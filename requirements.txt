@@ -1,0 +1,10 @@
+torch
+monai
+simpleitk
+pydicom
+eyepy
+numpy
+scipy
+matplotlib
+pytest
+pytest-cov
