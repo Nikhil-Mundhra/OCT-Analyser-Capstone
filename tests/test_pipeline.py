@@ -182,6 +182,25 @@ def test_moving_average_and_flatten_with_fallback_filter(monkeypatch):
     assert flattened.device == volume.device
 
 
+def test_flattener_import_handles_missing_scipy(monkeypatch):
+    import anatomical_flattener
+
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "scipy.ndimage":
+            raise ModuleNotFoundError("No module named 'scipy'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    reloaded = importlib.reload(anatomical_flattener)
+
+    assert reloaded.gaussian_filter1d is None
+
+    monkeypatch.setattr(builtins, "__import__", real_import)
+    importlib.reload(anatomical_flattener)
+
+
 def test_flatten_uses_available_gaussian_filter(monkeypatch):
     import anatomical_flattener as flattener
 
@@ -205,6 +224,14 @@ def test_flatten_uses_available_gaussian_filter(monkeypatch):
 def test_model_fallback_and_runtime_configuration(monkeypatch):
     import src.model as model_module
 
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "monai.networks.nets":
+            raise ModuleNotFoundError("No module named 'monai'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
     monkeypatch.setattr(model_module.platform, "system", lambda: "Darwin")
     monkeypatch.setattr(model_module.torch, "get_num_threads", lambda: 2)
     set_threads = []
