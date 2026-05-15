@@ -6,5 +6,6 @@ eyepy
 numpy
 scipy
 matplotlib
+Flask
 pytest
 pytest-cov

@@ -1,0 +1,162 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f7f9;
+  --surface: #ffffff;
+  --text: #17212b;
+  --muted: #607083;
+  --line: #d8e0e8;
+  --accent: #0d7c7c;
+  --accent-strong: #095d5d;
+  --shadow: 0 18px 45px rgba(19, 33, 46, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(13, 124, 124, 0.08), transparent 330px),
+    var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.page-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 34px clamp(18px, 4vw, 56px) 18px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3.3vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.diagram-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.tab {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0 14px;
+}
+
+.tab:hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.tab.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.diagram-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  padding: 18px clamp(18px, 4vw, 56px) 48px;
+}
+
+.diagram-grid.show-both {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.diagram-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.diagram-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding: 14px 18px;
+}
+
+.diagram-panel h2 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.diagram-panel p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.diagram-stage {
+  overflow: auto;
+  padding: 22px;
+}
+
+.mermaid {
+  min-width: 980px;
+}
+
+.message-label-container {
+  pointer-events: none;
+}
+
+.message-label-bounds {
+  fill: transparent;
+  stroke: transparent;
+}
+
+.render-error {
+  margin: 0;
+  overflow: auto;
+  color: #8b1d1d;
+  font: 0.9rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 980px) {
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .diagram-tabs {
+    justify-content: flex-start;
+  }
+
+  .diagram-grid.show-both {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
