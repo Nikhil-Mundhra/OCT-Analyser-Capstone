@@ -1,0 +1,10 @@
+INFO: Using device cuda
+/scratch/yh3529/github/IPNV2_pytorch/v2_test_angio.py:45: DeprecationWarning: Starting with ImageIO v3 the behavior of this function will switch to that of iio.v3.imread. To keep the current behavior (and make this warning disappear) use `import imageio.v2 as imageio` or call `imageio.v2.imread` directly.
+  image = imageio.imread(os.path.join("/scratch/yh3529/IPN_OCTA_Segmentation/Data/muna_AngioVue/", cube, bscan), mode='L') # covert to 1 and 0
+INFO: 59491
+Traceback (most recent call last):
+  File "/scratch/yh3529/github/IPNV2_pytorch/v2_test_angio.py", line 142, in <module>
+    test_net(net=net,device=device)
+  File "/scratch/yh3529/github/IPNV2_pytorch/v2_test_angio.py", line 69, in test_net
+    cube_images[0,1,:,:,i]=np.array(resize(zeros_array, (BLOCK_SIZE[0], DATA_SIZE[1]), order=0, mode='constant', cval=0.0))
+IndexError: index 1 is out of bounds for axis 1 with size 1

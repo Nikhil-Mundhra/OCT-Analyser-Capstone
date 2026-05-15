@@ -6,6 +6,10 @@ eyepy
 numpy
 scipy
 matplotlib
-Flask
+fastapi
+uvicorn
+python-multipart
+pillow
+httpx
 pytest
 pytest-cov

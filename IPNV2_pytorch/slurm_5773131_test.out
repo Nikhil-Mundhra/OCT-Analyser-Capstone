@@ -1,0 +1,25 @@
+----------------- Options ---------------
+               block_size: [160, 100, 100]               
+                 channels: 64                            
+                data_size: [640, 400, 400]               
+                 dataroot: /scratch/yh3529/IPN_OCTA_Segmentation/Data/IEEE_IPN
+              feature_dir: ./logs/Features_V2            
+                  gpu_ids: 0,1                           
+              in_channels: 1                             
+                   method: IPN_V2                        
+        modality_filename: ['image1', 'label']           
+                     mode: test                          
+                n_classes: 2                             
+         plane_perceptron: UNet_3Plus                    
+plane_perceptron_channels: 64                            
+                 saveroot: /scratch/yh3529/IPN_OCTA_Segmentation/IPNV2_pytorch/logs
+                 test_ids: [200, 300]                    
+                train_ids: [0, 180]                      
+                  val_ids: [180, 200]                    
+----------------- End -------------------
+
+/scratch/yh3529/IPN_OCTA_Segmentation/IPNV2_pytorch/logs/best_model_oct/0.84250/30500.pth
+Disc_OD
+Disc_OS
+Retina_OD
+Retina_OS

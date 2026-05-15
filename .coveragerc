@@ -2,6 +2,7 @@
 source = .
 omit =
     tests/*
+    IPNV2_pytorch/*
 
 [report]
 exclude_lines =

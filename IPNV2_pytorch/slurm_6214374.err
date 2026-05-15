@@ -1,0 +1,182 @@
+INFO: Using device cuda
+INFO: DataParallel(
+  (module): IPN_V2(
+    (input3d): InConv3d(
+      (in_conv): Sequential(
+        (0): Conv3d(2, 64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+        (1): ReLU(inplace=True)
+      )
+    )
+    (PLM1): PLM(
+      (plm): Sequential(
+        (0): MaxPool3d(kernel_size=[8, 1, 1], stride=[8, 1, 1], padding=0, dilation=1, ceil_mode=False)
+        (1): Conv3d(64, 64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+        (2): ReLU(inplace=True)
+        (3): Conv3d(64, 64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+        (4): ReLU(inplace=True)
+      )
+    )
+    (PLM2): PLM(
+      (plm): Sequential(
+        (0): MaxPool3d(kernel_size=[5, 1, 1], stride=[5, 1, 1], padding=0, dilation=1, ceil_mode=False)
+        (1): Conv3d(64, 64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+        (2): ReLU(inplace=True)
+        (3): Conv3d(64, 64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+        (4): ReLU(inplace=True)
+      )
+    )
+    (PLM3): PLM(
+      (plm): Sequential(
+        (0): MaxPool3d(kernel_size=[4, 1, 1], stride=[4, 1, 1], padding=0, dilation=1, ceil_mode=False)
+        (1): Conv3d(64, 64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+        (2): ReLU(inplace=True)
+        (3): Conv3d(64, 64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+        (4): ReLU(inplace=True)
+      )
+    )
+    (input2d): skip(
+      (double2dconv): DoubleConv(
+        (double_conv): Sequential(
+          (0): Conv2d(128, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (1): ReLU(inplace=True)
+          (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (3): ReLU(inplace=True)
+        )
+      )
+      (skip_conv): Conv3d(64, 64, kernel_size=(160, 1, 1), stride=(160, 1, 1))
+    )
+    (pp): UNet_3Plus(
+      (conv1): DoubleConv(
+        (double_conv): Sequential(
+          (0): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (1): ReLU(inplace=True)
+          (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (3): ReLU(inplace=True)
+        )
+      )
+      (maxpool1): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (conv2): DoubleConv(
+        (double_conv): Sequential(
+          (0): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (1): ReLU(inplace=True)
+          (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (3): ReLU(inplace=True)
+        )
+      )
+      (maxpool2): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (conv3): DoubleConv(
+        (double_conv): Sequential(
+          (0): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (1): ReLU(inplace=True)
+          (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (3): ReLU(inplace=True)
+        )
+      )
+      (h1_PT_hd3): MaxPool2d(kernel_size=4, stride=4, padding=0, dilation=1, ceil_mode=True)
+      (h1_PT_hd3_conv): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (h1_PT_hd3_relu): ReLU(inplace=True)
+      (h2_PT_hd3): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=True)
+      (h2_PT_hd3_conv): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (h2_PT_hd3_relu): ReLU(inplace=True)
+      (h3_Cat_hd3_conv): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (h3_Cat_hd3_relu): ReLU(inplace=True)
+      (conv3d_1): Conv2d(192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (relu3d_1): ReLU(inplace=True)
+      (h1_PT_hd2): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=True)
+      (h1_PT_hd2_conv): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (h1_PT_hd2_relu): ReLU(inplace=True)
+      (h2_Cat_hd2_conv): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (h2_Cat_hd2_relu): ReLU(inplace=True)
+      (hd3_UT_hd2): Upsample(scale_factor=2.0, mode=bilinear)
+      (hd3_UT_hd2_conv): Conv2d(192, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (hd3_UT_hd2_relu): ReLU(inplace=True)
+      (conv2d_1): Conv2d(192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (relu2d_1): ReLU(inplace=True)
+      (h1_Cat_hd1_conv): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (h1_Cat_hd1_relu): ReLU(inplace=True)
+      (hd2_UT_hd1): Upsample(scale_factor=2.0, mode=bilinear)
+      (hd2_UT_hd1_conv): Conv2d(192, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (hd2_UT_hd1_relu): ReLU(inplace=True)
+      (hd3_UT_hd1): Upsample(scale_factor=4.0, mode=bilinear)
+      (hd3_UT_hd1_conv): Conv2d(192, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (hd3_UT_hd1_relu): ReLU(inplace=True)
+      (conv1d_1): Conv2d(192, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (relu1d_1): ReLU(inplace=True)
+      (outconv1): Conv2d(64, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    )
+  )
+)
+/home/yh3529/.conda/envs/torch-1.11/lib/python3.9/site-packages/torch/nn/functional.py:780: UserWarning: Note that order of the arguments: ceil_mode and return_indices will changeto match the args list in nn.MaxPool2d in a future release.
+  warnings.warn("Note that order of the arguments: ceil_mode and return_indices will change"
+INFO: 0 0.6905907988548279
+INFO: Checkpoint 0 saved !
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: label
+INFO: Step:0, Valid_Dice:0.0
+INFO: 10 0.353876531124115
+INFO: 20 0.37509506940841675
+INFO: 30 0.25721532106399536
+INFO: 40 0.30283206701278687
+INFO: 50 0.280384361743927
+INFO: 60 0.2687893211841583
+INFO: 70 0.2346651405096054
+INFO: 80 0.3028690218925476
+INFO: 90 0.3423214256763458
+INFO: 100 0.2916383743286133
+INFO: 110 0.35222694277763367
+INFO: 120 0.3553033769130707
+INFO: 130 0.34049907326698303
+INFO: 140 0.3978494107723236
+INFO: 150 0.2325928658246994
+INFO: 160 0.3826013207435608
+INFO: 170 0.3387928605079651
+INFO: 180 0.4016443192958832
+INFO: 190 0.3319164514541626
+INFO: 200 0.2643525004386902
+INFO: 210 0.22412969172000885
+INFO: 220 0.28880590200424194
+INFO: 230 0.2558876872062683
+INFO: 240 0.3993619978427887
+INFO: 250 0.2657303214073181
+INFO: 260 0.31263625621795654
+INFO: 270 0.2932792901992798
+INFO: 280 0.3197077214717865
+INFO: 290 0.3118058145046234
+INFO: 300 0.29511746764183044
+INFO: 310 0.2866225838661194
+INFO: 320 0.29999393224716187
+INFO: 330 0.3362463712692261
+INFO: 340 0.30349424481391907
+INFO: 350 0.3025127053260803
+INFO: 360 0.2864547073841095
+INFO: 370 0.26174089312553406
+INFO: 380 0.26191791892051697
+INFO: 390 0.23779194056987762
+INFO: 400 0.265379935503006
+INFO: 410 0.3051571846008301
+INFO: 420 0.21109174191951752
+INFO: 430 0.22515249252319336
+INFO: 440 0.24234245717525482
+INFO: 450 0.18706932663917542
+INFO: 460 0.20774772763252258
+INFO: 470 0.30690839886665344
+INFO: 480 0.18197597563266754
+INFO: 490 0.12517227232456207
