@@ -163,18 +163,40 @@ message.
 
 ## Local MVP App
 
-Install Python and frontend dependencies, then build the browser bundle:
+Run the full local MVP from a fresh checkout with one command:
 
 ```bash
-pip install -r requirements.txt
-npm install
-npm run build
+make run
 ```
 
-Start the API and static frontend in separate terminals:
+That command creates or updates `.venv`, installs Python dependencies, installs
+Node dependencies, builds the React bundle, starts the FastAPI backend at
+`http://127.0.0.1:8000`, and serves the frontend at
+`http://127.0.0.1:5173`. Press `Ctrl-C` in the Make process to stop both
+servers.
+
+Useful Make targets:
 
 ```bash
-uvicorn src.api:app --host 127.0.0.1 --port 8000
+make install  # install Python and Node dependencies
+make build    # build the frontend bundle
+make test     # run the Python test suite
+make clean    # remove runtime/cache artifacts
+```
+
+You can override ports when needed:
+
+```bash
+API_PORT=8001 WEB_PORT=5174 make run
+```
+
+Manual equivalent:
+
+```bash
+.venv/bin/python -m pip install -r requirements.txt
+npm install
+npm run build
+.venv/bin/python -m uvicorn src.api:app --host 127.0.0.1 --port 8000
 python3 -m http.server 5173
 ```
 
