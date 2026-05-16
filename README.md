@@ -90,33 +90,37 @@ OCT-Analyser-Capstone/
 ├── .github/
 │   └── workflows/
 │       └── pytest.yml          # GitHub Actions test workflow
-├── src/
-│   ├── __init__.py
-│   ├── api.py                  # FastAPI upload, status, and preview endpoints
-│   ├── data_loader.py          # .vol, .dcm, and .zip stack loading
-│   ├── ipnv2_adapter.py        # IPN-V2 architecture wrapper and smoke inference
-│   ├── mvp_pipeline.py         # MVP QC, preprocessing, features, demo classifier
-│   ├── model.py                # MONAI/PyTorch 3D segmentation model factory
-│   ├── pre_processing.py       # Preprocessing pipeline and fallback normalizer
-│   ├── preview.py              # PNG preview rendering helpers
-│   ├── runtime.py              # macOS scientific-stack runtime guards
-│   ├── scan_types.py           # Normalized scan data contract
-│   └── train.py                # Single training-step helper
-├── tests/
-│   ├── conftest.py
-│   └── test_pipeline.py        # Unit tests for 100% statement coverage
-├── app.js                      # Main React clinical workflow frontend
-├── demo/
-│   ├── app.bundle.js           # Built MVP frontend bundle
-│   ├── index.html              # Original standalone wireframe demo page
-│   └── wireframe.bundle.js     # Original wireframe bundle
-├── anatomical_flattener.py     # RPE-based flattening utilities
-├── functions.py                # Spatial continuity loss
-├── losses.py                   # Ordinal anatomical loss
-├── main.py                     # Example execution entry point
-├── Dockerfile                  # Containerized runtime
-├── requirements.txt            # Runtime and test dependencies
-├── pytest.ini                  # Pytest and coverage settings
+├── backend/
+│   ├── Dockerfile              # Containerized backend runtime
+│   ├── requirements.txt        # Backend runtime and test dependencies
+│   ├── pytest.ini              # Backend pytest settings
+│   ├── oct_analyzer/
+│   │   ├── api.py              # FastAPI upload, status, and preview endpoints
+│   │   ├── interfaces.py       # API response contracts exposed through OpenAPI
+│   │   ├── data_loader.py      # .vol, .dcm, and .zip stack loading
+│   │   ├── ipnv2_adapter.py    # IPN-V2 architecture wrapper and smoke inference
+│   │   ├── mvp_pipeline.py     # MVP QC, preprocessing, features, demo classifier
+│   │   ├── model.py            # MONAI/PyTorch 3D segmentation model factory
+│   │   ├── pre_processing.py   # Preprocessing pipeline and fallback normalizer
+│   │   ├── preview.py          # PNG preview rendering helpers
+│   │   ├── runtime.py          # macOS scientific-stack runtime guards
+│   │   ├── scan_types.py       # Normalized scan data contract
+│   │   └── train.py            # Single training-step helper
+│   └── tests/
+│       ├── conftest.py
+│       └── test_pipeline.py    # Unit tests for 100% statement coverage
+├── frontend/
+│   ├── index.html              # Browser entrypoint
+│   ├── package.json            # Frontend build dependencies
+│   ├── public/
+│   │   └── favicon.svg
+│   ├── src/
+│   │   ├── App.jsx             # Main React clinical workflow frontend
+│   │   └── api/
+│   │       └── octAnalyzerClient.js # Frontend API interface/client
+│   ├── dist/
+│   │   └── app.bundle.js       # Built frontend bundle
+│   └── demo/                   # Original standalone wireframe demo
 └── .coveragerc                 # Coverage configuration
 ```
 
@@ -140,16 +144,17 @@ Install dependencies:
 
 ```bash
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
+npm --prefix frontend install
 ```
 
 ## Usage
 
 Place an OCT file named `patient_001_baseline.vol` in the project root, or edit
-the path in `main.py`, then run:
+the path in `backend/oct_analyzer/main.py`, then run:
 
 ```bash
-python main.py
+python -m backend.oct_analyzer.main
 ```
 
 The entry point performs:
@@ -193,11 +198,11 @@ API_PORT=8001 WEB_PORT=5174 make run
 Manual equivalent:
 
 ```bash
-.venv/bin/python -m pip install -r requirements.txt
-npm install
-npm run build
-.venv/bin/python -m uvicorn src.api:app --host 127.0.0.1 --port 8000
-python3 -m http.server 5173
+.venv/bin/python -m pip install -r backend/requirements.txt
+npm --prefix frontend install
+npm --prefix frontend run build
+.venv/bin/python -m uvicorn backend.oct_analyzer.api:app --host 127.0.0.1 --port 8000
+cd frontend && python3 -m http.server 5173
 ```
 
 Open `http://127.0.0.1:5173` to use the clinical workflow frontend. It includes
@@ -206,6 +211,11 @@ gate, and audit/outcomes screens, now wired to the local API for `.vol`, `.dcm`,
 or `.zip` stack uploads. The current classifier and 12-layer segmentation are
 deterministic placeholders and the API response includes `is_demo_model: true`;
 outputs are for local demonstration only, not clinical use.
+
+The frontend communicates with the backend only through
+`frontend/src/api/octAnalyzerClient.js`. That client owns upload requests,
+backend URL selection, error handling, and preview URL normalization against the
+backend `ScanResult` contract in `backend/oct_analyzer/interfaces.py`.
 
 To test-drive IPN-V2 with real weights later, set:
 
@@ -224,13 +234,13 @@ The original standalone wireframe demo is still available at
 Run the test suite:
 
 ```bash
-pytest
+pytest -c backend/pytest.ini backend/tests
 ```
 
 Coverage is enforced by `pytest.ini`:
 
 ```bash
-pytest --cov=. --cov-report=term-missing --cov-fail-under=100
+pytest -c backend/pytest.ini backend/tests --cov=. --cov-report=term-missing --cov-fail-under=100
 ```
 
 The GitHub Actions workflow in `.github/workflows/pytest.yml` runs the same
@@ -241,17 +251,17 @@ pytest suite on every push and pull request.
 Build the image:
 
 ```bash
-docker build -t relaynet-3d .
+docker build -f backend/Dockerfile -t relaynet-3d .
 ```
 
 Run the container:
 
 ```bash
-docker run --rm relaynet-3d python main.py
+docker run --rm relaynet-3d python -m backend.oct_analyzer.main
 ```
 
-The Dockerfile copies `requirements.txt` first so dependency installation can be
-cached between source-code changes.
+The Dockerfile copies `backend/requirements.txt` first so dependency
+installation can be cached between source-code changes.
 
 ## Notes
 
