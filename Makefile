@@ -2,9 +2,10 @@ SHELL := /bin/bash
 
 PYTHON ?= python3
 VENV ?= .venv
-PIP := $(VENV)/bin/python -m pip
-PYTEST := $(VENV)/bin/python -m pytest
-UVICORN := $(VENV)/bin/python -m uvicorn
+VENV_PYTHON := $(abspath $(VENV)/bin/python)
+PIP := $(VENV_PYTHON) -m pip
+PYTEST := $(VENV_PYTHON) -m pytest
+UVICORN := $(VENV_PYTHON) -m uvicorn
 HOST ?= 127.0.0.1
 API_PORT ?= 8000
 WEB_PORT ?= 5173
@@ -36,34 +37,34 @@ check-ports:
 	fi
 
 venv:
-	@test -x "$(VENV)/bin/python" || $(PYTHON) -m venv "$(VENV)"
+	@test -x "$(VENV_PYTHON)" || $(PYTHON) -m venv "$(VENV)"
 	@$(PIP) install --upgrade pip
 
 install: venv
-	@$(PIP) install -r requirements.txt
-	@npm install
+	@$(PIP) install -r backend/requirements.txt
+	@npm --prefix frontend install
 
 build: install
-	@npm run build
+	@npm --prefix frontend run build
 
 test: install
-	@$(PYTEST)
+	@$(PYTEST) -c backend/pytest.ini backend/tests
 
 run: check-ports build
 	@echo "Starting API at http://$(HOST):$(API_PORT)"
 	@echo "Starting frontend at http://$(HOST):$(WEB_PORT)"
 	@echo "Press Ctrl-C to stop both servers."
 	@trap 'kill $$API_PID $$WEB_PID 2>/dev/null || true' INT TERM EXIT; \
-	$(UVICORN) src.api:app --host $(HOST) --port $(API_PORT) & \
+	$(UVICORN) backend.oct_analyzer.api:app --host $(HOST) --port $(API_PORT) & \
 	API_PID=$$!; \
 	sleep 1; \
 	if ! kill -0 $$API_PID 2>/dev/null; then \
 		wait $$API_PID; \
 		exit $$?; \
 	fi; \
-	$(PYTHON) -m http.server $(WEB_PORT) --bind $(HOST) & \
+	cd frontend && $(VENV_PYTHON) -m http.server $(WEB_PORT) --bind $(HOST) & \
 	WEB_PID=$$!; \
 	wait $$API_PID $$WEB_PID
 
 clean:
-	@rm -rf .coverage __pycache__ src/__pycache__ tests/__pycache__ runtime_uploads
+	@rm -rf .coverage __pycache__ backend/oct_analyzer/__pycache__ backend/tests/__pycache__ runtime_uploads frontend/dist

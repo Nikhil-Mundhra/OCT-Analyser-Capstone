@@ -1,7 +1,7 @@
 [run]
-source = .
+source = backend/oct_analyzer
 omit =
-    tests/*
+    backend/tests/*
     IPNV2_pytorch/*
 
 [report]
