@@ -28,6 +28,16 @@ app.add_middleware(
 SCAN_STORE: dict[str, dict] = {}
 
 
+@app.get("/")
+def read_root() -> dict[str, str]:
+    return {
+        "status": "ok",
+        "service": "Local OCT Analyzer MVP API",
+        "docs": "/docs",
+        "frontend": "Start with the frontend URL printed by make run.",
+    }
+
+
 @app.post("/api/scans", response_model=ScanResult)
 def create_scan(file: UploadFile) -> dict:
     suffix = Path(file.filename or "").suffix.lower()

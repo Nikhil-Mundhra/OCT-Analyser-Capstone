@@ -754,6 +754,22 @@ def test_api_rejects_bad_uploads_and_missing_resources(tmp_path, monkeypatch):
     assert absent_preview.status_code == 404
 
 
+def test_api_root_reports_service_status():
+    from fastapi.testclient import TestClient
+    import backend.oct_analyzer.api as api
+
+    client = TestClient(api.app)
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "service": "Local OCT Analyzer MVP API",
+        "docs": "/docs",
+        "frontend": "Start with the frontend URL printed by make run.",
+    }
+
+
 def test_main_success_file_not_found_and_unexpected_error(monkeypatch, capsys):
     import backend.oct_analyzer.main as main
 

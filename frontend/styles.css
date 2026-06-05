@@ -92,7 +92,8 @@ h2 {
 }
 
 .tabs button,
-.diagram-tabs button {
+.diagram-tabs button,
+.diagram-tabs a {
   background: rgba(255, 255, 255, 0.78);
   color: var(--text);
 }
@@ -103,6 +104,17 @@ h2 {
   background: var(--accent);
   border-color: var(--accent);
   color: #ffffff;
+}
+
+.diagram-tabs a {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  display: inline-flex;
+  font-weight: 750;
+  min-height: 40px;
+  padding: 0 14px;
+  text-decoration: none;
 }
 
 .analyzer-grid {
@@ -124,6 +136,72 @@ h2 {
 .panel {
   min-width: 0;
   padding: 18px;
+}
+
+.docs-shell {
+  margin: 0 auto;
+  max-width: 980px;
+  padding: 0 clamp(16px, 4vw, 48px) 56px;
+}
+
+.docs-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  line-height: 1.7;
+  padding: clamp(20px, 4vw, 42px);
+}
+
+.docs-panel h2,
+.docs-panel h3,
+.docs-panel h4 {
+  color: var(--text);
+  line-height: 1.18;
+  margin: 28px 0 12px;
+}
+
+.docs-panel h2:first-child,
+.docs-panel h3:first-child,
+.docs-panel h4:first-child {
+  margin-top: 0;
+}
+
+.docs-panel p,
+.docs-panel li {
+  color: var(--muted);
+  font-size: 0.98rem;
+}
+
+.docs-panel p {
+  margin: 0 0 14px;
+}
+
+.docs-panel ul {
+  margin: 0 0 18px 20px;
+  padding: 0;
+}
+
+.docs-panel code {
+  background: #eef4f4;
+  border-radius: 5px;
+  color: var(--accent-dark);
+  padding: 2px 5px;
+}
+
+.docs-panel pre {
+  background: #111827;
+  border-radius: 8px;
+  color: #f8fafc;
+  overflow-x: auto;
+  padding: 16px;
+}
+
+.docs-panel pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
 }
 
 .panel-title {

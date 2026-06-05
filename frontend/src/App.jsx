@@ -4,14 +4,17 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  BookOpen,
   Brain,
   CheckCircle2,
   ClipboardCheck,
   Clock,
   Download,
+  ExternalLink,
   Eye,
   FileText,
   History,
+  PlayCircle,
   Route,
   ScanLine,
   ShieldAlert,
@@ -23,6 +26,7 @@ import {
 import { createScan } from "./api/octAnalyzerClient.js";
 
 const screens = [
+  { id: "home", label: "Home" },
   { id: "worklist", label: "1. Triage Worklist" },
   { id: "upload", label: "2. Upload and QC" },
   { id: "review", label: "3. Scan Review" },
@@ -35,6 +39,65 @@ const demoRows = [
   ["P-1184", "OCTA", "Ambiguous", "61%", "Send to human audit", "warning"],
   ["P-1210", "Optic disc OCT", "High risk", "88%", "Specialist review required", "danger"],
   ["P-1244", "Macula OCT", "Poor quality", "N/A", "Re-upload or manual review", "warning"],
+];
+
+const documentationLinks = [
+  {
+    title: "Project README",
+    type: "Overview",
+    href: "/docs/?doc=readme",
+    source: "README.md",
+    summary: "Current capabilities, local API contract, setup commands, and deployment notes for the OCT Analyzer MVP.",
+  },
+  {
+    title: "Implementation Blueprint",
+    type: "Architecture",
+    href: "/docs/?doc=implementation",
+    source: "implementation-info.txt",
+    summary: "Step-by-step design notes for ingestion, preprocessing, feature extraction, classification, and Solix export handling.",
+  },
+  {
+    title: "3D OCT/OCTA Biomarker Mapping",
+    type: "Clinical Reference",
+    href: "/public/docs/biomarker_mapping_docs/oct_biomarker_mapping.html",
+    source: "biomarker_mapping_docs/oct_biomarker_mapping.html",
+    summary: "Layer-specific structural and vascular biomarkers with OCT/OCTA reference images and disease-feature mappings.",
+  },
+  {
+    title: "IPN-V2 OCTA Segmentation",
+    type: "Model Reference",
+    href: "/docs/?doc=ipnv2",
+    source: "IPNV2_pytorch/README.md",
+    summary: "Reference notes for the IPN-V2/OCTA-500 segmentation model, dataset preprocessing, related papers, and upstream code.",
+  },
+  {
+    title: "Deep Learning Architecture Flowchart",
+    type: "Diagram",
+    href: "/diagrams/?diagram=architecture",
+    source: "frontend/Deep-learning-model-architecture-flowchart.js",
+    summary: "Mermaid source for the 3D tensor pipeline, shared backbone, prediction heads, uncertainty, and report assembly.",
+  },
+  {
+    title: "Online Clinical Inference Workflow",
+    type: "Diagram",
+    href: "/diagrams/?diagram=online",
+    source: "frontend/Online-clinical-inference-workflow..js",
+    summary: "Sequence diagram source for clinician upload, API ingestion, preprocessing, QC, inference, explanation, and reporting.",
+  },
+  {
+    title: "Offline Training and Validation Workflow",
+    type: "Diagram",
+    href: "/diagrams/?diagram=offline",
+    source: "frontend/Offline-training-and-validation-workflow.js",
+    summary: "Sequence diagram source for research ingestion, standardization, model training, evaluation, metrics, and versioned storage.",
+  },
+  {
+    title: "Wireframe Demo",
+    type: "Prototype",
+    href: "/demo/",
+    source: "frontend/demo/index.html",
+    summary: "Standalone clinical workflow prototype covering triage, upload/QC, review, decision gate, and outcomes/audit screens.",
+  },
 ];
 
 function StatusBadge({ children, tone = "neutral" }) {
@@ -130,6 +193,43 @@ function Header({ scan }) {
   );
 }
 
+function StickyNav({ active, setActive, scan }) {
+  return (
+    <nav className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-3 lg:flex-row lg:items-center lg:justify-between">
+        <button
+          onClick={() => setActive("home")}
+          className="flex min-h-0 items-center gap-3 rounded-xl border-0 bg-transparent p-0 text-left"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
+            <ScanLine className="h-5 w-5" />
+          </span>
+          <span>
+            <span className="block text-sm font-black text-slate-950">OCT Analyzer</span>
+            <span className="block text-xs font-semibold text-slate-500">{scan ? "Active case loaded" : "Documentation and workflow"}</span>
+          </span>
+        </button>
+
+        <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:justify-end lg:pb-0">
+          {screens.map((screen) => (
+            <button
+              key={screen.id}
+              onClick={() => setActive(screen.id)}
+              className={`shrink-0 rounded-xl px-4 py-2 text-sm font-bold transition ${
+                active === screen.id
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {screen.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </nav>
+  );
+}
+
 function riskFromScan(scan) {
   if (!scan || scan.status !== "completed") {
     return { label: "No active scan", tone: "neutral", confidence: "N/A", action: "Upload scan" };
@@ -141,6 +241,164 @@ function riskFromScan(scan) {
     return { label: "Ambiguous", tone: "warning", confidence: `${Math.round(scan.confidence * 100)}%`, action: "Send to human audit" };
   }
   return { label: "Low risk", tone: "safe", confidence: `${Math.round(scan.confidence * 100)}%`, action: "Clinician sample review" };
+}
+
+function HomeScreen({ scan, uploadState, decision, setActive }) {
+  const risk = riskFromScan(scan);
+  const completed = scan?.status === "completed";
+  const workflow = [
+    ["Intake", "Upload OCT/OCTA export", uploadState.fileName ? "Active" : "Ready", Upload],
+    ["QC", "Validate signal and volume shape", completed ? "Passed" : "Pending", CheckCircle2],
+    ["Review", "Inspect previews and layer evidence", completed ? "Ready" : "Waiting", ScanLine],
+    ["Decision", "Capture clinician rationale", decision.choice ? "Saved" : "Open", ClipboardCheck],
+  ];
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-12">
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:col-span-7">
+        <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="p-6 lg:p-8">
+            <div className="mb-4 flex flex-wrap gap-2">
+              <StatusBadge tone="info">OCT/OCTA workflow</StatusBadge>
+              <StatusBadge tone={completed ? risk.tone : "warning"}>
+                {completed ? `${risk.label} case loaded` : "Awaiting scan"}
+              </StatusBadge>
+            </div>
+            <h2 className="max-w-2xl text-3xl font-black leading-tight text-slate-950">
+              Clinical OCT review workspace for triage, QC, evidence, and sign-off
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
+              Start a local scan intake, continue reviewing the active case, or jump into the queue while preserving human oversight at every decision point.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                onClick={() => setActive("upload")}
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
+              >
+                <Upload className="h-4 w-4" /> Upload scan
+              </button>
+              <button
+                onClick={() => setActive(completed ? "review" : "worklist")}
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700"
+              >
+                <PlayCircle className="h-4 w-4" /> {completed ? "Continue review" : "Open worklist"}
+              </button>
+            </div>
+          </div>
+          <div className="border-t border-slate-200 bg-slate-950 p-5 lg:border-l lg:border-t-0">
+            <HomeScanPreview scan={scan} />
+          </div>
+        </div>
+      </section>
+
+      <Card title="Current Case" subtitle="Live summary of the active local scan." icon={Activity} className="lg:col-span-5">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Metric label="Case state" value={completed ? "Review ready" : uploadState.status} tone={completed ? "safe" : uploadState.error ? "danger" : "neutral"} />
+          <Metric label="Risk tier" value={risk.label} tone={risk.tone} />
+          <Metric label="Confidence" value={risk.confidence} tone={completed ? "info" : "neutral"} />
+          <Metric label="Decision" value={decision.choice ? "Saved" : "Pending"} tone={decision.choice ? "safe" : "warning"} />
+        </div>
+        <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+          <b>Active file:</b> {scan?.filename || uploadState.fileName || "No scan selected"}
+        </div>
+      </Card>
+
+      <Card title="Workflow Overview" subtitle="Each step keeps evidence and clinician agency visible." icon={Route} className="lg:col-span-8">
+        <div className="grid gap-3 md:grid-cols-4">
+          {workflow.map(([title, detail, state, Icon]) => (
+            <button
+              key={title}
+              onClick={() => setActive(title === "Intake" ? "upload" : title === "Review" ? "review" : title === "Decision" ? "decision" : "upload")}
+              className="flex min-h-44 flex-col items-start justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-white"
+            >
+              <Icon className="h-5 w-5 text-slate-700" />
+              <span>
+                <span className="block text-base font-black text-slate-950">{title}</span>
+                <span className="mt-2 block text-sm font-medium leading-5 text-slate-600">{detail}</span>
+              </span>
+              <StatusBadge tone={state === "Passed" || state === "Saved" || state === "Ready" ? "safe" : state === "Active" ? "info" : "neutral"}>
+                {state}
+              </StatusBadge>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <Card title="Safety Snapshot" subtitle="Deployment state for the demo workflow." icon={ShieldAlert} className="lg:col-span-4">
+        <div className="space-y-3 text-sm text-slate-700">
+          <div className="rounded-2xl bg-amber-50 p-4"><b>Model status:</b> Demo model, not autonomous diagnosis.</div>
+          <div className="rounded-2xl bg-sky-50 p-4"><b>Backend:</b> Local FastAPI scan processor or explicit hosted API base.</div>
+          <div className="rounded-2xl bg-emerald-50 p-4"><b>Guardrail:</b> Clinician rationale required before sign-off.</div>
+        </div>
+      </Card>
+
+      <Card title="Documentation Library" subtitle="Repo documentation and diagram artifacts surfaced from the app." icon={BookOpen} className="lg:col-span-12">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {documentationLinks.map((doc) => (
+            <a
+              key={doc.title}
+              href={doc.href}
+              target="_blank"
+              rel="noreferrer"
+              className="flex min-h-64 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700 transition hover:border-slate-300 hover:bg-white hover:shadow-sm"
+            >
+              <span>
+                <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600">
+                  <FileText className="h-3 w-3" /> {doc.type}
+                </span>
+                <span className="block text-base font-black text-slate-950">{doc.title}</span>
+                <span className="mt-3 block text-sm font-medium leading-6 text-slate-600">{doc.summary}</span>
+              </span>
+              <span className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3 text-xs font-bold text-slate-500">
+                <span className="truncate">{doc.source}</span>
+                <ExternalLink className="h-4 w-4 shrink-0" />
+              </span>
+            </a>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function HomeScanPreview({ scan }) {
+  if (scan?.previews?.overlay || scan?.previews?.raw) {
+    const src = scan.previews.overlay || scan.previews.raw;
+    return (
+      <div className="flex h-full min-h-72 items-center justify-center">
+        <img src={src} alt="Active OCT scan preview" className="max-h-80 w-full rounded-2xl object-contain" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-72 flex-col justify-between rounded-2xl border border-slate-700 bg-slate-900 p-5">
+      <div className="flex items-center justify-between text-xs font-bold uppercase text-slate-400">
+        <span>Preview Bay</span>
+        <span>No scan</span>
+      </div>
+      <div className="space-y-2">
+        {Array.from({ length: 14 }).map((_, index) => (
+          <div
+            key={index}
+            className={`h-2 rounded-full ${
+              index % 5 === 0
+                ? "bg-cyan-300/70"
+                : index % 3 === 0
+                  ? "bg-emerald-300/65"
+                  : "bg-slate-500/60"
+            }`}
+            style={{ width: `${62 + ((index * 17) % 34)}%`, marginLeft: `${(index * 11) % 24}%` }}
+          />
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-3 text-xs font-semibold text-slate-300">
+        <span className="rounded-xl bg-slate-800 p-3">Raw</span>
+        <span className="rounded-xl bg-slate-800 p-3">Overlay</span>
+        <span className="rounded-xl bg-slate-800 p-3">CDF</span>
+      </div>
+    </div>
+  );
 }
 
 function WorklistScreen({ scan, setActive }) {
@@ -495,7 +753,7 @@ function OutcomesScreen({ scan, decision }) {
 }
 
 function ClinicalInterfaceApp() {
-  const [active, setActive] = useState("worklist");
+  const [active, setActive] = useState("home");
   const [scan, setScan] = useState(null);
   const [uploadState, setUploadState] = useState({ status: "Waiting", progress: 0, fileName: "", error: "" });
   const [decision, setDecision] = useState({ choice: "", rationale: "", submittedAt: "" });
@@ -523,25 +781,11 @@ function ClinicalInterfaceApp() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6 text-slate-900">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <Header scan={scan} />
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+      <StickyNav active={active} setActive={setActive} scan={scan} />
 
-        <nav className="flex flex-wrap gap-2 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
-          {screens.map((screen) => (
-            <button
-              key={screen.id}
-              onClick={() => setActive(screen.id)}
-              className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${
-                active === screen.id
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {screen.label}
-            </button>
-          ))}
-        </nav>
+      <div className="mx-auto max-w-7xl space-y-6 px-6 py-6">
+        <Header scan={scan} />
 
         <section className="rounded-3xl border border-slate-200 bg-white/60 p-4 shadow-sm">
           <div className="mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
@@ -558,6 +802,7 @@ function ClinicalInterfaceApp() {
           </div>
 
           {active === "worklist" && <WorklistScreen scan={scan} setActive={setActive} />}
+          {active === "home" && <HomeScreen scan={scan} uploadState={uploadState} decision={decision} setActive={setActive} />}
           {active === "upload" && <UploadScreen scan={scan} uploadState={uploadState} onUpload={uploadScan} />}
           {active === "review" && <ReviewScreen scan={scan} />}
           {active === "decision" && <DecisionScreen scan={scan} decision={decision} setDecision={setDecision} />}

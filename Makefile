@@ -23,8 +23,8 @@ help:
 	@echo "  make clean    Remove local runtime/cache artifacts"
 	@echo ""
 	@echo "URLs after make run:"
-	@echo "  Frontend: http://$(HOST):$(WEB_PORT)"
-	@echo "  API docs: http://$(HOST):$(API_PORT)/docs"
+	@echo "  Frontend: http://$(HOST):$(WEB_PORT) or next open port"
+	@echo "  API docs: http://$(HOST):$(API_PORT)/docs or next open port"
 
 check-ports:
 	@if lsof -nP -iTCP:$(API_PORT) -sTCP:LISTEN >/dev/null 2>&1; then \
@@ -37,8 +37,10 @@ check-ports:
 	fi
 
 venv:
-	@test -x "$(VENV_PYTHON)" || $(PYTHON) -m venv "$(VENV)"
-	@$(PIP) install --upgrade pip
+	@if [ ! -x "$(VENV_PYTHON)" ]; then \
+		$(PYTHON) -m venv "$(VENV)"; \
+		$(PIP) install --upgrade pip; \
+	fi
 
 install: venv
 	@$(PIP) install -r backend/requirements.txt
@@ -50,20 +52,51 @@ build: install
 test: install
 	@$(PYTEST) -c backend/pytest.ini backend/tests
 
-run: check-ports build
-	@echo "Starting API at http://$(HOST):$(API_PORT)"
-	@echo "Starting frontend at http://$(HOST):$(WEB_PORT)"
-	@echo "Press Ctrl-C to stop both servers."
-	@trap 'kill $$API_PID $$WEB_PID 2>/dev/null || true' INT TERM EXIT; \
-	$(UVICORN) backend.oct_analyzer.api:app --host $(HOST) --port $(API_PORT) & \
+run: build
+	@set -e; \
+	find_open_port() { \
+		port="$$1"; \
+		while lsof -nP -iTCP:$$port -sTCP:LISTEN >/dev/null 2>&1; do \
+			port=$$((port + 1)); \
+		done; \
+		echo "$$port"; \
+	}; \
+	RESOLVED_API_PORT=$$(find_open_port "$(API_PORT)"); \
+	RESOLVED_WEB_PORT=$$(find_open_port "$(WEB_PORT)"); \
+	API_URL="http://$(HOST):$$RESOLVED_API_PORT"; \
+	WEB_URL="http://$(HOST):$$RESOLVED_WEB_PORT"; \
+	if [ "$$RESOLVED_API_PORT" != "$(API_PORT)" ]; then \
+		echo "Port $(API_PORT) is in use. Using API port $$RESOLVED_API_PORT instead."; \
+	fi; \
+	if [ "$$RESOLVED_WEB_PORT" != "$(WEB_PORT)" ]; then \
+		echo "Port $(WEB_PORT) is in use. Using frontend port $$RESOLVED_WEB_PORT instead."; \
+	fi; \
+	if [ "$$RESOLVED_API_PORT" != "8000" ]; then \
+		WEB_URL="$$WEB_URL/?apiBase=$$API_URL"; \
+	fi; \
+	echo "Starting API at $$API_URL"; \
+	echo "Starting frontend at $$WEB_URL"; \
+	echo "Press Ctrl-C to stop both servers."; \
+	cleanup() { \
+		kill $$API_PID $$WEB_PID 2>/dev/null || true; \
+		wait $$API_PID $$WEB_PID 2>/dev/null || true; \
+	}; \
+	trap cleanup INT TERM EXIT; \
+	$(UVICORN) backend.oct_analyzer.api:app --host $(HOST) --port $$RESOLVED_API_PORT & \
 	API_PID=$$!; \
 	sleep 1; \
 	if ! kill -0 $$API_PID 2>/dev/null; then \
 		wait $$API_PID; \
 		exit $$?; \
 	fi; \
-	cd frontend && $(VENV_PYTHON) -m http.server $(WEB_PORT) --bind $(HOST) & \
+	$(VENV_PYTHON) -m http.server $$RESOLVED_WEB_PORT --bind $(HOST) --directory frontend & \
 	WEB_PID=$$!; \
+	sleep 1; \
+	if ! kill -0 $$WEB_PID 2>/dev/null; then \
+		kill $$API_PID 2>/dev/null || true; \
+		wait $$WEB_PID; \
+		exit $$?; \
+	fi; \
 	wait $$API_PID $$WEB_PID
 
 clean:

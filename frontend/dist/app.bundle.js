@@ -21568,8 +21568,21 @@ var __iconNode = [
 ];
 var Activity = createLucideIcon("activity", __iconNode);
 
-// node_modules/lucide-react/dist/esm/icons/brain.mjs
+// node_modules/lucide-react/dist/esm/icons/book-open.mjs
 var __iconNode2 = [
+  ["path", { d: "M12 7v14", key: "1akyts" }],
+  [
+    "path",
+    {
+      d: "M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z",
+      key: "ruj8y"
+    }
+  ]
+];
+var BookOpen = createLucideIcon("book-open", __iconNode2);
+
+// node_modules/lucide-react/dist/esm/icons/brain.mjs
+var __iconNode3 = [
   ["path", { d: "M12 18V5", key: "adv99a" }],
   ["path", { d: "M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4", key: "1e3is1" }],
   ["path", { d: "M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5", key: "1gqd8o" }],
@@ -21579,26 +21592,39 @@ var __iconNode2 = [
   ["path", { d: "M6 18a4 4 0 0 1-2-7.464", key: "k1g0md" }],
   ["path", { d: "M6.003 5.125a4 4 0 0 0-2.526 5.77", key: "q97ue3" }]
 ];
-var Brain = createLucideIcon("brain", __iconNode2);
+var Brain = createLucideIcon("brain", __iconNode3);
 
 // node_modules/lucide-react/dist/esm/icons/chart-column.mjs
-var __iconNode3 = [
+var __iconNode4 = [
   ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
   ["path", { d: "M18 17V9", key: "2bz60n" }],
   ["path", { d: "M13 17V5", key: "1frdt8" }],
   ["path", { d: "M8 17v-3", key: "17ska0" }]
 ];
-var ChartColumn = createLucideIcon("chart-column", __iconNode3);
+var ChartColumn = createLucideIcon("chart-column", __iconNode4);
 
 // node_modules/lucide-react/dist/esm/icons/circle-check.mjs
-var __iconNode4 = [
+var __iconNode5 = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-var CircleCheck = createLucideIcon("circle-check", __iconNode4);
+var CircleCheck = createLucideIcon("circle-check", __iconNode5);
+
+// node_modules/lucide-react/dist/esm/icons/circle-play.mjs
+var __iconNode6 = [
+  [
+    "path",
+    {
+      d: "M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z",
+      key: "kmsa83"
+    }
+  ],
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
+];
+var CirclePlay = createLucideIcon("circle-play", __iconNode6);
 
 // node_modules/lucide-react/dist/esm/icons/clipboard-check.mjs
-var __iconNode5 = [
+var __iconNode7 = [
   ["rect", { width: "8", height: "4", x: "8", y: "2", rx: "1", ry: "1", key: "tgr4d6" }],
   [
     "path",
@@ -21609,25 +21635,33 @@ var __iconNode5 = [
   ],
   ["path", { d: "m9 14 2 2 4-4", key: "df797q" }]
 ];
-var ClipboardCheck = createLucideIcon("clipboard-check", __iconNode5);
+var ClipboardCheck = createLucideIcon("clipboard-check", __iconNode7);
 
 // node_modules/lucide-react/dist/esm/icons/clock.mjs
-var __iconNode6 = [
+var __iconNode8 = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
 ];
-var Clock = createLucideIcon("clock", __iconNode6);
+var Clock = createLucideIcon("clock", __iconNode8);
 
 // node_modules/lucide-react/dist/esm/icons/download.mjs
-var __iconNode7 = [
+var __iconNode9 = [
   ["path", { d: "M12 15V3", key: "m9g1x1" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
   ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
 ];
-var Download = createLucideIcon("download", __iconNode7);
+var Download = createLucideIcon("download", __iconNode9);
+
+// node_modules/lucide-react/dist/esm/icons/external-link.mjs
+var __iconNode10 = [
+  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
+  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
+  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
+];
+var ExternalLink = createLucideIcon("external-link", __iconNode10);
 
 // node_modules/lucide-react/dist/esm/icons/eye.mjs
-var __iconNode8 = [
+var __iconNode11 = [
   [
     "path",
     {
@@ -21637,10 +21671,10 @@ var __iconNode8 = [
   ],
   ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-var Eye = createLucideIcon("eye", __iconNode8);
+var Eye = createLucideIcon("eye", __iconNode11);
 
 // node_modules/lucide-react/dist/esm/icons/file-text.mjs
-var __iconNode9 = [
+var __iconNode12 = [
   [
     "path",
     {
@@ -21653,36 +21687,36 @@ var __iconNode9 = [
   ["path", { d: "M16 13H8", key: "t4e002" }],
   ["path", { d: "M16 17H8", key: "z1uh3a" }]
 ];
-var FileText = createLucideIcon("file-text", __iconNode9);
+var FileText = createLucideIcon("file-text", __iconNode12);
 
 // node_modules/lucide-react/dist/esm/icons/history.mjs
-var __iconNode10 = [
+var __iconNode13 = [
   ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
   ["path", { d: "M12 7v5l4 2", key: "1fdv2h" }]
 ];
-var History = createLucideIcon("history", __iconNode10);
+var History = createLucideIcon("history", __iconNode13);
 
 // node_modules/lucide-react/dist/esm/icons/route.mjs
-var __iconNode11 = [
+var __iconNode14 = [
   ["circle", { cx: "6", cy: "19", r: "3", key: "1kj8tv" }],
   ["path", { d: "M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15", key: "1d8sl" }],
   ["circle", { cx: "18", cy: "5", r: "3", key: "gq8acd" }]
 ];
-var Route = createLucideIcon("route", __iconNode11);
+var Route = createLucideIcon("route", __iconNode14);
 
 // node_modules/lucide-react/dist/esm/icons/scan-line.mjs
-var __iconNode12 = [
+var __iconNode15 = [
   ["path", { d: "M3 7V5a2 2 0 0 1 2-2h2", key: "aa7l1z" }],
   ["path", { d: "M17 3h2a2 2 0 0 1 2 2v2", key: "4qcy5o" }],
   ["path", { d: "M21 17v2a2 2 0 0 1-2 2h-2", key: "6vwrx8" }],
   ["path", { d: "M7 21H5a2 2 0 0 1-2-2v-2", key: "ioqczr" }],
   ["path", { d: "M7 12h10", key: "b7w52i" }]
 ];
-var ScanLine = createLucideIcon("scan-line", __iconNode12);
+var ScanLine = createLucideIcon("scan-line", __iconNode15);
 
 // node_modules/lucide-react/dist/esm/icons/shield-alert.mjs
-var __iconNode13 = [
+var __iconNode16 = [
   [
     "path",
     {
@@ -21693,20 +21727,20 @@ var __iconNode13 = [
   ["path", { d: "M12 8v4", key: "1got3b" }],
   ["path", { d: "M12 16h.01", key: "1drbdi" }]
 ];
-var ShieldAlert = createLucideIcon("shield-alert", __iconNode13);
+var ShieldAlert = createLucideIcon("shield-alert", __iconNode16);
 
 // node_modules/lucide-react/dist/esm/icons/stethoscope.mjs
-var __iconNode14 = [
+var __iconNode17 = [
   ["path", { d: "M11 2v2", key: "1539x4" }],
   ["path", { d: "M5 2v2", key: "1yf1q8" }],
   ["path", { d: "M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1", key: "rb5t3r" }],
   ["path", { d: "M8 15a6 6 0 0 0 12 0v-3", key: "x18d4x" }],
   ["circle", { cx: "20", cy: "10", r: "2", key: "ts1r5v" }]
 ];
-var Stethoscope = createLucideIcon("stethoscope", __iconNode14);
+var Stethoscope = createLucideIcon("stethoscope", __iconNode17);
 
 // node_modules/lucide-react/dist/esm/icons/triangle-alert.mjs
-var __iconNode15 = [
+var __iconNode18 = [
   [
     "path",
     {
@@ -21717,22 +21751,22 @@ var __iconNode15 = [
   ["path", { d: "M12 9v4", key: "juzpu7" }],
   ["path", { d: "M12 17h.01", key: "p32p05" }]
 ];
-var TriangleAlert = createLucideIcon("triangle-alert", __iconNode15);
+var TriangleAlert = createLucideIcon("triangle-alert", __iconNode18);
 
 // node_modules/lucide-react/dist/esm/icons/upload.mjs
-var __iconNode16 = [
+var __iconNode19 = [
   ["path", { d: "M12 3v12", key: "1x0j5s" }],
   ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
 ];
-var Upload = createLucideIcon("upload", __iconNode16);
+var Upload = createLucideIcon("upload", __iconNode19);
 
 // node_modules/lucide-react/dist/esm/icons/user-round.mjs
-var __iconNode17 = [
+var __iconNode20 = [
   ["circle", { cx: "12", cy: "8", r: "5", key: "1hypcn" }],
   ["path", { d: "M20 21a8 8 0 0 0-16 0", key: "rfgkzh" }]
 ];
-var UserRound = createLucideIcon("user-round", __iconNode17);
+var UserRound = createLucideIcon("user-round", __iconNode20);
 
 // src/api/octAnalyzerClient.js
 var queryApiBase = globalThis.location ? new URLSearchParams(globalThis.location.search).get("apiBase") : "";
@@ -21778,6 +21812,7 @@ function apiUrl(path) {
 
 // src/App.jsx
 var screens = [
+  { id: "home", label: "Home" },
   { id: "worklist", label: "1. Triage Worklist" },
   { id: "upload", label: "2. Upload and QC" },
   { id: "review", label: "3. Scan Review" },
@@ -21789,6 +21824,64 @@ var demoRows = [
   ["P-1184", "OCTA", "Ambiguous", "61%", "Send to human audit", "warning"],
   ["P-1210", "Optic disc OCT", "High risk", "88%", "Specialist review required", "danger"],
   ["P-1244", "Macula OCT", "Poor quality", "N/A", "Re-upload or manual review", "warning"]
+];
+var documentationLinks = [
+  {
+    title: "Project README",
+    type: "Overview",
+    href: "/docs/?doc=readme",
+    source: "README.md",
+    summary: "Current capabilities, local API contract, setup commands, and deployment notes for the OCT Analyzer MVP."
+  },
+  {
+    title: "Implementation Blueprint",
+    type: "Architecture",
+    href: "/docs/?doc=implementation",
+    source: "implementation-info.txt",
+    summary: "Step-by-step design notes for ingestion, preprocessing, feature extraction, classification, and Solix export handling."
+  },
+  {
+    title: "3D OCT/OCTA Biomarker Mapping",
+    type: "Clinical Reference",
+    href: "/public/docs/biomarker_mapping_docs/oct_biomarker_mapping.html",
+    source: "biomarker_mapping_docs/oct_biomarker_mapping.html",
+    summary: "Layer-specific structural and vascular biomarkers with OCT/OCTA reference images and disease-feature mappings."
+  },
+  {
+    title: "IPN-V2 OCTA Segmentation",
+    type: "Model Reference",
+    href: "/docs/?doc=ipnv2",
+    source: "IPNV2_pytorch/README.md",
+    summary: "Reference notes for the IPN-V2/OCTA-500 segmentation model, dataset preprocessing, related papers, and upstream code."
+  },
+  {
+    title: "Deep Learning Architecture Flowchart",
+    type: "Diagram",
+    href: "/diagrams/?diagram=architecture",
+    source: "frontend/Deep-learning-model-architecture-flowchart.js",
+    summary: "Mermaid source for the 3D tensor pipeline, shared backbone, prediction heads, uncertainty, and report assembly."
+  },
+  {
+    title: "Online Clinical Inference Workflow",
+    type: "Diagram",
+    href: "/diagrams/?diagram=online",
+    source: "frontend/Online-clinical-inference-workflow..js",
+    summary: "Sequence diagram source for clinician upload, API ingestion, preprocessing, QC, inference, explanation, and reporting."
+  },
+  {
+    title: "Offline Training and Validation Workflow",
+    type: "Diagram",
+    href: "/diagrams/?diagram=offline",
+    source: "frontend/Offline-training-and-validation-workflow.js",
+    summary: "Sequence diagram source for research ingestion, standardization, model training, evaluation, metrics, and versioned storage."
+  },
+  {
+    title: "Wireframe Demo",
+    type: "Prototype",
+    href: "/demo/",
+    source: "frontend/demo/index.html",
+    summary: "Standalone clinical workflow prototype covering triage, upload/QC, review, decision gate, and outcomes/audit screens."
+  }
 ];
 function StatusBadge({ children, tone = "neutral" }) {
   const tones = {
@@ -21820,6 +21913,25 @@ function Metric({ label, value, tone = "neutral" }) {
 function Header({ scan }) {
   return /* @__PURE__ */ import_react4.default.createElement("header", { className: "rounded-3xl border border-slate-200 bg-white p-5 shadow-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-2 flex flex-wrap gap-2" }, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "info" }, "Clinical decision support"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "purple" }, "Human in the loop"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "warning" }, "Not autonomous diagnosis"), scan?.is_demo_model ? /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "warning" }, "Demo model") : null), /* @__PURE__ */ import_react4.default.createElement("h1", { className: "text-3xl font-black tracking-tight text-slate-950" }, "OCT/OCTA Clinical Inference Interface"), /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-2 max-w-3xl text-sm leading-6 text-slate-600" }, "End-to-end clinician workflow for triage, explainable scan review, active human justification, specialist routing, and safety monitoring.")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid grid-cols-2 gap-3 text-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("p", { className: "font-semibold text-slate-500" }, "Current user"), /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-1 font-bold text-slate-900" }, "Ophthalmologist")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("p", { className: "font-semibold text-slate-500" }, "Mode"), /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-1 font-bold text-slate-900" }, scan ? "Active case" : "Review queue")))));
 }
+function StickyNav({ active, setActive, scan }) {
+  return /* @__PURE__ */ import_react4.default.createElement("nav", { className: "sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mx-auto flex max-w-7xl flex-col gap-3 px-6 py-3 lg:flex-row lg:items-center lg:justify-between" }, /* @__PURE__ */ import_react4.default.createElement(
+    "button",
+    {
+      onClick: () => setActive("home"),
+      className: "flex min-h-0 items-center gap-3 rounded-xl border-0 bg-transparent p-0 text-left"
+    },
+    /* @__PURE__ */ import_react4.default.createElement("span", { className: "flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white" }, /* @__PURE__ */ import_react4.default.createElement(ScanLine, { className: "h-5 w-5" })),
+    /* @__PURE__ */ import_react4.default.createElement("span", null, /* @__PURE__ */ import_react4.default.createElement("span", { className: "block text-sm font-black text-slate-950" }, "OCT Analyzer"), /* @__PURE__ */ import_react4.default.createElement("span", { className: "block text-xs font-semibold text-slate-500" }, scan ? "Active case loaded" : "Documentation and workflow"))
+  ), /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:justify-end lg:pb-0" }, screens.map((screen) => /* @__PURE__ */ import_react4.default.createElement(
+    "button",
+    {
+      key: screen.id,
+      onClick: () => setActive(screen.id),
+      className: `shrink-0 rounded-xl px-4 py-2 text-sm font-bold transition ${active === screen.id ? "bg-slate-900 text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`
+    },
+    screen.label
+  )))));
+}
 function riskFromScan(scan) {
   if (!scan || scan.status !== "completed") {
     return { label: "No active scan", tone: "neutral", confidence: "N/A", action: "Upload scan" };
@@ -21831,6 +21943,69 @@ function riskFromScan(scan) {
     return { label: "Ambiguous", tone: "warning", confidence: `${Math.round(scan.confidence * 100)}%`, action: "Send to human audit" };
   }
   return { label: "Low risk", tone: "safe", confidence: `${Math.round(scan.confidence * 100)}%`, action: "Clinician sample review" };
+}
+function HomeScreen({ scan, uploadState, decision, setActive }) {
+  const risk = riskFromScan(scan);
+  const completed = scan?.status === "completed";
+  const workflow = [
+    ["Intake", "Upload OCT/OCTA export", uploadState.fileName ? "Active" : "Ready", Upload],
+    ["QC", "Validate signal and volume shape", completed ? "Passed" : "Pending", CircleCheck],
+    ["Review", "Inspect previews and layer evidence", completed ? "Ready" : "Waiting", ScanLine],
+    ["Decision", "Capture clinician rationale", decision.choice ? "Saved" : "Open", ClipboardCheck]
+  ];
+  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-5 lg:grid-cols-12" }, /* @__PURE__ */ import_react4.default.createElement("section", { className: "overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:col-span-7" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-0 lg:grid-cols-[1.05fr_0.95fr]" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "p-6 lg:p-8" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-4 flex flex-wrap gap-2" }, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "info" }, "OCT/OCTA workflow"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: completed ? risk.tone : "warning" }, completed ? `${risk.label} case loaded` : "Awaiting scan")), /* @__PURE__ */ import_react4.default.createElement("h2", { className: "max-w-2xl text-3xl font-black leading-tight text-slate-950" }, "Clinical OCT review workspace for triage, QC, evidence, and sign-off"), /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-4 max-w-2xl text-sm leading-6 text-slate-600" }, "Start a local scan intake, continue reviewing the active case, or jump into the queue while preserving human oversight at every decision point."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-6 flex flex-wrap gap-3" }, /* @__PURE__ */ import_react4.default.createElement(
+    "button",
+    {
+      onClick: () => setActive("upload"),
+      className: "inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
+    },
+    /* @__PURE__ */ import_react4.default.createElement(Upload, { className: "h-4 w-4" }),
+    " Upload scan"
+  ), /* @__PURE__ */ import_react4.default.createElement(
+    "button",
+    {
+      onClick: () => setActive(completed ? "review" : "worklist"),
+      className: "inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700"
+    },
+    /* @__PURE__ */ import_react4.default.createElement(CirclePlay, { className: "h-4 w-4" }),
+    " ",
+    completed ? "Continue review" : "Open worklist"
+  ))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "border-t border-slate-200 bg-slate-950 p-5 lg:border-l lg:border-t-0" }, /* @__PURE__ */ import_react4.default.createElement(HomeScanPreview, { scan })))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Current Case", subtitle: "Live summary of the active local scan.", icon: Activity, className: "lg:col-span-5" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-3 sm:grid-cols-2" }, /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Case state", value: completed ? "Review ready" : uploadState.status, tone: completed ? "safe" : uploadState.error ? "danger" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Risk tier", value: risk.label, tone: risk.tone }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Confidence", value: risk.confidence, tone: completed ? "info" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Decision", value: decision.choice ? "Saved" : "Pending", tone: decision.choice ? "safe" : "warning" })), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Active file:"), " ", scan?.filename || uploadState.fileName || "No scan selected")), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Workflow Overview", subtitle: "Each step keeps evidence and clinician agency visible.", icon: Route, className: "lg:col-span-8" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-3 md:grid-cols-4" }, workflow.map(([title, detail, state, Icon2]) => /* @__PURE__ */ import_react4.default.createElement(
+    "button",
+    {
+      key: title,
+      onClick: () => setActive(title === "Intake" ? "upload" : title === "Review" ? "review" : title === "Decision" ? "decision" : "upload"),
+      className: "flex min-h-44 flex-col items-start justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-white"
+    },
+    /* @__PURE__ */ import_react4.default.createElement(Icon2, { className: "h-5 w-5 text-slate-700" }),
+    /* @__PURE__ */ import_react4.default.createElement("span", null, /* @__PURE__ */ import_react4.default.createElement("span", { className: "block text-base font-black text-slate-950" }, title), /* @__PURE__ */ import_react4.default.createElement("span", { className: "mt-2 block text-sm font-medium leading-5 text-slate-600" }, detail)),
+    /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: state === "Passed" || state === "Saved" || state === "Ready" ? "safe" : state === "Active" ? "info" : "neutral" }, state)
+  )))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Safety Snapshot", subtitle: "Deployment state for the demo workflow.", icon: ShieldAlert, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-amber-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Model status:"), " Demo model, not autonomous diagnosis."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-sky-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Backend:"), " Local FastAPI scan processor or explicit hosted API base."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-emerald-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Guardrail:"), " Clinician rationale required before sign-off."))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Documentation Library", subtitle: "Repo documentation and diagram artifacts surfaced from the app.", icon: BookOpen, className: "lg:col-span-12" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-3 md:grid-cols-2 xl:grid-cols-4" }, documentationLinks.map((doc) => /* @__PURE__ */ import_react4.default.createElement(
+    "a",
+    {
+      key: doc.title,
+      href: doc.href,
+      target: "_blank",
+      rel: "noreferrer",
+      className: "flex min-h-64 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700 transition hover:border-slate-300 hover:bg-white hover:shadow-sm"
+    },
+    /* @__PURE__ */ import_react4.default.createElement("span", null, /* @__PURE__ */ import_react4.default.createElement("span", { className: "mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600" }, /* @__PURE__ */ import_react4.default.createElement(FileText, { className: "h-3 w-3" }), " ", doc.type), /* @__PURE__ */ import_react4.default.createElement("span", { className: "block text-base font-black text-slate-950" }, doc.title), /* @__PURE__ */ import_react4.default.createElement("span", { className: "mt-3 block text-sm font-medium leading-6 text-slate-600" }, doc.summary)),
+    /* @__PURE__ */ import_react4.default.createElement("span", { className: "mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3 text-xs font-bold text-slate-500" }, /* @__PURE__ */ import_react4.default.createElement("span", { className: "truncate" }, doc.source), /* @__PURE__ */ import_react4.default.createElement(ExternalLink, { className: "h-4 w-4 shrink-0" }))
+  )))));
+}
+function HomeScanPreview({ scan }) {
+  if (scan?.previews?.overlay || scan?.previews?.raw) {
+    const src = scan.previews.overlay || scan.previews.raw;
+    return /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex h-full min-h-72 items-center justify-center" }, /* @__PURE__ */ import_react4.default.createElement("img", { src, alt: "Active OCT scan preview", className: "max-h-80 w-full rounded-2xl object-contain" }));
+  }
+  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex min-h-72 flex-col justify-between rounded-2xl border border-slate-700 bg-slate-900 p-5" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex items-center justify-between text-xs font-bold uppercase text-slate-400" }, /* @__PURE__ */ import_react4.default.createElement("span", null, "Preview Bay"), /* @__PURE__ */ import_react4.default.createElement("span", null, "No scan")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-2" }, Array.from({ length: 14 }).map((_, index) => /* @__PURE__ */ import_react4.default.createElement(
+    "div",
+    {
+      key: index,
+      className: `h-2 rounded-full ${index % 5 === 0 ? "bg-cyan-300/70" : index % 3 === 0 ? "bg-emerald-300/65" : "bg-slate-500/60"}`,
+      style: { width: `${62 + index * 17 % 34}%`, marginLeft: `${index * 11 % 24}%` }
+    }
+  ))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid grid-cols-3 gap-3 text-xs font-semibold text-slate-300" }, /* @__PURE__ */ import_react4.default.createElement("span", { className: "rounded-xl bg-slate-800 p-3" }, "Raw"), /* @__PURE__ */ import_react4.default.createElement("span", { className: "rounded-xl bg-slate-800 p-3" }, "Overlay"), /* @__PURE__ */ import_react4.default.createElement("span", { className: "rounded-xl bg-slate-800 p-3" }, "CDF")));
 }
 function WorklistScreen({ scan, setActive }) {
   const liveRisk = riskFromScan(scan);
@@ -21960,7 +22135,7 @@ function OutcomesScreen({ scan, decision }) {
   }, null, 2)))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Audit Trail", subtitle: "Every AI claim, human action, and model version is traceable.", icon: History, className: "lg:col-span-5" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Model:"), " Local OCT MVP placeholder, demo mode"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Case events:"), " upload, QC pass, inference, explanation, clinician sign-off"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Feedback loop:"), " override cases can be exported as JSON"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Report export:"), " structured JSON summary"))));
 }
 function ClinicalInterfaceApp() {
-  const [active, setActive] = (0, import_react4.useState)("worklist");
+  const [active, setActive] = (0, import_react4.useState)("home");
   const [scan, setScan] = (0, import_react4.useState)(null);
   const [uploadState, setUploadState] = (0, import_react4.useState)({ status: "Waiting", progress: 0, fileName: "", error: "" });
   const [decision, setDecision] = (0, import_react4.useState)({ choice: "", rationale: "", submittedAt: "" });
@@ -21984,15 +22159,7 @@ function ClinicalInterfaceApp() {
       });
     }
   }
-  return /* @__PURE__ */ import_react4.default.createElement("main", { className: "min-h-screen bg-slate-50 p-6 text-slate-900" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mx-auto max-w-7xl space-y-6" }, /* @__PURE__ */ import_react4.default.createElement(Header, { scan }), /* @__PURE__ */ import_react4.default.createElement("nav", { className: "flex flex-wrap gap-2 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm" }, screens.map((screen) => /* @__PURE__ */ import_react4.default.createElement(
-    "button",
-    {
-      key: screen.id,
-      onClick: () => setActive(screen.id),
-      className: `rounded-2xl px-4 py-3 text-sm font-bold transition ${active === screen.id ? "bg-slate-900 text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`
-    },
-    screen.label
-  ))), /* @__PURE__ */ import_react4.default.createElement("section", { className: "rounded-3xl border border-slate-200 bg-white/60 p-4 shadow-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-center" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-slate-500" }, "Clinical screen"), /* @__PURE__ */ import_react4.default.createElement("h2", { className: "mt-1 text-2xl font-black text-slate-950" }, activeScreen?.label)), /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex flex-wrap gap-2" }, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "info" }, /* @__PURE__ */ import_react4.default.createElement(Clock, { className: "mr-1 h-3 w-3" }), " Fast response"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "warning" }, /* @__PURE__ */ import_react4.default.createElement(TriangleAlert, { className: "mr-1 h-3 w-3" }), " Confidence shown"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "purple" }, /* @__PURE__ */ import_react4.default.createElement(UserRound, { className: "mr-1 h-3 w-3" }), " Human justification"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "safe" }, /* @__PURE__ */ import_react4.default.createElement(Eye, { className: "mr-1 h-3 w-3" }), " Visual evidence"))), active === "worklist" && /* @__PURE__ */ import_react4.default.createElement(WorklistScreen, { scan, setActive }), active === "upload" && /* @__PURE__ */ import_react4.default.createElement(UploadScreen, { scan, uploadState, onUpload: uploadScan }), active === "review" && /* @__PURE__ */ import_react4.default.createElement(ReviewScreen, { scan }), active === "decision" && /* @__PURE__ */ import_react4.default.createElement(DecisionScreen, { scan, decision, setDecision }), active === "outcomes" && /* @__PURE__ */ import_react4.default.createElement(OutcomesScreen, { scan, decision })), /* @__PURE__ */ import_react4.default.createElement("footer", { className: "grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm lg:grid-cols-4" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Triage:"), " low-risk cases move quickly, uncertain cases are escalated."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Transparency:"), " confidence, uncertainty, and overlays are visible."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Safety:"), " critical sign-off requires human rationale."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Evaluation:"), " monitor outcomes, latency, overrides, and safety signals."))));
+  return /* @__PURE__ */ import_react4.default.createElement("main", { className: "min-h-screen bg-slate-50 text-slate-900" }, /* @__PURE__ */ import_react4.default.createElement(StickyNav, { active, setActive, scan }), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mx-auto max-w-7xl space-y-6 px-6 py-6" }, /* @__PURE__ */ import_react4.default.createElement(Header, { scan }), /* @__PURE__ */ import_react4.default.createElement("section", { className: "rounded-3xl border border-slate-200 bg-white/60 p-4 shadow-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-center" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-slate-500" }, "Clinical screen"), /* @__PURE__ */ import_react4.default.createElement("h2", { className: "mt-1 text-2xl font-black text-slate-950" }, activeScreen?.label)), /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex flex-wrap gap-2" }, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "info" }, /* @__PURE__ */ import_react4.default.createElement(Clock, { className: "mr-1 h-3 w-3" }), " Fast response"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "warning" }, /* @__PURE__ */ import_react4.default.createElement(TriangleAlert, { className: "mr-1 h-3 w-3" }), " Confidence shown"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "purple" }, /* @__PURE__ */ import_react4.default.createElement(UserRound, { className: "mr-1 h-3 w-3" }), " Human justification"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "safe" }, /* @__PURE__ */ import_react4.default.createElement(Eye, { className: "mr-1 h-3 w-3" }), " Visual evidence"))), active === "worklist" && /* @__PURE__ */ import_react4.default.createElement(WorklistScreen, { scan, setActive }), active === "home" && /* @__PURE__ */ import_react4.default.createElement(HomeScreen, { scan, uploadState, decision, setActive }), active === "upload" && /* @__PURE__ */ import_react4.default.createElement(UploadScreen, { scan, uploadState, onUpload: uploadScan }), active === "review" && /* @__PURE__ */ import_react4.default.createElement(ReviewScreen, { scan }), active === "decision" && /* @__PURE__ */ import_react4.default.createElement(DecisionScreen, { scan, decision, setDecision }), active === "outcomes" && /* @__PURE__ */ import_react4.default.createElement(OutcomesScreen, { scan, decision })), /* @__PURE__ */ import_react4.default.createElement("footer", { className: "grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm lg:grid-cols-4" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Triage:"), " low-risk cases move quickly, uncertain cases are escalated."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Transparency:"), " confidence, uncertainty, and overlays are visible."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Safety:"), " critical sign-off requires human rationale."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Evaluation:"), " monitor outcomes, latency, overrides, and safety signals."))));
 }
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ import_react4.default.createElement(ClinicalInterfaceApp, null));
 /*! Bundled license information:
@@ -22051,12 +22218,15 @@ lucide-react/dist/esm/context.mjs:
 lucide-react/dist/esm/Icon.mjs:
 lucide-react/dist/esm/createLucideIcon.mjs:
 lucide-react/dist/esm/icons/activity.mjs:
+lucide-react/dist/esm/icons/book-open.mjs:
 lucide-react/dist/esm/icons/brain.mjs:
 lucide-react/dist/esm/icons/chart-column.mjs:
 lucide-react/dist/esm/icons/circle-check.mjs:
+lucide-react/dist/esm/icons/circle-play.mjs:
 lucide-react/dist/esm/icons/clipboard-check.mjs:
 lucide-react/dist/esm/icons/clock.mjs:
 lucide-react/dist/esm/icons/download.mjs:
+lucide-react/dist/esm/icons/external-link.mjs:
 lucide-react/dist/esm/icons/eye.mjs:
 lucide-react/dist/esm/icons/file-text.mjs:
 lucide-react/dist/esm/icons/history.mjs:

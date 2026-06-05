@@ -19,6 +19,8 @@ const diagrams = {
 
 const grid = document.getElementById("diagramGrid");
 const buttons = document.querySelectorAll("[data-diagram]");
+const params = new URLSearchParams(window.location.search);
+const initialDiagram = diagrams[params.get("diagram")] ? params.get("diagram") : "offline";
 
 async function render(selected = "offline") {
   const mermaid = await import("https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs");
@@ -42,8 +44,13 @@ buttons.forEach((button) => {
   button.addEventListener("click", () => {
     buttons.forEach((item) => item.classList.remove("is-active"));
     button.classList.add("is-active");
+    history.replaceState(null, "", `?diagram=${button.dataset.diagram}`);
     render(button.dataset.diagram);
   });
 });
 
-render();
+buttons.forEach((button) => {
+  button.classList.toggle("is-active", button.dataset.diagram === initialDiagram);
+});
+
+render(initialDiagram);

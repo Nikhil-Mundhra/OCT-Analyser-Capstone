@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D OCT & OCTA Disease Feature Mapping</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            themeVariables: {
+                fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif'
+            },
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mermaid-wrapper {
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+        .mermaid-wrapper::-webkit-scrollbar {
+            height: 8px;
+        }
+        .mermaid-wrapper::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+        /* Fade in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased py-8 px-4 sm:px-6 lg:px-8 min-h-screen">
+
+    <div class="max-w-7xl mx-auto space-y-10">
+        
+        <!-- Header Section -->
+        <header class="text-center bg-white p-8 rounded-2xl shadow-sm border border-slate-200 animate-fade-in">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">3D OCT & OCTA Volume Biomarkers</h1>
+            <p class="text-lg text-slate-600 max-w-3xl mx-auto">Layer-specific structural and vascular biomarker mappings extracted from OCT/OCTA volumes for automated or clinical disease-level interpretation.</p>
+        </header>
+
+        <!-- Reference Image Section -->
+        <section class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 animate-fade-in" style="animation-delay: 0.05s;">
+            <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center border-b border-slate-100 pb-3">
+                <span class="bg-indigo-100 text-indigo-700 p-2 rounded-lg mr-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </span>
+                Anatomical References: Retinal Layers & Vascular Networks
+            </h2>
+            <div class="flex flex-col items-center gap-8">
+                <!-- New Comprehensive OCT Scan Image -->
+                <figure class="max-w-4xl w-full">
+                    <img src="image_99ff02.jpg" alt="Detailed OCT scan showing Macula, Fovea, and individual retinal layers" class="w-full h-auto rounded-xl shadow-md border border-slate-200" onerror="this.src='https://placehold.co/1000x500/e2e8f0/475569?text=Image+Not+Found:+image_99ff02.jpg'">
+                    <figcaption class="text-center text-sm text-slate-500 mt-4 italic">
+                        Detailed structural OCT scan highlighting the Macula, Fovea, and specific retinal layers (RNFL to Choroid).
+                    </figcaption>
+                </figure>
+
+                <!-- Previous Split OCT/OCT-A Image -->
+                <figure class="max-w-4xl w-full border-t border-slate-100 pt-8">
+                    <img src="image_9a0207.jpg" alt="Cross-sectional visualization of retinal layers in OCT and OCT-A" class="w-full h-auto rounded-xl shadow-md border border-slate-200" onerror="this.src='https://placehold.co/1000x500/e2e8f0/475569?text=Image+Not+Found:+image_9a0207.jpg'">
+                    <figcaption class="text-center text-sm text-slate-500 mt-4 italic">
+                        Cross-sectional comparison showing structural retinal layers (OCT, left) alongside their corresponding vascular networks (OCT-A, right).
+                    </figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <!-- Diagram 1: Structural Biomarkers -->
+        <section class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 animate-fade-in" style="animation-delay: 0.1s;">
+            <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center border-b border-slate-100 pb-3">
+                <span class="bg-blue-100 text-blue-700 p-2 rounded-lg mr-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                </span>
+                OCT Structural Biomarkers Pathway
+            </h2>
+            <div class="mermaid-wrapper flex justify-center">
+                <div class="mermaid min-w-[850px]">
+                    graph LR
+                    classDef category fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#ffffff,font-weight:bold,rx:8px,ry:8px
+                    classDef layer fill:#f8fafc,stroke:#94a3b8,stroke-width:2px,color:#1e293b,font-weight:bold
+                    classDef feature fill:#fffbeb,stroke:#f59e0b,stroke-width:1px,color:#92400e
+                    classDef disease fill:#fef2f2,stroke:#ef4444,stroke-width:1px,color:#991b1b,font-style:italic
+
+                    Root["OCT Structural Biomarkers"]:::category
+
+                    L1["RNFL"]:::layer
+                    F1["Thinning"]:::feature
+                    D1["Glaucoma, Optic Nerve Damage<br/>Diabetic Neurodegeneration"]:::disease
+                    Root --> L1 --> F1 --> D1
+
+                    L2["GCL / GCIPL"]:::layer
+                    F2["Thinning"]:::feature
+                    D2["Glaucoma, Early Ganglion-cell Loss<br/>Central Visual-field Risk"]:::disease
+                    Root --> L2 --> F2 --> D2
+
+                    L3["IPL / INL / OPL"]:::layer
+                    F3["Layer Boundary Disruption, DRIL<br/>Cystoid Spaces, Retinal Thickening"]:::feature
+                    D3["Diabetic Retinopathy, DME<br/>Retinal Ischemia"]:::disease
+                    Root --> L3 --> F3 --> D3
+
+                    L4["ONL / ELM / EZ / IZ"]:::layer
+                    F4["Photoreceptor/ELM Disruption<br/>EZ Loss, Outer-retinal Thinning"]:::feature
+                    D4["AMD, DME Visual Prognosis<br/>CSC, Inherited Degen."]:::disease
+                    Root --> L4 --> F4 --> D4
+
+                    L5["RPE / Bruch's Membrane"]:::layer
+                    F5["Drusen, RPE Elevation, PED<br/>Hyperreflective Foci, Atrophy"]:::feature
+                    D5["AMD, Geographic Atrophy<br/>Neovascular AMD, CSC"]:::disease
+                    Root --> L5 --> F5 --> D5
+
+                    L6["Choroid"]:::layer
+                    F6["Choroidal Thickening/Thinning<br/>Pachychoroid Pattern"]:::feature
+                    D6["CSC, Pachychoroid Disease<br/>AMD-related Stress"]:::disease
+                    Root --> L6 --> F6 --> D6
+                </div>
+            </div>
+        </section>
+
+        <!-- Diagram 2: Vascular Biomarkers -->
+        <section class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 animate-fade-in" style="animation-delay: 0.2s;">
+            <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center border-b border-slate-100 pb-3">
+                <span class="bg-emerald-100 text-emerald-700 p-2 rounded-lg mr-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </span>
+                OCTA Vascular Biomarkers Pathway
+            </h2>
+            <div class="mermaid-wrapper flex justify-center">
+                <div class="mermaid min-w-[850px]">
+                    graph LR
+                    classDef category fill:#10b981,stroke:#047857,stroke-width:2px,color:#ffffff,font-weight:bold,rx:8px,ry:8px
+                    classDef layer fill:#f8fafc,stroke:#94a3b8,stroke-width:2px,color:#1e293b,font-weight:bold
+                    classDef feature fill:#fffbeb,stroke:#f59e0b,stroke-width:1px,color:#92400e
+                    classDef disease fill:#fef2f2,stroke:#ef4444,stroke-width:1px,color:#991b1b,font-style:italic
+
+                    Root["OCTA Vascular Biomarkers"]:::category
+
+                    V1["Superficial Capillary Plexus"]:::layer
+                    VF1["Vessel Density Loss, Reduced<br/>Perfusion, Capillary Rarefaction"]:::feature
+                    VD1["Diabetic Retinopathy, Glaucoma<br/>Retinal Vascular Disease"]:::disease
+                    Root --> V1 --> VF1 --> VD1
+
+                    V2["Deep Capillary Plexus"]:::layer
+                    VF2["Capillary Dropout, Nonperfusion<br/>Reduced Density/Complexity"]:::feature
+                    VD2["Diabetic Retinopathy, DME Risk<br/>Retinal Ischemia, RVO"]:::disease
+                    Root --> V2 --> VF2 --> VD2
+
+                    V3["FAZ"]:::layer
+                    VF3["Enlargement, Irregularity<br/>Reduced Circularity, Eccentricity"]:::feature
+                    VD3["Diabetic Retinopathy, Macular<br/>Ischemia, Vascular Disease"]:::disease
+                    Root --> V3 --> VF3 --> VD3
+
+                    V4["Outer Retinal Flow Slab"]:::layer
+                    VF4["Abnormal Outer-retinal Flow"]:::feature
+                    VD4["CNV, Neovascular AMD<br/>Myopic CNV"]:::disease
+                    Root --> V4 --> VF4 --> VD4
+
+                    V5["Choriocapillaris"]:::layer
+                    VF5["Flow Deficit, Flow Voids<br/>Reduced Perfusion"]:::feature
+                    VD5["AMD, Geographic Atrophy<br/>Outer-retinal Degen."]:::disease
+                    Root --> V5 --> VF5 --> VD5
+
+                    V6["Peripapillary Capillaries"]:::layer
+                    VF6["Vessel Density Loss<br/>Radial Peripapillary Dropout"]:::feature
+                    VD6["Glaucoma, Optic Nerve Damage<br/>Structure-function Loss"]:::disease
+                    Root --> V6 --> VF6 --> VD6
+                </div>
+            </div>
+        </section>
+
+        <!-- Disease-Level Interpretation Matrix -->
+        <section class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 animate-fade-in" style="animation-delay: 0.3s;">
+            <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center border-b border-slate-100 pb-3">
+                <span class="bg-purple-100 text-purple-700 p-2 rounded-lg mr-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                </span>
+                Disease-Level Interpretation Matrix
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Card 1 -->
+                <div class="bg-blue-50 border-t-4 border-blue-500 rounded-lg p-5 hover:shadow-md transition-shadow">
+                    <h3 class="text-blue-900 font-bold text-lg border-b border-blue-200/60 pb-2 mb-3">Diabetic Retinopathy / DME</h3>
+                    <ul class="text-blue-800 space-y-1.5 text-sm list-disc pl-4">
+                        <li>DCP dropout</li>
+                        <li>FAZ enlargement</li>
+                        <li>Nonperfusion</li>
+                        <li>DRIL (Disorganization of Retinal Inner Layers)</li>
+                        <li>Retinal thickening & intraretinal fluid</li>
+                    </ul>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="bg-amber-50 border-t-4 border-amber-500 rounded-lg p-5 hover:shadow-md transition-shadow">
+                    <h3 class="text-amber-900 font-bold text-lg border-b border-amber-200/60 pb-2 mb-3">AMD / Geographic Atrophy</h3>
+                    <ul class="text-amber-800 space-y-1.5 text-sm list-disc pl-4">
+                        <li>Drusen presence</li>
+                        <li>RPE disruption / atrophy</li>
+                        <li>Hyperreflective foci</li>
+                        <li>Ellipsoid Zone (EZ) loss</li>
+                        <li>Choriocapillaris deficit</li>
+                    </ul>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="bg-rose-50 border-t-4 border-rose-500 rounded-lg p-5 hover:shadow-md transition-shadow">
+                    <h3 class="text-rose-900 font-bold text-lg border-b border-rose-200/60 pb-2 mb-3">Neovascular AMD / CNV</h3>
+                    <ul class="text-rose-800 space-y-1.5 text-sm list-disc pl-4">
+                        <li>Abnormal outer-retinal flow</li>
+                        <li>Subretinal fluid</li>
+                        <li>Intraretinal fluid</li>
+                        <li>Pigment Epithelial Detachment (PED)</li>
+                        <li>RPE disruption</li>
+                    </ul>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="bg-emerald-50 border-t-4 border-emerald-500 rounded-lg p-5 hover:shadow-md transition-shadow">
+                    <h3 class="text-emerald-900 font-bold text-lg border-b border-emerald-200/60 pb-2 mb-3">Glaucoma</h3>
+                    <ul class="text-emerald-800 space-y-1.5 text-sm list-disc pl-4">
+                        <li>RNFL thinning</li>
+                        <li>GCIPL thinning</li>
+                        <li>Peripapillary vessel density loss</li>
+                        <li>Macular perfusion loss</li>
+                    </ul>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="bg-purple-50 border-t-4 border-purple-500 rounded-lg p-5 hover:shadow-md transition-shadow">
+                    <h3 class="text-purple-900 font-bold text-lg border-b border-purple-200/60 pb-2 mb-3">CSC</h3>
+                    <ul class="text-purple-800 space-y-1.5 text-sm list-disc pl-4">
+                        <li>Subretinal fluid</li>
+                        <li>Pigment Epithelial Detachment (PED)</li>
+                        <li>RPE irregularity</li>
+                        <li>Choroidal thickening</li>
+                        <li>Pachychoroid pattern</li>
+                    </ul>
+                </div>
+
+                <!-- Card 6 -->
+                <div class="bg-teal-50 border-t-4 border-teal-500 rounded-lg p-5 hover:shadow-md transition-shadow">
+                    <h3 class="text-teal-900 font-bold text-lg border-b border-teal-200/60 pb-2 mb-3">Retinal Vascular Disease / RVO</h3>
+                    <ul class="text-teal-800 space-y-1.5 text-sm list-disc pl-4">
+                        <li>Nonperfusion</li>
+                        <li>Capillary dropout</li>
+                        <li>FAZ distortion</li>
+                        <li>Macular edema</li>
+                        <li>Vessel density loss</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Glossary of Acronyms -->
+        <section class="bg-slate-800 p-6 md:p-8 rounded-2xl shadow-sm text-slate-200 animate-fade-in" style="animation-delay: 0.4s;">
+            <h2 class="text-xl font-bold text-white mb-4 border-b border-slate-600 pb-3">Clinical Glossary</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-y-3 gap-x-6 text-sm">
+                <div><strong class="text-slate-50">AMD:</strong> Age-related Macular Degeneration</div>
+                <div><strong class="text-slate-50">CNV:</strong> Choroidal Neovascularization</div>
+                <div><strong class="text-slate-50">CSC:</strong> Central Serous Chorioretinopathy</div>
+                <div><strong class="text-slate-50">DME:</strong> Diabetic Macular Edema</div>
+                <div><strong class="text-slate-50">DRIL:</strong> Disorganization of Retinal Inner Layers</div>
+                <div><strong class="text-slate-50">ELM:</strong> External Limiting Membrane</div>
+                <div><strong class="text-slate-50">EZ:</strong> Ellipsoid Zone</div>
+                <div><strong class="text-slate-50">FAZ:</strong> Foveal Avascular Zone</div>
+                <div><strong class="text-slate-50">GCIPL:</strong> Ganglion Cell Inner Plexiform Layer</div>
+                <div><strong class="text-slate-50">INL:</strong> Inner Nuclear Layer</div>
+                <div><strong class="text-slate-50">IPL:</strong> Inner Plexiform Layer</div>
+                <div><strong class="text-slate-50">IZ:</strong> Interdigitation Zone</div>
+                <div><strong class="text-slate-50">ONL:</strong> Outer Nuclear Layer</div>
+                <div><strong class="text-slate-50">OPL:</strong> Outer Plexiform Layer</div>
+                <div><strong class="text-slate-50">PED:</strong> Pigment Epithelial Detachment</div>
+                <div><strong class="text-slate-50">RNFL:</strong> Retinal Nerve Fiber Layer</div>
+                <div><strong class="text-slate-50">RPE:</strong> Retinal Pigment Epithelium</div>
+                <div><strong class="text-slate-50">RVO:</strong> Retinal Vein Occlusion</div>
+            </div>
+        </section>
+
+    </div>
+</body>
+</html>
