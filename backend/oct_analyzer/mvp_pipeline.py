@@ -8,6 +8,8 @@ from .anatomical_flattener import flatten_volume_to_rpe
 from .ipnv2_adapter import failed_ipnv2_metadata, ipnv2_metadata, run_ipnv2_smoke_inference
 from .pre_processing import get_preprocessing_pipeline
 from .scan_types import NormalizedScan
+from .segmentation import placeholder_segment_layers as _placeholder_segment_layers
+from .segmentation import segment_retinal_layers
 
 
 LAYER_NAMES = [
@@ -36,7 +38,8 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
     flattened = flatten_volume_to_rpe(tensor)
     flattened_volume = flattened.detach().cpu().numpy()[0]
 
-    segmentation = placeholder_segment_layers(flattened_volume.shape)
+    segmentation_result = segment_retinal_layers(flattened_volume, scan.spacing_mm)
+    segmentation = segmentation_result.labels
     layers = extract_layer_features(flattened_volume, segmentation)
     diagnosis, confidence = classify_layers(layers)
     ipnv2_result = None
@@ -65,6 +68,8 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
         }
 
     warnings = [*scan.warnings, *validation["warnings"], *crop_info["warnings"], *fovea_info["warnings"]]
+    if segmentation_result.warning:
+        warnings.append(segmentation_result.warning)
     if ipnv2.get("warning"):
         warnings.append(ipnv2["warning"])
 
@@ -75,7 +80,7 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
         "source_format": scan.source_format,
         "volume_shape": list(scan.volume_shape),
         "spacing_mm": list(scan.spacing_mm),
-        "is_demo_model": True,
+        "is_demo_model": segmentation_result.mode == "placeholder",
         "qc": {
             "signal_range": validation["signal_range"],
             "crop_applied": crop_info["crop_applied"],
@@ -165,16 +170,7 @@ def center_crop_volume(
 
 
 def placeholder_segment_layers(shape: tuple[int, int, int], num_layers: int = 12) -> np.ndarray:
-    z_dim, y_dim, x_dim = shape
-    if z_dim < num_layers:
-        num_layers = z_dim
-    labels = np.zeros(shape, dtype=np.uint8)
-    edges = np.linspace(0, z_dim, num_layers + 1, dtype=int)
-    for index in range(num_layers):
-        labels[edges[index]:edges[index + 1], :, :] = index + 1
-    if num_layers < len(LAYER_NAMES):
-        labels[labels == 0] = num_layers
-    return labels
+    return _placeholder_segment_layers(shape, num_layers)
 
 
 def extract_layer_features(volume: np.ndarray, segmentation: np.ndarray) -> list[dict[str, Any]]:

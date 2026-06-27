@@ -89,7 +89,7 @@ def get_scan(scan_id: str) -> dict:
     return scan
 
 
-@app.get("/api/scans/{scan_id}/preview/{kind}")
+@app.get("/api/scans/{scan_id}/preview/{kind:path}")
 def get_preview(scan_id: str, kind: str) -> FileResponse:
     if scan_id not in SCAN_STORE:
         raise HTTPException(status_code=404, detail="Scan not found")
@@ -106,7 +106,7 @@ def get_preview(scan_id: str, kind: str) -> FileResponse:
 
 def _prefix_preview_urls(scan_id: str, result: dict) -> None:
     result["previews"] = {
-        key: f"/api/scans/{scan_id}/{url}"
+        key: f"/api/scans/{scan_id}/{url}" if isinstance(url, str) else [f"/api/scans/{scan_id}/{u}" for u in url]
         for key, url in result.get("previews", {}).items()
     }
     if result.get("ipnv2", {}).get("previews"):

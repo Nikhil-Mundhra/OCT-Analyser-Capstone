@@ -52,7 +52,10 @@ export function normalizeScanResult(scan) {
 
 function normalizePreviewMap(previews = {}) {
   return Object.fromEntries(
-    Object.entries(previews).map(([key, value]) => [key, apiUrl(value)])
+    Object.entries(previews).map(([key, value]) => [
+      key, 
+      Array.isArray(value) ? value.map(apiUrl) : apiUrl(value)
+    ])
   );
 }
 

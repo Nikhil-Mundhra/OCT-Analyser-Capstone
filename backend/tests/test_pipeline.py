@@ -574,6 +574,76 @@ def test_mvp_pipeline_handles_invalid_and_flat_volumes():
         validate_volume(np.array([[[np.nan]]], dtype=np.float32))
 
 
+def test_segmentation_structure_validates_placeholder_and_injected_segmenter(monkeypatch):
+    from backend.oct_analyzer.segmentation import (
+        SEGMENTATION_ATLAS_ENV,
+        SegmentationResult,
+        atlas_path_from_env,
+        segment_retinal_layers,
+        validate_segmentation_labels,
+    )
+
+    monkeypatch.delenv(SEGMENTATION_ATLAS_ENV, raising=False)
+    volume = np.ones((4, 3, 2), dtype=np.float32)
+    placeholder = segment_retinal_layers(volume, (1.0, 1.0, 1.0))
+
+    assert placeholder.mode == "placeholder"
+    assert placeholder.labels.shape == volume.shape
+    assert "placeholder" in placeholder.warning
+    assert atlas_path_from_env({}) is None
+    assert atlas_path_from_env({SEGMENTATION_ATLAS_ENV: " ~/atlas.npz "}).name == "atlas.npz"
+    monkeypatch.setenv(SEGMENTATION_ATLAS_ENV, "atlas.npz")
+    configured_placeholder = segment_retinal_layers(volume, (1.0, 1.0, 1.0))
+    assert "Atlas asset configured" in configured_placeholder.warning
+
+    def fake_segmenter(input_volume, spacing_mm):
+        assert input_volume is volume
+        assert spacing_mm == (0.5, 0.1, 0.1)
+        return SegmentationResult(
+            labels=np.full(input_volume.shape, 2, dtype=np.int16),
+            mode="atlas_registration",
+        )
+
+    result = segment_retinal_layers(volume, (0.5, 0.1, 0.1), segmenter=fake_segmenter)
+
+    assert result.mode == "atlas_registration"
+    assert result.labels.dtype == np.uint8
+    assert validate_segmentation_labels(result.labels, volume.shape).shape == volume.shape
+
+    with pytest.raises(ValueError, match="match volume shape"):
+        validate_segmentation_labels(np.ones((2, 2, 2), dtype=np.uint8), volume.shape)
+    with pytest.raises(ValueError, match="integer"):
+        validate_segmentation_labels(np.ones(volume.shape, dtype=np.float32), volume.shape)
+    with pytest.raises(ValueError, match="between 0 and 12"):
+        validate_segmentation_labels(np.full(volume.shape, 13, dtype=np.int16), volume.shape)
+
+
+def test_process_scan_uses_segmentation_boundary_for_demo_flag(tmp_path, monkeypatch):
+    import backend.oct_analyzer.mvp_pipeline as pipeline
+    from backend.oct_analyzer.scan_types import NormalizedScan
+    from backend.oct_analyzer.segmentation import SegmentationResult
+
+    monkeypatch.setattr(pipeline, "get_preprocessing_pipeline", lambda: lambda volume: torch.from_numpy(volume).unsqueeze(0).float())
+    monkeypatch.setattr(pipeline, "flatten_volume_to_rpe", lambda tensor: tensor)
+    monkeypatch.setattr(pipeline, "run_ipnv2_smoke_inference", lambda volume: (_ for _ in ()).throw(RuntimeError("skip ipnv2")))
+    monkeypatch.setattr(
+        pipeline,
+        "segment_retinal_layers",
+        lambda volume, spacing: SegmentationResult(
+            labels=np.ones(volume.shape, dtype=np.uint8),
+            mode="atlas_registration",
+            warning="atlas registration active",
+        ),
+    )
+
+    scan = NormalizedScan(volume=np.ones((3, 3, 3), dtype=np.float32), spacing_mm=(1.0, 1.0, 1.0), source_format="test")
+
+    result = pipeline.process_scan(scan, preview_dir=tmp_path)
+
+    assert result["is_demo_model"] is False
+    assert "atlas registration active" in result["qc"]["warnings"]
+
+
 def test_process_scan_returns_completed_payload_and_previews(tmp_path, monkeypatch):
     import backend.oct_analyzer.mvp_pipeline as pipeline
     from backend.oct_analyzer.ipnv2_adapter import IPNV2Result

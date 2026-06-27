@@ -21800,7 +21800,10 @@ function normalizeScanResult(scan) {
 }
 function normalizePreviewMap(previews = {}) {
   return Object.fromEntries(
-    Object.entries(previews).map(([key, value]) => [key, apiUrl(value)])
+    Object.entries(previews).map(([key, value]) => [
+      key,
+      Array.isArray(value) ? value.map(apiUrl) : apiUrl(value)
+    ])
   );
 }
 function apiUrl(path) {
@@ -22012,7 +22015,7 @@ function WorklistScreen({ scan, setActive }) {
   const rows = scan?.status === "completed" ? [["LOCAL-001", scan.source_format, liveRisk.label, liveRisk.confidence, liveRisk.action, liveRisk.tone], ...demoRows] : demoRows;
   return /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-5 lg:grid-cols-12" }, /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Triage Queue", subtitle: "AI rapidly processes routine scans and protects specialist bandwidth.", icon: Route, className: "lg:col-span-8" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "overflow-hidden rounded-2xl border border-slate-200" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid grid-cols-5 bg-slate-100 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500" }, /* @__PURE__ */ import_react4.default.createElement("span", null, "Patient"), /* @__PURE__ */ import_react4.default.createElement("span", null, "Scan"), /* @__PURE__ */ import_react4.default.createElement("span", null, "AI route"), /* @__PURE__ */ import_react4.default.createElement("span", null, "Confidence"), /* @__PURE__ */ import_react4.default.createElement("span", null, "Action")), rows.map((row) => /* @__PURE__ */ import_react4.default.createElement("div", { key: row[0], className: "grid grid-cols-5 items-center border-t border-slate-100 px-4 py-4 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("span", { className: "font-bold text-slate-900" }, row[0]), /* @__PURE__ */ import_react4.default.createElement("span", null, row[1]), /* @__PURE__ */ import_react4.default.createElement("span", null, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: row[5] }, row[2])), /* @__PURE__ */ import_react4.default.createElement("span", { className: "font-bold" }, row[3]), /* @__PURE__ */ import_react4.default.createElement("span", null, row[4])))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 flex flex-wrap gap-3" }, /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => setActive("upload"), className: "rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white" }, "Upload new scan"), scan?.status === "completed" ? /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => setActive("review"), className: "rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700" }, "Review active case") : null)), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Triage Rules", subtitle: "Routing logic is visible to reduce blind trust.", icon: ShieldAlert, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-emerald-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Low risk:"), " routine queue, optional clinician sampling."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-amber-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Ambiguous:"), " requires human audit before report sign-off."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-rose-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "High risk:"), " route to specialist with anomaly overlays and history."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Poor QC:"), " no model claim, request re-upload or manual inspection."))));
 }
-function UploadScreen({ scan, uploadState, onUpload }) {
+function UploadScreen({ scan, uploadState, onUpload, tmState }) {
   const inputRef = (0, import_react4.useRef)(null);
   const [dragging, setDragging] = (0, import_react4.useState)(false);
   function handleFiles(files) {
@@ -22024,7 +22027,7 @@ function UploadScreen({ scan, uploadState, onUpload }) {
   const qcWarnings = scan?.qc?.warnings || [];
   const signalRange = scan?.qc?.signal_range || [];
   const completed = scan?.status === "completed";
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-5 lg:grid-cols-12" }, /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Scan Intake", subtitle: ".vol, .dcm, or zipped TIFF/BMP/PNG export.", icon: Upload, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement(
+  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-5 lg:grid-cols-12" }, /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Scan Intake", subtitle: ".vol, .dcm, zipped TIFF, or 2D Image (.png, .jpg)", icon: Upload, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement(
     "div",
     {
       onDragOver: (event) => {
@@ -22039,7 +22042,7 @@ function UploadScreen({ scan, uploadState, onUpload }) {
       },
       className: `flex h-52 flex-col items-center justify-center rounded-2xl border-2 border-dashed p-4 text-center ${dragging ? "border-sky-400 bg-sky-50 text-sky-800" : "border-slate-300 bg-slate-50 text-slate-500"}`
     },
-    /* @__PURE__ */ import_react4.default.createElement("input", { ref: inputRef, type: "file", accept: ".vol,.dcm,.zip", className: "hidden", onChange: (event) => handleFiles(event.target.files) }),
+    /* @__PURE__ */ import_react4.default.createElement("input", { ref: inputRef, type: "file", accept: ".vol,.dcm,.zip,image/png,image/jpeg,image/webp", className: "hidden", onChange: (event) => handleFiles(event.target.files) }),
     /* @__PURE__ */ import_react4.default.createElement(Upload, { className: "mb-3 h-9 w-9" }),
     /* @__PURE__ */ import_react4.default.createElement("p", { className: "font-bold text-slate-800" }, "Drag OCT/OCTA volume here"),
     /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-1 text-sm" }, "or select scan from local system"),
@@ -22047,7 +22050,7 @@ function UploadScreen({ scan, uploadState, onUpload }) {
   ), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 grid gap-3 text-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "File:"), " ", scan?.filename || uploadState.fileName || "No scan uploaded"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Format:"), " ", scan?.source_format || "Awaiting upload"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Shape:"), " ", scan?.volume_shape?.join(" x ") || "N/A"))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Quality Control Gate", subtitle: "The model can be blocked before inference if scan quality is unsafe.", icon: CircleCheck, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Signal range", value: signalRange.length ? `${signalRange[0].toFixed(1)}-${signalRange[1].toFixed(1)}` : "N/A", tone: completed ? "safe" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Crop applied", value: scan?.qc?.crop_applied ? "Yes" : completed ? "No" : "N/A", tone: scan?.qc?.crop_applied ? "info" : completed ? "safe" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Warnings", value: qcWarnings.length, tone: qcWarnings.length ? "warning" : completed ? "safe" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "QC decision", value: uploadState.error ? "Blocked" : completed ? "Proceed" : uploadState.status, tone: uploadState.error ? "danger" : completed ? "info" : "neutral" })), uploadState.error ? /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 rounded-2xl bg-rose-50 p-4 text-sm text-rose-800" }, uploadState.error) : null, qcWarnings.length ? /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900" }, qcWarnings.join(" ")) : null), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Pipeline Status", subtitle: "Clinician sees where the case is in the system.", icon: Activity, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-4" }, ["Upload received", "Preprocessing complete", "QC passed", "Inference complete", "Report ready"].map((step, index) => {
     const done = completed || uploadState.progress > index * 20;
     return /* @__PURE__ */ import_react4.default.createElement("div", { key: step, className: `flex items-center gap-3 rounded-2xl p-4 ${done ? "bg-emerald-50" : "bg-slate-50"}` }, /* @__PURE__ */ import_react4.default.createElement("div", { className: `flex h-8 w-8 items-center justify-center rounded-full text-sm font-black ${done ? "bg-emerald-600 text-white" : "bg-white text-slate-700"}` }, index + 1), /* @__PURE__ */ import_react4.default.createElement("span", { className: "font-semibold text-slate-700" }, step));
-  }))));
+  }))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "AI Classification (Teachable Machine)", subtitle: "Runs directly in your browser.", icon: Activity, className: "lg:col-span-12" }, tmState?.loading && /* @__PURE__ */ import_react4.default.createElement("div", { className: "text-amber-800 bg-amber-50 p-4 rounded-2xl animate-pulse font-semibold text-sm" }, "Initializing AI model..."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid md:grid-cols-2 gap-4 mt-4" }, tmState?.imageSrc && /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl border border-slate-200 bg-slate-50 p-4 flex flex-col items-center" }, /* @__PURE__ */ import_react4.default.createElement("h4", { className: "font-bold text-slate-800 text-sm mb-2" }, "Analyzing: Frame ", tmState.currentFrame, " of ", tmState.totalFrames), /* @__PURE__ */ import_react4.default.createElement("img", { src: tmState.imageSrc, className: "max-h-64 object-contain rounded-lg border border-slate-300", alt: "Preview" })), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl border border-slate-200 bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("h4", { className: "font-bold text-slate-800 text-sm mb-3" }, "Classification Results"), tmState?.inferring ? /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex justify-center items-center h-32 animate-pulse text-slate-500 text-sm" }, "Processing frame ", tmState.currentFrame, "...") : tmState?.predictions ? /* @__PURE__ */ import_react4.default.createElement("ul", { className: "space-y-2" }, tmState.predictions.map((p, i) => /* @__PURE__ */ import_react4.default.createElement("li", { key: i, className: "flex justify-between items-center text-sm border-b border-slate-100 pb-1.5 last:border-b-0" }, /* @__PURE__ */ import_react4.default.createElement("span", { className: "font-semibold text-slate-700" }, p.className), /* @__PURE__ */ import_react4.default.createElement("span", { className: "font-mono font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded text-xs" }, (p.probability * 100).toFixed(1), "%")))) : /* @__PURE__ */ import_react4.default.createElement("p", { className: "text-sm text-slate-500 py-6 text-center" }, "Awaiting scan or image upload...")))));
 }
 function ReviewScreen({ scan }) {
   const [preview, setPreview] = (0, import_react4.useState)("overlay");
@@ -22140,7 +22143,80 @@ function ClinicalInterfaceApp() {
   const [uploadState, setUploadState] = (0, import_react4.useState)({ status: "Waiting", progress: 0, fileName: "", error: "" });
   const [decision, setDecision] = (0, import_react4.useState)({ choice: "", rationale: "", submittedAt: "" });
   const activeScreen = (0, import_react4.useMemo)(() => screens.find((screen) => screen.id === active), [active]);
+  const [tmModel, setTmModel] = (0, import_react4.useState)(null);
+  const [tmState, setTmState] = (0, import_react4.useState)({ loading: false, inferring: false, predictions: null, currentFrame: 0, totalFrames: 0, imageSrc: null });
+  (0, import_react4.useEffect)(() => {
+    async function loadTmModel() {
+      if (!window.tmImage) return;
+      setTmState((prev) => ({ ...prev, loading: true }));
+      try {
+        const loadedModel = await window.tmImage.load("/public/model/model.json", "/public/model/metadata.json");
+        setTmModel(loadedModel);
+      } catch (err) {
+        console.error("Failed to load TM model", err);
+      } finally {
+        setTmState((prev) => ({ ...prev, loading: false }));
+      }
+    }
+    loadTmModel();
+  }, []);
+  (0, import_react4.useEffect)(() => {
+    if (!scan?.previews?.frames || !tmModel) return;
+    let isCancelled = false;
+    async function processFrames() {
+      const frames = scan.previews.frames;
+      setTmState((prev) => ({ ...prev, inferring: true, totalFrames: frames.length, currentFrame: 0, predictions: null, imageSrc: null }));
+      let aggregatedProbs = {};
+      for (let i = 0; i < frames.length; i++) {
+        if (isCancelled) break;
+        setTmState((prev) => ({ ...prev, currentFrame: i + 1, imageSrc: frames[i] }));
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = frames[i];
+        await new Promise((resolve) => img.onload = resolve);
+        const predictions = await tmModel.predict(img);
+        predictions.forEach((p) => {
+          aggregatedProbs[p.className] = (aggregatedProbs[p.className] || 0) + p.probability;
+        });
+      }
+      if (isCancelled) return;
+      const finalPredictions = Object.keys(aggregatedProbs).map((className) => ({
+        className,
+        probability: aggregatedProbs[className] / frames.length
+      })).sort((a, b) => b.probability - a.probability);
+      setTmState((prev) => ({ ...prev, inferring: false, predictions: finalPredictions }));
+    }
+    processFrames();
+    return () => {
+      isCancelled = true;
+    };
+  }, [scan, tmModel]);
+  async function handle2DImage(file) {
+    if (!tmModel) {
+      alert("AI model is still loading, please wait.");
+      return;
+    }
+    setScan(null);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const imgUrl = e.target.result;
+      setTmState((prev) => ({ ...prev, inferring: true, currentFrame: 1, totalFrames: 1, predictions: null, imageSrc: imgUrl }));
+      const img = new Image();
+      img.src = imgUrl;
+      img.onload = async () => {
+        const predictions = await tmModel.predict(img);
+        const finalPredictions = predictions.sort((a, b) => b.probability - a.probability);
+        setTmState((prev) => ({ ...prev, inferring: false, predictions: finalPredictions }));
+      };
+    };
+    reader.readAsDataURL(file);
+  }
   async function uploadScan(file) {
+    if (file.type.startsWith("image/")) {
+      setUploadState({ status: "2D Image Mode", progress: 100, fileName: file.name, error: "" });
+      handle2DImage(file);
+      return;
+    }
     setUploadState({ status: "Uploading", progress: 20, fileName: file.name, error: "" });
     setDecision({ choice: "", rationale: "", submittedAt: "" });
     try {
@@ -22159,7 +22235,7 @@ function ClinicalInterfaceApp() {
       });
     }
   }
-  return /* @__PURE__ */ import_react4.default.createElement("main", { className: "min-h-screen bg-slate-50 text-slate-900" }, /* @__PURE__ */ import_react4.default.createElement(StickyNav, { active, setActive, scan }), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mx-auto max-w-7xl space-y-6 px-6 py-6" }, /* @__PURE__ */ import_react4.default.createElement(Header, { scan }), /* @__PURE__ */ import_react4.default.createElement("section", { className: "rounded-3xl border border-slate-200 bg-white/60 p-4 shadow-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-center" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-slate-500" }, "Clinical screen"), /* @__PURE__ */ import_react4.default.createElement("h2", { className: "mt-1 text-2xl font-black text-slate-950" }, activeScreen?.label)), /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex flex-wrap gap-2" }, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "info" }, /* @__PURE__ */ import_react4.default.createElement(Clock, { className: "mr-1 h-3 w-3" }), " Fast response"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "warning" }, /* @__PURE__ */ import_react4.default.createElement(TriangleAlert, { className: "mr-1 h-3 w-3" }), " Confidence shown"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "purple" }, /* @__PURE__ */ import_react4.default.createElement(UserRound, { className: "mr-1 h-3 w-3" }), " Human justification"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "safe" }, /* @__PURE__ */ import_react4.default.createElement(Eye, { className: "mr-1 h-3 w-3" }), " Visual evidence"))), active === "worklist" && /* @__PURE__ */ import_react4.default.createElement(WorklistScreen, { scan, setActive }), active === "home" && /* @__PURE__ */ import_react4.default.createElement(HomeScreen, { scan, uploadState, decision, setActive }), active === "upload" && /* @__PURE__ */ import_react4.default.createElement(UploadScreen, { scan, uploadState, onUpload: uploadScan }), active === "review" && /* @__PURE__ */ import_react4.default.createElement(ReviewScreen, { scan }), active === "decision" && /* @__PURE__ */ import_react4.default.createElement(DecisionScreen, { scan, decision, setDecision }), active === "outcomes" && /* @__PURE__ */ import_react4.default.createElement(OutcomesScreen, { scan, decision })), /* @__PURE__ */ import_react4.default.createElement("footer", { className: "grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm lg:grid-cols-4" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Triage:"), " low-risk cases move quickly, uncertain cases are escalated."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Transparency:"), " confidence, uncertainty, and overlays are visible."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Safety:"), " critical sign-off requires human rationale."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Evaluation:"), " monitor outcomes, latency, overrides, and safety signals."))));
+  return /* @__PURE__ */ import_react4.default.createElement("main", { className: "min-h-screen bg-slate-50 text-slate-900" }, /* @__PURE__ */ import_react4.default.createElement(StickyNav, { active, setActive, scan }), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mx-auto max-w-7xl space-y-6 px-6 py-6" }, /* @__PURE__ */ import_react4.default.createElement(Header, { scan }), /* @__PURE__ */ import_react4.default.createElement("section", { className: "rounded-3xl border border-slate-200 bg-white/60 p-4 shadow-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-center" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-slate-500" }, "Clinical screen"), /* @__PURE__ */ import_react4.default.createElement("h2", { className: "mt-1 text-2xl font-black text-slate-950" }, activeScreen?.label)), /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex flex-wrap gap-2" }, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "info" }, /* @__PURE__ */ import_react4.default.createElement(Clock, { className: "mr-1 h-3 w-3" }), " Fast response"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "warning" }, /* @__PURE__ */ import_react4.default.createElement(TriangleAlert, { className: "mr-1 h-3 w-3" }), " Confidence shown"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "purple" }, /* @__PURE__ */ import_react4.default.createElement(UserRound, { className: "mr-1 h-3 w-3" }), " Human justification"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "safe" }, /* @__PURE__ */ import_react4.default.createElement(Eye, { className: "mr-1 h-3 w-3" }), " Visual evidence"))), active === "worklist" && /* @__PURE__ */ import_react4.default.createElement(WorklistScreen, { scan, setActive }), active === "home" && /* @__PURE__ */ import_react4.default.createElement(HomeScreen, { scan, uploadState, decision, setActive }), active === "upload" && /* @__PURE__ */ import_react4.default.createElement(UploadScreen, { scan, uploadState, onUpload: uploadScan, tmState }), active === "review" && /* @__PURE__ */ import_react4.default.createElement(ReviewScreen, { scan }), active === "decision" && /* @__PURE__ */ import_react4.default.createElement(DecisionScreen, { scan, decision, setDecision }), active === "outcomes" && /* @__PURE__ */ import_react4.default.createElement(OutcomesScreen, { scan, decision })), /* @__PURE__ */ import_react4.default.createElement("footer", { className: "grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm lg:grid-cols-4" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Triage:"), " low-risk cases move quickly, uncertain cases are escalated."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Transparency:"), " confidence, uncertainty, and overlays are visible."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Safety:"), " critical sign-off requires human rationale."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Evaluation:"), " monitor outcomes, latency, overrides, and safety signals."))));
 }
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ import_react4.default.createElement(ClinicalInterfaceApp, null));
 /*! Bundled license information:

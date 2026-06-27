@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -15,7 +15,7 @@ def write_previews(
     segmentation: np.ndarray,
     layers: list[dict[str, Any]],
     ipnv2_result: Any | None = None,
-) -> dict[str, str]:
+) -> dict[str, Union[str, list[str]]]:
     preview_dir.mkdir(parents=True, exist_ok=True)
 
     raw = _slice_image(_center_slice(raw_volume))
@@ -46,10 +46,28 @@ def write_previews(
         probability.save(files["ipnv2_probability"])
         ipnv2_overlay.save(files["ipnv2_overlay"])
 
-    return {kind: f"preview/{kind}" for kind in files}
+    results = {kind: f"preview/{kind}" for kind in files}
+    
+    frames_dir = preview_dir / "frames"
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    num_slices = raw_volume.shape[0]
+    num_frames = min(20, num_slices)
+    indices = np.linspace(0, num_slices - 1, num_frames, dtype=int)
+    
+    frame_urls = []
+    for i, idx in enumerate(indices):
+        frame = _slice_image(raw_volume[idx])
+        frame_name = f"frame_{i}.png"
+        frame.save(frames_dir / frame_name)
+        frame_urls.append(f"preview/frames/{frame_name}")
+    
+    results["frames"] = frame_urls
+    return results
 
 
 def preview_path(preview_dir: Path, kind: str) -> Path:
+    if kind.startswith("frames/"):
+        return preview_dir / kind
     if kind not in PREVIEW_KINDS:
         raise ValueError(f"Unsupported preview kind: {kind}")
     return preview_dir / f"{kind}.png"
