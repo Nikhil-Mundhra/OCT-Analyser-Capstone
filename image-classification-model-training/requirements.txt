@@ -1,0 +1,22 @@
+# Core ML stack (already installed in environment)
+torch==2.11.0
+torchvision==0.26.0
+torchaudio==2.11.0
+
+# Data handling
+numpy>=2.0
+pillow>=10.0
+pandas>=2.0
+
+# ML utilities
+scikit-learn>=1.3
+
+# Config
+pyyaml>=6.0
+
+# Training monitoring
+tensorboard>=2.14
+
+# Visualization (for analyze_dataset.py)
+matplotlib>=3.7
+seaborn>=0.12

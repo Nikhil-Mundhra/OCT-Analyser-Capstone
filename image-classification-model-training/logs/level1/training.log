@@ -1,0 +1,90 @@
+16:04:58 | INFO     | training.trainer | Device selected: MPS (Apple Silicon GPU — 32 GB unified memory)
+16:04:58 | INFO     | __main__ | 
+16:04:58 | INFO     | __main__ | ============================================================
+16:04:58 | INFO     | __main__ |   OCT Gatekeeper — Level 1 Training
+16:04:58 | INFO     | __main__ |   Config     : config/hierarchy.yaml
+16:04:58 | INFO     | __main__ |   Device     : mps
+16:04:58 | INFO     | __main__ |   Folds      : 5
+16:04:58 | INFO     | __main__ |   Batch size : 48
+16:04:58 | INFO     | __main__ |   Epochs     : 5 warmup + 50 finetune (patience=10)
+16:04:58 | INFO     | __main__ |   Seed       : 42
+16:04:58 | INFO     | __main__ | ============================================================
+16:04:58 | INFO     | __main__ | 
+Building stratified 5-fold DataLoaders...
+16:04:59 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:04:59 | INFO     | data.dataset | [level1] 86120 samples | 2 classes | label_col=l1_idx
+16:04:59 | INFO     | data.dataset | Fold 1/5 — train: 68896 | val: 17224
+16:05:00 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:05:00 | INFO     | data.dataset | [level1] 68896 samples | 2 classes | label_col=l1_idx
+16:05:16 | INFO     | training.trainer | Device selected: MPS (Apple Silicon GPU — 32 GB unified memory)
+16:05:16 | INFO     | __main__ | 
+16:05:16 | INFO     | __main__ | ============================================================
+16:05:16 | INFO     | __main__ |   OCT Gatekeeper — Level 1 Training
+16:05:16 | INFO     | __main__ |   Config     : config/hierarchy.yaml
+16:05:16 | INFO     | __main__ |   Device     : mps
+16:05:16 | INFO     | __main__ |   Folds      : 5
+16:05:16 | INFO     | __main__ |   Batch size : 48
+16:05:16 | INFO     | __main__ |   Epochs     : 5 warmup + 50 finetune (patience=10)
+16:05:16 | INFO     | __main__ |   Seed       : 42
+16:05:16 | INFO     | __main__ | ============================================================
+16:05:16 | INFO     | __main__ | 
+Building stratified 5-fold DataLoaders...
+16:05:17 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:05:17 | INFO     | data.dataset | [level1] 86120 samples | 2 classes | label_col=l1_idx
+16:05:17 | INFO     | data.dataset | Fold 1/5 — train: 68896 | val: 17224
+16:05:18 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:05:18 | INFO     | data.dataset | [level1] 68896 samples | 2 classes | label_col=l1_idx
+16:09:38 | INFO     | training.trainer | Device selected: MPS (Apple Silicon GPU — 32 GB unified memory)
+16:09:38 | INFO     | __main__ | 
+16:09:38 | INFO     | __main__ | ============================================================
+16:09:38 | INFO     | __main__ |   OCT Gatekeeper — Level 1 Training
+16:09:38 | INFO     | __main__ |   Config     : config/hierarchy.yaml
+16:09:38 | INFO     | __main__ |   Device     : mps
+16:09:38 | INFO     | __main__ |   Folds      : 5
+16:09:38 | INFO     | __main__ |   Batch size : 48
+16:09:38 | INFO     | __main__ |   Epochs     : 5 warmup + 50 finetune (patience=10)
+16:09:38 | INFO     | __main__ |   Seed       : 42
+16:09:38 | INFO     | __main__ | ============================================================
+16:09:38 | INFO     | __main__ | 
+Building stratified 5-fold DataLoaders...
+16:09:39 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:39 | INFO     | data.dataset | [level1] 86120 samples | 2 classes | label_col=l1_idx
+16:09:39 | INFO     | data.dataset | Fold 1/5 — train: 68896 | val: 17224
+16:09:41 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:41 | INFO     | data.dataset | [level1] 68896 samples | 2 classes | label_col=l1_idx
+16:09:42 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:42 | INFO     | data.dataset | [level1] 17224 samples | 2 classes | label_col=l1_idx
+16:09:42 | INFO     | data.dataset | Fold 2/5 — train: 68896 | val: 17224
+16:09:43 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:43 | INFO     | data.dataset | [level1] 68896 samples | 2 classes | label_col=l1_idx
+16:09:44 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:44 | INFO     | data.dataset | [level1] 17224 samples | 2 classes | label_col=l1_idx
+16:09:44 | INFO     | data.dataset | Fold 3/5 — train: 68896 | val: 17224
+16:09:45 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:45 | INFO     | data.dataset | [level1] 68896 samples | 2 classes | label_col=l1_idx
+16:09:47 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:47 | INFO     | data.dataset | [level1] 17224 samples | 2 classes | label_col=l1_idx
+16:09:47 | INFO     | data.dataset | Fold 4/5 — train: 68896 | val: 17224
+16:09:48 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:48 | INFO     | data.dataset | [level1] 68896 samples | 2 classes | label_col=l1_idx
+16:09:49 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:49 | INFO     | data.dataset | [level1] 17224 samples | 2 classes | label_col=l1_idx
+16:09:49 | INFO     | data.dataset | Fold 5/5 — train: 68896 | val: 17224
+16:09:51 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:51 | INFO     | data.dataset | [level1] 68896 samples | 2 classes | label_col=l1_idx
+16:09:52 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+16:09:52 | INFO     | data.dataset | [level1] 17224 samples | 2 classes | label_col=l1_idx
+16:09:52 | INFO     | __main__ | Class names   : ['NORMAL', 'ABNORMAL']
+16:09:52 | INFO     | __main__ | Class weights : ['1.6036', '0.7265']  (used as FocalLoss alpha)
+16:09:52 | INFO     | __main__ | 
+16:09:52 | INFO     | __main__ | ###  FOLD 1 / 5  ###
+16:09:52 | INFO     | __main__ |      train batches: 1435 | val batches: 180
+16:09:52 | INFO     | models.level1_gatekeeper | Backbone FROZEN — training classifier head only.
+16:09:52 | INFO     | models.level1_gatekeeper | GatekeeperModel ready | backbone=ResNet-50 | in_features=2048 | num_classes=2 | frozen=True
+16:09:52 | INFO     | training.losses | Criterion: FocalLoss | mode=level1 | gamma=2.0 | smoothing=0.00 | class_weights=[1.6035751104354858, 0.7265364527702332]
+16:09:53 | INFO     | training.trainer | AMP enabled — forward pass dtype=torch.float16 | gradients=float32 | device=mps
+16:09:53 | INFO     | training.trainer | HierarchyTrainer ready | mode=level1 | device=mps | amp=True | checkpoints=checkpoints/level1
+16:09:53 | INFO     | training.trainer | 
+============================================================
+  PHASE 1 — Warm-up | 5 epochs | backbone FROZEN
+============================================================

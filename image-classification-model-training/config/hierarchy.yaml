@@ -1,0 +1,211 @@
+# config/hierarchy.yaml
+# Single source of truth for the OCT hierarchical classification pipeline.
+# Maps every leaf directory (relative to data_root) to its logical labels.
+#
+# Architectural Decisions:
+#   - AMD: Generic_AMD / DRUSEN / CNV kept as SEPARATE L3 classes (no merging)
+#   - Vascular: RAO + RVO → single Vascular_Occlusions at L2,
+#               separated back into RAO / RVO (+ MH) at L3
+#   - Validation: Stratified 5-fold CV at all levels
+#   - Resolution: L1/L2 = 224×224 | L3 = 384×384
+
+data_root: "/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# LABEL ENCODINGS
+# ──────────────────────────────────────────────────────────────────────────────
+l1_labels:
+  NORMAL:   0
+  ABNORMAL: 1
+
+l2_labels:
+  Macular_Degeneration:   0
+  Diabetic_Complications: 1
+  Vascular_Occlusions:    2   # RAO + RVO aggregated here at L2
+  Fluid_Accumulation:     3
+  Structural_Issues:      4
+
+# L3 specialist definitions: per-specialist class → integer index
+l3_specialists:
+  Macular:
+    name: L3_Macular
+    resolution: 384
+    description: "Wet AMD (CNV) vs Dry AMD (DRUSEN) vs Generic AMD — strictly separated"
+    classes:
+      CNV:         0    # Wet AMD / Choroidal Neovascularization
+      DRUSEN:      1    # Dry AMD / Drusen deposits
+      Generic_AMD: 2    # Unclassified / General AMD (OCTID source)
+
+  Diabetic:
+    name: L3_Diabetic
+    resolution: 384
+    description: "Diabetic Macular Edema vs Diabetic Retinopathy (general)"
+    classes:
+      DME: 0    # Diabetic Macular Edema
+      DR:  1    # Diabetic Retinopathy (general)
+
+  Vascular:
+    name: L3_Vascular
+    resolution: 384
+    description: "Macular Hole vs RVO vs RAO — RAO/RVO re-separated at specialist level"
+    classes:
+      MH:  0    # Macular Hole
+      RVO: 1    # Retinal Vein Occlusion
+      RAO: 2    # Retinal Artery Occlusion
+
+  Fluid:
+    name: L3_Fluid
+    resolution: 384
+    description: "Central Serous Retinopathy (single-class anomaly detection)"
+    classes:
+      CSR: 0    # Central Serous Retinopathy
+
+  Structural:
+    name: L3_Structural
+    resolution: 384
+    description: "Epiretinal Membrane vs Vitreomacular Interface Disease"
+    classes:
+      ERM: 0    # Epiretinal Membrane
+      VID: 1    # Vitreomacular Interface Disease
+
+# ──────────────────────────────────────────────────────────────────────────────
+# INPUT RESOLUTION PIPELINE
+# ──────────────────────────────────────────────────────────────────────────────
+resolution:
+  level1:    224    # Gatekeeper — maximum throughput
+  level2:    224    # Router — consistent feature space with L1
+  level3:    384    # Specialists — fine-grained structural detail
+
+# Recommended batch sizes for M2 Pro 24GB Apple Silicon unified memory
+# Memory budget: 24GB total − ~5GB OS/system = ~19GB available for PyTorch
+# float16 AMP halves activation memory vs float32 baseline
+batch_sizes:
+  level1:    48     # ResNet-50, 224×224, float16 → ~3.2GB activations
+  level2:    32     # EfficientNet-B2, 224×224, float16 → ~2.8GB activations
+  level3:    8      # EfficientNet-B0, 384×384, float16 → ~3.5GB activations (memory-bound)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# DIRECTORY → LABEL MAPPING
+# Each entry maps a directory path (relative to data_root) to its hierarchy labels.
+# ──────────────────────────────────────────────────────────────────────────────
+class_map:
+
+  # ── NORMAL (Healthy) ────────────────────────────────────────────────────────
+  - path: "Normal (Healthy)/OCT2017"
+    fine_class:   NORMAL
+    l1:           NORMAL
+    l2:           null
+    l3_specialist: null
+    l3_class:     null
+
+  - path: "Normal (Healthy)/NO"
+    fine_class:   NORMAL
+    l1:           NORMAL
+    l2:           null
+    l3_specialist: null
+    l3_class:     null
+
+  - path: "Normal (Healthy)/108503_OCTID"
+    fine_class:   NORMAL
+    l1:           NORMAL
+    l2:           null
+    l3_specialist: null
+    l3_class:     null
+
+  # ── MACULAR DEGENERATION ────────────────────────────────────────────────────
+  - path: "Macular Degeneration Spectrum/Choroidal Neovascularization/CNV"
+    fine_class:   CNV
+    l1:           ABNORMAL
+    l2:           Macular_Degeneration
+    l3_specialist: Macular
+    l3_class:     CNV          # Wet AMD — strictly separate from DRUSEN
+
+  - path: "Macular Degeneration Spectrum/DRUSEN"
+    fine_class:   DRUSEN
+    l1:           ABNORMAL
+    l2:           Macular_Degeneration
+    l3_specialist: Macular
+    l3_class:     DRUSEN       # Dry AMD — strictly separate from CNV
+
+  - path: "Macular Degeneration Spectrum/AMD"
+    fine_class:   Generic_AMD
+    l1:           ABNORMAL
+    l2:           Macular_Degeneration
+    l3_specialist: Macular
+    l3_class:     Generic_AMD  # Not merged with DRUSEN or CNV
+
+  - path: "Macular Degeneration Spectrum/General/108503_OCTID_AMD"
+    fine_class:   Generic_AMD
+    l1:           ABNORMAL
+    l2:           Macular_Degeneration
+    l3_specialist: Macular
+    l3_class:     Generic_AMD  # Second source of Generic_AMD — merged at class level only
+
+  # ── DIABETIC COMPLICATIONS ──────────────────────────────────────────────────
+  - path: "Diabetic Complications/Diabetic Macular Edema (DME)/DME"
+    fine_class:   DME
+    l1:           ABNORMAL
+    l2:           Diabetic_Complications
+    l3_specialist: Diabetic
+    l3_class:     DME
+
+  - path: "Diabetic Complications/Diabetic Macular Edema (DME)/OCTDL_DME"
+    fine_class:   DME
+    l1:           ABNORMAL
+    l2:           Diabetic_Complications
+    l3_specialist: Diabetic
+    l3_class:     DME          # Second source of DME — same class
+
+  - path: "Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR"
+    fine_class:   DR
+    l1:           ABNORMAL
+    l2:           Diabetic_Complications
+    l3_specialist: Diabetic
+    l3_class:     DR
+
+  # ── VASCULAR OCCLUSIONS (BLOCKAGES) ────────────────────────────────────────
+  # L2: All three map to Vascular_Occlusions (RAO+RVO aggregated)
+  # L3: Each gets its own specialist class (RAO/RVO re-separated)
+  - path: "Vascular Occlusions (Blockages)/Macular-Hole-Retinal-OCT-images/OCTID_MH"
+    fine_class:   MH
+    l1:           ABNORMAL
+    l2:           Vascular_Occlusions
+    l3_specialist: Vascular
+    l3_class:     MH
+
+  - path: "Vascular Occlusions (Blockages)/RVO"
+    fine_class:   RVO
+    l1:           ABNORMAL
+    l2:           Vascular_Occlusions   # Aggregated with RAO at L2
+    l3_specialist: Vascular
+    l3_class:     RVO                   # Re-separated at L3
+
+  - path: "Vascular Occlusions (Blockages)/RAO"
+    fine_class:   RAO
+    l1:           ABNORMAL
+    l2:           Vascular_Occlusions   # Aggregated with RVO at L2
+    l3_specialist: Vascular
+    l3_class:     RAO                   # Re-separated at L3
+
+  # ── FLUID ACCUMULATION ──────────────────────────────────────────────────────
+  - path: "Fluid Accumulation/Central Serous Retinopathy/108503_OCTID_CSR"
+    fine_class:   CSR
+    l1:           ABNORMAL
+    l2:           Fluid_Accumulation
+    l3_specialist: Fluid
+    l3_class:     CSR
+
+  # ── VITREOMACULAR & STRUCTURAL DISORDERS ───────────────────────────────────
+  - path: "Vitreomacular & Structural Disorders/ERM"
+    fine_class:   ERM
+    l1:           ABNORMAL
+    l2:           Structural_Issues
+    l3_specialist: Structural
+    l3_class:     ERM
+
+  - path: "Vitreomacular & Structural Disorders/VID"
+    fine_class:   VID
+    l1:           ABNORMAL
+    l2:           Structural_Issues
+    l3_specialist: Structural
+    l3_class:     VID
