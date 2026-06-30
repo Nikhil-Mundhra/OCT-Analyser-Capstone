@@ -264,3 +264,35 @@ Diabetic_Complications       0.89      0.97      0.93      2320
 21:47:36 | INFO     | training.trainer | Ep  24 [finetune|fold2] loss 0.0823/0.0422 | acc 0.9776 | macro_f1 0.9028 | auroc 0.9991 | lr 1.00e-04 | 793.3s
 22:01:26 | INFO     | training.trainer | Ep  25 [finetune|fold2] loss 0.2544/0.0193 | acc 0.9740 | macro_f1 0.8379 | auroc 0.9987 | lr 9.98e-05 | 828.7s
 22:13:25 | INFO     | training.trainer | Ep  26 [finetune|fold2] loss 0.3028/0.0321 | acc 0.9703 | macro_f1 0.8449 | auroc 0.9987 | lr 9.94e-05 | 719.2s
+22:26:28 | INFO     | training.trainer | Ep  27 [finetune|fold2] loss 0.2646/0.0289 | acc 0.9755 | macro_f1 0.8219 | auroc 0.9984 | lr 9.86e-05 | 782.5s
+22:26:29 | INFO     | training.trainer | Early stopping at epoch 27 | best_val_loss=0.0111 | no improvement for 10 epochs.
+22:26:29 | INFO     | training.trainer | 
+Fold 2 — Best Classification Report:
+                        precision    recall  f1-score   support
+
+  Macular_Degeneration       1.00      0.97      0.98      9421
+Diabetic_Complications       0.90      0.99      0.95      2321
+   Vascular_Occlusions       0.74      1.00      0.85        45
+    Fluid_Accumulation       0.61      1.00      0.75        20
+     Structural_Issues       0.73      1.00      0.84        46
+
+              accuracy                           0.97     11853
+             macro avg       0.80      0.99      0.88     11853
+          weighted avg       0.98      0.97      0.97     11853
+
+22:26:29 | INFO     | __main__ | Fold 3 complete — best epoch=17, phase=finetune
+22:26:29 | INFO     | __main__ | 
+22:26:29 | INFO     | __main__ | ###  FOLD 4 / 5  ###
+22:26:29 | INFO     | __main__ |      train batches: 987 | val batches: 124
+22:26:29 | INFO     | models.level2_router | Router backbone FROZEN.
+22:26:29 | INFO     | models.level2_router | DiseaseRouterModel ready | backbone=EfficientNet-B2 | in_features=1408 | num_classes=5 | frozen=True
+22:26:29 | INFO     | training.losses | Criterion: FocalLoss | mode=level2 | gamma=2.0 | smoothing=0.00 | class_weights=[0.25162798166275024, 1.0216116905212402, 52.68111038208008, 117.06913757324219, 51.25729751586914]
+22:26:29 | INFO     | training.trainer | AMP enabled — forward pass dtype=torch.float16 | gradients=float32 | device=mps
+22:26:29 | INFO     | training.trainer | HierarchyTrainer ready | mode=level2 | device=mps | amp=True | checkpoints=checkpoints/level2
+22:26:29 | INFO     | training.trainer | 
+============================================================
+  PHASE 1 — Warm-up | 5 epochs | backbone FROZEN
+============================================================
+22:31:59 | INFO     | training.trainer | Ep   0 [warmup|fold3] loss 10.7935/0.5060 | acc 0.4250 | macro_f1 0.2273 | auroc 0.8969 | lr 1.00e-03 | 329.8s
+22:37:05 | INFO     | training.trainer | Ep   1 [warmup|fold3] loss 9.4553/0.4695 | acc 0.4875 | macro_f1 0.2546 | auroc 0.9103 | lr 1.00e-03 | 305.8s
+22:41:49 | INFO     | training.trainer | Ep   2 [warmup|fold3] loss 9.3264/0.4603 | acc 0.5347 | macro_f1 0.2830 | auroc 0.9202 | lr 1.00e-03 | 283.2s

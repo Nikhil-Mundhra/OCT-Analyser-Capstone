@@ -44,7 +44,10 @@ graph TD
 - **Link:** [https://www.kaggle.com/datasets/cnzakimuena/retinal-oct-octa-data](https://www.kaggle.com/datasets/cnzakimuena/retinal-oct-octa-data)
 
 ### 3. Optical Coherence Tomography Image Retinal Database (OCTID)
-- **Description:** Open-source database with retinal OCT images categorized by conditions: AMD, Central Serous Retinopathy, Diabetic Retinopathy, Macular Hole, and Normal cases. Includes manual segmentation.
+- **Origin:** Captured using a Cirrus HD-OCT machine at Sankara Nethralaya Eye Hospital in Chennai, India.
+- **Contents:** Over 500 high-resolution volumetric and 2D B-scan images.
+- **Categories:** Labeled by experienced clinicians into Normal (NO), Macular Hole (MH), Age-related Macular Degeneration (AMD), Central Serous Retinopathy (CSR), and Diabetic Retinopathy (DR).
+- **Segmentation:** Includes 25 normal OCT images with manual, ground-truth delineations for evaluating segmentation algorithms.
 - **Source:** OpenICPSR (Project 108503)
 - **Link:** [https://www.openicpsr.org/openicpsr/project/108503/version/V1/view](https://www.openicpsr.org/openicpsr/project/108503/version/V1/view)
 
