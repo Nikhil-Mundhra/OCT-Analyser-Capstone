@@ -1,0 +1,87 @@
+=== L1 ===
+<div style="width: 100%; overflow-x: auto; margin: 20px 0; text-align: center;">
+  <table style="margin: 0 auto !important; border-collapse: collapse !important; background: transparent !important; border: none !important; font-family: sans-serif !important;">
+    <tr>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">Input</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">→</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">Conv1</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">→</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">MaxPool</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">→</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">ResBlock 1</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">→</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">ResBlock 2</div></td>
+    </tr>
+    <tr>
+      <td colspan="8" style="vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">↓</td>
+    </tr>
+    <tr>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">Output</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">←</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">FC Head</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">←</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">GAP</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">←</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">ResBlock 4</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">←</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">ResBlock 3</div></td>
+    </tr>
+  </table>
+</div>
+
+=== L2 ===
+<div style="width: 100%; overflow-x: auto; margin: 20px 0; text-align: center;">
+  <table style="margin: 0 auto !important; border-collapse: collapse !important; background: transparent !important; border: none !important; font-family: sans-serif !important;">
+    <tr>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">Input</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">→</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">Stem</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">→</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">MBConv 1</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">→</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">MBConv 2</div></td>
+    </tr>
+    <tr>
+      <td colspan="6" style="vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">↓</td>
+    </tr>
+    <tr>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">Output</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">←</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">FC Head</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">←</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">Head</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">←</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">MBConv 3</div></td>
+    </tr>
+  </table>
+</div>
+
+=== L3 ===
+<div style="width: 100%; overflow-x: auto; margin: 20px 0; text-align: center;">
+  <table style="margin: 0 auto !important; border-collapse: collapse !important; background: transparent !important; border: none !important; font-family: sans-serif !important;">
+    <tr>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">High-Res Input</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">→</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">Stem</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">→</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">MBConv 1</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">→</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">MBConv 2</div></td>
+    </tr>
+    <tr>
+      <td colspan="6" style="vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">↓</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"></td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">Output</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">←</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">FC Head</div></td>
+      <td style="color: currentColor; font-size: 24px; font-weight: bold; width: 40px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;">←</td>
+      <td style="width: 120px; vertical-align: middle !important; text-align: center !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important;"><div style="color: currentColor; font-weight: bold; margin: 0 !important; padding: 0 !important;">Head</div></td>
+    </tr>
+  </table>
+</div>
+

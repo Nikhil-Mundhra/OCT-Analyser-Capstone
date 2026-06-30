@@ -1,0 +1,87 @@
+=== L1 ===
+<div style="width: 100%; overflow-x: auto; margin: 20px 0;">
+  <table style="margin: 0 auto; border-collapse: separate; border-spacing: 0; background: transparent; border: none; font-family: sans-serif;">
+    <tr>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">Input</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">▶</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">Conv1</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">▶</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">MaxPool</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">▶</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">ResBlock 1</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">▶</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">ResBlock 2</div></td>
+    </tr>
+    <tr>
+      <td colspan="8"></td>
+      <td style="color: #3B82F6; font-size: 22px; text-align: center; padding: 5px 0;">▼</td>
+    </tr>
+    <tr>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">Output</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">◀</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">FC Head</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">◀</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">GAP</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">◀</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">ResBlock 4</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">◀</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">ResBlock 3</div></td>
+    </tr>
+  </table>
+</div>
+
+=== L2 ===
+<div style="width: 100%; overflow-x: auto; margin: 20px 0;">
+  <table style="margin: 0 auto; border-collapse: separate; border-spacing: 0; background: transparent; border: none; font-family: sans-serif;">
+    <tr>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">Input</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">▶</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">Stem</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">▶</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">MBConv 1</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">▶</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">MBConv 2</div></td>
+    </tr>
+    <tr>
+      <td colspan="6"></td>
+      <td style="color: #3B82F6; font-size: 22px; text-align: center; padding: 5px 0;">▼</td>
+    </tr>
+    <tr>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">Output</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">◀</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">FC Head</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">◀</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">Head</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">◀</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">MBConv 3</div></td>
+    </tr>
+  </table>
+</div>
+
+=== L3 ===
+<div style="width: 100%; overflow-x: auto; margin: 20px 0;">
+  <table style="margin: 0 auto; border-collapse: separate; border-spacing: 0; background: transparent; border: none; font-family: sans-serif;">
+    <tr>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">High-Res Input</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">▶</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">Stem</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">▶</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">MBConv 1</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">▶</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">MBConv 2</div></td>
+    </tr>
+    <tr>
+      <td colspan="6"></td>
+      <td style="color: #3B82F6; font-size: 22px; text-align: center; padding: 5px 0;">▼</td>
+    </tr>
+    <tr>
+      <td colspan="2"></td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">Output</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">◀</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">FC Head</div></td>
+      <td style="padding: 0 10px; color: #3B82F6; font-size: 18px; text-align: center;">◀</td>
+      <td style="width: 120px;"><div style="padding: 8px 0; border: 2px solid #3B82F6; border-radius: 8px; background: #2a2b2e; color: #fff; font-weight: bold; text-align: center;">Head</div></td>
+    </tr>
+  </table>
+</div>
+

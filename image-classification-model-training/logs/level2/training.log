@@ -258,3 +258,7 @@ Diabetic_Complications       0.89      0.97      0.93      2320
 20:28:30 | INFO     | training.trainer | Ep  18 [finetune|fold2] loss 0.0662/0.0589 | acc 0.9685 | macro_f1 0.8782 | auroc 0.9989 | lr 2.14e-05 | 740.1s
 20:40:53 | INFO     | training.trainer | Ep  19 [finetune|fold2] loss 0.0567/0.0317 | acc 0.9715 | macro_f1 0.9147 | auroc 0.9991 | lr 1.55e-05 | 742.3s
 20:53:56 | INFO     | training.trainer | Ep  20 [finetune|fold2] loss 0.0558/0.0476 | acc 0.9738 | macro_f1 0.8997 | auroc 0.9991 | lr 1.05e-05 | 782.4s
+21:07:32 | INFO     | training.trainer | Ep  21 [finetune|fold2] loss 0.0523/0.0617 | acc 0.9753 | macro_f1 0.9032 | auroc 0.9991 | lr 6.40e-06 | 815.2s
+21:21:03 | INFO     | training.trainer | Ep  22 [finetune|fold2] loss 0.0440/0.0489 | acc 0.9765 | macro_f1 0.9110 | auroc 0.9991 | lr 3.42e-06 | 810.8s
+21:34:23 | INFO     | training.trainer | Ep  23 [finetune|fold2] loss 0.0559/0.0489 | acc 0.9771 | macro_f1 0.9027 | auroc 0.9991 | lr 1.61e-06 | 798.8s
+21:47:36 | INFO     | training.trainer | Ep  24 [finetune|fold2] loss 0.0823/0.0422 | acc 0.9776 | macro_f1 0.9028 | auroc 0.9991 | lr 1.00e-04 | 793.3s
