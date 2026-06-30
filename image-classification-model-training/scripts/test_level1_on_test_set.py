@@ -76,6 +76,8 @@ def main():
     parser.add_argument("--option", type=int, choices=[1, 2], default=1,
                         help="Read option (1: All images, 2: Worst-case images)")
     parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--threshold", type=float, default=0.35,
+                        help="Classification threshold for Abnormal class (default: 0.35)")
     args = parser.parse_args()
     
     csv_path = Path(args.data_dir) / "data_information.csv"
@@ -132,7 +134,9 @@ def main():
             
             logits = model(images)
             probs = torch.softmax(logits, dim=1)
-            preds = torch.argmax(logits, dim=1)
+            
+            # Apply custom threshold for class 1 (Abnormal)
+            preds = (probs[:, 1] >= args.threshold).long()
             
             all_preds.extend(preds.cpu().numpy())
             all_probs.extend(probs[:, 1].cpu().numpy()) # Prob of class 1 (Abnormal)

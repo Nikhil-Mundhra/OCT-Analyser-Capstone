@@ -22,6 +22,7 @@ The folder structure is highly optimized for slice-level supervision:
 - **Evaluation Strategy:** Option 1 (All Images) 
   - The evaluation evaluates all 16,822 individual images, prioritizing full coverage across all slices rather than solely evaluating the worst-case condition.
 - **Hardware:** CPU Only
+- **Decision Threshold:** `0.35` (lowered from default `0.50` to reduce False Negatives, prioritizing safety for abnormal case screening)
 
 ## Acknowledgments and Citation
 If this dataset is utilized in further research or deployment, it must be acknowledged and cited as follows:
@@ -33,10 +34,17 @@ The original implementation of the above-mentioned publication is available at t
 
 ---
 
-## Results
-*Evaluation currently running... Results will be populated here upon completion.*
+## Results (Threshold: 0.35)
+*Evaluation completed on 16,822 test images using CPU.*
 
-- **Accuracy:** *Pending*
-- **AUROC:** *Pending*
-- **Macro F1:** *Pending*
-- **Weighted F1:** *Pending*
+- **Accuracy:** 0.8148 (81.48%)
+- **AUROC:** 0.9349
+- **Macro F1:** 0.8136
+- **Weighted F1:** 0.8133
+
+### Classification Report
+
+| Class | Precision | Recall | F1-Score | Support |
+| :--- | :--- | :--- | :--- | :--- |
+| **Normal** | 0.90 | 0.72 | 0.80 | 8584 |
+| **Abnormal** | 0.76 | 0.92 | 0.83 | 8238 |

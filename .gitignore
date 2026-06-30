@@ -8,3 +8,4 @@ runtime_uploads/
 # Ignore model checkpoints
 image-classification-model-training/checkpoints/
 *.pth
+image-classification-model-training/logs/level2/events.out.tfevents.1782838589.Nikhils-MacBook-Pro.local.74715.3

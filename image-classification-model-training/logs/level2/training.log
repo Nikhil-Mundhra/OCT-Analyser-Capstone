@@ -296,3 +296,22 @@ Diabetic_Complications       0.90      0.99      0.95      2321
 22:31:59 | INFO     | training.trainer | Ep   0 [warmup|fold3] loss 10.7935/0.5060 | acc 0.4250 | macro_f1 0.2273 | auroc 0.8969 | lr 1.00e-03 | 329.8s
 22:37:05 | INFO     | training.trainer | Ep   1 [warmup|fold3] loss 9.4553/0.4695 | acc 0.4875 | macro_f1 0.2546 | auroc 0.9103 | lr 1.00e-03 | 305.8s
 22:41:49 | INFO     | training.trainer | Ep   2 [warmup|fold3] loss 9.3264/0.4603 | acc 0.5347 | macro_f1 0.2830 | auroc 0.9202 | lr 1.00e-03 | 283.2s
+22:46:53 | INFO     | training.trainer | Ep   3 [warmup|fold3] loss 9.2933/0.3710 | acc 0.5967 | macro_f1 0.3042 | auroc 0.9335 | lr 1.00e-03 | 304.2s
+22:51:56 | INFO     | training.trainer | Ep   4 [warmup|fold3] loss 9.4108/0.3362 | acc 0.6851 | macro_f1 0.3379 | auroc 0.9384 | lr 1.00e-03 | 302.9s
+22:51:57 | INFO     | training.trainer | 
+============================================================
+  PHASE 2 — Fine-tuning | max 50 epochs | backbone UNFROZEN | patience=10
+============================================================
+22:51:57 | INFO     | models.level2_router | Router backbone UNFROZEN.
+23:04:36 | INFO     | training.trainer | Ep   5 [finetune|fold3] loss 2.4431/0.1556 | acc 0.8873 | macro_f1 0.5839 | auroc 0.9831 | lr 9.94e-05 | 759.7s
+23:04:37 | INFO     | training.trainer |   ✓ New best — val_loss=0.1556 | macro_f1=0.5839 | auroc=0.9831
+23:17:38 | INFO     | training.trainer | Ep   6 [finetune|fold3] loss 1.0157/0.1141 | acc 0.9153 | macro_f1 0.6492 | auroc 0.9903 | lr 9.76e-05 | 780.8s
+23:17:38 | INFO     | training.trainer |   ✓ New best — val_loss=0.1141 | macro_f1=0.6492 | auroc=0.9903
+23:30:38 | INFO     | training.trainer | Ep   7 [finetune|fold3] loss 0.8067/0.1161 | acc 0.9002 | macro_f1 0.7321 | auroc 0.9963 | lr 9.46e-05 | 780.0s
+23:43:09 | INFO     | training.trainer | Ep   8 [finetune|fold3] loss 0.4535/0.1221 | acc 0.9269 | macro_f1 0.7003 | auroc 0.9950 | lr 9.05e-05 | 750.2s
+23:55:40 | INFO     | training.trainer | Ep   9 [finetune|fold3] loss 0.4021/0.1283 | acc 0.9010 | macro_f1 0.7129 | auroc 0.9969 | lr 8.55e-05 | 750.8s
+00:08:06 | INFO     | training.trainer | Ep  10 [finetune|fold3] loss 0.3629/0.1100 | acc 0.9578 | macro_f1 0.8327 | auroc 0.9979 | lr 7.96e-05 | 744.9s
+00:08:06 | INFO     | training.trainer |   ✓ New best — val_loss=0.1100 | macro_f1=0.8327 | auroc=0.9979
+00:20:39 | INFO     | training.trainer | Ep  11 [finetune|fold3] loss 0.2503/0.0919 | acc 0.9695 | macro_f1 0.8462 | auroc 0.9979 | lr 7.30e-05 | 753.2s
+00:20:40 | INFO     | training.trainer |   ✓ New best — val_loss=0.0919 | macro_f1=0.8462 | auroc=0.9979
+00:33:12 | INFO     | training.trainer | Ep  12 [finetune|fold3] loss 0.2173/0.1116 | acc 0.8889 | macro_f1 0.7909 | auroc 0.9975 | lr 6.58e-05 | 751.9s
