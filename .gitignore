@@ -4,3 +4,7 @@
 __pycache__/
 *.pyc
 runtime_uploads/
+
+# Ignore model checkpoints
+image-classification-model-training/checkpoints/
+*.pth
