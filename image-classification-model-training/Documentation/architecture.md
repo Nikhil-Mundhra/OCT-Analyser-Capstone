@@ -17,14 +17,14 @@ Here is the visual representation of how a single input scan flows through our h
 graph TD
     Input(Input Image Scan) --> L1
 
-    subgraph Level 1: The Gatekeeper
+    subgraph SG1 ["Level 1: The Gatekeeper"]
         L1{ResNet-50<br/>Normal vs Abnormal?}
     end
 
     L1 -->|NORMAL| OutNormal([Diagnosis: NORMAL])
     L1 -->|ABNORMAL| L2
 
-    subgraph Level 2: The Disease Router
+    subgraph SG2 ["Level 2: The Disease Router"]
         L2{EfficientNet-B2<br/>Which Category?}
     end
 
@@ -34,7 +34,7 @@ graph TD
     L2 -->|Structural| L3_Str
     L2 -->|Fluid| L3_Flu
 
-    subgraph Level 3: The Specialists (EfficientNet-B0)
+    subgraph SG3 ["Level 3: The Specialists (EfficientNet-B0)"]
         L3_Mac[Macular Specialist]
         L3_Dia[Diabetic Specialist]
         L3_Vas[Vascular Specialist]
