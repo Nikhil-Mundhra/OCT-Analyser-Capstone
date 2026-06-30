@@ -172,9 +172,9 @@ TRANSFORM_REGISTRY: dict = {
         "train": get_train_transforms(RES_L1_L2),
         "val":   get_val_transforms(RES_L1_L2),
     },
-    # Level 2 — 224px, standard augmentation
+    # Level 2 — 224px, HEAVY augmentation (minority class collapse prevention)
     "level2": {
-        "train": get_train_transforms(RES_L1_L2),
+        "train": get_heavy_train_transforms(RES_L1_L2),
         "val":   get_val_transforms(RES_L1_L2),
     },
     # Level 3 Macular — 384px, standard (large enough dataset)

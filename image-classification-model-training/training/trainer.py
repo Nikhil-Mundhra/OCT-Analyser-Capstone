@@ -334,6 +334,7 @@ class HierarchyTrainer:
         # ── Misc
         fold_id: int = 0,
         max_grad_norm: float = 1.0,
+        resume_checkpoint_path: Optional[str] = None,
     ) -> Dict:
         """
         Run the full two-phase training for one cross-validation fold.
@@ -361,119 +362,176 @@ class HierarchyTrainer:
         best_val_loss   = float("inf")
         best_val_macro_f1 = 0.0
         best_metrics: Dict = {}
+        
+        start_epoch_warmup = 0
+        start_epoch_finetune = 0
+        es_counter = 0
+        ckpt = None
+        
+        if resume_checkpoint_path:
+            ckpt = torch.load(resume_checkpoint_path, map_location=self.device)
+            self.model.load_state_dict(ckpt["model_state_dict"])
+            best_val_loss = ckpt.get("es_best", float("inf"))
+            es_counter = ckpt.get("es_counter", 0)
+            
+            if ckpt["phase"] == "warmup":
+                start_epoch_warmup = ckpt["epoch"] + 1
+            else:
+                start_epoch_warmup = warmup_epochs  # skip warmup entirely
+                start_epoch_finetune = ckpt["epoch"] + 1
+            logger.info("Resuming from checkpoint %s (Phase: %s, Epoch: %d)", 
+                        resume_checkpoint_path, ckpt["phase"], ckpt["epoch"])
 
         train_acc = MetricAccumulator()
         val_acc   = MetricAccumulator()
 
         # ── PHASE 1: WARM-UP ──────────────────────────────────────────────────
-        self._log_section(f"PHASE 1 — Warm-up | {warmup_epochs} epochs | backbone FROZEN")
+        if start_epoch_warmup < warmup_epochs:
+            self._log_section(f"PHASE 1 — Warm-up | {warmup_epochs} epochs | backbone FROZEN")
 
-        optimizer_warmup = torch.optim.AdamW(
-            filter(lambda p: p.requires_grad, self.model.parameters()),
-            lr=warmup_lr,
-            weight_decay=weight_decay,
-        )
-
-        for epoch in range(warmup_epochs):
-            t0         = time.perf_counter()
-            train_loss = self._train_epoch(train_loader, optimizer_warmup, train_acc, max_grad_norm)
-            val_loss   = self._val_epoch(val_loader, val_acc)
-            elapsed    = time.perf_counter() - t0
-
-            train_m = train_acc.compute(class_names, prefix="train_")
-            val_m   = val_acc.compute(class_names, prefix="val_")
-
-            global_step += 1
-            self._log_epoch(
-                epoch=epoch,
-                phase="warmup",
-                fold_id=fold_id,
-                train_loss=train_loss,
-                val_loss=val_loss,
-                train_metrics=train_m,
-                val_metrics=val_m,
+        if start_epoch_warmup < warmup_epochs:
+            optimizer_warmup = torch.optim.AdamW(
+                filter(lambda p: p.requires_grad, self.model.parameters()),
                 lr=warmup_lr,
-                step=global_step,
-                elapsed=elapsed,
+                weight_decay=weight_decay,
             )
+            if ckpt and ckpt["phase"] == "warmup" and "optimizer_state_dict" in ckpt:
+                optimizer_warmup.load_state_dict(ckpt["optimizer_state_dict"])
 
-            # Track best by val loss during warm-up (macro F1 still unstable)
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                best_metrics  = {**val_m, "epoch": epoch, "phase": "warmup"}
-                self._save_checkpoint(f"fold{fold_id}_best_model.pth")
+            for epoch in range(start_epoch_warmup, warmup_epochs):
+                t0         = time.perf_counter()
+                train_loss = self._train_epoch(train_loader, optimizer_warmup, train_acc, max_grad_norm)
+                val_loss   = self._val_epoch(val_loader, val_acc)
+                elapsed    = time.perf_counter() - t0
 
-        self._save_checkpoint(f"fold{fold_id}_last_model.pth")
+                train_m = train_acc.compute(class_names, prefix="train_")
+                val_m   = val_acc.compute(class_names, prefix="val_")
 
-        # ── PHASE 2: FINE-TUNING ──────────────────────────────────────────────
-        self._log_section(
-            f"PHASE 2 — Fine-tuning | max {finetune_epochs} epochs | "
-            f"backbone UNFROZEN | patience={patience}"
-        )
-
-        self.model.unfreeze_backbone()
-
-        optimizer_ft = torch.optim.AdamW(
-            self.model.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr),
-            weight_decay=weight_decay,
-        )
-        # CosineAnnealingWarmRestarts: T_0=20 epochs, doubles after each restart
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer_ft,
-            T_0=20,
-            T_mult=2,
-            eta_min=1e-6,
-        )
-        early_stopper = EarlyStopping(patience=patience, mode="min")
-
-        for epoch in range(finetune_epochs):
-            t0         = time.perf_counter()
-            train_loss = self._train_epoch(train_loader, optimizer_ft, train_acc, max_grad_norm)
-            val_loss   = self._val_epoch(val_loader, val_acc)
-            scheduler.step()
-            elapsed    = time.perf_counter() - t0
-
-            train_m = train_acc.compute(class_names, prefix="train_")
-            val_m   = val_acc.compute(class_names, prefix="val_")
-
-            global_step   += 1
-            current_lr     = scheduler.get_last_lr()[0]
-            abs_epoch      = warmup_epochs + epoch
-
-            self._log_epoch(
-                epoch=abs_epoch,
-                phase="finetune",
-                fold_id=fold_id,
-                train_loss=train_loss,
-                val_loss=val_loss,
-                train_metrics=train_m,
-                val_metrics=val_m,
-                lr=current_lr,
-                step=global_step,
-                elapsed=elapsed,
-            )
-
-            # Model selection: best val loss (most stable signal across folds)
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                best_metrics  = {**val_m, "epoch": abs_epoch, "phase": "finetune"}
-                self._save_checkpoint(f"fold{fold_id}_best_model.pth")
-                logger.info(
-                    "  ✓ New best — val_loss=%.4f | macro_f1=%.4f | auroc=%.4f",
-                    val_loss,
-                    val_m.get("val_macro_f1", float("nan")),
-                    val_m.get("val_auroc",    float("nan")),
+                global_step += 1
+                self._log_epoch(
+                    epoch=epoch,
+                    phase="warmup",
+                    fold_id=fold_id,
+                    train_loss=train_loss,
+                    val_loss=val_loss,
+                    train_metrics=train_m,
+                    val_metrics=val_m,
+                    lr=warmup_lr,
+                    step=global_step,
+                    elapsed=elapsed,
                 )
 
+                # Track best by val loss during warm-up (macro F1 still unstable)
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_metrics  = {**val_m, "epoch": epoch, "phase": "warmup"}
+                    self._save_checkpoint(f"fold{fold_id}_best_model.pth")
+                    
+                # --- ASYNC RESUME CHECKPOINT ---
+                self._save_resume_checkpoint(
+                    filename=f"fold{fold_id}_resume.pth",
+                    optimizer=optimizer_warmup,
+                    scheduler=None,
+                    epoch=epoch,
+                    phase="warmup",
+                    early_stopper_best_loss=best_val_loss,
+                    early_stopper_counter=0,
+                )
+
+        if start_epoch_warmup < warmup_epochs:
             self._save_checkpoint(f"fold{fold_id}_last_model.pth")
 
-            if early_stopper.step(val_loss):
-                logger.info(
-                    "Early stopping at epoch %d | best_val_loss=%.4f | "
-                    "no improvement for %d epochs.",
-                    abs_epoch, best_val_loss, patience,
+        # ── PHASE 2: FINE-TUNING ──────────────────────────────────────────────
+        if start_epoch_finetune < finetune_epochs:
+            self._log_section(
+                f"PHASE 2 — Fine-tuning | max {finetune_epochs} epochs | "
+                f"backbone UNFROZEN | patience={patience}"
+            )
+
+            self.model.unfreeze_backbone()
+
+            optimizer_ft = torch.optim.AdamW(
+                self.model.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr),
+                weight_decay=weight_decay,
+            )
+            
+            # CosineAnnealingWarmRestarts: T_0=20 epochs, doubles after each restart
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+                optimizer_ft,
+                T_0=20,
+                T_mult=2,
+                eta_min=1e-6,
+            )
+            
+            if ckpt and ckpt["phase"] == "finetune" and "optimizer_state_dict" in ckpt:
+                optimizer_ft.load_state_dict(ckpt["optimizer_state_dict"])
+                if ckpt["scheduler_state_dict"]:
+                    scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+
+            early_stopper = EarlyStopping(patience=patience, mode="min")
+            early_stopper.best_value = best_val_loss
+            early_stopper.counter = es_counter
+
+            for epoch in range(start_epoch_finetune, finetune_epochs):
+                t0         = time.perf_counter()
+                train_loss = self._train_epoch(train_loader, optimizer_ft, train_acc, max_grad_norm)
+                val_loss   = self._val_epoch(val_loader, val_acc)
+                scheduler.step()
+                elapsed    = time.perf_counter() - t0
+
+                train_m = train_acc.compute(class_names, prefix="train_")
+                val_m   = val_acc.compute(class_names, prefix="val_")
+
+                global_step   += 1
+                current_lr     = scheduler.get_last_lr()[0]
+                abs_epoch      = warmup_epochs + epoch
+
+                self._log_epoch(
+                    epoch=abs_epoch,
+                    phase="finetune",
+                    fold_id=fold_id,
+                    train_loss=train_loss,
+                    val_loss=val_loss,
+                    train_metrics=train_m,
+                    val_metrics=val_m,
+                    lr=current_lr,
+                    step=global_step,
+                    elapsed=elapsed,
                 )
-                break
+
+                # --- ASYNC RESUME CHECKPOINT ---
+                # Continually overwrite a state checkpoint for mid-fold resumption
+                self._save_resume_checkpoint(
+                    filename=f"fold{fold_id}_resume.pth",
+                    optimizer=optimizer_ft,
+                    scheduler=scheduler,
+                    epoch=epoch,
+                    phase="finetune",
+                    early_stopper_best_loss=early_stopper.best_value,
+                    early_stopper_counter=early_stopper.counter,
+                )
+
+                # Model selection: best val loss (most stable signal across folds)
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_metrics  = {**val_m, "epoch": abs_epoch, "phase": "finetune"}
+                    self._save_checkpoint(f"fold{fold_id}_best_model.pth")
+                    logger.info(
+                        "  ✓ New best — val_loss=%.4f | macro_f1=%.4f | auroc=%.4f",
+                        val_loss,
+                        val_m.get("val_macro_f1", float("nan")),
+                        val_m.get("val_auroc",    float("nan")),
+                    )
+
+                self._save_checkpoint(f"fold{fold_id}_last_model.pth")
+
+                if early_stopper.step(val_loss):
+                    logger.info(
+                        "Early stopping at epoch %d | best_val_loss=%.4f | "
+                        "no improvement for %d epochs.",
+                        abs_epoch, best_val_loss, patience,
+                    )
+                    break
 
         # Print best classification report for this fold
         if "val_report" in best_metrics:
@@ -543,6 +601,43 @@ class HierarchyTrainer:
             },
             path,
         )
+
+    def _save_resume_checkpoint(
+        self, filename: str, optimizer: torch.optim.Optimizer, scheduler, 
+        epoch: int, phase: str, early_stopper_best_loss: float, early_stopper_counter: int
+    ) -> None:
+        path = self.ckpt_dir / filename
+        
+        # Clone tensors to CPU synchronously to avoid GPU race conditions during async SSD writing.
+        cpu_model_state = {k: v.cpu() for k, v in self.model.state_dict().items()}
+        
+        opt_state = optimizer.state_dict()
+        cpu_opt_state = {}
+        for param_id, param_state in opt_state['state'].items():
+            cpu_opt_state[param_id] = {k: (v.cpu() if isinstance(v, torch.Tensor) else v) for k, v in param_state.items()}
+        full_opt_state = {'state': cpu_opt_state, 'param_groups': opt_state['param_groups']}
+        
+        checkpoint_dict = {
+            "model_state_dict": cpu_model_state,
+            "optimizer_state_dict": full_opt_state,
+            "scheduler_state_dict": scheduler.state_dict() if scheduler else None,
+            "epoch": epoch,
+            "phase": phase,
+            "es_best": early_stopper_best_loss,
+            "es_counter": early_stopper_counter,
+            "mode": self.mode,
+        }
+        
+        import threading
+        import os
+        
+        def _save():
+            tmp_path = str(path) + ".tmp"
+            torch.save(checkpoint_dict, tmp_path)
+            os.replace(tmp_path, str(path))
+            
+        # Launch lightweight background thread for SSD I/O.
+        threading.Thread(target=_save, daemon=True).start()
 
     def load_checkpoint(self, filename: str) -> None:
         """Load a saved checkpoint back into the model."""

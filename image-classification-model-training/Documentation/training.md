@@ -65,3 +65,23 @@ Across all 5 folds, the model achieved an average **Recall of 97.4%** on the ABN
 - **Absolute impact**: Out of ~11,853 true ABNORMAL scans per fold, the model correctly catches ~11,545 and misses roughly 308.
 
 For a raw baseline threshold (50% probability), a 2.6% FNR is an exceptionally strong first pass. During production deployment, this FNR can be driven even lower by applying threshold calibration (e.g., lowering the threshold to 20%, enforcing a highly cautious decision boundary at the slight expense of false positives).
+
+---
+
+## Synthetic Augmentation Assessment (Level 2 & 3)
+
+Minority classes such as Vascular Occlusions, Fluid Accumulation, and Structural Issues are extremely underrepresented at Level 2. Aggressive oversampling + augmentation + class-weighted loss is mandatory to prevent the router from collapsing.
+
+Here is the medical assessment of how synthetic strategies map to ophthalmic imaging:
+
+**The Baseline Defenses**
+- **Class-Weighted Loss & Oversampling**: Utilizing PyTorch's `WeightedRandomSampler` alongside `CrossEntropyLoss` weights is the mandatory 1-2 punch.
+- **Traditional Augmentations**: Aggressive but anatomically valid geometric transformations (horizontal flips, slight rotations, elastic deformations) are safe and effective.
+
+**The Synthetic Augmentation Caveats**
+- **Random Erasing (Cutout)**: *Highly Recommended*. By randomly masking parts of the scan, you force the ResNet-50 backbone to look for distributed features of Vascular Occlusions or Fluid Accumulation rather than hyper-fixating on a single distinct artifact. It dramatically improves robustness.
+- **Mixup & CutMix**: *Proceed with extreme caution (Disabled).* While these are state-of-the-art for natural images, they can be highly destructive in medical imaging.
+  - CutMix might paste a Macular Hole into a scan of Diabetic Macular Edema, creating an anatomically impossible synthetic anomaly that confuses the model's spatial understanding of retinal layers.
+  - Mixup's pixel-blending can wash out the subtle contrast differences and boundary lines necessary to spot tiny fluid pockets or early-stage structural tearing.
+
+**Strategy**: To use advanced augmentation for the minority classes, Random Erasing combined with aggressive contrast and brightness jittering is the safest way to synthetically expand those small sample sizes without destroying the clinical ground truth.

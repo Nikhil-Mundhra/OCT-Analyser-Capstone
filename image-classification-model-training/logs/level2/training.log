@@ -1,0 +1,260 @@
+09:23:01 | INFO     | training.trainer | Device selected: MPS (Apple Silicon GPU — 32 GB unified memory)
+09:23:01 | INFO     | __main__ | 
+09:23:01 | INFO     | __main__ | ============================================================
+09:23:01 | INFO     | __main__ |   OCT Router — Level 2 Training
+09:23:01 | INFO     | __main__ |   Config     : config/hierarchy.yaml
+09:23:01 | INFO     | __main__ |   Device     : mps
+09:23:01 | INFO     | __main__ |   Folds      : 5
+09:23:01 | INFO     | __main__ |   Batch size : 48
+09:23:01 | INFO     | __main__ |   Epochs     : 5 warmup + 50 finetune (patience=10)
+09:23:01 | INFO     | __main__ |   Seed       : 42
+09:23:01 | INFO     | __main__ | ============================================================
+09:23:01 | INFO     | __main__ | 
+Building stratified 5-fold DataLoaders...
+09:23:02 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:02 | INFO     | data.dataset | [level2] 59267 samples | 5 classes | label_col=l2_idx
+09:23:02 | INFO     | data.dataset | Fold 1/5 — train: 47413 | val: 11854
+09:23:03 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:03 | INFO     | data.dataset | [level2] 47413 samples | 5 classes | label_col=l2_idx
+09:23:04 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:04 | INFO     | data.dataset | [level2] 11854 samples | 5 classes | label_col=l2_idx
+09:23:04 | INFO     | data.dataset | Fold 2/5 — train: 47413 | val: 11854
+09:23:05 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:05 | INFO     | data.dataset | [level2] 47413 samples | 5 classes | label_col=l2_idx
+09:23:06 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:06 | INFO     | data.dataset | [level2] 11854 samples | 5 classes | label_col=l2_idx
+09:23:06 | INFO     | data.dataset | Fold 3/5 — train: 47414 | val: 11853
+09:23:07 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:07 | INFO     | data.dataset | [level2] 47414 samples | 5 classes | label_col=l2_idx
+09:23:08 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:08 | INFO     | data.dataset | [level2] 11853 samples | 5 classes | label_col=l2_idx
+09:23:08 | INFO     | data.dataset | Fold 4/5 — train: 47414 | val: 11853
+09:23:09 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:10 | INFO     | data.dataset | [level2] 47414 samples | 5 classes | label_col=l2_idx
+09:23:11 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:11 | INFO     | data.dataset | [level2] 11853 samples | 5 classes | label_col=l2_idx
+09:23:11 | INFO     | data.dataset | Fold 5/5 — train: 47414 | val: 11853
+09:23:12 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:12 | INFO     | data.dataset | [level2] 47414 samples | 5 classes | label_col=l2_idx
+09:23:13 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:23:13 | INFO     | data.dataset | [level2] 11853 samples | 5 classes | label_col=l2_idx
+09:23:13 | INFO     | __main__ | Class names   : ['Macular_Degeneration', 'Diabetic_Complications', 'Vascular_Occlusions', 'Fluid_Accumulation', 'Structural_Issues']
+09:23:13 | INFO     | __main__ | Class weights : ['0.2516', '1.0216', '52.6811', '117.0691', '51.2573']  (used as FocalLoss alpha)
+09:23:13 | INFO     | __main__ | No resume checkpoints found. Starting fresh.
+09:23:13 | INFO     | __main__ | 
+09:23:13 | INFO     | __main__ | ###  FOLD 1 / 5  ###
+09:23:13 | INFO     | __main__ |      train batches: 987 | val batches: 124
+09:23:13 | INFO     | models.level2_router | Router backbone FROZEN.
+09:23:13 | INFO     | models.level2_router | DiseaseRouterModel ready | backbone=EfficientNet-B2 | in_features=1408 | num_classes=5 | frozen=True
+09:23:13 | INFO     | training.losses | Criterion: FocalLoss | mode=level2 | gamma=2.0 | smoothing=0.00 | class_weights=[0.25162798166275024, 1.0216116905212402, 52.68111038208008, 117.06913757324219, 51.25729751586914]
+09:23:13 | INFO     | training.trainer | AMP enabled — forward pass dtype=torch.float16 | gradients=float32 | device=mps
+09:23:13 | INFO     | training.trainer | HierarchyTrainer ready | mode=level2 | device=mps | amp=True | checkpoints=checkpoints/level2
+09:23:13 | INFO     | training.trainer | 
+============================================================
+  PHASE 1 — Warm-up | 5 epochs | backbone FROZEN
+============================================================
+09:28:07 | INFO     | training.trainer | Ep   0 [warmup|fold0] loss 10.7382/0.5695 | acc 0.3805 | macro_f1 0.2153 | auroc 0.8911 | lr 1.00e-03 | 293.8s
+09:32:31 | INFO     | training.trainer | Ep   1 [warmup|fold0] loss 9.1360/0.4714 | acc 0.5455 | macro_f1 0.2761 | auroc 0.9114 | lr 1.00e-03 | 264.1s
+09:37:12 | INFO     | training.trainer | Ep   2 [warmup|fold0] loss 8.9636/0.4150 | acc 0.6311 | macro_f1 0.3078 | auroc 0.9244 | lr 1.00e-03 | 280.0s
+09:41:31 | INFO     | training.trainer | Ep   3 [warmup|fold0] loss 9.1841/0.3746 | acc 0.6611 | macro_f1 0.3234 | auroc 0.9312 | lr 1.00e-03 | 258.8s
+09:45:49 | INFO     | training.trainer | Ep   4 [warmup|fold0] loss 8.9947/0.3976 | acc 0.6254 | macro_f1 0.3137 | auroc 0.9308 | lr 1.00e-03 | 257.8s
+09:45:49 | INFO     | training.trainer | 
+============================================================
+  PHASE 2 — Fine-tuning | max 50 epochs | backbone UNFROZEN | patience=10
+============================================================
+09:45:49 | INFO     | models.level2_router | Router backbone UNFROZEN.
+09:58:31 | INFO     | training.trainer | Ep   5 [finetune|fold0] loss 2.4002/0.1510 | acc 0.8933 | macro_f1 0.6146 | auroc 0.9859 | lr 9.94e-05 | 762.2s
+09:59:19 | INFO     | training.trainer | Device selected: MPS (Apple Silicon GPU — 32 GB unified memory)
+09:59:19 | INFO     | __main__ | 
+09:59:19 | INFO     | __main__ | ============================================================
+09:59:19 | INFO     | __main__ |   OCT Router — Level 2 Training
+09:59:19 | INFO     | __main__ |   Config     : config/hierarchy.yaml
+09:59:19 | INFO     | __main__ |   Device     : mps
+09:59:19 | INFO     | __main__ |   Folds      : 5
+09:59:19 | INFO     | __main__ |   Batch size : 48
+09:59:19 | INFO     | __main__ |   Epochs     : 5 warmup + 50 finetune (patience=10)
+09:59:19 | INFO     | __main__ |   Seed       : 42
+09:59:19 | INFO     | __main__ | ============================================================
+09:59:19 | INFO     | __main__ | 
+Building stratified 5-fold DataLoaders...
+09:59:20 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:20 | INFO     | data.dataset | [level2] 59267 samples | 5 classes | label_col=l2_idx
+09:59:20 | INFO     | data.dataset | Fold 1/5 — train: 47413 | val: 11854
+09:59:21 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:21 | INFO     | data.dataset | [level2] 47413 samples | 5 classes | label_col=l2_idx
+09:59:22 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:22 | INFO     | data.dataset | [level2] 11854 samples | 5 classes | label_col=l2_idx
+09:59:22 | INFO     | data.dataset | Fold 2/5 — train: 47413 | val: 11854
+09:59:23 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:23 | INFO     | data.dataset | [level2] 47413 samples | 5 classes | label_col=l2_idx
+09:59:24 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:24 | INFO     | data.dataset | [level2] 11854 samples | 5 classes | label_col=l2_idx
+09:59:24 | INFO     | data.dataset | Fold 3/5 — train: 47414 | val: 11853
+09:59:25 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:25 | INFO     | data.dataset | [level2] 47414 samples | 5 classes | label_col=l2_idx
+09:59:26 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:26 | INFO     | data.dataset | [level2] 11853 samples | 5 classes | label_col=l2_idx
+09:59:26 | INFO     | data.dataset | Fold 4/5 — train: 47414 | val: 11853
+09:59:27 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:27 | INFO     | data.dataset | [level2] 47414 samples | 5 classes | label_col=l2_idx
+09:59:28 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:28 | INFO     | data.dataset | [level2] 11853 samples | 5 classes | label_col=l2_idx
+09:59:28 | INFO     | data.dataset | Fold 5/5 — train: 47414 | val: 11853
+09:59:29 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:29 | INFO     | data.dataset | [level2] 47414 samples | 5 classes | label_col=l2_idx
+09:59:30 | INFO     | data.dataset | Manifest built: 86120 images | 12 fine classes
+09:59:30 | INFO     | data.dataset | [level2] 11853 samples | 5 classes | label_col=l2_idx
+09:59:30 | INFO     | __main__ | Class names   : ['Macular_Degeneration', 'Diabetic_Complications', 'Vascular_Occlusions', 'Fluid_Accumulation', 'Structural_Issues']
+09:59:30 | INFO     | __main__ | Class weights : ['0.2516', '1.0216', '52.6811', '117.0691', '51.2573']  (used as FocalLoss alpha)
+09:59:30 | INFO     | __main__ | Auto-resume detected: Fold 1 from checkpoints/level2/fold0_resume.pth
+09:59:30 | INFO     | __main__ | 
+09:59:30 | INFO     | __main__ | ###  FOLD 1 / 5  ###
+09:59:30 | INFO     | __main__ |      train batches: 987 | val batches: 124
+09:59:30 | INFO     | models.level2_router | Router backbone FROZEN.
+09:59:30 | INFO     | models.level2_router | DiseaseRouterModel ready | backbone=EfficientNet-B2 | in_features=1408 | num_classes=5 | frozen=True
+09:59:30 | INFO     | training.losses | Criterion: FocalLoss | mode=level2 | gamma=2.0 | smoothing=0.00 | class_weights=[0.25162798166275024, 1.0216116905212402, 52.68111038208008, 117.06913757324219, 51.25729751586914]
+09:59:30 | INFO     | training.trainer | AMP enabled — forward pass dtype=torch.float16 | gradients=float32 | device=mps
+09:59:30 | INFO     | training.trainer | HierarchyTrainer ready | mode=level2 | device=mps | amp=True | checkpoints=checkpoints/level2
+09:59:30 | INFO     | training.trainer | Resuming from checkpoint checkpoints/level2/fold0_resume.pth (Phase: warmup, Epoch: 4)
+09:59:30 | INFO     | training.trainer | 
+============================================================
+  PHASE 2 — Fine-tuning | max 50 epochs | backbone UNFROZEN | patience=10
+============================================================
+09:59:30 | INFO     | models.level2_router | Router backbone UNFROZEN.
+10:12:22 | INFO     | training.trainer | Ep   5 [finetune|fold0] loss 2.4873/0.1429 | acc 0.8584 | macro_f1 0.5688 | auroc 0.9840 | lr 9.94e-05 | 771.7s
+10:12:22 | INFO     | training.trainer |   ✓ New best — val_loss=0.1429 | macro_f1=0.5688 | auroc=0.9840
+10:24:50 | INFO     | training.trainer | Ep   6 [finetune|fold0] loss 1.0514/0.1109 | acc 0.9248 | macro_f1 0.6189 | auroc 0.9911 | lr 9.76e-05 | 747.1s
+10:24:50 | INFO     | training.trainer |   ✓ New best — val_loss=0.1109 | macro_f1=0.6189 | auroc=0.9911
+10:37:14 | INFO     | training.trainer | Ep   7 [finetune|fold0] loss 0.7281/0.0605 | acc 0.9185 | macro_f1 0.6733 | auroc 0.9935 | lr 9.46e-05 | 743.9s
+10:37:15 | INFO     | training.trainer |   ✓ New best — val_loss=0.0605 | macro_f1=0.6733 | auroc=0.9935
+10:49:41 | INFO     | training.trainer | Ep   8 [finetune|fold0] loss 0.4961/0.0556 | acc 0.9291 | macro_f1 0.7407 | auroc 0.9969 | lr 9.05e-05 | 746.1s
+10:49:41 | INFO     | training.trainer |   ✓ New best — val_loss=0.0556 | macro_f1=0.7407 | auroc=0.9969
+11:02:20 | INFO     | training.trainer | Ep   9 [finetune|fold0] loss 0.4851/0.2591 | acc 0.9047 | macro_f1 0.7138 | auroc 0.9961 | lr 8.55e-05 | 759.0s
+11:14:57 | INFO     | training.trainer | Ep  10 [finetune|fold0] loss 0.3747/0.0958 | acc 0.9625 | macro_f1 0.7384 | auroc 0.9966 | lr 7.96e-05 | 756.4s
+11:27:36 | INFO     | training.trainer | Ep  11 [finetune|fold0] loss 0.2378/0.0687 | acc 0.9615 | macro_f1 0.7613 | auroc 0.9973 | lr 7.30e-05 | 758.4s
+11:40:17 | INFO     | training.trainer | Ep  12 [finetune|fold0] loss 0.2556/0.1639 | acc 0.9722 | macro_f1 0.8322 | auroc 0.9980 | lr 6.58e-05 | 760.1s
+11:52:57 | INFO     | training.trainer | Ep  13 [finetune|fold0] loss 0.2096/0.0618 | acc 0.9489 | macro_f1 0.8132 | auroc 0.9981 | lr 5.82e-05 | 759.6s
+12:05:36 | INFO     | training.trainer | Ep  14 [finetune|fold0] loss 0.1617/0.2288 | acc 0.9501 | macro_f1 0.7838 | auroc 0.9981 | lr 5.05e-05 | 759.1s
+12:18:18 | INFO     | training.trainer | Ep  15 [finetune|fold0] loss 0.1637/0.0870 | acc 0.9377 | macro_f1 0.8260 | auroc 0.9982 | lr 4.28e-05 | 760.9s
+12:30:59 | INFO     | training.trainer | Ep  16 [finetune|fold0] loss 0.0984/0.1186 | acc 0.9683 | macro_f1 0.8278 | auroc 0.9972 | lr 3.52e-05 | 760.8s
+12:43:41 | INFO     | training.trainer | Ep  17 [finetune|fold0] loss 0.1271/0.1310 | acc 0.9636 | macro_f1 0.8597 | auroc 0.9950 | lr 2.80e-05 | 761.7s
+12:56:23 | INFO     | training.trainer | Ep  18 [finetune|fold0] loss 0.1179/0.0900 | acc 0.9603 | macro_f1 0.8489 | auroc 0.9985 | lr 2.14e-05 | 761.5s
+12:56:23 | INFO     | training.trainer | Early stopping at epoch 18 | best_val_loss=0.0556 | no improvement for 10 epochs.
+12:56:23 | INFO     | training.trainer | 
+Fold 0 — Best Classification Report:
+                        precision    recall  f1-score   support
+
+  Macular_Degeneration       1.00      0.91      0.95      9422
+Diabetic_Complications       0.77      0.99      0.86      2320
+   Vascular_Occlusions       0.37      0.93      0.53        45
+    Fluid_Accumulation       0.49      1.00      0.66        21
+     Structural_Issues       0.55      0.96      0.70        46
+
+              accuracy                           0.93     11854
+             macro avg       0.64      0.96      0.74     11854
+          weighted avg       0.95      0.93      0.93     11854
+
+12:56:23 | INFO     | __main__ | Fold 1 complete — best epoch=8, phase=finetune
+12:56:23 | INFO     | __main__ | 
+12:56:23 | INFO     | __main__ | ###  FOLD 2 / 5  ###
+12:56:23 | INFO     | __main__ |      train batches: 987 | val batches: 124
+12:56:23 | INFO     | models.level2_router | Router backbone FROZEN.
+12:56:23 | INFO     | models.level2_router | DiseaseRouterModel ready | backbone=EfficientNet-B2 | in_features=1408 | num_classes=5 | frozen=True
+12:56:23 | INFO     | training.losses | Criterion: FocalLoss | mode=level2 | gamma=2.0 | smoothing=0.00 | class_weights=[0.25162798166275024, 1.0216116905212402, 52.68111038208008, 117.06913757324219, 51.25729751586914]
+12:56:24 | INFO     | training.trainer | AMP enabled — forward pass dtype=torch.float16 | gradients=float32 | device=mps
+12:56:24 | INFO     | training.trainer | HierarchyTrainer ready | mode=level2 | device=mps | amp=True | checkpoints=checkpoints/level2
+12:56:24 | INFO     | training.trainer | 
+============================================================
+  PHASE 1 — Warm-up | 5 epochs | backbone FROZEN
+============================================================
+13:01:53 | INFO     | training.trainer | Ep   0 [warmup|fold1] loss 10.4775/0.5309 | acc 0.4215 | macro_f1 0.2315 | auroc 0.8904 | lr 1.00e-03 | 329.7s
+13:07:12 | INFO     | training.trainer | Ep   1 [warmup|fold1] loss 9.3216/0.4390 | acc 0.5074 | macro_f1 0.2704 | auroc 0.9174 | lr 1.00e-03 | 318.0s
+13:12:32 | INFO     | training.trainer | Ep   2 [warmup|fold1] loss 9.1079/0.3723 | acc 0.6091 | macro_f1 0.3158 | auroc 0.9299 | lr 1.00e-03 | 319.8s
+13:17:49 | INFO     | training.trainer | Ep   3 [warmup|fold1] loss 9.1713/0.3978 | acc 0.6033 | macro_f1 0.3145 | auroc 0.9285 | lr 1.00e-03 | 316.7s
+13:23:06 | INFO     | training.trainer | Ep   4 [warmup|fold1] loss 9.2039/0.3777 | acc 0.6112 | macro_f1 0.3086 | auroc 0.9309 | lr 1.00e-03 | 317.3s
+13:23:07 | INFO     | training.trainer | 
+============================================================
+  PHASE 2 — Fine-tuning | max 50 epochs | backbone UNFROZEN | patience=10
+============================================================
+13:23:07 | INFO     | models.level2_router | Router backbone UNFROZEN.
+13:36:24 | INFO     | training.trainer | Ep   5 [finetune|fold1] loss 2.5442/0.1420 | acc 0.8628 | macro_f1 0.5076 | auroc 0.9800 | lr 9.94e-05 | 797.0s
+13:36:24 | INFO     | training.trainer |   ✓ New best — val_loss=0.1420 | macro_f1=0.5076 | auroc=0.9800
+13:49:40 | INFO     | training.trainer | Ep   6 [finetune|fold1] loss 0.9337/0.0791 | acc 0.9127 | macro_f1 0.6554 | auroc 0.9932 | lr 9.76e-05 | 796.0s
+13:49:41 | INFO     | training.trainer |   ✓ New best — val_loss=0.0791 | macro_f1=0.6554 | auroc=0.9932
+14:02:58 | INFO     | training.trainer | Ep   7 [finetune|fold1] loss 0.7025/0.0680 | acc 0.9127 | macro_f1 0.6856 | auroc 0.9938 | lr 9.46e-05 | 797.3s
+14:02:59 | INFO     | training.trainer |   ✓ New best — val_loss=0.0680 | macro_f1=0.6856 | auroc=0.9938
+14:16:14 | INFO     | training.trainer | Ep   8 [finetune|fold1] loss 0.5824/0.0469 | acc 0.9521 | macro_f1 0.7558 | auroc 0.9964 | lr 9.05e-05 | 795.4s
+14:16:15 | INFO     | training.trainer |   ✓ New best — val_loss=0.0469 | macro_f1=0.7558 | auroc=0.9964
+14:29:31 | INFO     | training.trainer | Ep   9 [finetune|fold1] loss 0.3982/0.0727 | acc 0.8936 | macro_f1 0.7069 | auroc 0.9944 | lr 8.55e-05 | 795.7s
+14:42:47 | INFO     | training.trainer | Ep  10 [finetune|fold1] loss 0.3625/0.0413 | acc 0.9656 | macro_f1 0.8179 | auroc 0.9974 | lr 7.96e-05 | 796.0s
+14:42:48 | INFO     | training.trainer |   ✓ New best — val_loss=0.0413 | macro_f1=0.8179 | auroc=0.9974
+14:56:01 | INFO     | training.trainer | Ep  11 [finetune|fold1] loss 0.2829/0.0671 | acc 0.9500 | macro_f1 0.8134 | auroc 0.9974 | lr 7.30e-05 | 793.2s
+15:09:16 | INFO     | training.trainer | Ep  12 [finetune|fold1] loss 0.2799/0.0613 | acc 0.9544 | macro_f1 0.8115 | auroc 0.9977 | lr 6.58e-05 | 794.7s
+15:22:31 | INFO     | training.trainer | Ep  13 [finetune|fold1] loss 0.1582/0.1169 | acc 0.9641 | macro_f1 0.7899 | auroc 0.9974 | lr 5.82e-05 | 794.0s
+15:35:40 | INFO     | training.trainer | Ep  14 [finetune|fold1] loss 0.2453/0.0836 | acc 0.9652 | macro_f1 0.7822 | auroc 0.9981 | lr 5.05e-05 | 788.7s
+15:48:51 | INFO     | training.trainer | Ep  15 [finetune|fold1] loss 0.1130/0.1760 | acc 0.9594 | macro_f1 0.8246 | auroc 0.9985 | lr 4.28e-05 | 790.4s
+16:01:58 | INFO     | training.trainer | Ep  16 [finetune|fold1] loss 0.1133/0.0897 | acc 0.9605 | macro_f1 0.8272 | auroc 0.9982 | lr 3.52e-05 | 786.5s
+16:15:09 | INFO     | training.trainer | Ep  17 [finetune|fold1] loss 0.0838/0.1173 | acc 0.9591 | macro_f1 0.8499 | auroc 0.9986 | lr 2.80e-05 | 791.0s
+16:28:20 | INFO     | training.trainer | Ep  18 [finetune|fold1] loss 0.0662/0.0974 | acc 0.9715 | macro_f1 0.8261 | auroc 0.9985 | lr 2.14e-05 | 790.6s
+16:41:29 | INFO     | training.trainer | Ep  19 [finetune|fold1] loss 0.0756/0.0766 | acc 0.9697 | macro_f1 0.8442 | auroc 0.9986 | lr 1.55e-05 | 788.3s
+16:54:35 | INFO     | training.trainer | Ep  20 [finetune|fold1] loss 0.0737/0.1019 | acc 0.9743 | macro_f1 0.8523 | auroc 0.9987 | lr 1.05e-05 | 784.9s
+16:54:35 | INFO     | training.trainer | Early stopping at epoch 20 | best_val_loss=0.0413 | no improvement for 10 epochs.
+16:54:35 | INFO     | training.trainer | 
+Fold 1 — Best Classification Report:
+                        precision    recall  f1-score   support
+
+  Macular_Degeneration       1.00      0.96      0.98      9422
+Diabetic_Complications       0.89      0.97      0.93      2320
+   Vascular_Occlusions       0.41      1.00      0.58        45
+    Fluid_Accumulation       0.59      1.00      0.74        20
+     Structural_Issues       0.77      0.98      0.86        47
+
+              accuracy                           0.97     11854
+             macro avg       0.73      0.98      0.82     11854
+          weighted avg       0.97      0.97      0.97     11854
+
+16:54:35 | INFO     | __main__ | Fold 2 complete — best epoch=10, phase=finetune
+16:54:35 | INFO     | __main__ | 
+16:54:35 | INFO     | __main__ | ###  FOLD 3 / 5  ###
+16:54:35 | INFO     | __main__ |      train batches: 987 | val batches: 124
+16:54:35 | INFO     | models.level2_router | Router backbone FROZEN.
+16:54:35 | INFO     | models.level2_router | DiseaseRouterModel ready | backbone=EfficientNet-B2 | in_features=1408 | num_classes=5 | frozen=True
+16:54:35 | INFO     | training.losses | Criterion: FocalLoss | mode=level2 | gamma=2.0 | smoothing=0.00 | class_weights=[0.25162798166275024, 1.0216116905212402, 52.68111038208008, 117.06913757324219, 51.25729751586914]
+16:54:35 | INFO     | training.trainer | AMP enabled — forward pass dtype=torch.float16 | gradients=float32 | device=mps
+16:54:35 | INFO     | training.trainer | HierarchyTrainer ready | mode=level2 | device=mps | amp=True | checkpoints=checkpoints/level2
+16:54:35 | INFO     | training.trainer | 
+============================================================
+  PHASE 1 — Warm-up | 5 epochs | backbone FROZEN
+============================================================
+17:00:23 | INFO     | training.trainer | Ep   0 [warmup|fold2] loss 10.8269/0.6009 | acc 0.3183 | macro_f1 0.1881 | auroc 0.8880 | lr 1.00e-03 | 347.2s
+17:06:03 | INFO     | training.trainer | Ep   1 [warmup|fold2] loss 9.6574/0.4792 | acc 0.4959 | macro_f1 0.2606 | auroc 0.9120 | lr 1.00e-03 | 340.1s
+17:11:42 | INFO     | training.trainer | Ep   2 [warmup|fold2] loss 9.3448/0.4176 | acc 0.5412 | macro_f1 0.2872 | auroc 0.9265 | lr 1.00e-03 | 338.5s
+17:17:19 | INFO     | training.trainer | Ep   3 [warmup|fold2] loss 9.4089/0.4320 | acc 0.5685 | macro_f1 0.2938 | auroc 0.9229 | lr 1.00e-03 | 337.1s
+17:22:59 | INFO     | training.trainer | Ep   4 [warmup|fold2] loss 9.3512/0.4020 | acc 0.5689 | macro_f1 0.2910 | auroc 0.9285 | lr 1.00e-03 | 339.8s
+17:23:00 | INFO     | training.trainer | 
+============================================================
+  PHASE 2 — Fine-tuning | max 50 epochs | backbone UNFROZEN | patience=10
+============================================================
+17:23:00 | INFO     | models.level2_router | Router backbone UNFROZEN.
+17:36:35 | INFO     | training.trainer | Ep   5 [finetune|fold2] loss 2.5941/0.1188 | acc 0.7775 | macro_f1 0.5101 | auroc 0.9829 | lr 9.94e-05 | 815.3s
+17:36:36 | INFO     | training.trainer |   ✓ New best — val_loss=0.1188 | macro_f1=0.5101 | auroc=0.9829
+17:50:11 | INFO     | training.trainer | Ep   6 [finetune|fold2] loss 0.9860/0.1091 | acc 0.8681 | macro_f1 0.5813 | auroc 0.9906 | lr 9.76e-05 | 815.0s
+17:50:11 | INFO     | training.trainer |   ✓ New best — val_loss=0.1091 | macro_f1=0.5813 | auroc=0.9906
+18:03:48 | INFO     | training.trainer | Ep   7 [finetune|fold2] loss 0.7797/0.0683 | acc 0.8929 | macro_f1 0.6504 | auroc 0.9946 | lr 9.46e-05 | 816.1s
+18:03:48 | INFO     | training.trainer |   ✓ New best — val_loss=0.0683 | macro_f1=0.6504 | auroc=0.9946
+18:17:22 | INFO     | training.trainer | Ep   8 [finetune|fold2] loss 0.5797/0.1878 | acc 0.9366 | macro_f1 0.7225 | auroc 0.9957 | lr 9.05e-05 | 813.8s
+18:30:58 | INFO     | training.trainer | Ep   9 [finetune|fold2] loss 0.5360/0.1174 | acc 0.8963 | macro_f1 0.6531 | auroc 0.9965 | lr 8.55e-05 | 815.9s
+18:44:36 | INFO     | training.trainer | Ep  10 [finetune|fold2] loss 0.4173/0.0369 | acc 0.9498 | macro_f1 0.7448 | auroc 0.9973 | lr 7.96e-05 | 817.3s
+18:44:37 | INFO     | training.trainer |   ✓ New best — val_loss=0.0369 | macro_f1=0.7448 | auroc=0.9973
+18:58:09 | INFO     | training.trainer | Ep  11 [finetune|fold2] loss 0.3188/0.0501 | acc 0.9452 | macro_f1 0.7605 | auroc 0.9976 | lr 7.30e-05 | 812.1s
+19:11:39 | INFO     | training.trainer | Ep  12 [finetune|fold2] loss 0.2032/0.1020 | acc 0.9512 | macro_f1 0.7761 | auroc 0.9979 | lr 6.58e-05 | 809.0s
+19:25:15 | INFO     | training.trainer | Ep  13 [finetune|fold2] loss 0.2111/0.1462 | acc 0.9495 | macro_f1 0.7636 | auroc 0.9979 | lr 5.82e-05 | 815.6s
+19:38:39 | INFO     | training.trainer | Ep  14 [finetune|fold2] loss 0.1578/0.0555 | acc 0.9510 | macro_f1 0.8188 | auroc 0.9984 | lr 5.05e-05 | 803.4s
+19:51:49 | INFO     | training.trainer | Ep  15 [finetune|fold2] loss 0.1961/0.0546 | acc 0.9530 | macro_f1 0.8472 | auroc 0.9987 | lr 4.28e-05 | 790.2s
+20:04:01 | INFO     | training.trainer | Ep  16 [finetune|fold2] loss 0.1114/0.0209 | acc 0.9566 | macro_f1 0.8650 | auroc 0.9989 | lr 3.52e-05 | 731.5s
+20:04:02 | INFO     | training.trainer |   ✓ New best — val_loss=0.0209 | macro_f1=0.8650 | auroc=0.9989
+20:16:10 | INFO     | training.trainer | Ep  17 [finetune|fold2] loss 0.1175/0.0111 | acc 0.9743 | macro_f1 0.8755 | auroc 0.9990 | lr 2.80e-05 | 727.8s
+20:16:10 | INFO     | training.trainer |   ✓ New best — val_loss=0.0111 | macro_f1=0.8755 | auroc=0.9990
+20:28:30 | INFO     | training.trainer | Ep  18 [finetune|fold2] loss 0.0662/0.0589 | acc 0.9685 | macro_f1 0.8782 | auroc 0.9989 | lr 2.14e-05 | 740.1s
+20:40:53 | INFO     | training.trainer | Ep  19 [finetune|fold2] loss 0.0567/0.0317 | acc 0.9715 | macro_f1 0.9147 | auroc 0.9991 | lr 1.55e-05 | 742.3s
+20:53:56 | INFO     | training.trainer | Ep  20 [finetune|fold2] loss 0.0558/0.0476 | acc 0.9738 | macro_f1 0.8997 | auroc 0.9991 | lr 1.05e-05 | 782.4s
