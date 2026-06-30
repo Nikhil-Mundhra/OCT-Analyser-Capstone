@@ -39,6 +39,7 @@ Success Criteria:
 """
 
 import argparse
+import json
 import logging
 import os
 
@@ -109,6 +110,8 @@ def parse_args() -> argparse.Namespace:
     # Optimiser
     p.add_argument("--weight-decay",   type=float, default=1e-4,
                    help="AdamW L2 weight decay")
+    p.add_argument("--resume-fold",    type=int, default=0,
+                   help="Fold index to resume from (0-indexed). Skips prior folds.")
 
     # Data loading
     p.add_argument("--batch-size",     type=int,   default=48,
@@ -292,6 +295,10 @@ def main() -> None:
     all_fold_metrics = []
 
     for fold_id, (train_loader, val_loader) in enumerate(fold_loaders):
+        if fold_id < args.resume_fold:
+            logger.info("Skipping FOLD %d (resuming from %d)", fold_id + 1, args.resume_fold + 1)
+            continue
+            
         logger.info("")
         logger.info("###  FOLD %d / %d  ###", fold_id + 1, args.n_folds)
         logger.info(

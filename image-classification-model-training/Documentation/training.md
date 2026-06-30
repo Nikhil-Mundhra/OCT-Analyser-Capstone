@@ -47,3 +47,21 @@ The `get_device()` utility automatically selects the `mps` device when running o
 
 ### 4. DataLoader Worker Tuning
 - `num_workers=4` is set as the default. The M2 Pro chip has a 6P + 4E core configuration. Using 4 worker processes optimally leverages the performance cores for JPEG decoding and heavy Data Augmentation (RandomAffine, Erasing) without stalling the main python process feeding the MPS queue.
+
+---
+
+## Level 1 Gatekeeper Results & False Negative Analysis
+
+The Level 1 Gatekeeper (NORMAL vs ABNORMAL) completed a stratified 5-fold cross-validation with the following metrics:
+- **val_accuracy**: 0.9799 ± 0.0030
+- **val_auroc**: 0.9977 ± 0.0004
+- **val_macro_f1**: 0.9769 ± 0.0034
+
+### False Negative Rate (FNR)
+In medical classification, a False Negative (predicting a sick patient as healthy) is significantly more dangerous than a False Positive (flagging a healthy patient for review). 
+
+Across all 5 folds, the model achieved an average **Recall of 97.4%** on the ABNORMAL class (the positive class).
+- **False Negative Rate**: **2.6%**
+- **Absolute impact**: Out of ~11,853 true ABNORMAL scans per fold, the model correctly catches ~11,545 and misses roughly 308.
+
+For a raw baseline threshold (50% probability), a 2.6% FNR is an exceptionally strong first pass. During production deployment, this FNR can be driven even lower by applying threshold calibration (e.g., lowering the threshold to 20%, enforcing a highly cautious decision boundary at the slight expense of false positives).
