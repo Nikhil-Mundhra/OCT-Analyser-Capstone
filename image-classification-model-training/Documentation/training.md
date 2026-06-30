@@ -8,6 +8,21 @@ All levels of the pipeline (Gatekeeper, Router, and Specialists) share a unified
 
 Transfer learning from ImageNet features to grayscale medical OCT scans requires care. If we immediately train the entire network, the large gradients flowing backward from the randomly initialized classifier head will permanently destroy the useful pretrained convolutional features.
 
+```mermaid
+sequenceDiagram
+    participant B as Pretrained Backbone
+    participant H as Classifier Head
+    
+    Note over B,H: Phase 1: Warm-up (5 Epochs)
+    B->>B: Frozen (requires_grad=False)
+    H->>H: Train at High LR (1e-3)
+    
+    Note over B,H: Phase 2: Fine-Tuning (n Epochs)
+    B->>B: Unfrozen (requires_grad=True)
+    B->>B: Train at Low LR (1e-4)
+    H->>H: Continue at High LR (1e-3)
+```
+
 **Phase 1: Warm-up (Head Only)**
 - The convolutional backbone is `frozen` (requires_grad = False).
 - We train only the classifier head for 5 epochs using a relatively high learning rate (`1e-3`).
@@ -20,7 +35,9 @@ Transfer learning from ImageNet features to grayscale medical OCT scans requires
 
 ### Learning Rate Scheduling & Early Stopping
 
-- **CosineAnnealingWarmRestarts:** During Phase 2, we use a cosine annealing schedule with warm restarts (`T_0=20`, `T_mult=2`). Instead of letting the learning rate decay to zero permanently, it periodically spikes back up. This helps the optimizer escape local minima in the highly non-convex loss landscape typical of imbalanced datasets.
+> [!NOTE]
+> **CosineAnnealingWarmRestarts:** During Phase 2, we use a cosine annealing schedule with warm restarts (`T_0=20`, `T_mult=2`). Instead of letting the learning rate decay to zero permanently, it periodically spikes back up. This helps the optimizer escape local minima in the highly non-convex loss landscape typical of imbalanced datasets.
+
 - **Early Stopping:** Monitored on the validation loss with a `patience=10`. If the validation loss stops improving for 10 consecutive epochs, training for that fold halts to prevent overfitting.
 - **Gradient Clipping:** `max_norm=1.0` is applied before every optimizer step. Focal Loss on heavily imbalanced micro-batches can occasionally produce exploding gradients; clipping guarantees stability.
 
@@ -29,6 +46,14 @@ Transfer learning from ImageNet features to grayscale medical OCT scans requires
 ## Hardware Optimizations (Apple Silicon M2 Pro)
 
 The training pipeline is aggressively tuned for the M2 Pro chip (24GB Unified Memory). Containerization (Docker) is strictly avoided, as the Linux VM overhead prevents access to the Metal Performance Shaders (MPS) backend, resulting in CPU-only fallback and 50–200x slowdowns.
+
+```mermaid
+graph LR
+    A[PyTorch Script] -->|mps backend| B(macOS Metal API)
+    B --> C{M2 Pro Unified Memory 24GB}
+    C -->|float16 Tensor Math| D[GPU Cores]
+    C -->|JPEG Decode & Data Aug| E[6P + 4E CPU Cores]
+```
 
 ### 1. MPS Backend (Baseline)
 The `get_device()` utility automatically selects the `mps` device when running on Mac, utilizing the M2 GPU cores.
@@ -41,9 +66,9 @@ The `get_device()` utility automatically selects the `mps` device when running o
 - Note: MPS does not support `GradScaler`. The forward pass runs in `float16`, but the loss and gradients are computed in `float32`.
 
 ### 3. torch.compile() (Disabled)
-- PyTorch 2.0's `torch.compile` is disabled on this architecture.
-- Extensive benchmarking revealed that the Inductor backend attempts to target CUDA SMs (Streaming Multiprocessors). Since they don't exist on MPS, it falls back to a generic tracing path that *adds* overhead without fusing kernels, resulting in a 12x slowdown on M2 Pro.
-- It is left as a configurable flag (`use_compile`) for immediate activation when deploying on Linux/CUDA hardware.
+> [!WARNING]
+> **Why is `torch.compile` disabled?**
+> Extensive benchmarking revealed that the Inductor backend attempts to target CUDA SMs. Since they don't exist on MPS, it falls back to a generic tracing path that *adds* overhead without fusing kernels, resulting in a **12x slowdown** on M2 Pro.
 
 ### 4. DataLoader Worker Tuning
 - `num_workers=4` is set as the default. The M2 Pro chip has a 6P + 4E core configuration. Using 4 worker processes optimally leverages the performance cores for JPEG decoding and heavy Data Augmentation (RandomAffine, Erasing) without stalling the main python process feeding the MPS queue.
@@ -58,7 +83,15 @@ The Level 1 Gatekeeper (NORMAL vs ABNORMAL) completed a stratified 5-fold cross-
 - **val_macro_f1**: 0.9769 ± 0.0034
 
 ### False Negative Rate (FNR)
-In medical classification, a False Negative (predicting a sick patient as healthy) is significantly more dangerous than a False Positive (flagging a healthy patient for review). 
+
+```mermaid
+pie title L1 Gatekeeper Recall (Abnormal Class)
+    "True Positives (Correctly Flagged)" : 11545
+    "False Negatives (Missed)" : 308
+```
+
+> [!IMPORTANT]
+> In medical classification, a False Negative (predicting a sick patient as healthy) is significantly more dangerous than a False Positive (flagging a healthy patient for review). 
 
 Across all 5 folds, the model achieved an average **Recall of 97.4%** on the ABNORMAL class (the positive class).
 - **False Negative Rate**: **2.6%**
@@ -80,8 +113,11 @@ Here is the medical assessment of how synthetic strategies map to ophthalmic ima
 
 **The Synthetic Augmentation Caveats**
 - **Random Erasing (Cutout)**: *Highly Recommended*. By randomly masking parts of the scan, you force the ResNet-50 backbone to look for distributed features of Vascular Occlusions or Fluid Accumulation rather than hyper-fixating on a single distinct artifact. It dramatically improves robustness.
-- **Mixup & CutMix**: *Proceed with extreme caution (Disabled).* While these are state-of-the-art for natural images, they can be highly destructive in medical imaging.
-  - CutMix might paste a Macular Hole into a scan of Diabetic Macular Edema, creating an anatomically impossible synthetic anomaly that confuses the model's spatial understanding of retinal layers.
-  - Mixup's pixel-blending can wash out the subtle contrast differences and boundary lines necessary to spot tiny fluid pockets or early-stage structural tearing.
+
+> [!CAUTION]
+> **Mixup & CutMix: Proceed with extreme caution (Disabled).** 
+> While state-of-the-art for natural images, they can be highly destructive in medical imaging.
+> - **CutMix** might paste a Macular Hole into a scan of Diabetic Macular Edema, creating an anatomically impossible synthetic anomaly that confuses the model's spatial understanding of retinal layers.
+> - **Mixup's** pixel-blending can wash out the subtle contrast differences and boundary lines necessary to spot tiny fluid pockets or early-stage structural tearing.
 
 **Strategy**: To use advanced augmentation for the minority classes, Random Erasing combined with aggressive contrast and brightness jittering is the safest way to synthetically expand those small sample sizes without destroying the clinical ground truth.

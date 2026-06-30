@@ -7,21 +7,52 @@ The pipeline aggregates data from three disparate sources to form a master datas
 2. OCTDL dataset
 3. OCTID dataset
 
+> [!NOTE]
+> For complete citations, descriptions, and the specific training/testing split strategy regarding these sources, please refer to the [Dataset Documentation](dataset.md).
+
 This multi-source approach increases generalisation but introduces significant variations in labelling schemas and class distributions. `config/hierarchy.yaml` serves as the single source of truth, mapping raw directory paths to standardized `L1`, `L2`, and `L3` indices.
 
 ## The Imbalance Problem
 
 In the medical imaging domain, rare diseases mean scarce data. The class distribution across all 12 fine classes highlights a critical long-tail imbalance:
 
-- **Dominant:** `CNV` (37,205 images), `NORMAL` (26,853 images)
-- **Scarce:** `CSR` (102 images), `VID` (76 images)
-- **Critical:** `RAO` (22 images — a 1,691x minority compared to CNV)
+```mermaid
+pie title Severe Class Imbalance (Approximations)
+    "CNV (Dominant)" : 37205
+    "NORMAL (Dominant)" : 26853
+    "Other Classes" : 21938
+    "CSR (Scarce)" : 102
+    "RAO (Critical)" : 22
+```
 
-Training a standard model on this distribution results in the network collapsing: it learns to constantly predict "CNV" and achieves high accuracy by completely ignoring the rare pathologies.
+> [!CAUTION]
+> **The Threat of Collapse**
+> Training a standard model on this distribution results in the network collapsing: it learns to constantly predict "CNV" and achieves high accuracy by completely ignoring the rare pathologies (like RAO).
 
 ## Three-Tiered Imbalance Mitigation
 
 To force the network to learn the rare classes, we implement a defensive stack across three layers: the DataLoader, the Loss Function, and the Augmentation Pipeline.
+
+```mermaid
+graph TD
+    subgraph Layer 1: Data
+        A[Raw Imbalanced Data] --> B(Stratified K-Fold)
+        B --> C{WeightedRandomSampler}
+        C -->|Oversamples Rare| D(Balanced Epoch)
+    end
+
+    subgraph Layer 2: Loss
+        D --> E(Focal Loss γ=2.0)
+        E --> F[Alpha Weighting]
+        F --> G[Label Smoothing ε=0.1]
+    end
+
+    subgraph Layer 3: Augmentation
+        G --> H{Resolution Check}
+        H -->|224px L1/L2| I(Standard Augmentation<br/>Flip, Rotate)
+        H -->|384px L3 Specialist| J(Heavy Augmentation<br/>Affine, Random Erasing)
+    end
+```
 
 ### 1. Stratified K-Fold + WeightedRandomSampler (Data Layer)
 - **Stratified K-Fold:** We use `sklearn.model_selection.StratifiedKFold(n_splits=5)`. This ensures that even the rarest classes (like the 22 RAO images) are proportionally distributed across all 5 folds. Without stratification, a fold might contain zero RAO images, crashing the AUROC metric.
@@ -29,12 +60,17 @@ To force the network to learn the rare classes, we implement a defensive stack a
 
 ### 2. Focal Loss + Alpha Weighting (Loss Layer)
 Even with balanced sampling, "easy" examples (like classic NORMAL scans) can overwhelm the gradient flow compared to "hard" border-case examples.
-- **Focal Loss (γ=2.0):** We use Focal Loss instead of standard CrossEntropy. The `(1 - p_t)^gamma` modulating factor heavily penalizes confident, correct predictions (driving their loss near zero), while preserving the loss for uncertain or incorrect predictions. This forces the optimizer to spend its energy on the hardest examples.
+
+> [!TIP]
+> **Why Focal Loss?** 
+> The `(1 - p_t)^gamma` modulating factor heavily penalizes confident, correct predictions (driving their loss near zero), while preserving the loss for uncertain or incorrect predictions. This forces the optimizer to spend its energy on the hardest examples.
+
 - **Alpha Weighting:** We pass the normalized class weights as the `alpha` parameter to the Focal Loss to give a structural baseline boost to minority classes.
 - **Label Smoothing (ε=0.1):** Applied at Level 2 and 3. Because the datasets come from three different annotator pools, there is inherent label noise (e.g. one dataset's "AMD" might overlap with another's "DRUSEN"). Label smoothing prevents the model from becoming overconfident on noisy annotations.
 
 ### 3. Dual-Resolution Augmentation (Augmentation Layer)
 Since we are oversampling classes with very few images, the model runs a high risk of memorizing them (overfitting).
+
 - **L1/L2 (Standard Augmentation, 224px):** Uses standard random flips, subtle rotations (±10°), and minor brightness/contrast shifts to prevent overfitting on the broad classification tasks.
 - **L3 (Heavy Augmentation, 384px):** Specialist models (especially Vascular and Structural) employ aggressive augmentation:
   - Stronger affine transformations (rotations, translations, scaling)
