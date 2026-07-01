@@ -132,6 +132,7 @@ def train():
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
     parser.add_argument('--amp', action='store_true', help='Enable mixed-precision training')
     parser.add_argument('--log-dir', type=str, default='./logs', help='TensorBoard log directory')
+    parser.add_argument('--resume', type=str, default=None, help='Path to checkpoint to resume training from')
     args = parser.parse_args()
 
     # Set random seeds for reproducibility
@@ -248,15 +249,31 @@ def train():
     # -------------------------------------------------------------------------
     # Checkpointing
     # -------------------------------------------------------------------------
-    checkpoints_dir = Path("../checkpoints")
+    checkpoints_dir = Path(__file__).resolve().parent.parent / "checkpoints"
     checkpoints_dir.mkdir(exist_ok=True)
     best_val_granular_dice = 0.0
+
+    start_epoch = 0
+    if args.resume:
+        if Path(args.resume).exists():
+            print(f"Resuming training from checkpoint: {args.resume}")
+            checkpoint = torch.load(args.resume, map_location=device)
+            model.load_state_dict(checkpoint["model_state_dict"])
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            start_epoch = checkpoint["epoch"] + 1
+            if "val_granular_dice" in checkpoint:
+                best_val_granular_dice = checkpoint["val_granular_dice"]
+            # Fast-forward scheduler
+            for _ in range(start_epoch):
+                scheduler.step()
+        else:
+            print(f"Warning: Checkpoint path not found: {args.resume}. Training from scratch.")
 
     # -------------------------------------------------------------------------
     # Training Loop
     # -------------------------------------------------------------------------
     print("Starting training...\n")
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, epochs):
 
         # ---- Training ----
         model.train()
