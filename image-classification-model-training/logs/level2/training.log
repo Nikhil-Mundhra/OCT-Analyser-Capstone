@@ -315,3 +315,113 @@ Diabetic_Complications       0.90      0.99      0.95      2321
 00:20:39 | INFO     | training.trainer | Ep  11 [finetune|fold3] loss 0.2503/0.0919 | acc 0.9695 | macro_f1 0.8462 | auroc 0.9979 | lr 7.30e-05 | 753.2s
 00:20:40 | INFO     | training.trainer |   ✓ New best — val_loss=0.0919 | macro_f1=0.8462 | auroc=0.9979
 00:33:12 | INFO     | training.trainer | Ep  12 [finetune|fold3] loss 0.2173/0.1116 | acc 0.8889 | macro_f1 0.7909 | auroc 0.9975 | lr 6.58e-05 | 751.9s
+00:45:42 | INFO     | training.trainer | Ep  13 [finetune|fold3] loss 0.2438/0.1072 | acc 0.9763 | macro_f1 0.8587 | auroc 0.9987 | lr 5.82e-05 | 750.2s
+00:57:53 | INFO     | training.trainer | Ep  14 [finetune|fold3] loss 0.1687/0.0881 | acc 0.9765 | macro_f1 0.8642 | auroc 0.9987 | lr 5.05e-05 | 729.8s
+00:57:53 | INFO     | training.trainer |   ✓ New best — val_loss=0.0881 | macro_f1=0.8642 | auroc=0.9987
+01:09:57 | INFO     | training.trainer | Ep  15 [finetune|fold3] loss 0.1606/0.1142 | acc 0.9716 | macro_f1 0.8809 | auroc 0.9989 | lr 4.28e-05 | 723.5s
+01:21:56 | INFO     | training.trainer | Ep  16 [finetune|fold3] loss 0.0974/0.0820 | acc 0.9742 | macro_f1 0.8987 | auroc 0.9989 | lr 3.52e-05 | 719.1s
+01:21:56 | INFO     | training.trainer |   ✓ New best — val_loss=0.0820 | macro_f1=0.8987 | auroc=0.9989
+01:33:53 | INFO     | training.trainer | Ep  17 [finetune|fold3] loss 0.0818/0.0322 | acc 0.9570 | macro_f1 0.8976 | auroc 0.9989 | lr 2.80e-05 | 716.0s
+01:33:53 | INFO     | training.trainer |   ✓ New best — val_loss=0.0322 | macro_f1=0.8976 | auroc=0.9989
+01:45:49 | INFO     | training.trainer | Ep  18 [finetune|fold3] loss 0.0631/0.0615 | acc 0.9746 | macro_f1 0.9008 | auroc 0.9991 | lr 2.14e-05 | 715.9s
+01:57:44 | INFO     | training.trainer | Ep  19 [finetune|fold3] loss 0.0790/0.0596 | acc 0.9611 | macro_f1 0.8933 | auroc 0.9990 | lr 1.55e-05 | 714.3s
+02:09:37 | INFO     | training.trainer | Ep  20 [finetune|fold3] loss 0.0582/0.0875 | acc 0.9751 | macro_f1 0.9032 | auroc 0.9992 | lr 1.05e-05 | 712.9s
+02:21:29 | INFO     | training.trainer | Ep  21 [finetune|fold3] loss 0.0883/0.0763 | acc 0.9760 | macro_f1 0.9118 | auroc 0.9993 | lr 6.40e-06 | 711.3s
+02:33:22 | INFO     | training.trainer | Ep  22 [finetune|fold3] loss 0.0502/0.0743 | acc 0.9786 | macro_f1 0.9134 | auroc 0.9993 | lr 3.42e-06 | 712.6s
+02:45:15 | INFO     | training.trainer | Ep  23 [finetune|fold3] loss 0.0401/0.0997 | acc 0.9781 | macro_f1 0.9173 | auroc 0.9993 | lr 1.61e-06 | 712.8s
+02:57:09 | INFO     | training.trainer | Ep  24 [finetune|fold3] loss 0.0490/0.0825 | acc 0.9754 | macro_f1 0.9140 | auroc 0.9993 | lr 1.00e-04 | 713.1s
+03:09:12 | INFO     | training.trainer | Ep  25 [finetune|fold3] loss 0.3306/0.0792 | acc 0.9687 | macro_f1 0.8499 | auroc 0.9983 | lr 9.98e-05 | 723.0s
+03:21:15 | INFO     | training.trainer | Ep  26 [finetune|fold3] loss 0.2268/0.0863 | acc 0.9772 | macro_f1 0.8631 | auroc 0.9991 | lr 9.94e-05 | 722.3s
+03:33:15 | INFO     | training.trainer | Ep  27 [finetune|fold3] loss 0.2351/0.0823 | acc 0.9769 | macro_f1 0.8518 | auroc 0.9974 | lr 9.86e-05 | 719.5s
+03:33:15 | INFO     | training.trainer | Early stopping at epoch 27 | best_val_loss=0.0322 | no improvement for 10 epochs.
+03:33:15 | INFO     | training.trainer | 
+Fold 3 — Best Classification Report:
+                        precision    recall  f1-score   support
+
+  Macular_Degeneration       1.00      0.95      0.97      9421
+Diabetic_Complications       0.83      0.99      0.90      2321
+   Vascular_Occlusions       0.67      0.98      0.79        45
+    Fluid_Accumulation       0.83      1.00      0.91        20
+     Structural_Issues       0.85      0.98      0.91        46
+
+              accuracy                           0.96     11853
+             macro avg       0.84      0.98      0.90     11853
+          weighted avg       0.96      0.96      0.96     11853
+
+03:33:15 | INFO     | __main__ | Fold 4 complete — best epoch=17, phase=finetune
+03:33:15 | INFO     | __main__ | 
+03:33:15 | INFO     | __main__ | ###  FOLD 5 / 5  ###
+03:33:15 | INFO     | __main__ |      train batches: 987 | val batches: 124
+03:33:15 | INFO     | models.level2_router | Router backbone FROZEN.
+03:33:15 | INFO     | models.level2_router | DiseaseRouterModel ready | backbone=EfficientNet-B2 | in_features=1408 | num_classes=5 | frozen=True
+03:33:15 | INFO     | training.losses | Criterion: FocalLoss | mode=level2 | gamma=2.0 | smoothing=0.00 | class_weights=[0.25162798166275024, 1.0216116905212402, 52.68111038208008, 117.06913757324219, 51.25729751586914]
+03:33:15 | INFO     | training.trainer | AMP enabled — forward pass dtype=torch.float16 | gradients=float32 | device=mps
+03:33:15 | INFO     | training.trainer | HierarchyTrainer ready | mode=level2 | device=mps | amp=True | checkpoints=checkpoints/level2
+03:33:15 | INFO     | training.trainer | 
+============================================================
+  PHASE 1 — Warm-up | 5 epochs | backbone FROZEN
+============================================================
+03:37:33 | INFO     | training.trainer | Ep   0 [warmup|fold4] loss 10.9297/0.5759 | acc 0.3542 | macro_f1 0.2021 | auroc 0.8899 | lr 1.00e-03 | 257.2s
+03:41:28 | INFO     | training.trainer | Ep   1 [warmup|fold4] loss 9.3765/0.4892 | acc 0.5214 | macro_f1 0.2702 | auroc 0.9088 | lr 1.00e-03 | 235.5s
+03:45:22 | INFO     | training.trainer | Ep   2 [warmup|fold4] loss 9.2524/0.4092 | acc 0.5631 | macro_f1 0.2950 | auroc 0.9261 | lr 1.00e-03 | 233.0s
+03:49:15 | INFO     | training.trainer | Ep   3 [warmup|fold4] loss 9.4348/0.3695 | acc 0.6722 | macro_f1 0.3337 | auroc 0.9352 | lr 1.00e-03 | 232.7s
+03:53:08 | INFO     | training.trainer | Ep   4 [warmup|fold4] loss 9.4355/0.3705 | acc 0.6411 | macro_f1 0.3216 | auroc 0.9351 | lr 1.00e-03 | 232.9s
+03:53:08 | INFO     | training.trainer | 
+============================================================
+  PHASE 2 — Fine-tuning | max 50 epochs | backbone UNFROZEN | patience=10
+============================================================
+03:53:08 | INFO     | models.level2_router | Router backbone UNFROZEN.
+04:05:25 | INFO     | training.trainer | Ep   5 [finetune|fold4] loss 2.7058/0.1339 | acc 0.9129 | macro_f1 0.5987 | auroc 0.9844 | lr 9.94e-05 | 736.4s
+04:05:25 | INFO     | training.trainer |   ✓ New best — val_loss=0.1339 | macro_f1=0.5987 | auroc=0.9844
+04:17:41 | INFO     | training.trainer | Ep   6 [finetune|fold4] loss 1.1194/0.1486 | acc 0.9095 | macro_f1 0.6080 | auroc 0.9900 | lr 9.76e-05 | 736.1s
+04:29:58 | INFO     | training.trainer | Ep   7 [finetune|fold4] loss 0.7918/0.0928 | acc 0.9270 | macro_f1 0.6743 | auroc 0.9927 | lr 9.46e-05 | 736.5s
+04:29:58 | INFO     | training.trainer |   ✓ New best — val_loss=0.0928 | macro_f1=0.6743 | auroc=0.9927
+04:42:15 | INFO     | training.trainer | Ep   8 [finetune|fold4] loss 0.5923/0.1550 | acc 0.9150 | macro_f1 0.7384 | auroc 0.9950 | lr 9.05e-05 | 736.0s
+04:54:30 | INFO     | training.trainer | Ep   9 [finetune|fold4] loss 0.4382/0.0948 | acc 0.9234 | macro_f1 0.7294 | auroc 0.9961 | lr 8.55e-05 | 734.5s
+05:06:43 | INFO     | training.trainer | Ep  10 [finetune|fold4] loss 0.3971/0.0971 | acc 0.9529 | macro_f1 0.7845 | auroc 0.9971 | lr 7.96e-05 | 732.8s
+05:18:54 | INFO     | training.trainer | Ep  11 [finetune|fold4] loss 0.2604/0.0711 | acc 0.9562 | macro_f1 0.7763 | auroc 0.9970 | lr 7.30e-05 | 731.0s
+05:18:55 | INFO     | training.trainer |   ✓ New best — val_loss=0.0711 | macro_f1=0.7763 | auroc=0.9970
+05:31:07 | INFO     | training.trainer | Ep  12 [finetune|fold4] loss 0.2103/0.0910 | acc 0.9560 | macro_f1 0.8022 | auroc 0.9971 | lr 6.58e-05 | 732.0s
+05:43:20 | INFO     | training.trainer | Ep  13 [finetune|fold4] loss 0.2454/0.1575 | acc 0.9642 | macro_f1 0.8183 | auroc 0.9965 | lr 5.82e-05 | 732.6s
+05:55:33 | INFO     | training.trainer | Ep  14 [finetune|fold4] loss 0.1689/0.1151 | acc 0.9528 | macro_f1 0.8223 | auroc 0.9972 | lr 5.05e-05 | 732.1s
+06:07:39 | INFO     | training.trainer | Ep  15 [finetune|fold4] loss 0.1510/0.1161 | acc 0.9672 | macro_f1 0.8284 | auroc 0.9976 | lr 4.28e-05 | 726.1s
+06:19:40 | INFO     | training.trainer | Ep  16 [finetune|fold4] loss 0.1408/0.1086 | acc 0.9663 | macro_f1 0.8241 | auroc 0.9977 | lr 3.52e-05 | 720.4s
+06:31:39 | INFO     | training.trainer | Ep  17 [finetune|fold4] loss 0.1061/0.1259 | acc 0.9646 | macro_f1 0.8427 | auroc 0.9979 | lr 2.80e-05 | 718.2s
+06:43:36 | INFO     | training.trainer | Ep  18 [finetune|fold4] loss 0.1053/0.1131 | acc 0.9647 | macro_f1 0.8552 | auroc 0.9983 | lr 2.14e-05 | 717.3s
+06:55:35 | INFO     | training.trainer | Ep  19 [finetune|fold4] loss 0.0725/0.1147 | acc 0.9690 | macro_f1 0.8476 | auroc 0.9983 | lr 1.55e-05 | 718.7s
+07:07:32 | INFO     | training.trainer | Ep  20 [finetune|fold4] loss 0.0930/0.1089 | acc 0.9669 | macro_f1 0.8520 | auroc 0.9984 | lr 1.05e-05 | 715.7s
+07:19:26 | INFO     | training.trainer | Ep  21 [finetune|fold4] loss 0.0674/0.1558 | acc 0.9688 | macro_f1 0.8695 | auroc 0.9982 | lr 6.40e-06 | 713.8s
+07:19:26 | INFO     | training.trainer | Early stopping at epoch 21 | best_val_loss=0.0711 | no improvement for 10 epochs.
+07:19:26 | INFO     | training.trainer | 
+Fold 4 — Best Classification Report:
+                        precision    recall  f1-score   support
+
+  Macular_Degeneration       1.00      0.95      0.97      9421
+Diabetic_Complications       0.85      0.98      0.91      2320
+   Vascular_Occlusions       0.45      1.00      0.62        45
+    Fluid_Accumulation       0.49      1.00      0.66        21
+     Structural_Issues       0.59      0.93      0.72        46
+
+              accuracy                           0.96     11853
+             macro avg       0.67      0.97      0.78     11853
+          weighted avg       0.96      0.96      0.96     11853
+
+07:19:26 | INFO     | __main__ | Fold 5 complete — best epoch=11, phase=finetune
+07:19:26 | INFO     | __main__ | 
+07:19:26 | INFO     | __main__ | ============================================================
+07:19:26 | INFO     | __main__ |   CROSS-FOLD SUMMARY  (Level 1 — NORMAL vs ABNORMAL)
+07:19:26 | INFO     | __main__ | ============================================================
+07:19:26 | INFO     | __main__ |   val_accuracy          0.9564 ± 0.0151
+07:19:26 | INFO     | __main__ |   val_auroc             0.9979 ± 0.0009
+07:19:26 | INFO     | __main__ |   val_macro_f1          0.8216 ± 0.0588
+07:19:26 | INFO     | __main__ |   val_weighted_f1       0.9586 ± 0.0139
+07:19:26 | INFO     | __main__ | 
+07:19:26 | INFO     | __main__ | ─── Target Verification ───
+07:19:26 | INFO     | __main__ |   val_accuracy          0.9564  (target ≥ 0.92)  ✅ PASS
+07:19:26 | INFO     | __main__ |   val_auroc             0.9979  (target ≥ 0.96)  ✅ PASS
+07:19:26 | INFO     | __main__ |   val_macro_f1          0.8216  (target ≥ 0.90)  ❌ BELOW TARGET
+07:19:26 | WARNING  | __main__ |   ⚠  Some targets not met — consider longer training or tuning hyperparameters before promoting to Level 2.
+07:19:26 | INFO     | __main__ | 
+07:19:26 | INFO     | __main__ | CV summary saved → checkpoints/level2/cv_summary.json
+07:19:26 | INFO     | __main__ | TensorBoard logs  → tensorboard --logdir logs/level2
+07:19:26 | INFO     | __main__ | Best checkpoints  → checkpoints/level2/fold*_best_model.pth

@@ -20,7 +20,9 @@ Pipeline Variants:
 All pipelines use ImageNet mean/std for pretrained backbone compatibility.
 """
 
+import numpy as np
 from torchvision import transforms
+import cv2
 
 # ── ImageNet statistics ───────────────────────────────────────────────────────
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
@@ -33,6 +35,56 @@ RES_L3:    int = 384   # Level 3 specialist input resolution
 # Intermediate crop sizes (resize target before random/center crop)
 _CROP_L1_L2: int = 256
 _CROP_L3:    int = 416
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CLAHE Preprocessing
+# ──────────────────────────────────────────────────────────────────────────────
+
+class CLAHETransform:
+    """
+    Contrast Limited Adaptive Histogram Equalization for OCT images.
+
+    Applied per-image BEFORE resize/crop to normalise brightness and local
+    contrast variation across different OCT scanner manufacturers
+    (Zeiss, Heidelberg, Topcon, etc.).
+
+    Without this step, the model may learn scanner-specific intensity
+    distributions rather than pathology — a form of shortcut learning that
+    degrades performance on unseen devices.
+
+    Applied identically at train, val, and test time — this is NOT an
+    augmentation, it is a deterministic preprocessing step.
+
+    Args:
+        clip_limit:  Contrast clip threshold. 2.0 is standard for OCT.
+                     Higher values = more contrast, more noise amplification.
+        tile_grid:   Size of the adaptive tile grid. (8, 8) is standard.
+    """
+
+    def __init__(
+        self,
+        clip_limit: float = 2.0,
+        tile_grid: tuple = (8, 8),
+    ) -> None:
+        self.clahe = cv2.createCLAHE(
+            clipLimit=clip_limit,
+            tileGridSize=tile_grid,
+        )
+
+    def __call__(self, img) -> "PIL.Image.Image":
+        from PIL import Image as PILImage
+        # Convert to numpy grayscale — OCT images carry most diagnostic
+        # information in luminance; colour channels are usually redundant
+        img_np = np.array(img.convert("L"), dtype=np.uint8)
+        equalized = self.clahe.apply(img_np)
+        # Stack to 3-channel RGB — required for ImageNet-pretrained backbones
+        rgb = np.stack([equalized, equalized, equalized], axis=-1)
+        return PILImage.fromarray(rgb, mode="RGB")
+
+
+# Shared instance used in all transform pipelines
+_CLAHE = CLAHETransform(clip_limit=2.0, tile_grid=(8, 8))
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -56,6 +108,7 @@ def get_train_transforms(resolution: int = RES_L1_L2) -> transforms.Compose:
     """
     crop_size = _CROP_L3 if resolution == RES_L3 else _CROP_L1_L2
     return transforms.Compose([
+        _CLAHE,                          # Scanner normalisation (deterministic)
         transforms.Resize(
             crop_size,
             interpolation=transforms.InterpolationMode.BICUBIC,
@@ -103,6 +156,7 @@ def get_heavy_train_transforms(resolution: int = RES_L3) -> transforms.Compose:
     """
     crop_size = _CROP_L3 if resolution == RES_L3 else _CROP_L1_L2
     return transforms.Compose([
+        _CLAHE,                          # Scanner normalisation (deterministic)
         transforms.Resize(
             crop_size,
             interpolation=transforms.InterpolationMode.BICUBIC,
@@ -151,6 +205,7 @@ def get_val_transforms(resolution: int = RES_L1_L2) -> transforms.Compose:
     """
     crop_size = _CROP_L3 if resolution == RES_L3 else _CROP_L1_L2
     return transforms.Compose([
+        _CLAHE,                          # Scanner normalisation — must match train pipeline
         transforms.Resize(
             crop_size,
             interpolation=transforms.InterpolationMode.BICUBIC,

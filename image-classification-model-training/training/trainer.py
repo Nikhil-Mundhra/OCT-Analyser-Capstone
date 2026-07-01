@@ -359,8 +359,8 @@ class HierarchyTrainer:
         """
         # Use a unique global-step offset per fold so TensorBoard curves don't overlap
         global_step = fold_id * 100_000
-        best_val_loss   = float("inf")
-        best_val_macro_f1 = 0.0
+        best_val_loss     = float("inf")    # Used for early stopping only
+        best_val_macro_f1 = 0.0              # PRIMARY selection criterion
         best_metrics: Dict = {}
         
         start_epoch_warmup = 0
@@ -455,10 +455,14 @@ class HierarchyTrainer:
                 weight_decay=weight_decay,
             )
             
-            # CosineAnnealingWarmRestarts: T_0=20 epochs, doubles after each restart
+            # CosineAnnealingWarmRestarts: T_0=10 epochs, doubles after each restart.
+            # With finetune_epochs=50 and T_mult=2, restarts fire at epoch 10 and 30,
+            # giving two complete cosine cycles within the training budget.
+            # (Previously T_0=20 meant only one cycle at epoch 20, with the second
+            # restart at epoch 60 falling outside the budget entirely.)
             scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
                 optimizer_ft,
-                T_0=20,
+                T_0=10,
                 T_mult=2,
                 eta_min=1e-6,
             )
@@ -511,16 +515,18 @@ class HierarchyTrainer:
                     early_stopper_counter=early_stopper.counter,
                 )
 
-                # Model selection: best val loss (most stable signal across folds)
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
+                # Model selection: best val macro F1 — primary clinical criterion.
+                # val_loss is used only by early stopping (below), not for checkpoint selection.
+                current_macro_f1 = val_m.get("val_macro_f1", 0.0)
+                if current_macro_f1 > best_val_macro_f1:
+                    best_val_macro_f1 = current_macro_f1
                     best_metrics  = {**val_m, "epoch": abs_epoch, "phase": "finetune"}
                     self._save_checkpoint(f"fold{fold_id}_best_model.pth")
                     logger.info(
-                        "  ✓ New best — val_loss=%.4f | macro_f1=%.4f | auroc=%.4f",
+                        "  ✓ New best — macro_f1=%.4f | val_loss=%.4f | auroc=%.4f",
+                        current_macro_f1,
                         val_loss,
-                        val_m.get("val_macro_f1", float("nan")),
-                        val_m.get("val_auroc",    float("nan")),
+                        val_m.get("val_auroc", float("nan")),
                     )
 
                 self._save_checkpoint(f"fold{fold_id}_last_model.pth")

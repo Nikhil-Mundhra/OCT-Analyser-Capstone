@@ -1,10 +1,7 @@
 const queryApiBase = globalThis.location
   ? new URLSearchParams(globalThis.location.search).get("apiBase")
   : "";
-const DEFAULT_API_BASE =
-  globalThis.location?.port && globalThis.location.port !== "8000"
-    ? `${globalThis.location.protocol}//${globalThis.location.hostname}:8000`
-    : "";
+const DEFAULT_API_BASE = "https://nmundhra-oct-image-classifier-model.hf.space";
 
 export const OCT_ANALYZER_API_BASE = (
   globalThis.OCT_ANALYZER_API_BASE || queryApiBase || DEFAULT_API_BASE
@@ -20,7 +17,7 @@ export async function createScan(file) {
   const form = new FormData();
   form.append("file", file);
 
-  const response = await fetch(apiUrl("/api/scans"), {
+  const response = await fetch(apiUrl("/predict"), {
     method: "POST",
     body: form,
   });
@@ -38,15 +35,30 @@ export function normalizeScanResult(scan) {
     return scan;
   }
 
+  // Map Hugging Face Pipeline output to the legacy React frontend schema
+  const isAbnormal = scan.level1_prediction === "ABNORMAL";
+  
+  let diagnosis = "NORMAL";
+  if (isAbnormal && scan.level2_prediction) {
+    if (scan.level2_prediction === "Macular_Degeneration") diagnosis = "AMD";
+    else if (scan.level2_prediction === "Diabetic_Complications") diagnosis = "DR";
+    else diagnosis = scan.level2_prediction;
+  }
+
   return {
-    ...scan,
-    previews: normalizePreviewMap(scan.previews),
-    ipnv2: scan.ipnv2
-      ? {
-          ...scan.ipnv2,
-          previews: normalizePreviewMap(scan.ipnv2.previews),
-        }
-      : scan.ipnv2,
+    status: "completed",
+    diagnosis: diagnosis,
+    confidence: isAbnormal ? scan.level2_confidence : scan.level1_confidence,
+    level1: {
+      prediction: scan.level1_prediction,
+      confidence: scan.level1_confidence
+    },
+    level2: {
+      prediction: scan.level2_prediction,
+      confidence: scan.level2_confidence
+    },
+    previews: {},
+    ipnv2: null
   };
 }
 

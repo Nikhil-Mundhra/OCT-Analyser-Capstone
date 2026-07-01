@@ -36,10 +36,11 @@ sequenceDiagram
 ### Learning Rate Scheduling & Early Stopping
 
 > [!NOTE]
-> **CosineAnnealingWarmRestarts:** During Phase 2, we use a cosine annealing schedule with warm restarts (`T_0=20`, `T_mult=2`). Instead of letting the learning rate decay to zero permanently, it periodically spikes back up. This helps the optimizer escape local minima in the highly non-convex loss landscape typical of imbalanced datasets.
+> **CosineAnnealingWarmRestarts:** During Phase 2, we use a cosine annealing schedule with warm restarts (`T_0=10`, `T_mult=2`, `eta_min=1e-6`). With `finetune_epochs=50`, restarts fire at epoch 10 and epoch 30, giving **two complete cosine cycles** within the training budget. Previously `T_0=20` meant only one cycle completed (second restart at epoch 60, beyond the budget).
 
-- **Early Stopping:** Monitored on the validation loss with a `patience=10`. If the validation loss stops improving for 10 consecutive epochs, training for that fold halts to prevent overfitting.
-- **Gradient Clipping:** `max_norm=1.0` is applied before every optimizer step. Focal Loss on heavily imbalanced micro-batches can occasionally produce exploding gradients; clipping guarantees stability.
+- **Early Stopping:** Monitored on the validation loss with a `patience=10`. If validation loss does not improve for 10 consecutive epochs, training halts.
+- **Checkpoint Selection:** The best checkpoint is saved based on **maximum val_macro_f1** (not val_loss). These two signals can diverge under class imbalance; a low-loss model may still miss the minority class. Selecting on F1 guarantees the deployed checkpoint is the best clinical performer across both classes.
+- **Gradient Clipping:** `max_norm=1.0` is applied before every optimizer step. Focal Loss on heavily imbalanced micro-batches can produce exploding gradients; clipping guarantees stability.
 
 ---
 
@@ -98,6 +99,55 @@ Across all 5 folds, the model achieved an average **Recall of 97.4%** on the ABN
 - **Absolute impact**: Out of ~11,853 true ABNORMAL scans per fold, the model correctly catches ~11,545 and misses roughly 308.
 
 For a raw baseline threshold (50% probability), a 2.6% FNR is an exceptionally strong first pass. During production deployment, this FNR can be driven even lower by applying threshold calibration (e.g., lowering the threshold to 20%, enforcing a highly cautious decision boundary at the slight expense of false positives).
+
+---
+
+## Post-Training Calibration Pipeline
+
+After training completes, two calibration steps are applied to the saved checkpoint **before** running the external test set. Both steps use the held-out validation fold as the calibration set — never the test set.
+
+### 1. ROC-Derived Decision Threshold (`scripts/calibrate_level1.py`)
+
+The decision threshold (the probability cutoff for classifying a scan as ABNORMAL) must be derived from data, not hardcoded. We use a **sensitivity-constrained strategy**:
+
+> Find the highest-specificity threshold that keeps Sensitivity ≥ 0.95.
+
+This reflects the clinical priority: a screening model must catch ≥ 95% of diseased patients. Specificity (avoiding false alarms) is maximised subject to this constraint.
+
+Alternatively, **Youden's Index** (`argmax(TPR - FPR)`) can be used for the geometrically optimal operating point.
+
+The result is saved to `checkpoints/level1/calibration.json` and automatically loaded by the test script.
+
+```bash
+python3 scripts/calibrate_level1.py \
+    --checkpoint checkpoints/level1/fold0_best_model.pth \
+    --strategy sensitivity_constrained \
+    --sensitivity-target 0.95
+```
+
+### 2. Temperature Scaling (`scripts/calibrate_level1.py`)
+
+Raw softmax outputs from trained CNNs are systematically **overconfident** — a 95% predicted probability often corresponds to only 80% actual accuracy. Temperature scaling fits a single scalar parameter *T* on the calibration set by minimising NLL:
+
+$$\text{calibrated\_prob} = \text{softmax}\left(\frac{\text{logits}}{T}\right)$$
+
+A value of *T* > 1.0 (most common) softens probabilities toward calibrated uncertainty. A reliability diagram (calibration curve) is saved before and after scaling so the ECE improvement can be inspected.
+
+The fitted temperature is appended to `calibration.json` and applied automatically at test time.
+
+### 3. Test-Time Augmentation (TTA)
+
+At inference, each image is evaluated through **5 augmented views** (original + horizontal flip + vertical flip + 90° rotation + −90° rotation). Softmax probabilities are averaged across all views. This reduces prediction variance without any retraining, typically adding +0.5–1.5% AUROC.
+
+### 4. Grad-CAM Explainability
+
+After evaluation, Grad-CAM heatmaps are generated for **all four outcome categories** (True Positive, False Negative, True Negative, False Positive). The target layer is `model.features[-1]` — the final MBConv block of EfficientNet-B3. False Negative grids are the most clinically critical: they show what the model attended to when it incorrectly cleared a diseased patient.
+
+```bash
+python3 scripts/test_level1_on_test_set.py \
+    --checkpoint checkpoints/level1/fold0_best_model.pth \
+    --gradcam
+```
 
 ---
 

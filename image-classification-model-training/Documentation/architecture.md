@@ -3,7 +3,7 @@
 > [!NOTE]
 > **What exactly did we build?**
 > We built a **Hierarchical Convolutional Neural Network (CNN) Ensemble**. 
-> It is **NOT** a Recurrent Neural Network (RNN) or a Transformer (like ViT). We utilized **Transfer Learning**, taking state-of-the-art image recognition models (ResNet and EfficientNet) that were pre-trained on millions of real-world images, and specialized them specifically for medical OCT scan analysis.
+> It is **NOT** a Recurrent Neural Network (RNN) or a Transformer (like ViT). We utilized **Transfer Learning**, taking state-of-the-art image recognition models (EfficientNet family) that were pre-trained on millions of real-world images, and specialized them specifically for medical OCT scan analysis.
 
 Instead of training a single massive model to classify all possible diseases at once (which struggles with rare diseases and structural similarities), we built a **triage system** (a cascade/hierarchy of models). It mimics how a medical system works: a general practitioner (Gatekeeper) routes you to a department (Router), which then assigns you to a specialized expert (Specialist).
 
@@ -18,7 +18,7 @@ graph TD
     Input(Input Image Scan) --> L1
 
     subgraph SG1 ["Level 1: The Gatekeeper"]
-        L1{ResNet-50<br/>Normal vs Abnormal?}
+        L1{EfficientNet-B3<br/>Normal vs Abnormal?}
     end
 
     L1 -->|NORMAL| OutNormal([Diagnosis: NORMAL])
@@ -54,23 +54,28 @@ graph TD
 ## 2. Layer-by-Layer Breakdown
 
 ### Level 1: The Gatekeeper (Binary Triage)
-- **Model Backbone:** `ResNet-50`
-- **Role:** Safely screen out healthy patients. This model is optimized for maximum **Recall**, ensuring we never false-negative a sick patient.
+- **Model Backbone:** `EfficientNet-B3`
+- **Role:** Safely screen out healthy patients. Optimized for maximum Recall, ensuring no sick patient is missed. EfficientNet-B3 achieves this with 3× fewer parameters than ResNet-50 (12.2M vs 25.6M) while reaching higher ImageNet Top-1 accuracy (82.2% vs 80.9%), translating to better feature extraction for subtle retinal pathology.
 - **Input Resolution:** `224 x 224` pixels (Fast throughput).
 - **Output Classes (2):** `NORMAL` vs `ABNORMAL`.
+- **Parameters:** 12.2M (vs 25.6M for ResNet-50 — ~2× more efficient)
+- **ImageNet Top-1:** 82.2% (vs 80.9% for ResNet-50)
+- **Grad-CAM Target:** `model.features[-1]` — last MBConv block before global average pooling.
+
+> [!TIP]
+> **Why switch from ResNet-50 to EfficientNet-B3?**
+> EfficientNet's compound scaling (depth × width × resolution) simultaneously captures fine-grained local texture AND broader structural context — both are crucial for detecting drusen deposits, fluid accumulation, and membrane changes in retinal OCT scans.
 
 | Flow | Layer | Role in Architecture |
 |:---:|---|---|
-| 🟢 | **Input** | Raw patient scan (224x224x3) |
-| ↓ | **Conv1** | Extracts low-level edge features (7x7 Conv, stride 2) |
-| ↓ | **MaxPool** | Reduces spatial dimensions |
-| ↓ | **ResBlock 1** | Learns basic textures (3 bottleneck layers) |
-| ↓ | **ResBlock 2** | Learns complex patterns (4 bottleneck layers) |
-| ↓ | **ResBlock 3** | Learns disease-specific structures (6 bottleneck layers) |
-| ↓ | **ResBlock 4** | High-level semantic features (3 bottleneck layers) |
-| ↓ | **GAP** | Global Average Pooling: Flattens spatial maps into vector |
-| ↓ | **FC Head** | Linear Classification Head (out_features=2) |
-| 🏁 | **Output** | Final Binary Triage: NORMAL vs ABNORMAL |
+| 🟢 | **Input** | CLAHE-normalised scan (224×224×3) |
+| ↓ | **Stem** | Initial Conv3×3 feature extraction |
+| ↓ | **MBConv 1–2** | Low-level edge and texture detection |
+| ↓ | **MBConv 3–5** | Compound-scaled mid-level pathology features |
+| ↓ | **MBConv 6–7** | High-level semantic disease representations |
+| ↓ | **GAP** | AdaptiveAvgPool2d → 1536-d feature vector |
+| ↓ | **FC Head** | Dropout → Linear(1536,512) → ReLU → Linear(512,2) |
+| 🏁 | **Output** | Binary triage: NORMAL vs ABNORMAL |
 
 ### Level 2: The Disease Router
 - **Model Backbone:** `EfficientNet-B2`
@@ -109,7 +114,26 @@ graph TD
 
 ---
 
-## 3. The Imbalance Mitigation Engine
+## 3. Preprocessing: CLAHE Scanner Normalization
+
+Before any augmentation or model inference, every image passes through **CLAHE (Contrast Limited Adaptive Histogram Equalization)**. This is a **deterministic** preprocessing step applied identically at train, validation, and test time — it is NOT an augmentation.
+
+**The Problem:** OCT scanners from different manufacturers (Zeiss, Heidelberg, Topcon) produce images with wildly different brightness and contrast profiles. Without normalization, the model learns scanner-specific intensity distributions instead of pathology — a form of shortcut learning that causes the model to fail on any unseen device.
+
+**The Solution:**
+- Convert RGB scan to grayscale (OCT diagnostic information is luminance-based; color is redundant).
+- Apply CLAHE with `clip_limit=2.0` and `tile_grid=(8, 8)` to equalize local contrast adaptively.
+- Stack back to 3-channel RGB (required for ImageNet-pretrained backbone compatibility).
+
+```python
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+equalized = clahe.apply(grayscale_img)
+rgb = np.stack([equalized, equalized, equalized], axis=-1)
+```
+
+---
+
+## 4. The Imbalance Mitigation Engine
 
 Medical datasets are notoriously imbalanced. We have over 26,000 NORMAL images, but only 22 images of RAO. Standard CNNs fail entirely on this. 
 
@@ -133,9 +157,33 @@ Because we oversample the 22 RAO images heavily, the model would normally memori
 
 ---
 
-## 4. Training Strategy: Two-Phase Fine-Tuning
+## 5. Training Strategy: Two-Phase Fine-Tuning
 
 Transfer learning can be volatile if done incorrectly. We use a **Phase-based** training loop for every model in the hierarchy:
 
 1. **Phase 1: Warm-up (Frozen Backbone).** We freeze the millions of pre-trained parameters in the CNN backbone and only allow gradients to update our newly attached classification head. We do this for 5 epochs using a high learning rate ($10^{-3}$).
 2. **Phase 2: Fine-tuning (Unfrozen Backbone).** We unfreeze the entire network and drop the learning rate drastically ($10^{-4}$ to $10^{-5}$). We allow the CNN to gently adapt its edge-and-texture filters specifically to OCT scans, without destroying the powerful generalized features it learned from ImageNet.
+
+**CLAHE Preprocessing (Added June 2026):** Before any geometric augmentation, all images pass through Contrast Limited Adaptive Histogram Equalisation (CLAHE, clip_limit=2.0, tile_grid=8×8). This normalises local contrast variation across different OCT scanner manufacturers (Zeiss, Heidelberg, Topcon). Without it, the model may learn scanner-specific intensity distributions — a form of shortcut learning that degrades performance on unseen devices. CLAHE is applied identically at train, val, and test time.
+
+---
+
+## 6. Model Selection & LR Scheduling
+
+### Checkpoint Criterion: Macro F1 (Primary)
+
+> [!IMPORTANT]
+> The best model checkpoint is saved when **`val_macro_f1`** improves, not `val_loss`. `val_loss` is used only for early stopping.
+
+This is a deliberate clinical decision. On a heavily imbalanced dataset, `val_loss` can decrease while the model simultaneously *gets worse* at classifying minority disease classes (e.g., RAO, CSR). Macro F1 averages the F1 score equally across all classes, so it is genuinely sensitive to performance degradation on rare diseases — which is exactly what matters clinically.
+
+### Cosine Annealing Warm Restarts (`T_0=10`, `T_mult=2`)
+
+The LR scheduler fires restarts at epochs **10** and **30** — giving exactly two complete cosine cycles within a typical 50-epoch budget.
+
+> [!NOTE]
+> **Why was `T_0` changed from 20 to 10?** With `T_0=20` and `T_mult=2`, restarts fired at epochs 20 and 60. Since training almost always early-stops before epoch 60 (patience=10), only one cosine cycle was ever completed. Setting `T_0=10` ensures the scheduler can fully cycle twice and escape local minima more effectively.
+
+---
+
+*This documentation reflects the pipeline configuration as of 1st July, 2026. Level 1 backbone upgraded from ResNet-50 to EfficientNet-B3.*

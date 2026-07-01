@@ -9,3 +9,11 @@ runtime_uploads/
 image-classification-model-training/checkpoints/
 *.pth
 image-classification-model-training/logs/level2/events.out.tfevents.1782838589.Nikhils-MacBook-Pro.local.74715.3
+
+# Environment variables
+.env
+
+logs_test/*
+image-segmentation-model-training/logs/events.out.tfevents.1782875617.Nikhils-MacBook-Pro.local.87565.0
+image-classification-model-training/logs/level2/events.out.tfevents.1782856995.Nikhils-MacBook-Pro.local.74715.4
+image-segmentation-model-training/logs/events.out.tfevents.1782876605.Nikhils-MacBook-Pro.local.89573.0

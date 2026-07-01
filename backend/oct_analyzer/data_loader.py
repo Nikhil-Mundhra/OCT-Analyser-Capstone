@@ -70,7 +70,10 @@ def load_normalized_scan(file_path: str | Path) -> NormalizedScan:
     if suffix == ".zip":
         return _load_image_stack_zip(path)
 
-    raise ValueError("Unsupported file format. Please provide .vol, .dcm, or .zip")
+    if suffix in {".png", ".jpg", ".jpeg", ".webp", ".tif", ".bmp"}:
+        return _load_single_image(path)
+
+    raise ValueError("Unsupported file format. Please provide .vol, .dcm, .zip, or a 2D image")
 
 
 def _load_dicom_scan(path: Path) -> NormalizedScan:
@@ -142,6 +145,17 @@ def _load_image_stack_zip(path: Path) -> NormalizedScan:
         spacing_mm=spacing,
         source_format="image-stack",
         metadata=metadata,
+        source_path=path,
+    )
+
+
+def _load_single_image(path: Path) -> NormalizedScan:
+    array = _read_grayscale_image(path)
+    return NormalizedScan(
+        volume=_ensure_zyx_volume(array),
+        spacing_mm=(1.0, 1.0, 1.0),
+        source_format="single-image",
+        metadata={"loader": "pil"},
         source_path=path,
     )
 

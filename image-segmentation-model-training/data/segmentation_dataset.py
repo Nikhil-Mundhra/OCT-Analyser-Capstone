@@ -74,11 +74,17 @@ class OCT5kSegmentationDataset(Dataset):
             mask_granular, mask_coarse = augmented['masks']
 
         # Convert to PyTorch tensors
-        image         = torch.from_numpy(image).float().unsqueeze(0) / 255.0   # (1, H, W)
+        # If transform included A.Normalize, image is already float32. 
+        # Only divide by 255 if it's still a uint8 array.
+        if image.dtype == np.uint8:
+            image_tensor = torch.from_numpy(image).float().unsqueeze(0) / 255.0
+        else:
+            image_tensor = torch.from_numpy(image).float().unsqueeze(0)
+            
         mask_granular = torch.from_numpy(np.array(mask_granular)).long()        # (H, W)
         mask_coarse   = torch.from_numpy(np.array(mask_coarse)).long()          # (H, W)
 
-        return image, mask_coarse, mask_granular
+        return image_tensor, mask_coarse, mask_granular
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +201,11 @@ class TransformSubset(torch.utils.data.Dataset):
             image_np  = aug['image']
             mask_g_np, mask_c_np = aug['masks']
 
-            image         = torch.from_numpy(image_np).float().unsqueeze(0) / 255.0
+            if image_np.dtype == np.uint8:
+                image = torch.from_numpy(image_np).float().unsqueeze(0) / 255.0
+            else:
+                image = torch.from_numpy(image_np).float().unsqueeze(0)
+                
             mask_granular = torch.from_numpy(mask_g_np.astype(np.int64))
             mask_coarse   = torch.from_numpy(mask_c_np.astype(np.int64))
 

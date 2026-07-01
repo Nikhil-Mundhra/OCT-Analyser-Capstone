@@ -20,3 +20,9 @@ tensorboard>=2.14
 # Visualization (for analyze_dataset.py)
 matplotlib>=3.7
 seaborn>=0.12
+
+# Image preprocessing — CLAHE scanner normalisation in data/transforms.py
+opencv-python-headless>=4.8
+
+# Explainability — Grad-CAM visualisations in test_level1_on_test_set.py
+torchcam>=0.3.2

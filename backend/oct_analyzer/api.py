@@ -12,10 +12,12 @@ from .mvp_pipeline import process_scan
 from .preview import preview_path
 
 
-RUNTIME_DIR = Path("runtime_uploads")
+import tempfile
+
+RUNTIME_DIR = Path(tempfile.gettempdir()) / "runtime_uploads"
 UPLOAD_DIR = RUNTIME_DIR / "uploads"
 PREVIEW_DIR = RUNTIME_DIR / "previews"
-SUPPORTED_SUFFIXES = {".vol", ".dcm", ".zip"}
+SUPPORTED_SUFFIXES = {".vol", ".dcm", ".zip", ".png", ".jpg", ".jpeg", ".webp", ".tif", ".bmp"}
 
 app = FastAPI(title="Local OCT Analyzer MVP")
 app.add_middleware(
@@ -42,7 +44,7 @@ def read_root() -> dict[str, str]:
 def create_scan(file: UploadFile) -> dict:
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in SUPPORTED_SUFFIXES:
-        raise HTTPException(status_code=400, detail="Upload a .vol, .dcm, or .zip OCT export")
+        raise HTTPException(status_code=400, detail="Upload a .vol, .dcm, .zip OCT export, or a 2D image (.png, .jpg)")
 
     scan_id = uuid4().hex
     upload_path = UPLOAD_DIR / scan_id / f"scan{suffix}"

@@ -1,16 +1,21 @@
 """
 models/level1_gatekeeper.py
 
-Level 1 Binary Gatekeeper — ResNet-50 pretrained on ImageNet.
+Level 1 Binary Gatekeeper — EfficientNet-B3 pretrained on ImageNet.
 
 Task:    NORMAL (0) vs ABNORMAL (1)
 Input:   224×224 RGB tensors (maximum throughput for 86K-image screening)
-Backbone: torchvision ResNet-50 (IMAGENET1K_V2 weights — best accuracy preset)
+Backbone: torchvision EfficientNet-B3 (IMAGENET1K_V1 weights)
+          12.2M parameters vs 25.6M for ResNet-50 (~3× fewer params)
+          ImageNet Top-1: 82.2% vs 80.9% for ResNet-50
+          Compound scaling (depth × width × resolution) captures both fine-grained
+          local texture and broader structural context — well-suited for retinal
+          pathology detection (drusen deposits, fluid accumulation, membrane changes).
 
 Two-Phase Training Protocol
 ────────────────────────────
 Phase 1 — Warm-up (backbone frozen):
-  All ResNet-50 feature layers are frozen. Only the custom classifier head
+  All EfficientNet-B3 feature layers are frozen. Only the custom classifier head
   is trained with a relatively high LR (1e-3). This warms the randomly
   initialised head before gradient flow reaches the pretrained backbone,
   preventing the pretrained features from being corrupted early in training.
@@ -19,38 +24,41 @@ Phase 2 — Fine-tuning (full network):
   Backbone is unfrozen via unfreeze_backbone(). Differential LRs are applied
   via get_param_groups(): backbone at 1e-4 (preserves pretrained features),
   head at 1e-3 (continues fast adaptation of classification layers).
+
+Grad-CAM Target Layer
+─────────────────────
+  Use model.features[-1] (the last MBConv block) as the Grad-CAM target layer.
+  This is the final spatial feature map before global average pooling.
 """
 
 import logging
 from typing import Dict, List
 
-import os
-# Prevent Apple Silicon segmentation fault in torch.load when loading torchvision weights
-os.environ["TORCH_FORCE_WEIGHTS_ONLY_LOAD"] = "0"
-
 import torch
 import torch.nn as nn
 from torchvision import models
-from torchvision.models import ResNet50_Weights
+from torchvision.models import EfficientNet_B3_Weights
 
 logger = logging.getLogger(__name__)
 
 
 class GatekeeperModel(nn.Module):
     """
-    ResNet-50 binary classifier for OCT gatekeeper screening.
+    EfficientNet-B3 binary classifier for OCT gatekeeper screening.
 
     Architecture:
-        ResNet-50 feature extractor (2048-d global avg pool output)
-        → Dropout(0.3)
-        → Linear(2048, 512) + ReLU
-        → Dropout(0.15)
+        EfficientNet-B3 feature extractor (1536-d spatial feature maps)
+        → AdaptiveAvgPool2d(1)           (1536 × 1 × 1)
+        → Flatten
+        → Dropout(dropout_rate)
+        → Linear(1536, 512) + ReLU
+        → Dropout(dropout_rate / 2)
         → Linear(512, num_classes)
 
     Args:
         num_classes:     Output size. 2 for NORMAL/ABNORMAL binary task.
-        dropout_rate:    Dropout probability before the first FC layer.
-        pretrained:      Load IMAGENET1K_V2 weights if True.
+        dropout_rate:    Dropout probability before the first FC layer (0.3).
+        pretrained:      Load IMAGENET1K_V1 weights if True.
         freeze_backbone: Start with backbone frozen (Phase 1 warm-up).
     """
 
@@ -63,15 +71,18 @@ class GatekeeperModel(nn.Module):
     ) -> None:
         super().__init__()
 
-        weights = ResNet50_Weights.IMAGENET1K_V2 if pretrained else None
-        backbone = models.resnet50(weights=weights)
+        weights = EfficientNet_B3_Weights.IMAGENET1K_V1 if pretrained else None
+        backbone = models.efficientnet_b3(weights=weights)
 
-        # Strip the original 1000-class FC head; keep everything up to avgpool
-        # children: conv1 → bn1 → relu → maxpool → layer1-4 → avgpool
-        self.features = nn.Sequential(*list(backbone.children())[:-1])
+        # EfficientNet has a clean three-part structure: features / avgpool / classifier.
+        # We keep features (MBConv blocks) and avgpool; strip only the classifier head.
+        self.features = backbone.features        # nn.Sequential of MBConv blocks
+        self.avgpool  = backbone.avgpool         # AdaptiveAvgPool2d(output_size=1)
 
-        # Custom head
-        in_features = backbone.fc.in_features  # 2048 for ResNet-50
+        # in_features = 1536 for EfficientNet-B3
+        in_features = backbone.classifier[1].in_features
+
+        # Custom classification head — same topology as the previous ResNet-50 head
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(p=dropout_rate),
@@ -85,7 +96,7 @@ class GatekeeperModel(nn.Module):
             self.freeze_backbone()
 
         logger.info(
-            "GatekeeperModel ready | backbone=ResNet-50 | "
+            "GatekeeperModel ready | backbone=EfficientNet-B3 | "
             "in_features=%d | num_classes=%d | frozen=%s",
             in_features, num_classes, freeze_backbone,
         )
@@ -118,15 +129,15 @@ class GatekeeperModel(nn.Module):
         ImageNet representations while the head adapts to OCT domain.
 
         Args:
-            backbone_lr: LR for pretrained ResNet-50 feature layers.
+            backbone_lr: LR for pretrained EfficientNet-B3 feature layers.
             head_lr:     LR for the custom classifier head.
 
         Returns:
             List of dicts compatible with ``torch.optim.AdamW``.
         """
         return [
-            {"params": self.features.parameters(),    "lr": backbone_lr},
-            {"params": self.classifier.parameters(),  "lr": head_lr},
+            {"params": self.features.parameters(),   "lr": backbone_lr},
+            {"params": self.classifier.parameters(), "lr": head_lr},
         ]
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -141,8 +152,9 @@ class GatekeeperModel(nn.Module):
         Returns:
             Logits tensor, shape ``(B, num_classes)``.
         """
-        x = self.features(x)       # (B, 2048, 1, 1)
-        x = self.classifier(x)     # (B, num_classes)
+        x = self.features(x)      # (B, 1536, 7, 7) for 224×224 input
+        x = self.avgpool(x)       # (B, 1536, 1, 1)
+        x = self.classifier(x)    # (B, num_classes)
         return x
 
 
@@ -161,8 +173,8 @@ def build_gatekeeper(
 
     Args:
         num_classes:     2 for binary NORMAL/ABNORMAL.
-        dropout_rate:    Dropout rate in classifier head.
-        pretrained:      Use IMAGENET1K_V2 pretrained weights.
+        dropout_rate:    Dropout rate in classifier head (0.3 default).
+        pretrained:      Use IMAGENET1K_V1 pretrained weights.
         freeze_backbone: Start with frozen backbone for warm-up phase.
 
     Returns:

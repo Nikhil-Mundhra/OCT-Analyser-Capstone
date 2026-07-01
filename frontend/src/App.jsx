@@ -452,7 +452,7 @@ function WorklistScreen({ scan, setActive }) {
   );
 }
 
-function UploadScreen({ scan, uploadState, onUpload, tmState }) {
+function UploadScreen({ scan, uploadState, onUpload }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
 
@@ -526,39 +526,6 @@ function UploadScreen({ scan, uploadState, onUpload, tmState }) {
           })}
         </div>
       </Card>
-
-      <Card title="AI Classification (Teachable Machine)" subtitle="Runs directly in your browser." icon={Activity} className="lg:col-span-12">
-        {tmState?.loading && <div className="text-amber-800 bg-amber-50 p-4 rounded-2xl animate-pulse font-semibold text-sm">Initializing AI model...</div>}
-        
-        <div className="grid md:grid-cols-2 gap-4 mt-4">
-          {tmState?.imageSrc && (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 flex flex-col items-center">
-               <h4 className="font-bold text-slate-800 text-sm mb-2">Analyzing: Frame {tmState.currentFrame} of {tmState.totalFrames}</h4>
-               <img src={tmState.imageSrc} className="max-h-64 object-contain rounded-lg border border-slate-300" alt="Preview" />
-            </div>
-          )}
-          
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <h4 className="font-bold text-slate-800 text-sm mb-3">Classification Results</h4>
-            {tmState?.inferring ? (
-               <div className="flex justify-center items-center h-32 animate-pulse text-slate-500 text-sm">
-                 Processing frame {tmState.currentFrame}...
-               </div>
-            ) : tmState?.predictions ? (
-               <ul className="space-y-2">
-                 {tmState.predictions.map((p, i) => (
-                   <li key={i} className="flex justify-between items-center text-sm border-b border-slate-100 pb-1.5 last:border-b-0">
-                     <span className="font-semibold text-slate-700">{p.className}</span>
-                     <span className="font-mono font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded text-xs">{(p.probability * 100).toFixed(1)}%</span>
-                   </li>
-                 ))}
-               </ul>
-            ) : (
-               <p className="text-sm text-slate-500 py-6 text-center">Awaiting scan or image upload...</p>
-            )}
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }
@@ -616,19 +583,38 @@ function ReviewScreen({ scan }) {
         ) : null}
       </Card>
 
-      <Card title="AI Findings" subtitle="No hidden single answer, show confidence and competing evidence." icon={Brain} className="lg:col-span-5">
-        <div className="space-y-3">
-          <Metric label="Risk tier" value={risk.label} tone={risk.tone} />
-          <Metric label="Model confidence" value={risk.confidence} tone={risk.tone === "danger" ? "warning" : "safe"} />
-          <Metric label="Layer votes flagged" value={`${drLayers}/12`} tone={drLayers ? "warning" : completed ? "safe" : "neutral"} />
-          <Metric label="IPN-V2 mode" value={ipnv2?.mode ? ipnv2.mode.replace("_", " ") : "N/A"} tone={ipnv2?.mode === "checkpoint" ? "safe" : ipnv2 ? "warning" : "neutral"} />
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-            <b>Explainability:</b> layer diagnosis still uses the placeholder CDF contract. IPN-V2 is displayed separately as OCTA/en face segmentation output, not as DR diagnosis.
+      <div className="lg:col-span-5 space-y-5">
+        <Card title="Level 1: RelayNet Analysis" subtitle="Layer-by-layer segmentation and risk scoring." icon={Brain}>
+          <div className="space-y-3">
+            <Metric label="Risk tier" value={risk.label} tone={risk.tone} />
+            <Metric label="Model confidence" value={risk.confidence} tone={risk.tone === "danger" ? "warning" : "safe"} />
+            <Metric label="Layer votes flagged" value={`${drLayers}/12`} tone={drLayers ? "warning" : completed ? "safe" : "neutral"} />
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+              <b>Explainability:</b> Diagnosis is based on RelayNet CDF feature extraction across 12 retinal layers.
+            </div>
+            <LayerVoteList layers={scan?.layers || []} />
           </div>
-          {ipnv2?.warning ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{ipnv2.warning}</div> : null}
-          <LayerVoteList layers={scan?.layers || []} />
-        </div>
-      </Card>
+        </Card>
+        
+        <Card title="Level 2: IPN-V2 Verification" subtitle="Secondary OCTA segmentation output for safety." icon={Activity}>
+           <div className="space-y-3">
+             <Metric label="IPN-V2 mode" value={ipnv2?.mode ? ipnv2.mode.replace("_", " ") : "N/A"} tone={ipnv2?.mode === "checkpoint" ? "safe" : ipnv2 ? "warning" : "neutral"} />
+             {ipnv2?.warning ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{ipnv2.warning}</div> : null}
+             {ipnv2?.previews?.ipnv2_probability ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-950 overflow-hidden">
+                   <img src={ipnv2.previews.ipnv2_probability} alt="IPN-V2 Probability" className="w-full h-40 object-contain" />
+                </div>
+             ) : (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 text-center">
+                   Awaiting IPN-V2 probability map
+                </div>
+             )}
+             <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+               <b>Safety check:</b> IPN-V2 acts as a secondary verification path. High discrepancies between Level 1 and Level 2 flag the scan for immediate specialist review.
+             </div>
+           </div>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -792,89 +778,7 @@ function ClinicalInterfaceApp() {
   const [decision, setDecision] = useState({ choice: "", rationale: "", submittedAt: "" });
   const activeScreen = useMemo(() => screens.find((screen) => screen.id === active), [active]);
 
-  const [tmModel, setTmModel] = useState(null);
-  const [tmState, setTmState] = useState({ loading: false, inferring: false, predictions: null, currentFrame: 0, totalFrames: 0, imageSrc: null });
-
-  useEffect(() => {
-    async function loadTmModel() {
-      if (!window.tmImage) return;
-      setTmState(prev => ({ ...prev, loading: true }));
-      try {
-        const loadedModel = await window.tmImage.load("/public/model/model.json", "/public/model/metadata.json");
-        setTmModel(loadedModel);
-      } catch (err) {
-        console.error("Failed to load TM model", err);
-      } finally {
-        setTmState(prev => ({ ...prev, loading: false }));
-      }
-    }
-    loadTmModel();
-  }, []);
-
-  useEffect(() => {
-    if (!scan?.previews?.frames || !tmModel) return;
-    let isCancelled = false;
-    
-    async function processFrames() {
-      const frames = scan.previews.frames;
-      setTmState(prev => ({ ...prev, inferring: true, totalFrames: frames.length, currentFrame: 0, predictions: null, imageSrc: null }));
-      let aggregatedProbs = {};
-      
-      for (let i = 0; i < frames.length; i++) {
-        if (isCancelled) break;
-        setTmState(prev => ({ ...prev, currentFrame: i + 1, imageSrc: frames[i] }));
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = frames[i];
-        await new Promise(resolve => img.onload = resolve);
-        
-        const predictions = await tmModel.predict(img);
-        predictions.forEach(p => {
-          aggregatedProbs[p.className] = (aggregatedProbs[p.className] || 0) + p.probability;
-        });
-      }
-      
-      if (isCancelled) return;
-      
-      const finalPredictions = Object.keys(aggregatedProbs).map(className => ({
-        className,
-        probability: aggregatedProbs[className] / frames.length
-      })).sort((a, b) => b.probability - a.probability);
-      
-      setTmState(prev => ({ ...prev, inferring: false, predictions: finalPredictions }));
-    }
-    
-    processFrames();
-    return () => { isCancelled = true; };
-  }, [scan, tmModel]);
-
-  async function handle2DImage(file) {
-    if (!tmModel) {
-      alert("AI model is still loading, please wait.");
-      return;
-    }
-    setScan(null); // Clear previous 3D scan
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const imgUrl = e.target.result;
-      setTmState(prev => ({ ...prev, inferring: true, currentFrame: 1, totalFrames: 1, predictions: null, imageSrc: imgUrl }));
-      const img = new Image();
-      img.src = imgUrl;
-      img.onload = async () => {
-        const predictions = await tmModel.predict(img);
-        const finalPredictions = predictions.sort((a, b) => b.probability - a.probability);
-        setTmState(prev => ({ ...prev, inferring: false, predictions: finalPredictions }));
-      };
-    };
-    reader.readAsDataURL(file);
-  }
-
   async function uploadScan(file) {
-    if (file.type.startsWith("image/")) {
-      setUploadState({ status: "2D Image Mode", progress: 100, fileName: file.name, error: "" });
-      handle2DImage(file);
-      return;
-    }
     setUploadState({ status: "Uploading", progress: 20, fileName: file.name, error: "" });
     setDecision({ choice: "", rationale: "", submittedAt: "" });
 
