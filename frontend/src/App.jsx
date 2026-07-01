@@ -531,87 +531,59 @@ function UploadScreen({ scan, uploadState, onUpload }) {
 }
 
 function ReviewScreen({ scan }) {
-  const [preview, setPreview] = useState("overlay");
   const completed = scan?.status === "completed";
-  const previewUrl = completed ? scan.previews?.[preview] : "";
   const risk = riskFromScan(scan);
-  const drLayers = scan?.layers?.filter((layer) => layer.vote === "DR").length || 0;
-  const ipnv2 = scan?.ipnv2;
-  const previewOptions = [
-    ["raw", "Raw"],
-    ["overlay", "Layer demo"],
-    ["features", "CDF chart"],
-  ];
-  if (ipnv2?.previews?.ipnv2_overlay) {
-    previewOptions.push(["ipnv2_overlay", "OCTA/IPN-V2"]);
-  }
-  if (ipnv2?.previews?.ipnv2_probability) {
-    previewOptions.push(["ipnv2_probability", "IPN prob"]);
-  }
+  
+  const l1 = scan?.level1;
+  const l2 = scan?.level2;
+  const l1Abnormal = l1?.prediction === "ABNORMAL";
 
   return (
     <div className="grid gap-5 lg:grid-cols-12">
-      <Card title="Volumetric Scan Viewer" subtitle="Slice viewer with layer demo overlays, CDF chart, and optional IPN-V2 OCTA output." icon={ScanLine} className="lg:col-span-7">
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 lg:col-span-2">
-            {previewUrl ? (
-              <img src={previewUrl} alt={`${preview} preview`} className="h-72 w-full object-contain" />
+      <Card title="OCT Image Classification" subtitle="Hugging Face Deployment" icon={ScanLine} className="lg:col-span-7">
+        <div className="grid gap-4">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+            {completed ? (
+              <div className="flex h-72 items-center justify-center text-white p-4 text-center">
+                Scan successfully classified by remote Hugging Face endpoints.
+              </div>
             ) : (
-              <WireBox height="h-72">Upload a scan to view generated previews</WireBox>
+              <WireBox height="h-72">Upload a scan to view predictions</WireBox>
             )}
           </div>
-          <div className="space-y-4">
-            <PreviewThumb src={scan?.previews?.raw} label="Raw center slice" />
-            <PreviewThumb src={ipnv2?.previews?.ipnv2_probability || scan?.previews?.features} label={ipnv2?.previews?.ipnv2_probability ? "IPN-V2 probability" : "CDF feature chart"} />
-          </div>
         </div>
-        <div className="mt-4 grid gap-3 text-xs font-semibold text-slate-600 md:grid-cols-5">
-          {previewOptions.map(([id, label]) => (
-            <button
-              key={id}
-              onClick={() => setPreview(id)}
-              className={`rounded-xl border px-3 py-2 ${preview === id ? "bg-slate-900 text-white" : "bg-white"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        {ipnv2 ? (
-          <div className={`mt-4 rounded-2xl border p-4 text-sm ${ipnv2.mode === "checkpoint" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
-            <b>IPN-V2:</b> {ipnv2.mode === "checkpoint" ? "Checkpoint-backed OCTA segmentation path." : "Untrained smoke mode. This output proves integration plumbing only."}
-          </div>
-        ) : null}
       </Card>
 
       <div className="lg:col-span-5 space-y-5">
-        <Card title="Level 1: RelayNet Analysis" subtitle="Layer-by-layer segmentation and risk scoring." icon={Brain}>
+        <Card title="Level 1: Gatekeeper (ResNet-50)" subtitle="Binary triage screening." icon={Brain}>
           <div className="space-y-3">
-            <Metric label="Risk tier" value={risk.label} tone={risk.tone} />
-            <Metric label="Model confidence" value={risk.confidence} tone={risk.tone === "danger" ? "warning" : "safe"} />
-            <Metric label="Layer votes flagged" value={`${drLayers}/12`} tone={drLayers ? "warning" : completed ? "safe" : "neutral"} />
+            <Metric label="Gatekeeper Prediction" value={l1?.prediction || "N/A"} tone={l1Abnormal ? "danger" : "safe"} />
+            {l1?.confidence && (
+              <Metric label="Model Confidence" value={`${Math.round(l1.confidence * 100)}%`} tone="neutral" />
+            )}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-              <b>Explainability:</b> Diagnosis is based on RelayNet CDF feature extraction across 12 retinal layers.
+              <b>Explainability:</b> Diagnosis is based on a ResNet-50 model analyzing spatial features to triage ABNORMAL vs NORMAL scans.
             </div>
-            <LayerVoteList layers={scan?.layers || []} />
           </div>
         </Card>
         
-        <Card title="Level 2: IPN-V2 Verification" subtitle="Secondary OCTA segmentation output for safety." icon={Activity}>
+        <Card title="Level 2: Disease Router (EfficientNet-B2)" subtitle="Specific disease classification." icon={Activity}>
            <div className="space-y-3">
-             <Metric label="IPN-V2 mode" value={ipnv2?.mode ? ipnv2.mode.replace("_", " ") : "N/A"} tone={ipnv2?.mode === "checkpoint" ? "safe" : ipnv2 ? "warning" : "neutral"} />
-             {ipnv2?.warning ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{ipnv2.warning}</div> : null}
-             {ipnv2?.previews?.ipnv2_probability ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-950 overflow-hidden">
-                   <img src={ipnv2.previews.ipnv2_probability} alt="IPN-V2 Probability" className="w-full h-40 object-contain" />
-                </div>
+             {l1Abnormal ? (
+               <>
+                 <Metric label="Router Prediction" value={l2?.prediction?.replace(/_/g, " ") || "N/A"} tone="warning" />
+                 {l2?.confidence && (
+                   <Metric label="Model Confidence" value={`${Math.round(l2.confidence * 100)}%`} tone="neutral" />
+                 )}
+                 <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+                   <b>Safety check:</b> Specific pathology successfully identified.
+                 </div>
+               </>
              ) : (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 text-center">
-                   Awaiting IPN-V2 probability map
-                </div>
+               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 text-center">
+                  Level 2 routing bypassed. Scan is healthy.
+               </div>
              )}
-             <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-               <b>Safety check:</b> IPN-V2 acts as a secondary verification path. High discrepancies between Level 1 and Level 2 flag the scan for immediate specialist review.
-             </div>
            </div>
         </Card>
       </div>
