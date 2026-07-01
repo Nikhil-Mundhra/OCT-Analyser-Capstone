@@ -822,7 +822,7 @@ function ClinicalInterfaceApp() {
 
           {active === "worklist" && <WorklistScreen scan={scan} setActive={setActive} />}
           {active === "home" && <HomeScreen scan={scan} uploadState={uploadState} decision={decision} setActive={setActive} />}
-          {active === "upload" && <UploadScreen scan={scan} uploadState={uploadState} onUpload={uploadScan} tmState={tmState} />}
+          {active === "upload" && <UploadScreen scan={scan} uploadState={uploadState} onUpload={uploadScan} />}
           {active === "review" && <ReviewScreen scan={scan} />}
           {active === "decision" && <DecisionScreen scan={scan} decision={decision} setDecision={setDecision} />}
           {active === "outcomes" && <OutcomesScreen scan={scan} decision={decision} />}
