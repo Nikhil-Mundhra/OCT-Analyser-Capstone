@@ -1,12 +1,21 @@
 {
   "scripts": {
-    "build": "esbuild src/App.jsx --bundle --format=esm --loader:.js=jsx --loader:.jsx=jsx --outfile=dist/app.bundle.js",
-    "dev": "npm run build && python3 -m http.server 5173"
+    "prebuild": "node ../scripts/sync-model-docs.js",
+    "build:docs": "npx @tailwindcss/cli -i docs-input.css -o dist/docs.css --minify",
+    "build": "npm run build:docs && esbuild src/App.jsx --bundle --format=esm --jsx=automatic --loader:.js=jsx --loader:.jsx=jsx --loader:.ts=ts --loader:.tsx=tsx --outfile=dist/app.bundle.js",
+    "dev": "npm run build && npx serve . -l 5173"
   },
   "dependencies": {
+    "dompurify": "^3.4.11",
     "esbuild": "^0.28.0",
     "lucide-react": "^1.16.0",
+    "marked": "^18.0.5",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.18.1"
+  },
+  "devDependencies": {
+    "serve": "^14.2.6",
+    "tailwindcss": "^4.3.2"
   }
 }

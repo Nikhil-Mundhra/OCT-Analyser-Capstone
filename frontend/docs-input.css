@@ -1,0 +1,731 @@
+@import "tailwindcss";
+@source "./src/docs";
+
+@layer preflight {
+  /* Disable preflight by emptying the layer */
+}
+
+:root {
+  /* Neutrals (warm stone scale) */
+  --bg: #FFFFFF;
+  --bg-alt: #FAFAF9;
+  --bg-soft: #F5F5F4;
+  --bg-hover: #EEEDEB;
+  --line: #EBE9E6;
+  --line-2: #D6D3D1;
+  --ink: #0A0A0A;
+  --ink-2: #404040;
+  --ink-3: #737373;
+  --ink-4: #A3A3A3;
+  --ink-5: #D4D4D4;
+
+  /* Accent (single, indigo/blue — OKLCH) */
+  --accent: oklch(0.42 0.17 262);
+  --accent-strong: oklch(0.36 0.18 263);
+  --accent-soft: oklch(0.96 0.02 262);
+  --accent-line: oklch(0.88 0.06 262);
+  --accent-ink: oklch(0.42 0.17 262);
+
+  /* Chart palette (restrained categorical) */
+  --c-1: oklch(0.55 0.18 262);
+  --c-2: oklch(0.60 0.14 180);
+  --c-3: oklch(0.70 0.15 75);
+  --c-4: oklch(0.60 0.18 15);
+  --c-5: oklch(0.62 0.15 140);
+  --c-6: oklch(0.55 0.04 250);
+  --c-7: oklch(0.58 0.18 290);
+
+  /* Status */
+  --pos: oklch(0.55 0.13 150);
+  --neg: oklch(0.55 0.16 25);
+
+  /* Category colors - single indigo accent in light theme */
+  --cat-blue: var(--accent);
+  --cat-purple: var(--accent);
+  --cat-emerald: var(--accent);
+
+  /* Category Shadow variables for light theme */
+  --shadow-blue: color-mix(in srgb, var(--cat-blue) 15%, transparent);
+  --shadow-purple: color-mix(in srgb, var(--cat-purple) 15%, transparent);
+  --shadow-emerald: color-mix(in srgb, var(--cat-emerald) 15%, transparent);
+
+  --toc-shadow-blue: color-mix(in srgb, var(--cat-blue) 40%, transparent);
+  --toc-shadow-purple: color-mix(in srgb, var(--cat-purple) 40%, transparent);
+  --toc-shadow-emerald: color-mix(in srgb, var(--cat-emerald) 40%, transparent);
+
+  /* Docs Theme Mapping */
+  --docs-bg-page: var(--bg);
+  --docs-bg-sidebar: var(--bg-alt);
+  --docs-text-primary: var(--ink);
+  --docs-text-secondary: var(--ink-2);
+  --docs-text-muted: var(--ink-3);
+  --docs-border-main: var(--line);
+  --docs-active-link-bg: var(--bg-soft);
+  --docs-active-link-text: var(--accent-ink);
+  --docs-accent: var(--accent);
+  --docs-code-bg: var(--bg-soft);
+  --docs-code-border: var(--line);
+  --docs-code-text: var(--accent-ink);
+  --docs-pre-bg: var(--bg-alt);
+  --docs-pre-border: var(--line-2);
+  --docs-blockquote-bg: var(--accent-soft);
+  --docs-blockquote-border: var(--accent-line);
+  --docs-table-border: var(--line-2);
+  --docs-table-th-bg: var(--bg-soft);
+  --docs-table-tr-even-bg: var(--bg-alt);
+  --docs-table-tr-hover-bg: var(--bg-hover);
+  --docs-bg-card: var(--bg);
+  --docs-card-border: var(--line);
+  --docs-img-bg: var(--bg);
+  --docs-header-bg: rgba(255, 255, 255, 0.8);
+  --docs-header-border: var(--line);
+  --docs-glow-bg: var(--accent-soft);
+
+  /* Font Styling Constants */
+  --docs-font-sans: var(--font-inter), Geist, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --docs-font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --docs-font-size-base: 14px;
+  --docs-line-height-base: 1.5;
+}
+
+.dark {
+  /* Dark theme equivalents for variables */
+  --bg: #0a0a0a;
+  --bg-alt: #0f0f0f;
+  --bg-soft: rgba(255, 255, 255, 0.05);
+  --bg-hover: rgba(255, 255, 255, 0.08);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.12);
+  --ink: #f3f4f6;
+  --ink-2: #9ca3af;
+  --ink-3: #6b7280;
+  --ink-4: #4b5563;
+  --ink-5: #374151;
+
+  --accent: #3b82f6;
+  --accent-strong: #60a5fa;
+  --accent-soft: rgba(96, 165, 250, 0.1);
+  --accent-line: rgba(96, 165, 250, 0.3);
+  --accent-ink: #93c5fd;
+
+  --pos: oklch(0.65 0.15 150);
+  --neg: oklch(0.65 0.18 25);
+
+  --cat-blue: #3b82f6;
+  --cat-purple: #a855f7;
+  --cat-emerald: #10b981;
+
+  /* Category Shadow variables for dark theme */
+  --shadow-blue: color-mix(in srgb, var(--cat-blue) 30%, transparent);
+  --shadow-purple: color-mix(in srgb, var(--cat-purple) 30%, transparent);
+  --shadow-emerald: color-mix(in srgb, var(--cat-emerald) 30%, transparent);
+
+  --toc-shadow-blue: color-mix(in srgb, var(--cat-blue) 80%, transparent);
+  --toc-shadow-purple: color-mix(in srgb, var(--cat-purple) 80%, transparent);
+  --toc-shadow-emerald: color-mix(in srgb, var(--cat-emerald) 80%, transparent);
+
+  --docs-bg-page: var(--bg);
+  --docs-bg-sidebar: var(--bg-alt);
+  --docs-text-primary: var(--ink);
+  --docs-text-secondary: var(--ink-2);
+  --docs-text-muted: var(--ink-3);
+  --docs-border-main: var(--line);
+  --docs-active-link-bg: var(--bg-soft);
+  --docs-active-link-text: #ffffff;
+  --docs-accent: var(--accent);
+  --docs-code-bg: rgba(255, 255, 255, 0.07);
+  --docs-code-border: rgba(255, 255, 255, 0.1);
+  --docs-code-text: #a5b4fc;
+  --docs-pre-bg: var(--bg-alt);
+  --docs-pre-border: var(--line);
+  --docs-blockquote-bg: rgba(96, 165, 250, 0.05);
+  --docs-blockquote-border: rgba(96, 165, 250, 0.5);
+  --docs-table-border: var(--line-2);
+  --docs-table-th-bg: rgba(255, 255, 255, 0.03);
+  --docs-table-tr-even-bg: rgba(255, 255, 255, 0.01);
+  --docs-table-tr-hover-bg: rgba(255, 255, 255, 0.05);
+  --docs-bg-card: #121214;
+  --docs-card-border: var(--line);
+  --docs-img-bg: #ffffff;
+  --docs-header-bg: rgba(10, 10, 10, 0.8);
+  --docs-header-border: var(--line);
+  --docs-glow-bg: rgba(59, 130, 246, 0.15);
+}
+
+@theme {
+  --color-docs-bg-page: var(--docs-bg-page);
+  --color-docs-bg-sidebar: var(--docs-bg-sidebar);
+  --color-docs-text-primary: var(--docs-text-primary);
+  --color-docs-text-secondary: var(--docs-text-secondary);
+  --color-docs-text-muted: var(--docs-text-muted);
+  --color-docs-border-main: var(--docs-border-main);
+  --color-docs-active-link-bg: var(--docs-active-link-bg);
+  --color-docs-active-link-text: var(--docs-active-link-text);
+  --color-docs-accent: var(--docs-accent);
+  --color-docs-bg-card: var(--docs-bg-card);
+  --color-docs-card-border: var(--docs-card-border);
+  --color-docs-header-bg: var(--docs-header-bg);
+  --color-docs-header-border: var(--docs-header-border);
+  --color-docs-glow-bg: var(--docs-glow-bg);
+
+  --color-bg: var(--bg);
+  --color-bg-alt: var(--bg-alt);
+  --color-bg-soft: var(--bg-soft);
+  --color-bg-hover: var(--bg-hover);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-pos: var(--pos);
+  --color-neg: var(--neg);
+  --color-c-1: var(--c-1);
+  --color-c-2: var(--c-2);
+  --color-c-3: var(--c-3);
+  --color-c-4: var(--c-4);
+  --color-c-5: var(--c-5);
+  --color-c-6: var(--c-6);
+  --color-c-7: var(--c-7);
+
+  --color-cat-blue: var(--cat-blue);
+  --color-cat-purple: var(--cat-purple);
+  --color-cat-emerald: var(--cat-emerald);
+
+  --font-sans: var(--docs-font-sans);
+  --font-mono: var(--docs-font-mono);
+}
+
+
+
+/* Documentation Theme overrides */
+.docs-theme {
+  font-family: var(--docs-font-sans);
+  font-size: var(--docs-font-size-base);
+  line-height: var(--docs-line-height-base);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Documentation Content Styles */
+.docs-content {
+  line-height: var(--docs-line-height-base);
+  color: var(--docs-text-secondary);
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+
+.docs-content h1,
+.docs-content h2,
+.docs-content h3,
+.docs-content h4 {
+  scroll-margin-top: 120px;
+}
+
+.docs-content h1 {
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: var(--docs-text-primary);
+  margin-bottom: 1.5rem;
+  margin-top: 2.5rem;
+  letter-spacing: -0.02em;
+  transition: color 0.2s;
+}
+
+.docs-content h2 {
+  font-size: 1.75rem;
+  font-weight: 300;
+  color: var(--docs-text-primary);
+  margin-bottom: 1rem;
+  margin-top: 2.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--docs-border-main);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.docs-content h3 {
+  font-size: 1.25rem;
+  font-weight: 300;
+  color: var(--docs-text-secondary);
+  margin-bottom: 0.75rem;
+  margin-top: 2rem;
+  transition: color 0.2s;
+}
+
+.docs-content h4 {
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--docs-text-muted);
+  margin-bottom: 0.5rem;
+  margin-top: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.2s;
+}
+
+.docs-content p {
+  font-size: var(--docs-font-size-base);
+  font-weight: 300;
+  margin-bottom: 1.25rem;
+  line-height: var(--docs-line-height-base);
+}
+
+.docs-content ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.docs-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.docs-content li {
+  margin-bottom: 0.5rem;
+}
+
+.docs-content a {
+  color: var(--docs-accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--docs-code-border);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.docs-content a:hover {
+  opacity: 0.8;
+}
+
+.docs-content strong,
+.docs-content b {
+  color: var(--docs-text-primary);
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.docs-content em,
+.docs-content i {
+  color: var(--docs-text-muted);
+  transition: color 0.2s;
+}
+
+/* Inline code */
+.docs-content code {
+  font-family: var(--docs-font-mono);
+  font-size: 0.875em;
+  background: var(--docs-code-bg);
+  border: 1px solid var(--docs-code-border);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  color: var(--docs-code-text);
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+
+/* Code blocks */
+.docs-content pre {
+  background: var(--docs-pre-bg);
+  border: 1px solid var(--docs-pre-border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  margin-top: 0.5rem;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.docs-content pre code {
+  font-family: var(--docs-font-mono);
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--docs-text-secondary);
+  font-size: 0.875rem;
+  line-height: var(--docs-line-height-base);
+}
+
+/* Blockquotes */
+.docs-content blockquote {
+  border-left: 3px solid var(--docs-blockquote-border);
+  background: var(--docs-blockquote-bg);
+  border-radius: 0 8px 8px 0;
+  padding: 0.875rem 1.25rem;
+  margin: 1.5rem 0;
+  color: var(--docs-text-muted);
+  font-style: italic;
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+
+.docs-content blockquote p {
+  margin-bottom: 0;
+}
+
+/* Horizontal rule */
+.docs-content hr {
+  border: none;
+  border-top: 1px solid var(--docs-border-main);
+  margin: 2rem 0;
+  transition: border-color 0.2s;
+}
+
+/* Tables */
+.docs-content table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0;
+  font-size: var(--docs-font-size-base);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--docs-table-border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  background-color: var(--docs-bg-page);
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.docs-content th,
+.docs-content td {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  border-bottom: 1px solid var(--docs-table-border);
+  border-right: 1px solid var(--docs-table-border);
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.docs-content th:last-child,
+.docs-content td:last-child {
+  border-right: none;
+}
+
+.docs-content th {
+  background-color: var(--docs-table-th-bg);
+  color: var(--docs-text-primary);
+  font-weight: 300;
+  border-bottom: 1px solid var(--docs-table-border);
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  text-align: left;
+}
+
+.docs-content td {
+  color: var(--docs-text-secondary);
+  background-color: transparent;
+  font-weight: 300;
+  line-height: var(--docs-line-height-base);
+}
+
+/* Make sure paragraphs inside tables don't break spacing */
+.docs-content td p,
+.docs-content th p {
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+.docs-content tr:last-child td {
+  border-bottom: none;
+}
+
+.docs-content tr:nth-child(even) td {
+  background-color: var(--docs-table-tr-even-bg);
+  transition: background-color 0.2s;
+}
+
+.docs-content tr:hover td {
+  background-color: var(--docs-table-tr-hover-bg);
+  color: var(--docs-text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Images */
+.docs-content img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--docs-border-main);
+  margin: 1.5rem 0;
+  background-color: var(--docs-img-bg) !important;
+  transition: border-color 0.2s;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--docs-border-main);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--docs-border-main);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--docs-border-main) transparent;
+}
+
+/* Hide scrollbar for sidebars but allow scrolling */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Documentation Video Embed Styles */
+.docs-video-wrapper {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--docs-border-main);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.docs-video-wrapper iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.docs-video-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .docs-video-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.docs-video-card {
+  background: var(--docs-bg-card);
+  border: 1px solid var(--docs-border-card);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.docs-video-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-blue-500);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.docs-video-card-player {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+}
+
+.docs-video-card-player iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.docs-video-card-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.docs-video-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--docs-text-primary);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.docs-video-card-desc {
+  font-size: 13px;
+  color: var(--docs-text-secondary);
+  line-height: 1.5;
+}
+
+/* Header/Navigation Overrides for Karl Documentation Pages */
+.docs-theme .wordmark {
+  color: var(--docs-text-primary);
+  transition: color 0.2s;
+}
+
+.docs-theme .nav-links a {
+  color: var(--docs-text-secondary);
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.docs-theme .nav-links a:hover {
+  color: var(--docs-text-primary);
+  background: var(--docs-active-link-bg);
+}
+
+.docs-theme .nav-links a.active {
+  color: var(--docs-text-primary);
+  font-weight: 700;
+}
+
+.docs-theme .n-login {
+  color: var(--docs-text-primary);
+  border-color: var(--docs-border-main);
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.docs-theme .n-login:hover {
+  background: var(--docs-active-link-bg);
+  border-color: var(--docs-border-main);
+}
+
+.docs-theme .n-demo {
+  background: var(--docs-accent);
+  color: #ffffff;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.docs-theme .n-demo:hover {
+  opacity: 0.95;
+  background: var(--docs-accent);
+}
+
+/* Revert Navigation Colors in Dark Mode */
+.dark .docs-theme .wordmark,
+.docs-theme.dark .wordmark {
+  color: #ffffff;
+}
+
+.dark .docs-theme .nav-links a,
+.docs-theme.dark .nav-links a {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dark .docs-theme .nav-links a:hover,
+.docs-theme.dark .nav-links a:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.dark .docs-theme .nav-links a.active,
+.docs-theme.dark .nav-links a.active {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.dark .docs-theme .n-login,
+.docs-theme.dark .n-login {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.dark .docs-theme .n-login:hover,
+.docs-theme.dark .n-login:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.dark .docs-theme .n-demo,
+.docs-theme.dark .n-demo {
+  background: #ffffff;
+  color: #000000;
+}
+
+.dark .docs-theme .n-demo:hover,
+.docs-theme.dark .n-demo:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Dropdown Overrides for Karl Documentation Pages */
+.docs-theme .nav-dropdown-menu {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--docs-border-main);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+.docs-theme .nav-links .nav-dropdown-menu a {
+  color: var(--docs-text-secondary);
+}
+
+.docs-theme .nav-links .nav-dropdown-menu a:hover {
+  color: var(--docs-text-primary);
+  background: var(--docs-active-link-bg);
+}
+
+.docs-theme .nav-links .nav-dropdown-menu a.active {
+  color: var(--docs-text-primary);
+  font-weight: 700;
+}
+
+/* Revert to Dark styles in Dark Mode Docs */
+.dark .docs-theme .nav-dropdown-menu,
+.docs-theme.dark .nav-dropdown-menu {
+  background: rgba(18, 18, 20, 0.95);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.dark .docs-theme .nav-links .nav-dropdown-menu a,
+.docs-theme.dark .nav-links .nav-dropdown-menu a {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dark .docs-theme .nav-links .nav-dropdown-menu a:hover,
+.docs-theme.dark .nav-links .nav-dropdown-menu a:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.dark .docs-theme .nav-links .nav-dropdown-menu a.active,
+.docs-theme.dark .nav-links .nav-dropdown-menu a.active {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Mobile Menu overrides for Documentation Theme */
+.docs-theme .mobile-menu {
+  --mobile-menu-bg: var(--docs-header-bg, rgba(255, 255, 255, 0.95));
+  --mobile-menu-border: var(--docs-header-border, rgba(0, 0, 0, 0.08));
+  --mobile-link-color: var(--docs-text-secondary, rgba(0, 0, 0, 0.7));
+  --mobile-link-active: var(--docs-text-primary, #000000);
+  --mobile-link-title: var(--docs-text-muted, rgba(0, 0, 0, 0.4));
+  --mobile-sublink-color: var(--docs-text-secondary, rgba(0, 0, 0, 0.6));
+  --mobile-sublink-active: var(--docs-text-primary, #000000);
+  --hamburger-color: var(--docs-text-primary, #000000);
+}
+
+.dark .docs-theme .mobile-menu,
+.docs-theme.dark .mobile-menu {
+  --mobile-menu-bg: rgba(18, 18, 20, 0.95);
+  --mobile-menu-border: rgba(255, 255, 255, 0.08);
+  --mobile-link-color: rgba(255, 255, 255, 0.7);
+  --mobile-link-active: #ffffff;
+  --mobile-link-title: rgba(255, 255, 255, 0.4);
+  --mobile-sublink-color: rgba(255, 255, 255, 0.6);
+  --mobile-sublink-active: #ffffff;
+  --hamburger-color: #ffffff;
+}
+
+
+

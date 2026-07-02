@@ -30,7 +30,7 @@ var require_react_development = __commonJS({
     "use strict";
     (function() {
       function defineDeprecationWarning(methodName, info) {
-        Object.defineProperty(Component.prototype, methodName, {
+        Object.defineProperty(Component4.prototype, methodName, {
           get: function() {
             console.warn(
               "%s(...) is deprecated in plain JavaScript React classes. %s",
@@ -55,7 +55,7 @@ var require_react_development = __commonJS({
           publicInstance
         ), didWarnStateUpdateForUnmountedComponent[warningKey] = true);
       }
-      function Component(props, context, updater) {
+      function Component4(props, context, updater) {
         this.props = props;
         this.context = context;
         this.refs = emptyObject;
@@ -134,7 +134,7 @@ var require_react_development = __commonJS({
               type = type._init;
               try {
                 return getComponentNameFromType(type(innerType));
-              } catch (x) {
+              } catch (x2) {
               }
           }
         return null;
@@ -146,7 +146,7 @@ var require_react_development = __commonJS({
         try {
           var name = getComponentNameFromType(type);
           return name ? "<" + name + ">" : "<...>";
-        } catch (x) {
+        } catch (x2) {
           return "<...>";
         }
       }
@@ -239,9 +239,9 @@ var require_react_development = __commonJS({
         return newKey;
       }
       function validateChildKeys(node) {
-        isValidElement(node) ? node._store && (node._store.validated = 1) : "object" === typeof node && null !== node && node.$$typeof === REACT_LAZY_TYPE && ("fulfilled" === node._payload.status ? isValidElement(node._payload.value) && node._payload.value._store && (node._payload.value._store.validated = 1) : node._store && (node._store.validated = 1));
+        isValidElement2(node) ? node._store && (node._store.validated = 1) : "object" === typeof node && null !== node && node.$$typeof === REACT_LAZY_TYPE && ("fulfilled" === node._payload.status ? isValidElement2(node._payload.value) && node._payload.value._store && (node._payload.value._store.validated = 1) : node._store && (node._store.validated = 1));
       }
-      function isValidElement(object) {
+      function isValidElement2(object) {
         return "object" === typeof object && null !== object && object.$$typeof === REACT_ELEMENT_TYPE;
       }
       function escape(key) {
@@ -310,13 +310,13 @@ var require_react_development = __commonJS({
           var childKey = "" === nameSoFar ? "." + getElementKey(invokeCallback, 0) : nameSoFar;
           isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array, escapedPrefix, "", function(c) {
             return c;
-          })) : null != callback && (isValidElement(callback) && (null != callback.key && (invokeCallback && invokeCallback.key === callback.key || checkKeyStringCoercion(callback.key)), escapedPrefix = cloneAndReplaceKey(
+          })) : null != callback && (isValidElement2(callback) && (null != callback.key && (invokeCallback && invokeCallback.key === callback.key || checkKeyStringCoercion(callback.key)), escapedPrefix = cloneAndReplaceKey(
             callback,
             escapedPrefix + (null == callback.key || invokeCallback && invokeCallback.key === callback.key ? "" : ("" + callback.key).replace(
               userProvidedKeyEscapeRegex,
               "$&/"
             ) + "/") + childKey
-          ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array.push(callback));
+          ), "" !== nameSoFar && null != invokeCallback && isValidElement2(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array.push(callback));
           return 1;
         }
         invokeCallback = 0;
@@ -508,15 +508,15 @@ var require_react_development = __commonJS({
         }
       }, assign = Object.assign, emptyObject = {};
       Object.freeze(emptyObject);
-      Component.prototype.isReactComponent = {};
-      Component.prototype.setState = function(partialState, callback) {
+      Component4.prototype.isReactComponent = {};
+      Component4.prototype.setState = function(partialState, callback) {
         if ("object" !== typeof partialState && "function" !== typeof partialState && null != partialState)
           throw Error(
             "takes an object of state variables to update or a function which returns an object of state variables."
           );
         this.updater.enqueueSetState(this, partialState, callback, "setState");
       };
-      Component.prototype.forceUpdate = function(callback) {
+      Component4.prototype.forceUpdate = function(callback) {
         this.updater.enqueueForceUpdate(this, callback, "forceUpdate");
       };
       var deprecatedAPIs = {
@@ -531,10 +531,10 @@ var require_react_development = __commonJS({
       };
       for (fnName in deprecatedAPIs)
         deprecatedAPIs.hasOwnProperty(fnName) && defineDeprecationWarning(fnName, deprecatedAPIs[fnName]);
-      ComponentDummy.prototype = Component.prototype;
+      ComponentDummy.prototype = Component4.prototype;
       deprecatedAPIs = PureComponent.prototype = new ComponentDummy();
       deprecatedAPIs.constructor = PureComponent;
-      assign(deprecatedAPIs, Component.prototype);
+      assign(deprecatedAPIs, Component4.prototype);
       deprecatedAPIs.isPureReactComponent = true;
       var isArrayImpl = Array.isArray, REACT_CLIENT_REFERENCE = /* @__PURE__ */ Symbol.for("react.client.reference"), ReactSharedInternals = {
         H: null,
@@ -613,7 +613,7 @@ var require_react_development = __commonJS({
           }) || [];
         },
         only: function(children) {
-          if (!isValidElement(children))
+          if (!isValidElement2(children))
             throw Error(
               "React.Children.only expected to receive a single React element child."
             );
@@ -622,7 +622,7 @@ var require_react_development = __commonJS({
       };
       exports.Activity = REACT_ACTIVITY_TYPE;
       exports.Children = fnName;
-      exports.Component = Component;
+      exports.Component = Component4;
       exports.Fragment = REACT_FRAGMENT_TYPE;
       exports.Profiler = REACT_PROFILER_TYPE;
       exports.PureComponent = PureComponent;
@@ -847,7 +847,7 @@ var require_react_development = __commonJS({
         });
         return elementType;
       };
-      exports.isValidElement = isValidElement;
+      exports.isValidElement = isValidElement2;
       exports.lazy = function(ctor) {
         ctor = { _status: -1, _result: ctor };
         var lazyType = {
@@ -938,11 +938,11 @@ var require_react_development = __commonJS({
       exports.useDeferredValue = function(value, initialValue) {
         return resolveDispatcher().useDeferredValue(value, initialValue);
       };
-      exports.useEffect = function(create, deps) {
-        null == create && console.warn(
+      exports.useEffect = function(create2, deps) {
+        null == create2 && console.warn(
           "React Hook useEffect requires an effect callback. Did you forget to pass a callback to the hook?"
         );
-        return resolveDispatcher().useEffect(create, deps);
+        return resolveDispatcher().useEffect(create2, deps);
       };
       exports.useEffectEvent = function(callback) {
         return resolveDispatcher().useEffectEvent(callback);
@@ -950,23 +950,23 @@ var require_react_development = __commonJS({
       exports.useId = function() {
         return resolveDispatcher().useId();
       };
-      exports.useImperativeHandle = function(ref, create, deps) {
-        return resolveDispatcher().useImperativeHandle(ref, create, deps);
+      exports.useImperativeHandle = function(ref, create2, deps) {
+        return resolveDispatcher().useImperativeHandle(ref, create2, deps);
       };
-      exports.useInsertionEffect = function(create, deps) {
-        null == create && console.warn(
+      exports.useInsertionEffect = function(create2, deps) {
+        null == create2 && console.warn(
           "React Hook useInsertionEffect requires an effect callback. Did you forget to pass a callback to the hook?"
         );
-        return resolveDispatcher().useInsertionEffect(create, deps);
+        return resolveDispatcher().useInsertionEffect(create2, deps);
       };
-      exports.useLayoutEffect = function(create, deps) {
-        null == create && console.warn(
+      exports.useLayoutEffect = function(create2, deps) {
+        null == create2 && console.warn(
           "React Hook useLayoutEffect requires an effect callback. Did you forget to pass a callback to the hook?"
         );
-        return resolveDispatcher().useLayoutEffect(create, deps);
+        return resolveDispatcher().useLayoutEffect(create2, deps);
       };
-      exports.useMemo = function(create, deps) {
-        return resolveDispatcher().useMemo(create, deps);
+      exports.useMemo = function(create2, deps) {
+        return resolveDispatcher().useMemo(create2, deps);
       };
       exports.useOptimistic = function(passthrough, reducer) {
         return resolveDispatcher().useOptimistic(passthrough, reducer);
@@ -1098,9 +1098,9 @@ var require_scheduler_development = __commonJS({
         }
         return first;
       }
-      function compare(a, b) {
-        var diff = a.sortIndex - b.sortIndex;
-        return 0 !== diff ? diff : a.id - b.id;
+      function compare(a, b2) {
+        var diff = a.sortIndex - b2.sortIndex;
+        return 0 !== diff ? diff : a.id - b2.id;
       }
       function advanceTimers(currentTime) {
         for (var timer = peek(timerQueue); null !== timer; ) {
@@ -1328,7 +1328,7 @@ var require_react_dom_development = __commonJS({
         return dispatcher;
       }
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-      var React2 = require_react(), Internals = {
+      var React17 = require_react(), Internals = {
         d: {
           f: noop,
           r: function() {
@@ -1346,7 +1346,7 @@ var require_react_dom_development = __commonJS({
         },
         p: 0,
         findDOMNode: null
-      }, REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal"), ReactSharedInternals = React2.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      }, REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal"), ReactSharedInternals = React17.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
         "React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills"
       );
@@ -1674,14 +1674,14 @@ var require_react_dom_client_development = __commonJS({
             throw Error("Unable to find node on an unmounted component.");
           return alternate !== fiber ? null : fiber;
         }
-        for (var a = fiber, b = alternate; ; ) {
+        for (var a = fiber, b2 = alternate; ; ) {
           var parentA = a.return;
           if (null === parentA) break;
           var parentB = parentA.alternate;
           if (null === parentB) {
-            b = parentA.return;
-            if (null !== b) {
-              a = b;
+            b2 = parentA.return;
+            if (null !== b2) {
+              a = b2;
               continue;
             }
             break;
@@ -1689,23 +1689,23 @@ var require_react_dom_client_development = __commonJS({
           if (parentA.child === parentB.child) {
             for (parentB = parentA.child; parentB; ) {
               if (parentB === a) return assertIsMounted(parentA), fiber;
-              if (parentB === b) return assertIsMounted(parentA), alternate;
+              if (parentB === b2) return assertIsMounted(parentA), alternate;
               parentB = parentB.sibling;
             }
             throw Error("Unable to find node on an unmounted component.");
           }
-          if (a.return !== b.return) a = parentA, b = parentB;
+          if (a.return !== b2.return) a = parentA, b2 = parentB;
           else {
             for (var didFindChild = false, _child = parentA.child; _child; ) {
               if (_child === a) {
                 didFindChild = true;
                 a = parentA;
-                b = parentB;
+                b2 = parentB;
                 break;
               }
-              if (_child === b) {
+              if (_child === b2) {
                 didFindChild = true;
-                b = parentA;
+                b2 = parentA;
                 a = parentB;
                 break;
               }
@@ -1716,12 +1716,12 @@ var require_react_dom_client_development = __commonJS({
                 if (_child === a) {
                   didFindChild = true;
                   a = parentB;
-                  b = parentA;
+                  b2 = parentA;
                   break;
                 }
-                if (_child === b) {
+                if (_child === b2) {
                   didFindChild = true;
-                  b = parentB;
+                  b2 = parentB;
                   a = parentA;
                   break;
                 }
@@ -1733,7 +1733,7 @@ var require_react_dom_client_development = __commonJS({
                 );
             }
           }
-          if (a.alternate !== b)
+          if (a.alternate !== b2)
             throw Error(
               "Return fibers should always be each others' alternates. This error is likely caused by a bug in React. Please file an issue."
             );
@@ -1799,7 +1799,7 @@ var require_react_dom_client_development = __commonJS({
               type = type._init;
               try {
                 return getComponentNameFromType(type(innerType));
-              } catch (x) {
+              } catch (x2) {
               }
           }
         return null;
@@ -2015,14 +2015,14 @@ var require_react_dom_client_development = __commonJS({
         if (void 0 === prefix)
           try {
             throw Error();
-          } catch (x) {
-            var match = x.stack.trim().match(/\n( *(at )?)/);
+          } catch (x2) {
+            var match = x2.stack.trim().match(/\n( *(at )?)/);
             prefix = match && match[1] || "";
-            suffix = -1 < x.stack.indexOf("\n    at") ? " (<anonymous>)" : -1 < x.stack.indexOf("@") ? "@unknown:0:0" : "";
+            suffix = -1 < x2.stack.indexOf("\n    at") ? " (<anonymous>)" : -1 < x2.stack.indexOf("@") ? "@unknown:0:0" : "";
           }
         return "\n" + prefix + name + suffix;
       }
-      function describeNativeComponentFrame(fn, construct) {
+      function describeNativeComponentFrame(fn, construct2) {
         if (!fn || reentry) return "";
         var frame = componentFrameCache.get(fn);
         if (void 0 !== frame) return frame;
@@ -2037,7 +2037,7 @@ var require_react_dom_client_development = __commonJS({
           var RunInRootFrame = {
             DetermineComponentFrameRoot: function() {
               try {
-                if (construct) {
+                if (construct2) {
                   var Fake = function() {
                     throw Error();
                   };
@@ -2049,8 +2049,8 @@ var require_react_dom_client_development = __commonJS({
                   if ("object" === typeof Reflect && Reflect.construct) {
                     try {
                       Reflect.construct(Fake, []);
-                    } catch (x) {
-                      var control = x;
+                    } catch (x2) {
+                      var control = x2;
                     }
                     Reflect.construct(fn, [], Fake);
                   } else {
@@ -2182,8 +2182,8 @@ var require_react_dom_client_development = __commonJS({
             workInProgress2 = workInProgress2.return;
           } while (workInProgress2);
           return info;
-        } catch (x) {
-          return "\nError generating stack: " + x.message + "\n" + x.stack;
+        } catch (x2) {
+          return "\nError generating stack: " + x2.message + "\n" + x2.stack;
         }
       }
       function describeFunctionComponentFrameWithoutLineNumber(fn) {
@@ -2242,8 +2242,8 @@ var require_react_dom_client_development = __commonJS({
               (workInProgress2 = workInProgress2.owner) && ownerStack && (info += "\n" + formatOwnerStack(ownerStack));
             } else break;
           var JSCompiler_inline_result = info;
-        } catch (x) {
-          JSCompiler_inline_result = "\nError generating stack: " + x.message + "\n" + x.stack;
+        } catch (x2) {
+          JSCompiler_inline_result = "\nError generating stack: " + x2.message + "\n" + x2.stack;
         }
         return JSCompiler_inline_result;
       }
@@ -2329,9 +2329,9 @@ var require_react_dom_client_development = __commonJS({
             ));
           }
       }
-      function clz32Fallback(x) {
-        x >>>= 0;
-        return 0 === x ? 32 : 31 - (log(x) / LN2 | 0) | 0;
+      function clz32Fallback(x2) {
+        x2 >>>= 0;
+        return 0 === x2 ? 32 : 31 - (log(x2) / LN2 | 0) | 0;
       }
       function getHighestPriorityLanes(lanes) {
         var pendingSyncLanes = lanes & 42;
@@ -2881,7 +2881,7 @@ var require_react_dom_client_development = __commonJS({
         "number" === type && getActiveElement(node.ownerDocument) === node || node.defaultValue === "" + value || (node.defaultValue = "" + value);
       }
       function validateOptionProps(element, props) {
-        null == props.value && ("object" === typeof props.children && null !== props.children ? React2.Children.forEach(props.children, function(child) {
+        null == props.value && ("object" === typeof props.children && null !== props.children ? React17.Children.forEach(props.children, function(child) {
           null == child || "string" === typeof child || "number" === typeof child || "bigint" === typeof child || didWarnInvalidChild || (didWarnInvalidChild = true, console.error(
             "Cannot infer the option value of complex children. Pass a `value` prop or use a plain string as children to <option>."
           ));
@@ -3029,7 +3029,7 @@ var require_react_dom_client_development = __commonJS({
         return indentation(indent) + describeTextNode(clientText, maxLength) + "\n";
       }
       function objectName(object) {
-        return Object.prototype.toString.call(object).replace(/^\[object (.*)\]$/, function(m, p0) {
+        return Object.prototype.toString.call(object).replace(/^\[object (.*)\]$/, function(m2, p0) {
           return p0;
         });
       }
@@ -3230,7 +3230,7 @@ var require_react_dom_client_development = __commonJS({
       function describeDiff(rootNode) {
         try {
           return "\n\n" + describeNode(rootNode, 0);
-        } catch (x) {
+        } catch (x2) {
           return "";
         }
       }
@@ -3448,18 +3448,18 @@ var require_react_dom_client_development = __commonJS({
         );
         return false;
       }
-      function setTextContent(node, text) {
-        if (text) {
+      function setTextContent(node, text2) {
+        if (text2) {
           var firstChild = node.firstChild;
           if (firstChild && firstChild === node.lastChild && 3 === firstChild.nodeType) {
-            firstChild.nodeValue = text;
+            firstChild.nodeValue = text2;
             return;
           }
         }
-        node.textContent = text;
+        node.textContent = text2;
       }
       function camelize(string) {
-        return string.replace(hyphenPattern, function(_, character) {
+        return string.replace(hyphenPattern, function(_2, character) {
           return character.toUpperCase();
         });
       }
@@ -3876,8 +3876,8 @@ var require_react_dom_client_development = __commonJS({
           }
         }
       }
-      function batchedUpdates$1(fn, a, b) {
-        if (isInsideEventHandler) return fn(a, b);
+      function batchedUpdates$1(fn, a, b2) {
+        if (isInsideEventHandler) return fn(a, b2);
         isInsideEventHandler = true;
         try {
           var JSCompiler_inline_result = fn(a);
@@ -4090,8 +4090,8 @@ var require_react_dom_client_development = __commonJS({
         if ("input" === domEventName || "change" === domEventName)
           return getInstIfValueChanged(targetInst);
       }
-      function is(x, y) {
-        return x === y && (0 !== x || 1 / x === 1 / y) || x !== x && y !== y;
+      function is(x2, y2) {
+        return x2 === y2 && (0 !== x2 || 1 / x2 === 1 / y2) || x2 !== x2 && y2 !== y2;
       }
       function shallowEqual(objA, objB) {
         if (objectIs(objA, objB)) return true;
@@ -4881,9 +4881,9 @@ var require_react_dom_client_development = __commonJS({
         this._debugHookTypes = null;
         hasBadMapPolyfill || "function" !== typeof Object.preventExtensions || Object.preventExtensions(this);
       }
-      function shouldConstruct(Component) {
-        Component = Component.prototype;
-        return !(!Component || !Component.isReactComponent);
+      function shouldConstruct(Component4) {
+        Component4 = Component4.prototype;
+        return !(!Component4 || !Component4.isReactComponent);
       }
       function createWorkInProgress(current2, pendingProps) {
         var workInProgress2 = current2.alternate;
@@ -5779,10 +5779,10 @@ var require_react_dom_client_development = __commonJS({
       function resolveLazy(lazyType) {
         try {
           return callLazyInitInDEV(lazyType);
-        } catch (x) {
-          if (null !== x && "object" === typeof x && "function" === typeof x.then)
-            throw suspendedThenable = x, needsToResetSuspendedThenableDEV = true, SuspenseException;
-          throw x;
+        } catch (x2) {
+          if (null !== x2 && "object" === typeof x2 && "function" === typeof x2.then)
+            throw suspendedThenable = x2, needsToResetSuspendedThenableDEV = true, SuspenseException;
+          throw x2;
         }
       }
       function getSuspendedThenable() {
@@ -6499,9 +6499,9 @@ var require_react_dom_client_development = __commonJS({
             );
             thenableState$1 = null;
             return firstChildFiber;
-          } catch (x) {
-            if (x === SuspenseException || x === SuspenseActionException) throw x;
-            var fiber = createFiber(29, x, null, returnFiber.mode);
+          } catch (x2) {
+            if (x2 === SuspenseException || x2 === SuspenseActionException) throw x2;
+            var fiber = createFiber(29, x2, null, returnFiber.mode);
             fiber.lanes = lanes;
             fiber.return = returnFiber;
             var debugInfo = fiber._debugInfo = currentDebugInfo;
@@ -6593,14 +6593,14 @@ var require_react_dom_client_development = __commonJS({
           queue = queue.firstBaseUpdate;
           if (null !== queue) {
             do {
-              var clone = {
+              var clone2 = {
                 lane: queue.lane,
                 tag: queue.tag,
                 payload: queue.payload,
                 callback: null,
                 next: null
               };
-              null === newLast ? newFirst = newLast = clone : newLast = newLast.next = clone;
+              null === newLast ? newFirst = newLast = clone2 : newLast = newLast.next = clone2;
               queue = queue.next;
             } while (null !== queue);
             null === newLast ? newFirst = newLast = capturedUpdate : newLast = newLast.next = capturedUpdate;
@@ -6892,13 +6892,13 @@ var require_react_dom_client_development = __commonJS({
           if (!objectIs(nextDeps[i], prevDeps[i])) return false;
         return true;
       }
-      function renderWithHooks(current2, workInProgress2, Component, props, secondArg, nextRenderLanes) {
+      function renderWithHooks(current2, workInProgress2, Component4, props, secondArg, nextRenderLanes) {
         renderLanes = nextRenderLanes;
         currentlyRenderingFiber = workInProgress2;
         hookTypesDev = null !== current2 ? current2._debugHookTypes : null;
         hookTypesUpdateIndexDev = -1;
         ignorePreviousDependencies = null !== current2 && current2.type !== workInProgress2.type;
-        if ("[object AsyncFunction]" === Object.prototype.toString.call(Component) || "[object AsyncGeneratorFunction]" === Object.prototype.toString.call(Component))
+        if ("[object AsyncFunction]" === Object.prototype.toString.call(Component4) || "[object AsyncGeneratorFunction]" === Object.prototype.toString.call(Component4))
           nextRenderLanes = getComponentNameFromFiber(currentlyRenderingFiber), didWarnAboutAsyncClientComponent.has(nextRenderLanes) || (didWarnAboutAsyncClientComponent.add(nextRenderLanes), console.error(
             "%s is an async Client Component. Only Server Components can be async at the moment. This error is often caused by accidentally adding `'use client'` to a module that was originally written for the server.",
             null === nextRenderLanes ? "An unknown Component" : "<" + nextRenderLanes + ">"
@@ -6908,11 +6908,11 @@ var require_react_dom_client_development = __commonJS({
         workInProgress2.lanes = 0;
         ReactSharedInternals.H = null !== current2 && null !== current2.memoizedState ? HooksDispatcherOnUpdateInDEV : null !== hookTypesDev ? HooksDispatcherOnMountWithHookTypesInDEV : HooksDispatcherOnMountInDEV;
         shouldDoubleInvokeUserFnsInHooksDEV = nextRenderLanes = (workInProgress2.mode & StrictLegacyMode) !== NoMode;
-        var children = callComponentInDEV(Component, props, secondArg);
+        var children = callComponentInDEV(Component4, props, secondArg);
         shouldDoubleInvokeUserFnsInHooksDEV = false;
         didScheduleRenderPhaseUpdateDuringThisPass && (children = renderWithHooksAgain(
           workInProgress2,
-          Component,
+          Component4,
           props,
           secondArg
         ));
@@ -6921,7 +6921,7 @@ var require_react_dom_client_development = __commonJS({
           try {
             children = renderWithHooksAgain(
               workInProgress2,
-              Component,
+              Component4,
               props,
               secondArg
             );
@@ -6960,7 +6960,7 @@ var require_react_dom_client_development = __commonJS({
           "`use` was called from inside a try/catch block. This is not allowed and can lead to unexpected behavior. To handle errors triggered by `use`, wrap your component in a error boundary."
         )));
       }
-      function renderWithHooksAgain(workInProgress2, Component, props, secondArg) {
+      function renderWithHooksAgain(workInProgress2, Component4, props, secondArg) {
         currentlyRenderingFiber = workInProgress2;
         var numberOfReRenders = 0;
         do {
@@ -6983,7 +6983,7 @@ var require_react_dom_client_development = __commonJS({
           }
           hookTypesUpdateIndexDev = -1;
           ReactSharedInternals.H = HooksDispatcherOnRerenderInDEV;
-          children = callComponentInDEV(Component, props, secondArg);
+          children = callComponentInDEV(Component4, props, secondArg);
         } while (didScheduleRenderPhaseUpdateDuringThisPass);
         return children;
       }
@@ -7307,8 +7307,8 @@ var require_react_dom_client_development = __commonJS({
         ))
           hook.memoizedState = getServerSnapshot, didReceiveUpdate = true;
         hook = hook.queue;
-        var create = subscribeToStore.bind(null, fiber, hook, subscribe);
-        updateEffectImpl(2048, Passive, create, [subscribe]);
+        var create2 = subscribeToStore.bind(null, fiber, hook, subscribe);
+        updateEffectImpl(2048, Passive, create2, [subscribe]);
         if (hook.getSnapshot !== getSnapshot || cachedSnapshot || null !== workInProgressHook && workInProgressHook.memoizedState.tag & HasEffect) {
           fiber.flags |= 2048;
           pushSimpleEffect(
@@ -7615,9 +7615,9 @@ var require_react_dom_client_development = __commonJS({
         if ("object" === typeof currentStateHook && null !== currentStateHook && "function" === typeof currentStateHook.then)
           try {
             var state = useThenable(currentStateHook);
-          } catch (x) {
-            if (x === SuspenseException) throw SuspenseActionException;
-            throw x;
+          } catch (x2) {
+            if (x2 === SuspenseException) throw SuspenseActionException;
+            throw x2;
           }
         else state = currentStateHook;
         currentStateHook = updateWorkInProgressHook();
@@ -7644,12 +7644,12 @@ var require_react_dom_client_development = __commonJS({
         currentStateHook.memoizedState = action;
         return [stateHook, dispatch, false];
       }
-      function pushSimpleEffect(tag, inst, create, deps) {
-        tag = { tag, create, deps, inst, next: null };
+      function pushSimpleEffect(tag, inst, create2, deps) {
+        tag = { tag, create: create2, deps, inst, next: null };
         inst = currentlyRenderingFiber.updateQueue;
         null === inst && (inst = createFunctionComponentUpdateQueue(), currentlyRenderingFiber.updateQueue = inst);
-        create = inst.lastEffect;
-        null === create ? inst.lastEffect = tag.next = tag : (deps = create.next, create.next = tag, tag.next = deps, inst.lastEffect = tag);
+        create2 = inst.lastEffect;
+        null === create2 ? inst.lastEffect = tag.next = tag : (deps = create2.next, create2.next = tag, tag.next = deps, inst.lastEffect = tag);
         return tag;
       }
       function mountRef(initialValue) {
@@ -7657,29 +7657,29 @@ var require_react_dom_client_development = __commonJS({
         initialValue = { current: initialValue };
         return hook.memoizedState = initialValue;
       }
-      function mountEffectImpl(fiberFlags, hookFlags, create, deps) {
+      function mountEffectImpl(fiberFlags, hookFlags, create2, deps) {
         var hook = mountWorkInProgressHook();
         currentlyRenderingFiber.flags |= fiberFlags;
         hook.memoizedState = pushSimpleEffect(
           HasEffect | hookFlags,
           { destroy: void 0 },
-          create,
+          create2,
           void 0 === deps ? null : deps
         );
       }
-      function updateEffectImpl(fiberFlags, hookFlags, create, deps) {
+      function updateEffectImpl(fiberFlags, hookFlags, create2, deps) {
         var hook = updateWorkInProgressHook();
         deps = void 0 === deps ? null : deps;
         var inst = hook.memoizedState.inst;
-        null !== currentHook && null !== deps && areHookInputsEqual(deps, currentHook.memoizedState.deps) ? hook.memoizedState = pushSimpleEffect(hookFlags, inst, create, deps) : (currentlyRenderingFiber.flags |= fiberFlags, hook.memoizedState = pushSimpleEffect(
+        null !== currentHook && null !== deps && areHookInputsEqual(deps, currentHook.memoizedState.deps) ? hook.memoizedState = pushSimpleEffect(hookFlags, inst, create2, deps) : (currentlyRenderingFiber.flags |= fiberFlags, hook.memoizedState = pushSimpleEffect(
           HasEffect | hookFlags,
           inst,
-          create,
+          create2,
           deps
         ));
       }
-      function mountEffect(create, deps) {
-        (currentlyRenderingFiber.mode & StrictEffectsMode) !== NoMode ? mountEffectImpl(276826112, Passive, create, deps) : mountEffectImpl(8390656, Passive, create, deps);
+      function mountEffect(create2, deps) {
+        (currentlyRenderingFiber.mode & StrictEffectsMode) !== NoMode ? mountEffectImpl(276826112, Passive, create2, deps) : mountEffectImpl(8390656, Passive, create2, deps);
       }
       function useEffectEventImpl(payload) {
         currentlyRenderingFiber.flags |= 4;
@@ -7713,15 +7713,15 @@ var require_react_dom_client_development = __commonJS({
           return ref.impl.apply(void 0, arguments);
         };
       }
-      function mountLayoutEffect(create, deps) {
+      function mountLayoutEffect(create2, deps) {
         var fiberFlags = 4194308;
         (currentlyRenderingFiber.mode & StrictEffectsMode) !== NoMode && (fiberFlags |= 134217728);
-        return mountEffectImpl(fiberFlags, Layout, create, deps);
+        return mountEffectImpl(fiberFlags, Layout, create2, deps);
       }
-      function imperativeHandleEffect(create, ref) {
+      function imperativeHandleEffect(create2, ref) {
         if ("function" === typeof ref) {
-          create = create();
-          var refCleanup = ref(create);
+          create2 = create2();
+          var refCleanup = ref(create2);
           return function() {
             "function" === typeof refCleanup ? refCleanup() : ref(null);
           };
@@ -7730,14 +7730,14 @@ var require_react_dom_client_development = __commonJS({
           return ref.hasOwnProperty("current") || console.error(
             "Expected useImperativeHandle() first argument to either be a ref callback or React.createRef() object. Instead received: %s.",
             "an object with keys {" + Object.keys(ref).join(", ") + "}"
-          ), create = create(), ref.current = create, function() {
+          ), create2 = create2(), ref.current = create2, function() {
             ref.current = null;
           };
       }
-      function mountImperativeHandle(ref, create, deps) {
-        "function" !== typeof create && console.error(
+      function mountImperativeHandle(ref, create2, deps) {
+        "function" !== typeof create2 && console.error(
           "Expected useImperativeHandle() second argument to be a function that creates a handle. Instead received: %s.",
-          null !== create ? typeof create : "null"
+          null !== create2 ? typeof create2 : "null"
         );
         deps = null !== deps && void 0 !== deps ? deps.concat([ref]) : null;
         var fiberFlags = 4194308;
@@ -7745,20 +7745,20 @@ var require_react_dom_client_development = __commonJS({
         mountEffectImpl(
           fiberFlags,
           Layout,
-          imperativeHandleEffect.bind(null, create, ref),
+          imperativeHandleEffect.bind(null, create2, ref),
           deps
         );
       }
-      function updateImperativeHandle(ref, create, deps) {
-        "function" !== typeof create && console.error(
+      function updateImperativeHandle(ref, create2, deps) {
+        "function" !== typeof create2 && console.error(
           "Expected useImperativeHandle() second argument to be a function that creates a handle. Instead received: %s.",
-          null !== create ? typeof create : "null"
+          null !== create2 ? typeof create2 : "null"
         );
         deps = null !== deps && void 0 !== deps ? deps.concat([ref]) : null;
         updateEffectImpl(
           4,
           Layout,
-          imperativeHandleEffect.bind(null, create, ref),
+          imperativeHandleEffect.bind(null, create2, ref),
           deps
         );
       }
@@ -7856,7 +7856,7 @@ var require_react_dom_client_development = __commonJS({
       function releaseAsyncTransition() {
         ReactSharedInternals.asyncTransitions--;
       }
-      function startTransition(fiber, queue, pendingState, finishedState, callback) {
+      function startTransition3(fiber, queue, pendingState, finishedState, callback) {
         var previousPriority = ReactDOMSharedInternals.p;
         ReactDOMSharedInternals.p = 0 !== previousPriority && previousPriority < ContinuousEventPriority ? previousPriority : ContinuousEventPriority;
         var prevTransition = ReactSharedInternals.T, currentTransition = {};
@@ -7909,7 +7909,7 @@ var require_react_dom_client_development = __commonJS({
           );
         var queue = ensureFormComponentIsStateful(formFiber).queue;
         startHostActionTimer(formFiber);
-        startTransition(
+        startTransition3(
           formFiber,
           queue,
           pendingState,
@@ -7970,7 +7970,7 @@ var require_react_dom_client_development = __commonJS({
       }
       function mountTransition() {
         var stateHook = mountStateImpl(false);
-        stateHook = startTransition.bind(
+        stateHook = startTransition3.bind(
           null,
           currentlyRenderingFiber,
           stateHook.queue,
@@ -8204,17 +8204,17 @@ var require_react_dom_client_development = __commonJS({
           null
         ));
       }
-      function resolveClassComponentProps(Component, baseProps) {
+      function resolveClassComponentProps(Component4, baseProps) {
         var newProps = baseProps;
         if ("ref" in baseProps) {
           newProps = {};
           for (var propName in baseProps)
             "ref" !== propName && (newProps[propName] = baseProps[propName]);
         }
-        if (Component = Component.defaultProps) {
+        if (Component4 = Component4.defaultProps) {
           newProps === baseProps && (newProps = assign({}, newProps));
-          for (var _propName in Component)
-            void 0 === newProps[_propName] && (newProps[_propName] = Component[_propName]);
+          for (var _propName in Component4)
+            void 0 === newProps[_propName] && (newProps[_propName] = Component4[_propName]);
         }
         return newProps;
       }
@@ -8443,8 +8443,8 @@ var require_react_dom_client_development = __commonJS({
           renderLanes2
         );
       }
-      function updateForwardRef(current2, workInProgress2, Component, nextProps, renderLanes2) {
-        Component = Component.render;
+      function updateForwardRef(current2, workInProgress2, Component4, nextProps, renderLanes2) {
+        Component4 = Component4.render;
         var ref = workInProgress2.ref;
         if ("ref" in nextProps) {
           var propsWithoutRef = {};
@@ -8455,7 +8455,7 @@ var require_react_dom_client_development = __commonJS({
         nextProps = renderWithHooks(
           current2,
           workInProgress2,
-          Component,
+          Component4,
           propsWithoutRef,
           ref,
           renderLanes2
@@ -8468,19 +8468,19 @@ var require_react_dom_client_development = __commonJS({
         reconcileChildren(current2, workInProgress2, nextProps, renderLanes2);
         return workInProgress2.child;
       }
-      function updateMemoComponent(current2, workInProgress2, Component, nextProps, renderLanes2) {
+      function updateMemoComponent(current2, workInProgress2, Component4, nextProps, renderLanes2) {
         if (null === current2) {
-          var type = Component.type;
-          if ("function" === typeof type && !shouldConstruct(type) && void 0 === type.defaultProps && null === Component.compare)
-            return Component = resolveFunctionForHotReloading(type), workInProgress2.tag = 15, workInProgress2.type = Component, validateFunctionComponentInDev(workInProgress2, type), updateSimpleMemoComponent(
+          var type = Component4.type;
+          if ("function" === typeof type && !shouldConstruct(type) && void 0 === type.defaultProps && null === Component4.compare)
+            return Component4 = resolveFunctionForHotReloading(type), workInProgress2.tag = 15, workInProgress2.type = Component4, validateFunctionComponentInDev(workInProgress2, type), updateSimpleMemoComponent(
               current2,
               workInProgress2,
-              Component,
+              Component4,
               nextProps,
               renderLanes2
             );
           current2 = createFiberFromTypeAndProps(
-            Component.type,
+            Component4.type,
             null,
             nextProps,
             workInProgress2,
@@ -8494,9 +8494,9 @@ var require_react_dom_client_development = __commonJS({
         type = current2.child;
         if (!checkScheduledUpdateOrContext(current2, renderLanes2)) {
           var prevProps = type.memoizedProps;
-          Component = Component.compare;
-          Component = null !== Component ? Component : shallowEqual;
-          if (Component(prevProps, nextProps) && current2.ref === workInProgress2.ref)
+          Component4 = Component4.compare;
+          Component4 = null !== Component4 ? Component4 : shallowEqual;
+          if (Component4(prevProps, nextProps) && current2.ref === workInProgress2.ref)
             return bailoutOnAlreadyFinishedWork(
               current2,
               workInProgress2,
@@ -8509,7 +8509,7 @@ var require_react_dom_client_development = __commonJS({
         current2.return = workInProgress2;
         return workInProgress2.child = current2;
       }
-      function updateSimpleMemoComponent(current2, workInProgress2, Component, nextProps, renderLanes2) {
+      function updateSimpleMemoComponent(current2, workInProgress2, Component4, nextProps, renderLanes2) {
         if (null !== current2) {
           var prevProps = current2.memoizedProps;
           if (shallowEqual(prevProps, nextProps) && current2.ref === workInProgress2.ref && workInProgress2.type === current2.type)
@@ -8521,7 +8521,7 @@ var require_react_dom_client_development = __commonJS({
         return updateFunctionComponent(
           current2,
           workInProgress2,
-          Component,
+          Component4,
           nextProps,
           renderLanes2
         );
@@ -8711,9 +8711,9 @@ var require_react_dom_client_development = __commonJS({
             workInProgress2.flags |= 4194816;
         }
       }
-      function updateFunctionComponent(current2, workInProgress2, Component, nextProps, renderLanes2) {
-        if (Component.prototype && "function" === typeof Component.prototype.render) {
-          var componentName2 = getComponentNameFromType(Component) || "Unknown";
+      function updateFunctionComponent(current2, workInProgress2, Component4, nextProps, renderLanes2) {
+        if (Component4.prototype && "function" === typeof Component4.prototype.render) {
+          var componentName2 = getComponentNameFromType(Component4) || "Unknown";
           didWarnAboutBadClass[componentName2] || (console.error(
             "The <%s /> component appears to have a render method, but doesn't extend React.Component. This is likely to cause errors. Change %s to extend React.Component instead.",
             componentName2,
@@ -8724,15 +8724,15 @@ var require_react_dom_client_development = __commonJS({
           workInProgress2,
           null
         );
-        null === current2 && (validateFunctionComponentInDev(workInProgress2, workInProgress2.type), Component.contextTypes && (componentName2 = getComponentNameFromType(Component) || "Unknown", didWarnAboutContextTypes[componentName2] || (didWarnAboutContextTypes[componentName2] = true, console.error(
+        null === current2 && (validateFunctionComponentInDev(workInProgress2, workInProgress2.type), Component4.contextTypes && (componentName2 = getComponentNameFromType(Component4) || "Unknown", didWarnAboutContextTypes[componentName2] || (didWarnAboutContextTypes[componentName2] = true, console.error(
           "%s uses the legacy contextTypes API which was removed in React 19. Use React.createContext() with React.useContext() instead. (https://react.dev/link/legacy-context)",
           componentName2
         ))));
         prepareToReadContext(workInProgress2);
-        Component = renderWithHooks(
+        Component4 = renderWithHooks(
           current2,
           workInProgress2,
-          Component,
+          Component4,
           nextProps,
           void 0,
           renderLanes2
@@ -8742,30 +8742,30 @@ var require_react_dom_client_development = __commonJS({
           return bailoutHooks(current2, workInProgress2, renderLanes2), bailoutOnAlreadyFinishedWork(current2, workInProgress2, renderLanes2);
         isHydrating && nextProps && pushMaterializedTreeId(workInProgress2);
         workInProgress2.flags |= 1;
-        reconcileChildren(current2, workInProgress2, Component, renderLanes2);
+        reconcileChildren(current2, workInProgress2, Component4, renderLanes2);
         return workInProgress2.child;
       }
-      function replayFunctionComponent(current2, workInProgress2, nextProps, Component, secondArg, renderLanes2) {
+      function replayFunctionComponent(current2, workInProgress2, nextProps, Component4, secondArg, renderLanes2) {
         prepareToReadContext(workInProgress2);
         hookTypesUpdateIndexDev = -1;
         ignorePreviousDependencies = null !== current2 && current2.type !== workInProgress2.type;
         workInProgress2.updateQueue = null;
         nextProps = renderWithHooksAgain(
           workInProgress2,
-          Component,
+          Component4,
           nextProps,
           secondArg
         );
         finishRenderingHooks(current2, workInProgress2);
-        Component = checkDidRenderIdHook();
+        Component4 = checkDidRenderIdHook();
         if (null !== current2 && !didReceiveUpdate)
           return bailoutHooks(current2, workInProgress2, renderLanes2), bailoutOnAlreadyFinishedWork(current2, workInProgress2, renderLanes2);
-        isHydrating && Component && pushMaterializedTreeId(workInProgress2);
+        isHydrating && Component4 && pushMaterializedTreeId(workInProgress2);
         workInProgress2.flags |= 1;
         reconcileChildren(current2, workInProgress2, nextProps, renderLanes2);
         return workInProgress2.child;
       }
-      function updateClassComponent(current2, workInProgress2, Component, nextProps, renderLanes2) {
+      function updateClassComponent(current2, workInProgress2, Component4, nextProps, renderLanes2) {
         switch (shouldErrorImpl(workInProgress2)) {
           case false:
             var _instance = workInProgress2.stateNode, state = new workInProgress2.type(
@@ -8797,18 +8797,18 @@ var require_react_dom_client_development = __commonJS({
         prepareToReadContext(workInProgress2);
         if (null === workInProgress2.stateNode) {
           state = emptyContextObject;
-          _instance = Component.contextType;
-          "contextType" in Component && null !== _instance && (void 0 === _instance || _instance.$$typeof !== REACT_CONTEXT_TYPE) && !didWarnAboutInvalidateContextType.has(Component) && (didWarnAboutInvalidateContextType.add(Component), lane = void 0 === _instance ? " However, it is set to undefined. This can be caused by a typo or by mixing up named and default imports. This can also happen due to a circular dependency, so try moving the createContext() call to a separate file." : "object" !== typeof _instance ? " However, it is set to a " + typeof _instance + "." : _instance.$$typeof === REACT_CONSUMER_TYPE ? " Did you accidentally pass the Context.Consumer instead?" : " However, it is set to an object with keys {" + Object.keys(_instance).join(", ") + "}.", console.error(
+          _instance = Component4.contextType;
+          "contextType" in Component4 && null !== _instance && (void 0 === _instance || _instance.$$typeof !== REACT_CONTEXT_TYPE) && !didWarnAboutInvalidateContextType.has(Component4) && (didWarnAboutInvalidateContextType.add(Component4), lane = void 0 === _instance ? " However, it is set to undefined. This can be caused by a typo or by mixing up named and default imports. This can also happen due to a circular dependency, so try moving the createContext() call to a separate file." : "object" !== typeof _instance ? " However, it is set to a " + typeof _instance + "." : _instance.$$typeof === REACT_CONSUMER_TYPE ? " Did you accidentally pass the Context.Consumer instead?" : " However, it is set to an object with keys {" + Object.keys(_instance).join(", ") + "}.", console.error(
             "%s defines an invalid contextType. contextType should point to the Context object returned by React.createContext().%s",
-            getComponentNameFromType(Component) || "Component",
+            getComponentNameFromType(Component4) || "Component",
             lane
           ));
           "object" === typeof _instance && null !== _instance && (state = readContext(_instance));
-          _instance = new Component(nextProps, state);
+          _instance = new Component4(nextProps, state);
           if (workInProgress2.mode & StrictLegacyMode) {
             setIsStrictModeForDevtools(true);
             try {
-              _instance = new Component(nextProps, state);
+              _instance = new Component4(nextProps, state);
             } finally {
               setIsStrictModeForDevtools(false);
             }
@@ -8818,20 +8818,20 @@ var require_react_dom_client_development = __commonJS({
           workInProgress2.stateNode = _instance;
           _instance._reactInternals = workInProgress2;
           _instance._reactInternalInstance = fakeInternalInstance;
-          "function" === typeof Component.getDerivedStateFromProps && null === state && (state = getComponentNameFromType(Component) || "Component", didWarnAboutUninitializedState.has(state) || (didWarnAboutUninitializedState.add(state), console.error(
+          "function" === typeof Component4.getDerivedStateFromProps && null === state && (state = getComponentNameFromType(Component4) || "Component", didWarnAboutUninitializedState.has(state) || (didWarnAboutUninitializedState.add(state), console.error(
             "`%s` uses `getDerivedStateFromProps` but its initial state is %s. This is not recommended. Instead, define the initial state by assigning an object to `this.state` in the constructor of `%s`. This ensures that `getDerivedStateFromProps` arguments have a consistent shape.",
             state,
             null === _instance.state ? "null" : "undefined",
             state
           )));
-          if ("function" === typeof Component.getDerivedStateFromProps || "function" === typeof _instance.getSnapshotBeforeUpdate) {
+          if ("function" === typeof Component4.getDerivedStateFromProps || "function" === typeof _instance.getSnapshotBeforeUpdate) {
             var foundWillUpdateName = lane = state = null;
             "function" === typeof _instance.componentWillMount && true !== _instance.componentWillMount.__suppressDeprecationWarning ? state = "componentWillMount" : "function" === typeof _instance.UNSAFE_componentWillMount && (state = "UNSAFE_componentWillMount");
             "function" === typeof _instance.componentWillReceiveProps && true !== _instance.componentWillReceiveProps.__suppressDeprecationWarning ? lane = "componentWillReceiveProps" : "function" === typeof _instance.UNSAFE_componentWillReceiveProps && (lane = "UNSAFE_componentWillReceiveProps");
             "function" === typeof _instance.componentWillUpdate && true !== _instance.componentWillUpdate.__suppressDeprecationWarning ? foundWillUpdateName = "componentWillUpdate" : "function" === typeof _instance.UNSAFE_componentWillUpdate && (foundWillUpdateName = "UNSAFE_componentWillUpdate");
             if (null !== state || null !== lane || null !== foundWillUpdateName) {
-              _instance = getComponentNameFromType(Component) || "Component";
-              var newApiName = "function" === typeof Component.getDerivedStateFromProps ? "getDerivedStateFromProps()" : "getSnapshotBeforeUpdate()";
+              _instance = getComponentNameFromType(Component4) || "Component";
+              var newApiName = "function" === typeof Component4.getDerivedStateFromProps ? "getDerivedStateFromProps()" : "getSnapshotBeforeUpdate()";
               didWarnAboutLegacyLifecyclesAndDerivedState.has(_instance) || (didWarnAboutLegacyLifecyclesAndDerivedState.add(_instance), console.error(
                 "Unsafe legacy lifecycles will not be called for components using new component APIs.\n\n%s uses %s but also contains the following legacy lifecycles:%s%s%s\n\nThe above lifecycles should be removed. Learn more about this warning here:\nhttps://react.dev/link/unsafe-component-lifecycles",
                 _instance,
@@ -8843,8 +8843,8 @@ var require_react_dom_client_development = __commonJS({
             }
           }
           _instance = workInProgress2.stateNode;
-          state = getComponentNameFromType(Component) || "Component";
-          _instance.render || (Component.prototype && "function" === typeof Component.prototype.render ? console.error(
+          state = getComponentNameFromType(Component4) || "Component";
+          _instance.render || (Component4.prototype && "function" === typeof Component4.prototype.render ? console.error(
             "No `render` method found on the %s instance: did you accidentally return an object from the constructor?",
             state
           ) : console.error(
@@ -8863,11 +8863,11 @@ var require_react_dom_client_development = __commonJS({
             "contextType was defined as an instance property on %s. Use a static property to define contextType instead.",
             state
           );
-          Component.childContextTypes && !didWarnAboutChildContextTypes.has(Component) && (didWarnAboutChildContextTypes.add(Component), console.error(
+          Component4.childContextTypes && !didWarnAboutChildContextTypes.has(Component4) && (didWarnAboutChildContextTypes.add(Component4), console.error(
             "%s uses the legacy childContextTypes API which was removed in React 19. Use React.createContext() instead. (https://react.dev/link/legacy-context)",
             state
           ));
-          Component.contextTypes && !didWarnAboutContextTypes$1.has(Component) && (didWarnAboutContextTypes$1.add(Component), console.error(
+          Component4.contextTypes && !didWarnAboutContextTypes$1.has(Component4) && (didWarnAboutContextTypes$1.add(Component4), console.error(
             "%s uses the legacy contextTypes API which was removed in React 19. Use React.createContext() with static contextType instead. (https://react.dev/link/legacy-context)",
             state
           ));
@@ -8875,9 +8875,9 @@ var require_react_dom_client_development = __commonJS({
             "%s has a method called componentShouldUpdate(). Did you mean shouldComponentUpdate()? The name is phrased as a question because the function is expected to return a value.",
             state
           );
-          Component.prototype && Component.prototype.isPureReactComponent && "undefined" !== typeof _instance.shouldComponentUpdate && console.error(
+          Component4.prototype && Component4.prototype.isPureReactComponent && "undefined" !== typeof _instance.shouldComponentUpdate && console.error(
             "%s has a method called shouldComponentUpdate(). shouldComponentUpdate should not be used when extending React.PureComponent. Please extend React.Component if shouldComponentUpdate is used.",
-            getComponentNameFromType(Component) || "A pure component"
+            getComponentNameFromType(Component4) || "A pure component"
           );
           "function" === typeof _instance.componentDidUnmount && console.error(
             "%s has a method called componentDidUnmount(). But there is no such lifecycle method. Did you mean componentWillUnmount()?",
@@ -8905,9 +8905,9 @@ var require_react_dom_client_development = __commonJS({
             state,
             state
           );
-          "function" !== typeof _instance.getSnapshotBeforeUpdate || "function" === typeof _instance.componentDidUpdate || didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate.has(Component) || (didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate.add(Component), console.error(
+          "function" !== typeof _instance.getSnapshotBeforeUpdate || "function" === typeof _instance.componentDidUpdate || didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate.has(Component4) || (didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate.add(Component4), console.error(
             "%s: getSnapshotBeforeUpdate() should be used with componentDidUpdate(). This component defines getSnapshotBeforeUpdate() only.",
-            getComponentNameFromType(Component)
+            getComponentNameFromType(Component4)
           ));
           "function" === typeof _instance.getDerivedStateFromProps && console.error(
             "%s: getDerivedStateFromProps() is defined as an instance method and will be ignored. Instead, declare it as a static method.",
@@ -8917,12 +8917,12 @@ var require_react_dom_client_development = __commonJS({
             "%s: getDerivedStateFromError() is defined as an instance method and will be ignored. Instead, declare it as a static method.",
             state
           );
-          "function" === typeof Component.getSnapshotBeforeUpdate && console.error(
+          "function" === typeof Component4.getSnapshotBeforeUpdate && console.error(
             "%s: getSnapshotBeforeUpdate() is defined as a static method and will be ignored. Instead, declare it as an instance method.",
             state
           );
           (lane = _instance.state) && ("object" !== typeof lane || isArrayImpl(lane)) && console.error("%s.state: must be set to an object or null", state);
-          "function" === typeof _instance.getChildContext && "object" !== typeof Component.childContextTypes && console.error(
+          "function" === typeof _instance.getChildContext && "object" !== typeof Component4.childContextTypes && console.error(
             "%s.getChildContext(): childContextTypes must be defined in order to use getChildContext().",
             state
           );
@@ -8931,9 +8931,9 @@ var require_react_dom_client_development = __commonJS({
           _instance.state = workInProgress2.memoizedState;
           _instance.refs = {};
           initializeUpdateQueue(workInProgress2);
-          state = Component.contextType;
+          state = Component4.contextType;
           _instance.context = "object" === typeof state && null !== state ? readContext(state) : emptyContextObject;
-          _instance.state === nextProps && (state = getComponentNameFromType(Component) || "Component", didWarnAboutDirectlyAssigningPropsToState.has(state) || (didWarnAboutDirectlyAssigningPropsToState.add(state), console.error(
+          _instance.state === nextProps && (state = getComponentNameFromType(Component4) || "Component", didWarnAboutDirectlyAssigningPropsToState.has(state) || (didWarnAboutDirectlyAssigningPropsToState.add(state), console.error(
             "%s: It is not recommended to assign props directly to state because updates to props won't be reflected in state. In most cases, it is better to use props directly.",
             state
           )));
@@ -8946,14 +8946,14 @@ var require_react_dom_client_development = __commonJS({
             _instance
           );
           _instance.state = workInProgress2.memoizedState;
-          state = Component.getDerivedStateFromProps;
+          state = Component4.getDerivedStateFromProps;
           "function" === typeof state && (applyDerivedStateFromProps(
             workInProgress2,
-            Component,
+            Component4,
             state,
             nextProps
           ), _instance.state = workInProgress2.memoizedState);
-          "function" === typeof Component.getDerivedStateFromProps || "function" === typeof _instance.getSnapshotBeforeUpdate || "function" !== typeof _instance.UNSAFE_componentWillMount && "function" !== typeof _instance.componentWillMount || (state = _instance.state, "function" === typeof _instance.componentWillMount && _instance.componentWillMount(), "function" === typeof _instance.UNSAFE_componentWillMount && _instance.UNSAFE_componentWillMount(), state !== _instance.state && (console.error(
+          "function" === typeof Component4.getDerivedStateFromProps || "function" === typeof _instance.getSnapshotBeforeUpdate || "function" !== typeof _instance.UNSAFE_componentWillMount && "function" !== typeof _instance.componentWillMount || (state = _instance.state, "function" === typeof _instance.componentWillMount && _instance.componentWillMount(), "function" === typeof _instance.UNSAFE_componentWillMount && _instance.UNSAFE_componentWillMount(), state !== _instance.state && (console.error(
             "%s.componentWillMount(): Assigning directly to this.state is deprecated (except inside a component's constructor). Use setState instead.",
             getComponentNameFromFiber(workInProgress2) || "Component"
           ), classComponentUpdater.enqueueReplaceState(
@@ -8967,13 +8967,13 @@ var require_react_dom_client_development = __commonJS({
         } else if (null === current2) {
           _instance = workInProgress2.stateNode;
           var unresolvedOldProps = workInProgress2.memoizedProps;
-          lane = resolveClassComponentProps(Component, unresolvedOldProps);
+          lane = resolveClassComponentProps(Component4, unresolvedOldProps);
           _instance.props = lane;
           var oldContext = _instance.context;
-          foundWillUpdateName = Component.contextType;
+          foundWillUpdateName = Component4.contextType;
           state = emptyContextObject;
           "object" === typeof foundWillUpdateName && null !== foundWillUpdateName && (state = readContext(foundWillUpdateName));
-          newApiName = Component.getDerivedStateFromProps;
+          newApiName = Component4.getDerivedStateFromProps;
           foundWillUpdateName = "function" === typeof newApiName || "function" === typeof _instance.getSnapshotBeforeUpdate;
           unresolvedOldProps = workInProgress2.pendingProps !== unresolvedOldProps;
           foundWillUpdateName || "function" !== typeof _instance.UNSAFE_componentWillReceiveProps && "function" !== typeof _instance.componentWillReceiveProps || (unresolvedOldProps || oldContext !== state) && callComponentWillReceiveProps(
@@ -8990,12 +8990,12 @@ var require_react_dom_client_development = __commonJS({
           oldContext = workInProgress2.memoizedState;
           unresolvedOldProps || oldState !== oldContext || hasForceUpdate ? ("function" === typeof newApiName && (applyDerivedStateFromProps(
             workInProgress2,
-            Component,
+            Component4,
             newApiName,
             nextProps
           ), oldContext = workInProgress2.memoizedState), (lane = hasForceUpdate || checkShouldComponentUpdate(
             workInProgress2,
-            Component,
+            Component4,
             lane,
             nextProps,
             oldState,
@@ -9006,14 +9006,14 @@ var require_react_dom_client_development = __commonJS({
           _instance = workInProgress2.stateNode;
           cloneUpdateQueue(current2, workInProgress2);
           state = workInProgress2.memoizedProps;
-          foundWillUpdateName = resolveClassComponentProps(Component, state);
+          foundWillUpdateName = resolveClassComponentProps(Component4, state);
           _instance.props = foundWillUpdateName;
           newApiName = workInProgress2.pendingProps;
           oldState = _instance.context;
-          oldContext = Component.contextType;
+          oldContext = Component4.contextType;
           lane = emptyContextObject;
           "object" === typeof oldContext && null !== oldContext && (lane = readContext(oldContext));
-          unresolvedOldProps = Component.getDerivedStateFromProps;
+          unresolvedOldProps = Component4.getDerivedStateFromProps;
           (oldContext = "function" === typeof unresolvedOldProps || "function" === typeof _instance.getSnapshotBeforeUpdate) || "function" !== typeof _instance.UNSAFE_componentWillReceiveProps && "function" !== typeof _instance.componentWillReceiveProps || (state !== newApiName || oldState !== lane) && callComponentWillReceiveProps(
             workInProgress2,
             _instance,
@@ -9028,12 +9028,12 @@ var require_react_dom_client_development = __commonJS({
           var newState = workInProgress2.memoizedState;
           state !== newApiName || oldState !== newState || hasForceUpdate || null !== current2 && null !== current2.dependencies && checkIfContextChanged(current2.dependencies) ? ("function" === typeof unresolvedOldProps && (applyDerivedStateFromProps(
             workInProgress2,
-            Component,
+            Component4,
             unresolvedOldProps,
             nextProps
           ), newState = workInProgress2.memoizedState), (foundWillUpdateName = hasForceUpdate || checkShouldComponentUpdate(
             workInProgress2,
-            Component,
+            Component4,
             foundWillUpdateName,
             nextProps,
             oldState,
@@ -9051,9 +9051,9 @@ var require_react_dom_client_development = __commonJS({
         if (lane || state) {
           lane = workInProgress2.stateNode;
           setCurrentFiber(workInProgress2);
-          if (state && "function" !== typeof Component.getDerivedStateFromError)
-            Component = null, profilerStartTime = -1;
-          else if (Component = callRenderInDEV(lane), workInProgress2.mode & StrictLegacyMode) {
+          if (state && "function" !== typeof Component4.getDerivedStateFromError)
+            Component4 = null, profilerStartTime = -1;
+          else if (Component4 = callRenderInDEV(lane), workInProgress2.mode & StrictLegacyMode) {
             setIsStrictModeForDevtools(true);
             try {
               callRenderInDEV(lane);
@@ -9070,9 +9070,9 @@ var require_react_dom_client_development = __commonJS({
           ), workInProgress2.child = reconcileChildFibers(
             workInProgress2,
             null,
-            Component,
+            Component4,
             renderLanes2
-          )) : reconcileChildren(current2, workInProgress2, Component, renderLanes2);
+          )) : reconcileChildren(current2, workInProgress2, Component4, renderLanes2);
           workInProgress2.memoizedState = lane.state;
           current2 = workInProgress2.child;
         } else
@@ -9094,19 +9094,19 @@ var require_react_dom_client_development = __commonJS({
         reconcileChildren(current2, workInProgress2, nextChildren, renderLanes2);
         return workInProgress2.child;
       }
-      function validateFunctionComponentInDev(workInProgress2, Component) {
-        Component && Component.childContextTypes && console.error(
+      function validateFunctionComponentInDev(workInProgress2, Component4) {
+        Component4 && Component4.childContextTypes && console.error(
           "childContextTypes cannot be defined on a function component.\n  %s.childContextTypes = ...",
-          Component.displayName || Component.name || "Component"
+          Component4.displayName || Component4.name || "Component"
         );
-        "function" === typeof Component.getDerivedStateFromProps && (workInProgress2 = getComponentNameFromType(Component) || "Unknown", didWarnAboutGetDerivedStateOnFunctionComponent[workInProgress2] || (console.error(
+        "function" === typeof Component4.getDerivedStateFromProps && (workInProgress2 = getComponentNameFromType(Component4) || "Unknown", didWarnAboutGetDerivedStateOnFunctionComponent[workInProgress2] || (console.error(
           "%s: Function components do not support getDerivedStateFromProps.",
           workInProgress2
         ), didWarnAboutGetDerivedStateOnFunctionComponent[workInProgress2] = true));
-        "object" === typeof Component.contextType && null !== Component.contextType && (Component = getComponentNameFromType(Component) || "Unknown", didWarnAboutContextTypeOnFunctionComponent[Component] || (console.error(
+        "object" === typeof Component4.contextType && null !== Component4.contextType && (Component4 = getComponentNameFromType(Component4) || "Unknown", didWarnAboutContextTypeOnFunctionComponent[Component4] || (console.error(
           "%s: Function components do not support contextType.",
-          Component
-        ), didWarnAboutContextTypeOnFunctionComponent[Component] = true));
+          Component4
+        ), didWarnAboutContextTypeOnFunctionComponent[Component4] = true));
       }
       function mountSuspenseOffscreenState(renderLanes2) {
         return { baseLanes: renderLanes2, cachePool: getSuspendedCache() };
@@ -15408,12 +15408,12 @@ var require_react_dom_client_development = __commonJS({
           typeof listener
         );
       }
-      function normalizeHTML(parent, html) {
+      function normalizeHTML(parent, html2) {
         parent = parent.namespaceURI === MATH_NAMESPACE || parent.namespaceURI === SVG_NAMESPACE ? parent.ownerDocument.createElementNS(
           parent.namespaceURI,
           parent.tagName
         ) : parent.ownerDocument.createElement(parent.tagName);
-        parent.innerHTML = html;
+        parent.innerHTML = html2;
         return parent.innerHTML;
       }
       function normalizeMarkupForTextOrAttribute(markup) {
@@ -17243,8 +17243,8 @@ var require_react_dom_client_development = __commonJS({
         props = void 0 !== props && null !== props && props.hasOwnProperty("display") ? props.display : null;
         instance.style.display = null == props || "boolean" === typeof props ? "" : ("" + props).trim();
       }
-      function unhideTextInstance(textInstance, text) {
-        textInstance.nodeValue = text;
+      function unhideTextInstance(textInstance, text2) {
+        textInstance.nodeValue = text2;
       }
       function clearContainerSparingly(container) {
         var nextNode = container.firstChild;
@@ -17309,8 +17309,8 @@ var require_react_dom_client_development = __commonJS({
         }
         return null;
       }
-      function canHydrateTextInstance(instance, text, inRootOrSingleton) {
-        if ("" === text) return null;
+      function canHydrateTextInstance(instance, text2, inRootOrSingleton) {
+        if ("" === text2) return null;
         for (; 3 !== instance.nodeType; ) {
           if ((1 !== instance.nodeType || "INPUT" !== instance.nodeName || "hidden" !== instance.type) && !inRootOrSingleton)
             return null;
@@ -17373,20 +17373,20 @@ var require_react_dom_client_development = __commonJS({
         }
         return 8 === instance.nodeType ? instance.data === ACTIVITY_START_DATA ? { type: "Activity", props: {} } : { type: "Suspense", props: {} } : instance.nodeValue;
       }
-      function diffHydratedTextForDevWarnings(textInstance, text, parentProps) {
-        return null === parentProps || true !== parentProps[SUPPRESS_HYDRATION_WARNING] ? (textInstance.nodeValue === text ? textInstance = null : (text = normalizeMarkupForTextOrAttribute(text), textInstance = normalizeMarkupForTextOrAttribute(textInstance.nodeValue) === text ? null : textInstance.nodeValue), textInstance) : null;
+      function diffHydratedTextForDevWarnings(textInstance, text2, parentProps) {
+        return null === parentProps || true !== parentProps[SUPPRESS_HYDRATION_WARNING] ? (textInstance.nodeValue === text2 ? textInstance = null : (text2 = normalizeMarkupForTextOrAttribute(text2), textInstance = normalizeMarkupForTextOrAttribute(textInstance.nodeValue) === text2 ? null : textInstance.nodeValue), textInstance) : null;
       }
       function getNextHydratableInstanceAfterHydrationBoundary(hydrationInstance) {
         hydrationInstance = hydrationInstance.nextSibling;
         for (var depth = 0; hydrationInstance; ) {
           if (8 === hydrationInstance.nodeType) {
-            var data = hydrationInstance.data;
-            if (data === SUSPENSE_END_DATA || data === ACTIVITY_END_DATA) {
+            var data2 = hydrationInstance.data;
+            if (data2 === SUSPENSE_END_DATA || data2 === ACTIVITY_END_DATA) {
               if (0 === depth)
                 return getNextHydratable(hydrationInstance.nextSibling);
               depth--;
             } else
-              data !== SUSPENSE_START_DATA && data !== SUSPENSE_FALLBACK_START_DATA && data !== SUSPENSE_PENDING_START_DATA && data !== SUSPENSE_QUEUED_START_DATA && data !== ACTIVITY_START_DATA || depth++;
+              data2 !== SUSPENSE_START_DATA && data2 !== SUSPENSE_FALLBACK_START_DATA && data2 !== SUSPENSE_PENDING_START_DATA && data2 !== SUSPENSE_QUEUED_START_DATA && data2 !== ACTIVITY_START_DATA || depth++;
           }
           hydrationInstance = hydrationInstance.nextSibling;
         }
@@ -17396,12 +17396,12 @@ var require_react_dom_client_development = __commonJS({
         targetInstance = targetInstance.previousSibling;
         for (var depth = 0; targetInstance; ) {
           if (8 === targetInstance.nodeType) {
-            var data = targetInstance.data;
-            if (data === SUSPENSE_START_DATA || data === SUSPENSE_FALLBACK_START_DATA || data === SUSPENSE_PENDING_START_DATA || data === SUSPENSE_QUEUED_START_DATA || data === ACTIVITY_START_DATA) {
+            var data2 = targetInstance.data;
+            if (data2 === SUSPENSE_START_DATA || data2 === SUSPENSE_FALLBACK_START_DATA || data2 === SUSPENSE_PENDING_START_DATA || data2 === SUSPENSE_QUEUED_START_DATA || data2 === ACTIVITY_START_DATA) {
               if (0 === depth) return targetInstance;
               depth--;
             } else
-              data !== SUSPENSE_END_DATA && data !== ACTIVITY_END_DATA || depth++;
+              data2 !== SUSPENSE_END_DATA && data2 !== ACTIVITY_END_DATA || depth++;
           }
           targetInstance = targetInstance.previousSibling;
         }
@@ -18513,14 +18513,14 @@ var require_react_dom_client_development = __commonJS({
         ));
       }
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-      var Scheduler = require_scheduler(), React2 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.element"), REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = /* @__PURE__ */ Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = /* @__PURE__ */ Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo"), REACT_LAZY_TYPE = /* @__PURE__ */ Symbol.for("react.lazy");
+      var Scheduler = require_scheduler(), React17 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.element"), REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = /* @__PURE__ */ Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = /* @__PURE__ */ Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo"), REACT_LAZY_TYPE = /* @__PURE__ */ Symbol.for("react.lazy");
       /* @__PURE__ */ Symbol.for("react.scope");
       var REACT_ACTIVITY_TYPE = /* @__PURE__ */ Symbol.for("react.activity");
       /* @__PURE__ */ Symbol.for("react.legacy_hidden");
       /* @__PURE__ */ Symbol.for("react.tracing_marker");
       var REACT_MEMO_CACHE_SENTINEL = /* @__PURE__ */ Symbol.for("react.memo_cache_sentinel");
       /* @__PURE__ */ Symbol.for("react.view_transition");
-      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = /* @__PURE__ */ Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React2.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
+      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = /* @__PURE__ */ Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React17.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
         pending: false,
         data: null,
         method: null,
@@ -19759,11 +19759,11 @@ var require_react_dom_client_development = __commonJS({
         pendingLegacyContextWarning = /* @__PURE__ */ new Map();
       };
       var callComponent = {
-        react_stack_bottom_frame: function(Component, props, secondArg) {
+        react_stack_bottom_frame: function(Component4, props, secondArg) {
           var wasRendering = isRendering;
           isRendering = true;
           try {
-            return Component(props, secondArg);
+            return Component4(props, secondArg);
           } finally {
             isRendering = wasRendering;
           }
@@ -19819,10 +19819,10 @@ var require_react_dom_client_development = __commonJS({
         callComponentWillUnmount
       ), callCreate = {
         react_stack_bottom_frame: function(effect) {
-          var create = effect.create;
+          var create2 = effect.create;
           effect = effect.inst;
-          create = create();
-          return effect.destroy = create;
+          create2 = create2();
+          return effect.destroy = create2;
         }
       }, callCreateInDEV = callCreate.react_stack_bottom_frame.bind(callCreate), callDestroy = {
         react_stack_bottom_frame: function(current2, nearestMountedAncestor, destroy) {
@@ -19932,38 +19932,38 @@ var require_react_dom_client_development = __commonJS({
           mountHookTypesDev();
           return readContext(context);
         },
-        useEffect: function(create, deps) {
+        useEffect: function(create2, deps) {
           currentHookNameInDev = "useEffect";
           mountHookTypesDev();
           checkDepsAreArrayDev(deps);
-          return mountEffect(create, deps);
+          return mountEffect(create2, deps);
         },
-        useImperativeHandle: function(ref, create, deps) {
+        useImperativeHandle: function(ref, create2, deps) {
           currentHookNameInDev = "useImperativeHandle";
           mountHookTypesDev();
           checkDepsAreArrayDev(deps);
-          return mountImperativeHandle(ref, create, deps);
+          return mountImperativeHandle(ref, create2, deps);
         },
-        useInsertionEffect: function(create, deps) {
+        useInsertionEffect: function(create2, deps) {
           currentHookNameInDev = "useInsertionEffect";
           mountHookTypesDev();
           checkDepsAreArrayDev(deps);
-          mountEffectImpl(4, Insertion, create, deps);
+          mountEffectImpl(4, Insertion, create2, deps);
         },
-        useLayoutEffect: function(create, deps) {
+        useLayoutEffect: function(create2, deps) {
           currentHookNameInDev = "useLayoutEffect";
           mountHookTypesDev();
           checkDepsAreArrayDev(deps);
-          return mountLayoutEffect(create, deps);
+          return mountLayoutEffect(create2, deps);
         },
-        useMemo: function(create, deps) {
+        useMemo: function(create2, deps) {
           currentHookNameInDev = "useMemo";
           mountHookTypesDev();
           checkDepsAreArrayDev(deps);
           var prevDispatcher = ReactSharedInternals.H;
           ReactSharedInternals.H = InvalidNestedHooksDispatcherOnMountInDEV;
           try {
-            return mountMemo(create, deps);
+            return mountMemo(create2, deps);
           } finally {
             ReactSharedInternals.H = prevDispatcher;
           }
@@ -20067,33 +20067,33 @@ var require_react_dom_client_development = __commonJS({
           updateHookTypesDev();
           return readContext(context);
         },
-        useEffect: function(create, deps) {
+        useEffect: function(create2, deps) {
           currentHookNameInDev = "useEffect";
           updateHookTypesDev();
-          return mountEffect(create, deps);
+          return mountEffect(create2, deps);
         },
-        useImperativeHandle: function(ref, create, deps) {
+        useImperativeHandle: function(ref, create2, deps) {
           currentHookNameInDev = "useImperativeHandle";
           updateHookTypesDev();
-          return mountImperativeHandle(ref, create, deps);
+          return mountImperativeHandle(ref, create2, deps);
         },
-        useInsertionEffect: function(create, deps) {
+        useInsertionEffect: function(create2, deps) {
           currentHookNameInDev = "useInsertionEffect";
           updateHookTypesDev();
-          mountEffectImpl(4, Insertion, create, deps);
+          mountEffectImpl(4, Insertion, create2, deps);
         },
-        useLayoutEffect: function(create, deps) {
+        useLayoutEffect: function(create2, deps) {
           currentHookNameInDev = "useLayoutEffect";
           updateHookTypesDev();
-          return mountLayoutEffect(create, deps);
+          return mountLayoutEffect(create2, deps);
         },
-        useMemo: function(create, deps) {
+        useMemo: function(create2, deps) {
           currentHookNameInDev = "useMemo";
           updateHookTypesDev();
           var prevDispatcher = ReactSharedInternals.H;
           ReactSharedInternals.H = InvalidNestedHooksDispatcherOnMountInDEV;
           try {
-            return mountMemo(create, deps);
+            return mountMemo(create2, deps);
           } finally {
             ReactSharedInternals.H = prevDispatcher;
           }
@@ -20197,33 +20197,33 @@ var require_react_dom_client_development = __commonJS({
           updateHookTypesDev();
           return readContext(context);
         },
-        useEffect: function(create, deps) {
+        useEffect: function(create2, deps) {
           currentHookNameInDev = "useEffect";
           updateHookTypesDev();
-          updateEffectImpl(2048, Passive, create, deps);
+          updateEffectImpl(2048, Passive, create2, deps);
         },
-        useImperativeHandle: function(ref, create, deps) {
+        useImperativeHandle: function(ref, create2, deps) {
           currentHookNameInDev = "useImperativeHandle";
           updateHookTypesDev();
-          return updateImperativeHandle(ref, create, deps);
+          return updateImperativeHandle(ref, create2, deps);
         },
-        useInsertionEffect: function(create, deps) {
+        useInsertionEffect: function(create2, deps) {
           currentHookNameInDev = "useInsertionEffect";
           updateHookTypesDev();
-          return updateEffectImpl(4, Insertion, create, deps);
+          return updateEffectImpl(4, Insertion, create2, deps);
         },
-        useLayoutEffect: function(create, deps) {
+        useLayoutEffect: function(create2, deps) {
           currentHookNameInDev = "useLayoutEffect";
           updateHookTypesDev();
-          return updateEffectImpl(4, Layout, create, deps);
+          return updateEffectImpl(4, Layout, create2, deps);
         },
-        useMemo: function(create, deps) {
+        useMemo: function(create2, deps) {
           currentHookNameInDev = "useMemo";
           updateHookTypesDev();
           var prevDispatcher = ReactSharedInternals.H;
           ReactSharedInternals.H = InvalidNestedHooksDispatcherOnUpdateInDEV;
           try {
-            return updateMemo(create, deps);
+            return updateMemo(create2, deps);
           } finally {
             ReactSharedInternals.H = prevDispatcher;
           }
@@ -20327,33 +20327,33 @@ var require_react_dom_client_development = __commonJS({
           updateHookTypesDev();
           return readContext(context);
         },
-        useEffect: function(create, deps) {
+        useEffect: function(create2, deps) {
           currentHookNameInDev = "useEffect";
           updateHookTypesDev();
-          updateEffectImpl(2048, Passive, create, deps);
+          updateEffectImpl(2048, Passive, create2, deps);
         },
-        useImperativeHandle: function(ref, create, deps) {
+        useImperativeHandle: function(ref, create2, deps) {
           currentHookNameInDev = "useImperativeHandle";
           updateHookTypesDev();
-          return updateImperativeHandle(ref, create, deps);
+          return updateImperativeHandle(ref, create2, deps);
         },
-        useInsertionEffect: function(create, deps) {
+        useInsertionEffect: function(create2, deps) {
           currentHookNameInDev = "useInsertionEffect";
           updateHookTypesDev();
-          return updateEffectImpl(4, Insertion, create, deps);
+          return updateEffectImpl(4, Insertion, create2, deps);
         },
-        useLayoutEffect: function(create, deps) {
+        useLayoutEffect: function(create2, deps) {
           currentHookNameInDev = "useLayoutEffect";
           updateHookTypesDev();
-          return updateEffectImpl(4, Layout, create, deps);
+          return updateEffectImpl(4, Layout, create2, deps);
         },
-        useMemo: function(create, deps) {
+        useMemo: function(create2, deps) {
           currentHookNameInDev = "useMemo";
           updateHookTypesDev();
           var prevDispatcher = ReactSharedInternals.H;
           ReactSharedInternals.H = InvalidNestedHooksDispatcherOnRerenderInDEV;
           try {
-            return updateMemo(create, deps);
+            return updateMemo(create2, deps);
           } finally {
             ReactSharedInternals.H = prevDispatcher;
           }
@@ -20463,38 +20463,38 @@ var require_react_dom_client_development = __commonJS({
           mountHookTypesDev();
           return readContext(context);
         },
-        useEffect: function(create, deps) {
+        useEffect: function(create2, deps) {
           currentHookNameInDev = "useEffect";
           warnInvalidHookAccess();
           mountHookTypesDev();
-          return mountEffect(create, deps);
+          return mountEffect(create2, deps);
         },
-        useImperativeHandle: function(ref, create, deps) {
+        useImperativeHandle: function(ref, create2, deps) {
           currentHookNameInDev = "useImperativeHandle";
           warnInvalidHookAccess();
           mountHookTypesDev();
-          return mountImperativeHandle(ref, create, deps);
+          return mountImperativeHandle(ref, create2, deps);
         },
-        useInsertionEffect: function(create, deps) {
+        useInsertionEffect: function(create2, deps) {
           currentHookNameInDev = "useInsertionEffect";
           warnInvalidHookAccess();
           mountHookTypesDev();
-          mountEffectImpl(4, Insertion, create, deps);
+          mountEffectImpl(4, Insertion, create2, deps);
         },
-        useLayoutEffect: function(create, deps) {
+        useLayoutEffect: function(create2, deps) {
           currentHookNameInDev = "useLayoutEffect";
           warnInvalidHookAccess();
           mountHookTypesDev();
-          return mountLayoutEffect(create, deps);
+          return mountLayoutEffect(create2, deps);
         },
-        useMemo: function(create, deps) {
+        useMemo: function(create2, deps) {
           currentHookNameInDev = "useMemo";
           warnInvalidHookAccess();
           mountHookTypesDev();
           var prevDispatcher = ReactSharedInternals.H;
           ReactSharedInternals.H = InvalidNestedHooksDispatcherOnMountInDEV;
           try {
-            return mountMemo(create, deps);
+            return mountMemo(create2, deps);
           } finally {
             ReactSharedInternals.H = prevDispatcher;
           }
@@ -20618,38 +20618,38 @@ var require_react_dom_client_development = __commonJS({
           updateHookTypesDev();
           return readContext(context);
         },
-        useEffect: function(create, deps) {
+        useEffect: function(create2, deps) {
           currentHookNameInDev = "useEffect";
           warnInvalidHookAccess();
           updateHookTypesDev();
-          updateEffectImpl(2048, Passive, create, deps);
+          updateEffectImpl(2048, Passive, create2, deps);
         },
-        useImperativeHandle: function(ref, create, deps) {
+        useImperativeHandle: function(ref, create2, deps) {
           currentHookNameInDev = "useImperativeHandle";
           warnInvalidHookAccess();
           updateHookTypesDev();
-          return updateImperativeHandle(ref, create, deps);
+          return updateImperativeHandle(ref, create2, deps);
         },
-        useInsertionEffect: function(create, deps) {
+        useInsertionEffect: function(create2, deps) {
           currentHookNameInDev = "useInsertionEffect";
           warnInvalidHookAccess();
           updateHookTypesDev();
-          return updateEffectImpl(4, Insertion, create, deps);
+          return updateEffectImpl(4, Insertion, create2, deps);
         },
-        useLayoutEffect: function(create, deps) {
+        useLayoutEffect: function(create2, deps) {
           currentHookNameInDev = "useLayoutEffect";
           warnInvalidHookAccess();
           updateHookTypesDev();
-          return updateEffectImpl(4, Layout, create, deps);
+          return updateEffectImpl(4, Layout, create2, deps);
         },
-        useMemo: function(create, deps) {
+        useMemo: function(create2, deps) {
           currentHookNameInDev = "useMemo";
           warnInvalidHookAccess();
           updateHookTypesDev();
           var prevDispatcher = ReactSharedInternals.H;
           ReactSharedInternals.H = InvalidNestedHooksDispatcherOnUpdateInDEV;
           try {
-            return updateMemo(create, deps);
+            return updateMemo(create2, deps);
           } finally {
             ReactSharedInternals.H = prevDispatcher;
           }
@@ -20773,38 +20773,38 @@ var require_react_dom_client_development = __commonJS({
           updateHookTypesDev();
           return readContext(context);
         },
-        useEffect: function(create, deps) {
+        useEffect: function(create2, deps) {
           currentHookNameInDev = "useEffect";
           warnInvalidHookAccess();
           updateHookTypesDev();
-          updateEffectImpl(2048, Passive, create, deps);
+          updateEffectImpl(2048, Passive, create2, deps);
         },
-        useImperativeHandle: function(ref, create, deps) {
+        useImperativeHandle: function(ref, create2, deps) {
           currentHookNameInDev = "useImperativeHandle";
           warnInvalidHookAccess();
           updateHookTypesDev();
-          return updateImperativeHandle(ref, create, deps);
+          return updateImperativeHandle(ref, create2, deps);
         },
-        useInsertionEffect: function(create, deps) {
+        useInsertionEffect: function(create2, deps) {
           currentHookNameInDev = "useInsertionEffect";
           warnInvalidHookAccess();
           updateHookTypesDev();
-          return updateEffectImpl(4, Insertion, create, deps);
+          return updateEffectImpl(4, Insertion, create2, deps);
         },
-        useLayoutEffect: function(create, deps) {
+        useLayoutEffect: function(create2, deps) {
           currentHookNameInDev = "useLayoutEffect";
           warnInvalidHookAccess();
           updateHookTypesDev();
-          return updateEffectImpl(4, Layout, create, deps);
+          return updateEffectImpl(4, Layout, create2, deps);
         },
-        useMemo: function(create, deps) {
+        useMemo: function(create2, deps) {
           currentHookNameInDev = "useMemo";
           warnInvalidHookAccess();
           updateHookTypesDev();
           var prevDispatcher = ReactSharedInternals.H;
           ReactSharedInternals.H = InvalidNestedHooksDispatcherOnUpdateInDEV;
           try {
-            return updateMemo(create, deps);
+            return updateMemo(create2, deps);
           } finally {
             ReactSharedInternals.H = prevDispatcher;
           }
@@ -21308,7 +21308,7 @@ var require_react_dom_client_development = __commonJS({
         }
       };
       (function() {
-        var isomorphicReactPackageVersion = React2.version;
+        var isomorphicReactPackageVersion = React17.version;
         if ("19.2.6" !== isomorphicReactPackageVersion)
           throw Error(
             'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.2.6\nLearn more: https://react.dev/warnings/version-mismatch")
@@ -21448,12 +21448,3047 @@ var require_client = __commonJS({
   }
 });
 
+// node_modules/react/cjs/react-jsx-runtime.development.js
+var require_react_jsx_runtime_development = __commonJS({
+  "node_modules/react/cjs/react-jsx-runtime.development.js"(exports) {
+    "use strict";
+    (function() {
+      function getComponentNameFromType(type) {
+        if (null == type) return null;
+        if ("function" === typeof type)
+          return type.$$typeof === REACT_CLIENT_REFERENCE ? null : type.displayName || type.name || null;
+        if ("string" === typeof type) return type;
+        switch (type) {
+          case REACT_FRAGMENT_TYPE:
+            return "Fragment";
+          case REACT_PROFILER_TYPE:
+            return "Profiler";
+          case REACT_STRICT_MODE_TYPE:
+            return "StrictMode";
+          case REACT_SUSPENSE_TYPE:
+            return "Suspense";
+          case REACT_SUSPENSE_LIST_TYPE:
+            return "SuspenseList";
+          case REACT_ACTIVITY_TYPE:
+            return "Activity";
+        }
+        if ("object" === typeof type)
+          switch ("number" === typeof type.tag && console.error(
+            "Received an unexpected object in getComponentNameFromType(). This is likely a bug in React. Please file an issue."
+          ), type.$$typeof) {
+            case REACT_PORTAL_TYPE:
+              return "Portal";
+            case REACT_CONTEXT_TYPE:
+              return type.displayName || "Context";
+            case REACT_CONSUMER_TYPE:
+              return (type._context.displayName || "Context") + ".Consumer";
+            case REACT_FORWARD_REF_TYPE:
+              var innerType = type.render;
+              type = type.displayName;
+              type || (type = innerType.displayName || innerType.name || "", type = "" !== type ? "ForwardRef(" + type + ")" : "ForwardRef");
+              return type;
+            case REACT_MEMO_TYPE:
+              return innerType = type.displayName || null, null !== innerType ? innerType : getComponentNameFromType(type.type) || "Memo";
+            case REACT_LAZY_TYPE:
+              innerType = type._payload;
+              type = type._init;
+              try {
+                return getComponentNameFromType(type(innerType));
+              } catch (x2) {
+              }
+          }
+        return null;
+      }
+      function testStringCoercion(value) {
+        return "" + value;
+      }
+      function checkKeyStringCoercion(value) {
+        try {
+          testStringCoercion(value);
+          var JSCompiler_inline_result = false;
+        } catch (e) {
+          JSCompiler_inline_result = true;
+        }
+        if (JSCompiler_inline_result) {
+          JSCompiler_inline_result = console;
+          var JSCompiler_temp_const = JSCompiler_inline_result.error;
+          var JSCompiler_inline_result$jscomp$0 = "function" === typeof Symbol && Symbol.toStringTag && value[Symbol.toStringTag] || value.constructor.name || "Object";
+          JSCompiler_temp_const.call(
+            JSCompiler_inline_result,
+            "The provided key is an unsupported type %s. This value must be coerced to a string before using it here.",
+            JSCompiler_inline_result$jscomp$0
+          );
+          return testStringCoercion(value);
+        }
+      }
+      function getTaskName(type) {
+        if (type === REACT_FRAGMENT_TYPE) return "<>";
+        if ("object" === typeof type && null !== type && type.$$typeof === REACT_LAZY_TYPE)
+          return "<...>";
+        try {
+          var name = getComponentNameFromType(type);
+          return name ? "<" + name + ">" : "<...>";
+        } catch (x2) {
+          return "<...>";
+        }
+      }
+      function getOwner() {
+        var dispatcher = ReactSharedInternals.A;
+        return null === dispatcher ? null : dispatcher.getOwner();
+      }
+      function UnknownOwner() {
+        return Error("react-stack-top-frame");
+      }
+      function hasValidKey(config) {
+        if (hasOwnProperty.call(config, "key")) {
+          var getter = Object.getOwnPropertyDescriptor(config, "key").get;
+          if (getter && getter.isReactWarning) return false;
+        }
+        return void 0 !== config.key;
+      }
+      function defineKeyPropWarningGetter(props, displayName) {
+        function warnAboutAccessingKey() {
+          specialPropKeyWarningShown || (specialPropKeyWarningShown = true, console.error(
+            "%s: `key` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://react.dev/link/special-props)",
+            displayName
+          ));
+        }
+        warnAboutAccessingKey.isReactWarning = true;
+        Object.defineProperty(props, "key", {
+          get: warnAboutAccessingKey,
+          configurable: true
+        });
+      }
+      function elementRefGetterWithDeprecationWarning() {
+        var componentName = getComponentNameFromType(this.type);
+        didWarnAboutElementRef[componentName] || (didWarnAboutElementRef[componentName] = true, console.error(
+          "Accessing element.ref was removed in React 19. ref is now a regular prop. It will be removed from the JSX Element type in a future release."
+        ));
+        componentName = this.props.ref;
+        return void 0 !== componentName ? componentName : null;
+      }
+      function ReactElement(type, key, props, owner, debugStack, debugTask) {
+        var refProp = props.ref;
+        type = {
+          $$typeof: REACT_ELEMENT_TYPE,
+          type,
+          key,
+          props,
+          _owner: owner
+        };
+        null !== (void 0 !== refProp ? refProp : null) ? Object.defineProperty(type, "ref", {
+          enumerable: false,
+          get: elementRefGetterWithDeprecationWarning
+        }) : Object.defineProperty(type, "ref", { enumerable: false, value: null });
+        type._store = {};
+        Object.defineProperty(type._store, "validated", {
+          configurable: false,
+          enumerable: false,
+          writable: true,
+          value: 0
+        });
+        Object.defineProperty(type, "_debugInfo", {
+          configurable: false,
+          enumerable: false,
+          writable: true,
+          value: null
+        });
+        Object.defineProperty(type, "_debugStack", {
+          configurable: false,
+          enumerable: false,
+          writable: true,
+          value: debugStack
+        });
+        Object.defineProperty(type, "_debugTask", {
+          configurable: false,
+          enumerable: false,
+          writable: true,
+          value: debugTask
+        });
+        Object.freeze && (Object.freeze(type.props), Object.freeze(type));
+        return type;
+      }
+      function jsxDEVImpl(type, config, maybeKey, isStaticChildren, debugStack, debugTask) {
+        var children = config.children;
+        if (void 0 !== children)
+          if (isStaticChildren)
+            if (isArrayImpl(children)) {
+              for (isStaticChildren = 0; isStaticChildren < children.length; isStaticChildren++)
+                validateChildKeys(children[isStaticChildren]);
+              Object.freeze && Object.freeze(children);
+            } else
+              console.error(
+                "React.jsx: Static children should always be an array. You are likely explicitly calling React.jsxs or React.jsxDEV. Use the Babel transform instead."
+              );
+          else validateChildKeys(children);
+        if (hasOwnProperty.call(config, "key")) {
+          children = getComponentNameFromType(type);
+          var keys = Object.keys(config).filter(function(k) {
+            return "key" !== k;
+          });
+          isStaticChildren = 0 < keys.length ? "{key: someKey, " + keys.join(": ..., ") + ": ...}" : "{key: someKey}";
+          didWarnAboutKeySpread[children + isStaticChildren] || (keys = 0 < keys.length ? "{" + keys.join(": ..., ") + ": ...}" : "{}", console.error(
+            'A props object containing a "key" prop is being spread into JSX:\n  let props = %s;\n  <%s {...props} />\nReact keys must be passed directly to JSX without using spread:\n  let props = %s;\n  <%s key={someKey} {...props} />',
+            isStaticChildren,
+            children,
+            keys,
+            children
+          ), didWarnAboutKeySpread[children + isStaticChildren] = true);
+        }
+        children = null;
+        void 0 !== maybeKey && (checkKeyStringCoercion(maybeKey), children = "" + maybeKey);
+        hasValidKey(config) && (checkKeyStringCoercion(config.key), children = "" + config.key);
+        if ("key" in config) {
+          maybeKey = {};
+          for (var propName in config)
+            "key" !== propName && (maybeKey[propName] = config[propName]);
+        } else maybeKey = config;
+        children && defineKeyPropWarningGetter(
+          maybeKey,
+          "function" === typeof type ? type.displayName || type.name || "Unknown" : type
+        );
+        return ReactElement(
+          type,
+          children,
+          maybeKey,
+          getOwner(),
+          debugStack,
+          debugTask
+        );
+      }
+      function validateChildKeys(node) {
+        isValidElement2(node) ? node._store && (node._store.validated = 1) : "object" === typeof node && null !== node && node.$$typeof === REACT_LAZY_TYPE && ("fulfilled" === node._payload.status ? isValidElement2(node._payload.value) && node._payload.value._store && (node._payload.value._store.validated = 1) : node._store && (node._store.validated = 1));
+      }
+      function isValidElement2(object) {
+        return "object" === typeof object && null !== object && object.$$typeof === REACT_ELEMENT_TYPE;
+      }
+      var React17 = require_react(), REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = /* @__PURE__ */ Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = /* @__PURE__ */ Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo"), REACT_LAZY_TYPE = /* @__PURE__ */ Symbol.for("react.lazy"), REACT_ACTIVITY_TYPE = /* @__PURE__ */ Symbol.for("react.activity"), REACT_CLIENT_REFERENCE = /* @__PURE__ */ Symbol.for("react.client.reference"), ReactSharedInternals = React17.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, hasOwnProperty = Object.prototype.hasOwnProperty, isArrayImpl = Array.isArray, createTask = console.createTask ? console.createTask : function() {
+        return null;
+      };
+      React17 = {
+        react_stack_bottom_frame: function(callStackForError) {
+          return callStackForError();
+        }
+      };
+      var specialPropKeyWarningShown;
+      var didWarnAboutElementRef = {};
+      var unknownOwnerDebugStack = React17.react_stack_bottom_frame.bind(
+        React17,
+        UnknownOwner
+      )();
+      var unknownOwnerDebugTask = createTask(getTaskName(UnknownOwner));
+      var didWarnAboutKeySpread = {};
+      exports.Fragment = REACT_FRAGMENT_TYPE;
+      exports.jsx = function(type, config, maybeKey) {
+        var trackActualOwner = 1e4 > ReactSharedInternals.recentlyCreatedOwnerStacks++;
+        return jsxDEVImpl(
+          type,
+          config,
+          maybeKey,
+          false,
+          trackActualOwner ? Error("react-stack-top-frame") : unknownOwnerDebugStack,
+          trackActualOwner ? createTask(getTaskName(type)) : unknownOwnerDebugTask
+        );
+      };
+      exports.jsxs = function(type, config, maybeKey) {
+        var trackActualOwner = 1e4 > ReactSharedInternals.recentlyCreatedOwnerStacks++;
+        return jsxDEVImpl(
+          type,
+          config,
+          maybeKey,
+          true,
+          trackActualOwner ? Error("react-stack-top-frame") : unknownOwnerDebugStack,
+          trackActualOwner ? createTask(getTaskName(type)) : unknownOwnerDebugTask
+        );
+      };
+    })();
+  }
+});
+
+// node_modules/react/jsx-runtime.js
+var require_jsx_runtime = __commonJS({
+  "node_modules/react/jsx-runtime.js"(exports, module) {
+    "use strict";
+    if (false) {
+      module.exports = null;
+    } else {
+      module.exports = require_react_jsx_runtime_development();
+    }
+  }
+});
+
 // src/App.jsx
-var import_react4 = __toESM(require_react());
+var import_react9 = __toESM(require_react());
 var import_client = __toESM(require_client());
 
+// node_modules/react-router/dist/development/chunk-KS7C4IRE.mjs
+var React = __toESM(require_react(), 1);
+var React2 = __toESM(require_react(), 1);
+var React3 = __toESM(require_react(), 1);
+var React4 = __toESM(require_react(), 1);
+var React9 = __toESM(require_react(), 1);
+var React8 = __toESM(require_react(), 1);
+var React7 = __toESM(require_react(), 1);
+var React6 = __toESM(require_react(), 1);
+var React5 = __toESM(require_react(), 1);
+var React10 = __toESM(require_react(), 1);
+var React11 = __toESM(require_react(), 1);
+var ABSOLUTE_URL_REGEX = /^(?:[a-z][a-z0-9+.-]*:|[\\/]{2})/i;
+var PROTOCOL_RELATIVE_URL_REGEX = /^[\\/]{2}/;
+function normalizeProtocolRelativeUrl(url, protocol) {
+  return protocol + url.replace(/\\/g, "/");
+}
+var PopStateEventType = "popstate";
+function isLocation(obj) {
+  return typeof obj === "object" && obj != null && "pathname" in obj && "search" in obj && "hash" in obj && "state" in obj && "key" in obj;
+}
+function createBrowserHistory(options = {}) {
+  function createBrowserLocation(window2, globalHistory) {
+    let maskedLocation = globalHistory.state?.masked;
+    let { pathname, search, hash } = maskedLocation || window2.location;
+    return createLocation(
+      "",
+      { pathname, search, hash },
+      // state defaults to `null` because `window.history.state` does
+      globalHistory.state && globalHistory.state.usr || null,
+      globalHistory.state && globalHistory.state.key || "default",
+      maskedLocation ? {
+        pathname: window2.location.pathname,
+        search: window2.location.search,
+        hash: window2.location.hash
+      } : void 0
+    );
+  }
+  function createBrowserHref(window2, to) {
+    return typeof to === "string" ? to : createPath(to);
+  }
+  return getUrlBasedHistory(
+    createBrowserLocation,
+    createBrowserHref,
+    null,
+    options
+  );
+}
+function invariant(value, message) {
+  if (value === false || value === null || typeof value === "undefined") {
+    throw new Error(message);
+  }
+}
+function warning(cond, message) {
+  if (!cond) {
+    if (typeof console !== "undefined") console.warn(message);
+    try {
+      throw new Error(message);
+    } catch (e) {
+    }
+  }
+}
+function createKey() {
+  return Math.random().toString(36).substring(2, 10);
+}
+function getHistoryState(location, index) {
+  return {
+    usr: location.state,
+    key: location.key,
+    idx: index,
+    masked: location.mask ? {
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash
+    } : void 0
+  };
+}
+function createLocation(current, to, state = null, key, mask) {
+  let location = {
+    pathname: typeof current === "string" ? current : current.pathname,
+    search: "",
+    hash: "",
+    ...typeof to === "string" ? parsePath(to) : to,
+    state,
+    // TODO: This could be cleaned up.  push/replace should probably just take
+    // full Locations now and avoid the need to run through this flow at all
+    // But that's a pretty big refactor to the current test suite so going to
+    // keep as is for the time being and just let any incoming keys take precedence
+    key: to && to.key || key || createKey(),
+    mask
+  };
+  return location;
+}
+function createPath({
+  pathname = "/",
+  search = "",
+  hash = ""
+}) {
+  if (search && search !== "?")
+    pathname += search.charAt(0) === "?" ? search : "?" + search;
+  if (hash && hash !== "#")
+    pathname += hash.charAt(0) === "#" ? hash : "#" + hash;
+  return pathname;
+}
+function parsePath(path) {
+  let parsedPath = {};
+  if (path) {
+    let hashIndex = path.indexOf("#");
+    if (hashIndex >= 0) {
+      parsedPath.hash = path.substring(hashIndex);
+      path = path.substring(0, hashIndex);
+    }
+    let searchIndex = path.indexOf("?");
+    if (searchIndex >= 0) {
+      parsedPath.search = path.substring(searchIndex);
+      path = path.substring(0, searchIndex);
+    }
+    if (path) {
+      parsedPath.pathname = path;
+    }
+  }
+  return parsedPath;
+}
+function getUrlBasedHistory(getLocation, createHref2, validateLocation, options = {}) {
+  let { window: window2 = document.defaultView, v5Compat = false } = options;
+  let globalHistory = window2.history;
+  let action = "POP";
+  let listener = null;
+  let index = getIndex();
+  if (index == null) {
+    index = 0;
+    globalHistory.replaceState({ ...globalHistory.state, idx: index }, "");
+  }
+  function getIndex() {
+    let state = globalHistory.state || { idx: null };
+    return state.idx;
+  }
+  function handlePop() {
+    action = "POP";
+    let nextIndex = getIndex();
+    let delta = nextIndex == null ? null : nextIndex - index;
+    index = nextIndex;
+    if (listener) {
+      listener({ action, location: history.location, delta });
+    }
+  }
+  function push(to, state) {
+    action = "PUSH";
+    let location = isLocation(to) ? to : createLocation(history.location, to, state);
+    if (validateLocation) validateLocation(location, to);
+    index = getIndex() + 1;
+    let historyState = getHistoryState(location, index);
+    let url = history.createHref(location.mask || location);
+    try {
+      globalHistory.pushState(historyState, "", url);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "DataCloneError") {
+        throw error;
+      }
+      window2.location.assign(url);
+    }
+    if (v5Compat && listener) {
+      listener({ action, location: history.location, delta: 1 });
+    }
+  }
+  function replace2(to, state) {
+    action = "REPLACE";
+    let location = isLocation(to) ? to : createLocation(history.location, to, state);
+    if (validateLocation) validateLocation(location, to);
+    index = getIndex();
+    let historyState = getHistoryState(location, index);
+    let url = history.createHref(location.mask || location);
+    globalHistory.replaceState(historyState, "", url);
+    if (v5Compat && listener) {
+      listener({ action, location: history.location, delta: 0 });
+    }
+  }
+  function createURL(to) {
+    return createBrowserURLImpl(window2, to);
+  }
+  let history = {
+    get action() {
+      return action;
+    },
+    get location() {
+      return getLocation(window2, globalHistory);
+    },
+    listen(fn) {
+      if (listener) {
+        throw new Error("A history only accepts one active listener");
+      }
+      window2.addEventListener(PopStateEventType, handlePop);
+      listener = fn;
+      return () => {
+        window2.removeEventListener(PopStateEventType, handlePop);
+        listener = null;
+      };
+    },
+    createHref(to) {
+      return createHref2(window2, to);
+    },
+    createURL,
+    encodeLocation(to) {
+      let url = createURL(to);
+      return {
+        pathname: url.pathname,
+        search: url.search,
+        hash: url.hash
+      };
+    },
+    push,
+    replace: replace2,
+    go(n) {
+      return globalHistory.go(n);
+    }
+  };
+  return history;
+}
+function createBrowserURLImpl(windowImpl, to, isAbsolute = false) {
+  let base = "http://localhost";
+  if (windowImpl) {
+    base = windowImpl.location.origin !== "null" ? windowImpl.location.origin : windowImpl.location.href;
+  }
+  invariant(base, "No window.location.(origin|href) available to create URL");
+  let href = typeof to === "string" ? to : createPath(to);
+  href = href.replace(/ $/, "%20");
+  if (!isAbsolute && PROTOCOL_RELATIVE_URL_REGEX.test(href)) {
+    href = base + href;
+  }
+  return new URL(href, base);
+}
+var _map;
+_map = /* @__PURE__ */ new WeakMap();
+function matchRoutes(routes, locationArg, basename = "/") {
+  return matchRoutesImpl(routes, locationArg, basename, false);
+}
+function matchRoutesImpl(routes, locationArg, basename, allowPartial, precomputedBranches) {
+  let location = typeof locationArg === "string" ? parsePath(locationArg) : locationArg;
+  let pathname = stripBasename(location.pathname || "/", basename);
+  if (pathname == null) {
+    return null;
+  }
+  let branches = precomputedBranches ?? flattenAndRankRoutes(routes);
+  let matches = null;
+  let decoded = decodePath(pathname);
+  for (let i = 0; matches == null && i < branches.length; ++i) {
+    matches = matchRouteBranch(
+      branches[i],
+      decoded,
+      allowPartial
+    );
+  }
+  return matches;
+}
+function convertRouteMatchToUiMatch(match, loaderData) {
+  let { route, pathname, params } = match;
+  return {
+    id: route.id,
+    pathname,
+    params,
+    data: loaderData[route.id],
+    loaderData: loaderData[route.id],
+    handle: route.handle
+  };
+}
+function flattenAndRankRoutes(routes) {
+  let branches = flattenRoutes(routes);
+  rankRouteBranches(branches);
+  return branches;
+}
+function flattenRoutes(routes, branches = [], parentsMeta = [], parentPath = "", _hasParentOptionalSegments = false) {
+  let flattenRoute = (route, index, hasParentOptionalSegments = _hasParentOptionalSegments, relativePath) => {
+    let meta = {
+      relativePath: relativePath === void 0 ? route.path || "" : relativePath,
+      caseSensitive: route.caseSensitive === true,
+      childrenIndex: index,
+      route
+    };
+    if (meta.relativePath.startsWith("/")) {
+      if (!meta.relativePath.startsWith(parentPath) && hasParentOptionalSegments) {
+        return;
+      }
+      invariant(
+        meta.relativePath.startsWith(parentPath),
+        `Absolute route path "${meta.relativePath}" nested under path "${parentPath}" is not valid. An absolute child route path must start with the combined path of all its parent routes.`
+      );
+      meta.relativePath = meta.relativePath.slice(parentPath.length);
+    }
+    let path = joinPaths([parentPath, meta.relativePath]);
+    let routesMeta = parentsMeta.concat(meta);
+    if (route.children && route.children.length > 0) {
+      invariant(
+        // Our types know better, but runtime JS may not!
+        // @ts-expect-error
+        route.index !== true,
+        `Index routes must not have child routes. Please remove all child routes from route path "${path}".`
+      );
+      flattenRoutes(
+        route.children,
+        branches,
+        routesMeta,
+        path,
+        hasParentOptionalSegments
+      );
+    }
+    if (route.path == null && !route.index) {
+      return;
+    }
+    branches.push({
+      path,
+      score: computeScore(path, route.index),
+      routesMeta: routesMeta.map((meta2, i) => {
+        let [matcher, params] = compilePath(
+          meta2.relativePath,
+          meta2.caseSensitive,
+          i === routesMeta.length - 1
+        );
+        return {
+          ...meta2,
+          matcher,
+          compiledParams: params
+        };
+      })
+    });
+  };
+  routes.forEach((route, index) => {
+    if (route.path === "" || !route.path?.includes("?")) {
+      flattenRoute(route, index);
+    } else {
+      for (let exploded of explodeOptionalSegments(route.path)) {
+        flattenRoute(route, index, true, exploded);
+      }
+    }
+  });
+  return branches;
+}
+function explodeOptionalSegments(path) {
+  let segments = path.split("/");
+  if (segments.length === 0) return [];
+  let [first, ...rest] = segments;
+  let isOptional = first.endsWith("?");
+  let required = first.replace(/\?$/, "");
+  if (rest.length === 0) {
+    return isOptional ? [required, ""] : [required];
+  }
+  let restExploded = explodeOptionalSegments(rest.join("/"));
+  let result = [];
+  result.push(
+    ...restExploded.map(
+      (subpath) => subpath === "" ? required : [required, subpath].join("/")
+    )
+  );
+  if (isOptional) {
+    result.push(...restExploded);
+  }
+  return result.map(
+    (exploded) => path.startsWith("/") && exploded === "" ? "/" : exploded
+  );
+}
+function rankRouteBranches(branches) {
+  branches.sort(
+    (a, b2) => a.score !== b2.score ? b2.score - a.score : compareIndexes(
+      a.routesMeta.map((meta) => meta.childrenIndex),
+      b2.routesMeta.map((meta) => meta.childrenIndex)
+    )
+  );
+}
+var paramRe = /^:[\w-]+$/;
+var dynamicSegmentValue = 3;
+var indexRouteValue = 2;
+var emptySegmentValue = 1;
+var staticSegmentValue = 10;
+var splatPenalty = -2;
+var isSplat = (s) => s === "*";
+function computeScore(path, index) {
+  let segments = path.split("/");
+  let initialScore = segments.length;
+  if (segments.some(isSplat)) {
+    initialScore += splatPenalty;
+  }
+  if (index) {
+    initialScore += indexRouteValue;
+  }
+  return segments.filter((s) => !isSplat(s)).reduce(
+    (score, segment) => score + (paramRe.test(segment) ? dynamicSegmentValue : segment === "" ? emptySegmentValue : staticSegmentValue),
+    initialScore
+  );
+}
+function compareIndexes(a, b2) {
+  let siblings = a.length === b2.length && a.slice(0, -1).every((n, i) => n === b2[i]);
+  return siblings ? (
+    // If two routes are siblings, we should try to match the earlier sibling
+    // first. This allows people to have fine-grained control over the matching
+    // behavior by simply putting routes with identical paths in the order they
+    // want them tried.
+    a[a.length - 1] - b2[b2.length - 1]
+  ) : (
+    // Otherwise, it doesn't really make sense to rank non-siblings by index,
+    // so they sort equally.
+    0
+  );
+}
+function matchRouteBranch(branch, pathname, allowPartial = false) {
+  let { routesMeta } = branch;
+  let matchedParams = {};
+  let matchedPathname = "/";
+  let matches = [];
+  for (let i = 0; i < routesMeta.length; ++i) {
+    let meta = routesMeta[i];
+    let end = i === routesMeta.length - 1;
+    let remainingPathname = matchedPathname === "/" ? pathname : pathname.slice(matchedPathname.length) || "/";
+    let pattern = {
+      path: meta.relativePath,
+      caseSensitive: meta.caseSensitive,
+      end
+    };
+    let match = (
+      // Use precomputed matcher if it exists
+      meta.matcher && meta.compiledParams ? matchPathImpl(
+        pattern,
+        remainingPathname,
+        meta.matcher,
+        meta.compiledParams
+      ) : matchPath(pattern, remainingPathname)
+    );
+    let route = meta.route;
+    if (!match && end && allowPartial && !routesMeta[routesMeta.length - 1].route.index) {
+      match = matchPath(
+        {
+          path: meta.relativePath,
+          caseSensitive: meta.caseSensitive,
+          end: false
+        },
+        remainingPathname
+      );
+    }
+    if (!match) {
+      return null;
+    }
+    Object.assign(matchedParams, match.params);
+    matches.push({
+      // TODO: Can this as be avoided?
+      params: matchedParams,
+      pathname: joinPaths([matchedPathname, match.pathname]),
+      pathnameBase: normalizePathname(
+        joinPaths([matchedPathname, match.pathnameBase])
+      ),
+      route
+    });
+    if (match.pathnameBase !== "/") {
+      matchedPathname = joinPaths([matchedPathname, match.pathnameBase]);
+    }
+  }
+  return matches;
+}
+function matchPath(pattern, pathname) {
+  if (typeof pattern === "string") {
+    pattern = { path: pattern, caseSensitive: false, end: true };
+  }
+  let [matcher, compiledParams] = compilePath(
+    pattern.path,
+    pattern.caseSensitive,
+    pattern.end
+  );
+  return matchPathImpl(pattern, pathname, matcher, compiledParams);
+}
+function matchPathImpl(pattern, pathname, matcher, compiledParams) {
+  let match = pathname.match(matcher);
+  if (!match) return null;
+  let matchedPathname = match[0];
+  let pathnameBase = matchedPathname.replace(/(.)\/+$/, "$1");
+  let captureGroups = match.slice(1);
+  let params = compiledParams.reduce(
+    (memo2, { paramName, isOptional }, index) => {
+      if (paramName === "*") {
+        let splatValue = captureGroups[index] || "";
+        pathnameBase = matchedPathname.slice(0, matchedPathname.length - splatValue.length).replace(/(.)\/+$/, "$1");
+      }
+      const value = captureGroups[index];
+      if (isOptional && !value) {
+        memo2[paramName] = void 0;
+      } else {
+        memo2[paramName] = (value || "").replace(/%2F/g, "/");
+      }
+      return memo2;
+    },
+    {}
+  );
+  return {
+    params,
+    pathname: matchedPathname,
+    pathnameBase,
+    pattern
+  };
+}
+function compilePath(path, caseSensitive = false, end = true) {
+  warning(
+    path === "*" || !path.endsWith("*") || path.endsWith("/*"),
+    `Route path "${path}" will be treated as if it were "${path.replace(/\*$/, "/*")}" because the \`*\` character must always follow a \`/\` in the pattern. To get rid of this warning, please change the route path to "${path.replace(/\*$/, "/*")}".`
+  );
+  let params = [];
+  let regexpSource = "^" + path.replace(/\/*\*?$/, "").replace(/^\/*/, "/").replace(/[\\.*+^${}|()[\]]/g, "\\$&").replace(
+    /\/:([\w-]+)(\?)?/g,
+    (match, paramName, isOptional, index, str) => {
+      params.push({ paramName, isOptional: isOptional != null });
+      if (isOptional) {
+        let nextChar = str.charAt(index + match.length);
+        if (nextChar && nextChar !== "/") {
+          return "/([^\\/]*)";
+        }
+        return "(?:/([^\\/]*))?";
+      }
+      return "/([^\\/]+)";
+    }
+  ).replace(/\/([\w-]+)\?(\/|$)/g, "(/$1)?$2");
+  if (path.endsWith("*")) {
+    params.push({ paramName: "*" });
+    regexpSource += path === "*" || path === "/*" ? "(.*)$" : "(?:\\/(.+)|\\/*)$";
+  } else if (end) {
+    regexpSource += "\\/*$";
+  } else if (path !== "" && path !== "/") {
+    regexpSource += "(?:(?=\\/|$))";
+  } else {
+  }
+  let matcher = new RegExp(regexpSource, caseSensitive ? void 0 : "i");
+  return [matcher, params];
+}
+function decodePath(value) {
+  try {
+    return value.split("/").map((v2) => decodeURIComponent(v2).replace(/\//g, "%2F")).join("/");
+  } catch (error) {
+    warning(
+      false,
+      `The URL path "${value}" could not be decoded because it is a malformed URL segment. This is probably due to a bad percent encoding (${error}).`
+    );
+    return value;
+  }
+}
+function stripBasename(pathname, basename) {
+  if (basename === "/") return pathname;
+  if (!pathname.toLowerCase().startsWith(basename.toLowerCase())) {
+    return null;
+  }
+  let startIndex = basename.endsWith("/") ? basename.length - 1 : basename.length;
+  let nextChar = pathname.charAt(startIndex);
+  if (nextChar && nextChar !== "/") {
+    return null;
+  }
+  return pathname.slice(startIndex) || "/";
+}
+function resolvePath(to, fromPathname = "/") {
+  let {
+    pathname: toPathname,
+    search = "",
+    hash = ""
+  } = typeof to === "string" ? parsePath(to) : to;
+  let pathname;
+  if (toPathname) {
+    toPathname = removeDoubleSlashes(toPathname);
+    if (toPathname.startsWith("/")) {
+      pathname = resolvePathname(toPathname.substring(1), "/");
+    } else {
+      pathname = resolvePathname(toPathname, fromPathname);
+    }
+  } else {
+    pathname = fromPathname;
+  }
+  return {
+    pathname,
+    search: normalizeSearch(search),
+    hash: normalizeHash(hash)
+  };
+}
+function resolvePathname(relativePath, fromPathname) {
+  let segments = removeTrailingSlash(fromPathname).split("/");
+  let relativeSegments = relativePath.split("/");
+  relativeSegments.forEach((segment) => {
+    if (segment === "..") {
+      if (segments.length > 1) segments.pop();
+    } else if (segment !== ".") {
+      segments.push(segment);
+    }
+  });
+  return segments.length > 1 ? segments.join("/") : "/";
+}
+function getInvalidPathError(char, field, dest, path) {
+  return `Cannot include a '${char}' character in a manually specified \`to.${field}\` field [${JSON.stringify(
+    path
+  )}].  Please separate it out to the \`to.${dest}\` field. Alternatively you may provide the full path as a string in <Link to="..."> and the router will parse it for you.`;
+}
+function getPathContributingMatches(matches) {
+  return matches.filter(
+    (match, index) => index === 0 || match.route.path && match.route.path.length > 0
+  );
+}
+function getResolveToMatches(matches) {
+  let pathMatches = getPathContributingMatches(matches);
+  return pathMatches.map(
+    (match, idx) => idx === pathMatches.length - 1 ? match.pathname : match.pathnameBase
+  );
+}
+function resolveTo(toArg, routePathnames, locationPathname, isPathRelative = false) {
+  let to;
+  if (typeof toArg === "string") {
+    to = parsePath(toArg);
+  } else {
+    to = { ...toArg };
+    invariant(
+      !to.pathname || !to.pathname.includes("?"),
+      getInvalidPathError("?", "pathname", "search", to)
+    );
+    invariant(
+      !to.pathname || !to.pathname.includes("#"),
+      getInvalidPathError("#", "pathname", "hash", to)
+    );
+    invariant(
+      !to.search || !to.search.includes("#"),
+      getInvalidPathError("#", "search", "hash", to)
+    );
+  }
+  let isEmptyPath = toArg === "" || to.pathname === "";
+  let toPathname = isEmptyPath ? "/" : to.pathname;
+  let from;
+  if (toPathname == null) {
+    from = locationPathname;
+  } else {
+    let routePathnameIndex = routePathnames.length - 1;
+    if (!isPathRelative && toPathname.startsWith("..")) {
+      let toSegments = toPathname.split("/");
+      while (toSegments[0] === "..") {
+        toSegments.shift();
+        routePathnameIndex -= 1;
+      }
+      to.pathname = toSegments.join("/");
+    }
+    from = routePathnameIndex >= 0 ? routePathnames[routePathnameIndex] : "/";
+  }
+  let path = resolvePath(to, from);
+  let hasExplicitTrailingSlash = toPathname && toPathname !== "/" && toPathname.endsWith("/");
+  let hasCurrentTrailingSlash = (isEmptyPath || toPathname === ".") && locationPathname.endsWith("/");
+  if (!path.pathname.endsWith("/") && (hasExplicitTrailingSlash || hasCurrentTrailingSlash)) {
+    path.pathname += "/";
+  }
+  return path;
+}
+var removeDoubleSlashes = (path) => path.replace(/[\\/]{2,}/g, "/");
+var joinPaths = (paths) => removeDoubleSlashes(paths.join("/"));
+var removeTrailingSlash = (path) => path.replace(/\/+$/, "");
+var normalizePathname = (pathname) => removeTrailingSlash(pathname).replace(/^\/*/, "/");
+var normalizeSearch = (search) => !search || search === "?" ? "" : search.startsWith("?") ? search : "?" + search;
+var normalizeHash = (hash) => !hash || hash === "#" ? "" : hash.startsWith("#") ? hash : "#" + hash;
+var ErrorResponseImpl = class {
+  constructor(status, statusText, data2, internal = false) {
+    this.status = status;
+    this.statusText = statusText || "";
+    this.internal = internal;
+    if (data2 instanceof Error) {
+      this.data = data2.toString();
+      this.error = data2;
+    } else {
+      this.data = data2;
+    }
+  }
+};
+function isRouteErrorResponse(error) {
+  return error != null && typeof error.status === "number" && typeof error.statusText === "string" && typeof error.internal === "boolean" && "data" in error;
+}
+function getRoutePattern(matches) {
+  let parts = matches.map((m2) => m2.route.path).filter(Boolean);
+  return joinPaths(parts) || "/";
+}
+var isBrowser = typeof window !== "undefined" && typeof window.document !== "undefined" && typeof window.document.createElement !== "undefined";
+function parseToInfo(_to, basename) {
+  let to = _to;
+  if (typeof to !== "string" || !ABSOLUTE_URL_REGEX.test(to)) {
+    return {
+      absoluteURL: void 0,
+      isExternal: false,
+      to
+    };
+  }
+  let absoluteURL = to;
+  let isExternal = false;
+  if (isBrowser) {
+    try {
+      let currentUrl = new URL(window.location.href);
+      let targetUrl = PROTOCOL_RELATIVE_URL_REGEX.test(to) ? new URL(normalizeProtocolRelativeUrl(to, currentUrl.protocol)) : new URL(to);
+      let path = stripBasename(targetUrl.pathname, basename);
+      if (targetUrl.origin === currentUrl.origin && path != null) {
+        to = path + targetUrl.search + targetUrl.hash;
+      } else {
+        isExternal = true;
+      }
+    } catch (e) {
+      warning(
+        false,
+        `<Link to="${to}"> contains an invalid URL which will probably break when clicked - please update to a valid URL path.`
+      );
+    }
+  }
+  return {
+    absoluteURL,
+    isExternal,
+    to
+  };
+}
+var objectProtoNames = Object.getOwnPropertyNames(Object.prototype).sort().join("\0");
+var validMutationMethodsArr = [
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE"
+];
+var validMutationMethods = new Set(
+  validMutationMethodsArr
+);
+var validRequestMethodsArr = [
+  "GET",
+  ...validMutationMethodsArr
+];
+var validRequestMethods = new Set(validRequestMethodsArr);
+var _routes;
+var _branches;
+var _hmrRoutes;
+var _hmrBranches;
+_routes = /* @__PURE__ */ new WeakMap();
+_branches = /* @__PURE__ */ new WeakMap();
+_hmrRoutes = /* @__PURE__ */ new WeakMap();
+_hmrBranches = /* @__PURE__ */ new WeakMap();
+var invalidProtocols = [
+  "about:",
+  "blob:",
+  "chrome:",
+  "chrome-untrusted:",
+  "content:",
+  "data:",
+  "devtools:",
+  "file:",
+  "filesystem:",
+  // eslint-disable-next-line no-script-url
+  "javascript:"
+];
+function hasInvalidProtocol(location) {
+  try {
+    return invalidProtocols.includes(new URL(location).protocol);
+  } catch {
+    return false;
+  }
+}
+var DataRouterContext = React.createContext(null);
+DataRouterContext.displayName = "DataRouter";
+var DataRouterStateContext = React.createContext(null);
+DataRouterStateContext.displayName = "DataRouterState";
+var RSCRouterContext = React.createContext(false);
+function useIsRSCRouterContext() {
+  return React.useContext(RSCRouterContext);
+}
+var ViewTransitionContext = React.createContext({
+  isTransitioning: false
+});
+ViewTransitionContext.displayName = "ViewTransition";
+var FetchersContext = React.createContext(
+  /* @__PURE__ */ new Map()
+);
+FetchersContext.displayName = "Fetchers";
+var AwaitContext = React.createContext(null);
+AwaitContext.displayName = "Await";
+var NavigationContext = React.createContext(
+  null
+);
+NavigationContext.displayName = "Navigation";
+var LocationContext = React.createContext(
+  null
+);
+LocationContext.displayName = "Location";
+var RouteContext = React.createContext({
+  outlet: null,
+  matches: [],
+  isDataRoute: false
+});
+RouteContext.displayName = "Route";
+var RouteErrorContext = React.createContext(null);
+RouteErrorContext.displayName = "RouteError";
+var ENABLE_DEV_WARNINGS = true;
+var ERROR_DIGEST_BASE = "REACT_ROUTER_ERROR";
+var ERROR_DIGEST_REDIRECT = "REDIRECT";
+var ERROR_DIGEST_ROUTE_ERROR_RESPONSE = "ROUTE_ERROR_RESPONSE";
+function decodeRedirectErrorDigest(digest) {
+  if (digest.startsWith(`${ERROR_DIGEST_BASE}:${ERROR_DIGEST_REDIRECT}:{`)) {
+    try {
+      let parsed = JSON.parse(digest.slice(28));
+      if (typeof parsed === "object" && parsed && typeof parsed.status === "number" && typeof parsed.statusText === "string" && typeof parsed.location === "string" && typeof parsed.reloadDocument === "boolean" && typeof parsed.replace === "boolean") {
+        return parsed;
+      }
+    } catch {
+    }
+  }
+}
+function decodeRouteErrorResponseDigest(digest) {
+  if (digest.startsWith(
+    `${ERROR_DIGEST_BASE}:${ERROR_DIGEST_ROUTE_ERROR_RESPONSE}:{`
+  )) {
+    try {
+      let parsed = JSON.parse(digest.slice(40));
+      if (typeof parsed === "object" && parsed && typeof parsed.status === "number" && typeof parsed.statusText === "string") {
+        return new ErrorResponseImpl(
+          parsed.status,
+          parsed.statusText,
+          parsed.data
+        );
+      }
+    } catch {
+    }
+  }
+}
+function useHref(to, { relative } = {}) {
+  invariant(
+    useInRouterContext(),
+    // TODO: This error is probably because they somehow have 2 versions of the
+    // router loaded. We can help them understand how to avoid that.
+    `useHref() may be used only in the context of a <Router> component.`
+  );
+  let { basename, navigator: navigator2 } = React2.useContext(NavigationContext);
+  let { hash, pathname, search } = useResolvedPath(to, { relative });
+  let joinedPathname = pathname;
+  if (basename !== "/") {
+    joinedPathname = pathname === "/" ? basename : joinPaths([basename, pathname]);
+  }
+  return navigator2.createHref({ pathname: joinedPathname, search, hash });
+}
+function useInRouterContext() {
+  return React2.useContext(LocationContext) != null;
+}
+function useLocation() {
+  invariant(
+    useInRouterContext(),
+    // TODO: This error is probably because they somehow have 2 versions of the
+    // router loaded. We can help them understand how to avoid that.
+    `useLocation() may be used only in the context of a <Router> component.`
+  );
+  return React2.useContext(LocationContext).location;
+}
+var navigateEffectWarning = `You should call navigate() in a React.useEffect(), not when your component is first rendered.`;
+function useIsomorphicLayoutEffect(cb) {
+  let isStatic = React2.useContext(NavigationContext).static;
+  if (!isStatic) {
+    React2.useLayoutEffect(cb);
+  }
+}
+function useNavigate() {
+  let { isDataRoute } = React2.useContext(RouteContext);
+  return isDataRoute ? useNavigateStable() : useNavigateUnstable();
+}
+function useNavigateUnstable() {
+  invariant(
+    useInRouterContext(),
+    // TODO: This error is probably because they somehow have 2 versions of the
+    // router loaded. We can help them understand how to avoid that.
+    `useNavigate() may be used only in the context of a <Router> component.`
+  );
+  let dataRouterContext = React2.useContext(DataRouterContext);
+  let { basename, navigator: navigator2 } = React2.useContext(NavigationContext);
+  let { matches } = React2.useContext(RouteContext);
+  let { pathname: locationPathname } = useLocation();
+  let routePathnamesJson = JSON.stringify(getResolveToMatches(matches));
+  let activeRef = React2.useRef(false);
+  useIsomorphicLayoutEffect(() => {
+    activeRef.current = true;
+  });
+  let navigate = React2.useCallback(
+    (to, options = {}) => {
+      warning(activeRef.current, navigateEffectWarning);
+      if (!activeRef.current) return;
+      if (typeof to === "number") {
+        navigator2.go(to);
+        return;
+      }
+      let path = resolveTo(
+        to,
+        JSON.parse(routePathnamesJson),
+        locationPathname,
+        options.relative === "path"
+      );
+      if (dataRouterContext == null && basename !== "/") {
+        path.pathname = path.pathname === "/" ? basename : joinPaths([basename, path.pathname]);
+      }
+      (!!options.replace ? navigator2.replace : navigator2.push)(
+        path,
+        options.state,
+        options
+      );
+    },
+    [
+      basename,
+      navigator2,
+      routePathnamesJson,
+      locationPathname,
+      dataRouterContext
+    ]
+  );
+  return navigate;
+}
+var OutletContext = React2.createContext(null);
+function useOutlet(context) {
+  let outlet = React2.useContext(RouteContext).outlet;
+  return React2.useMemo(
+    () => outlet && /* @__PURE__ */ React2.createElement(OutletContext.Provider, { value: context }, outlet),
+    [outlet, context]
+  );
+}
+function useParams() {
+  let { matches } = React2.useContext(RouteContext);
+  let routeMatch = matches[matches.length - 1];
+  return routeMatch?.params ?? {};
+}
+function useResolvedPath(to, { relative } = {}) {
+  let { matches } = React2.useContext(RouteContext);
+  let { pathname: locationPathname } = useLocation();
+  let routePathnamesJson = JSON.stringify(getResolveToMatches(matches));
+  return React2.useMemo(
+    () => resolveTo(
+      to,
+      JSON.parse(routePathnamesJson),
+      locationPathname,
+      relative === "path"
+    ),
+    [to, routePathnamesJson, locationPathname, relative]
+  );
+}
+function useRoutes(routes, locationArg) {
+  return useRoutesImpl(routes, locationArg);
+}
+function useRoutesImpl(routes, locationArg, dataRouterOpts) {
+  invariant(
+    useInRouterContext(),
+    // TODO: This error is probably because they somehow have 2 versions of the
+    // router loaded. We can help them understand how to avoid that.
+    `useRoutes() may be used only in the context of a <Router> component.`
+  );
+  let { navigator: navigator2 } = React2.useContext(NavigationContext);
+  let { matches: parentMatches } = React2.useContext(RouteContext);
+  let routeMatch = parentMatches[parentMatches.length - 1];
+  let parentParams = routeMatch ? routeMatch.params : {};
+  let parentPathname = routeMatch ? routeMatch.pathname : "/";
+  let parentPathnameBase = routeMatch ? routeMatch.pathnameBase : "/";
+  let parentRoute = routeMatch && routeMatch.route;
+  if (ENABLE_DEV_WARNINGS) {
+    let parentPath = parentRoute && parentRoute.path || "";
+    warningOnce(
+      parentPathname,
+      !parentRoute || parentPath.endsWith("*") || parentPath.endsWith("*?"),
+      `You rendered descendant <Routes> (or called \`useRoutes()\`) at "${parentPathname}" (under <Route path="${parentPath}">) but the parent route path has no trailing "*". This means if you navigate deeper, the parent won't match anymore and therefore the child routes will never render.
+
+Please change the parent <Route path="${parentPath}"> to <Route path="${parentPath === "/" ? "*" : `${parentPath}/*`}">.`
+    );
+  }
+  let locationFromContext = useLocation();
+  let location;
+  if (locationArg) {
+    let parsedLocationArg = typeof locationArg === "string" ? parsePath(locationArg) : locationArg;
+    invariant(
+      parentPathnameBase === "/" || parsedLocationArg.pathname?.startsWith(parentPathnameBase),
+      `When overriding the location using \`<Routes location>\` or \`useRoutes(routes, location)\`, the location pathname must begin with the portion of the URL pathname that was matched by all parent routes. The current pathname base is "${parentPathnameBase}" but pathname "${parsedLocationArg.pathname}" was given in the \`location\` prop.`
+    );
+    location = parsedLocationArg;
+  } else {
+    location = locationFromContext;
+  }
+  let pathname = location.pathname || "/";
+  let remainingPathname = pathname;
+  if (parentPathnameBase !== "/") {
+    let parentSegments = parentPathnameBase.replace(/^\//, "").split("/");
+    let segments = pathname.replace(/^\//, "").split("/");
+    remainingPathname = "/" + segments.slice(parentSegments.length).join("/");
+  }
+  let matches = dataRouterOpts && dataRouterOpts.state.matches.length ? (
+    // If we're in a data router, use the matches we've already identified but ensure
+    // we have the latest route instances from the manifest in case elements have changed
+    dataRouterOpts.state.matches.map(
+      (m2) => Object.assign(m2, {
+        route: dataRouterOpts.manifest[m2.route.id] || m2.route
+      })
+    )
+  ) : matchRoutes(routes, { pathname: remainingPathname });
+  if (ENABLE_DEV_WARNINGS) {
+    warning(
+      parentRoute || matches != null,
+      `No routes matched location "${location.pathname}${location.search}${location.hash}" `
+    );
+    warning(
+      matches == null || matches[matches.length - 1].route.element !== void 0 || matches[matches.length - 1].route.Component !== void 0 || matches[matches.length - 1].route.lazy !== void 0,
+      `Matched leaf route at location "${location.pathname}${location.search}${location.hash}" does not have an element or Component. This means it will render an <Outlet /> with a null value by default resulting in an "empty" page.`
+    );
+  }
+  let renderedMatches = _renderMatches(
+    matches && matches.map(
+      (match) => Object.assign({}, match, {
+        params: Object.assign({}, parentParams, match.params),
+        pathname: joinPaths([
+          parentPathnameBase,
+          // Re-encode pathnames that were decoded inside matchRoutes.
+          // Pre-encode `%`, `?` and `#` ahead of `encodeLocation` because it uses
+          // `new URL()` internally and we need to prevent it from treating
+          // them as separators
+          navigator2.encodeLocation ? navigator2.encodeLocation(
+            match.pathname.replace(/%/g, "%25").replace(/\?/g, "%3F").replace(/#/g, "%23")
+          ).pathname : match.pathname
+        ]),
+        pathnameBase: match.pathnameBase === "/" ? parentPathnameBase : joinPaths([
+          parentPathnameBase,
+          // Re-encode pathnames that were decoded inside matchRoutes
+          // Pre-encode `%`, `?` and `#` ahead of `encodeLocation` because it uses
+          // `new URL()` internally and we need to prevent it from treating
+          // them as separators
+          navigator2.encodeLocation ? navigator2.encodeLocation(
+            match.pathnameBase.replace(/%/g, "%25").replace(/\?/g, "%3F").replace(/#/g, "%23")
+          ).pathname : match.pathnameBase
+        ])
+      })
+    ),
+    parentMatches,
+    dataRouterOpts
+  );
+  if (locationArg && renderedMatches) {
+    return /* @__PURE__ */ React2.createElement(
+      LocationContext.Provider,
+      {
+        value: {
+          location: {
+            pathname: "/",
+            search: "",
+            hash: "",
+            state: null,
+            key: "default",
+            mask: void 0,
+            ...location
+          },
+          navigationType: "POP"
+          /* Pop */
+        }
+      },
+      renderedMatches
+    );
+  }
+  return renderedMatches;
+}
+function DefaultErrorComponent() {
+  let error = useRouteError();
+  let message = isRouteErrorResponse(error) ? `${error.status} ${error.statusText}` : error instanceof Error ? error.message : JSON.stringify(error);
+  let stack = error instanceof Error ? error.stack : null;
+  let lightgrey = "rgba(200,200,200, 0.5)";
+  let preStyles = { padding: "0.5rem", backgroundColor: lightgrey };
+  let codeStyles = { padding: "2px 4px", backgroundColor: lightgrey };
+  let devInfo = null;
+  if (ENABLE_DEV_WARNINGS) {
+    console.error(
+      "Error handled by React Router default ErrorBoundary:",
+      error
+    );
+    devInfo = /* @__PURE__ */ React2.createElement(React2.Fragment, null, /* @__PURE__ */ React2.createElement("p", null, "\u{1F4BF} Hey developer \u{1F44B}"), /* @__PURE__ */ React2.createElement("p", null, "You can provide a way better UX than this when your app throws errors by providing your own ", /* @__PURE__ */ React2.createElement("code", { style: codeStyles }, "ErrorBoundary"), " or", " ", /* @__PURE__ */ React2.createElement("code", { style: codeStyles }, "errorElement"), " prop on your route."));
+  }
+  return /* @__PURE__ */ React2.createElement(React2.Fragment, null, /* @__PURE__ */ React2.createElement("h2", null, "Unexpected Application Error!"), /* @__PURE__ */ React2.createElement("h3", { style: { fontStyle: "italic" } }, message), stack ? /* @__PURE__ */ React2.createElement("pre", { style: preStyles }, stack) : null, devInfo);
+}
+var defaultErrorElement = /* @__PURE__ */ React2.createElement(DefaultErrorComponent, null);
+var RenderErrorBoundary = class extends React2.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      location: props.location,
+      revalidation: props.revalidation,
+      error: props.error
+    };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  static getDerivedStateFromProps(props, state) {
+    if (state.location !== props.location || state.revalidation !== "idle" && props.revalidation === "idle") {
+      return {
+        error: props.error,
+        location: props.location,
+        revalidation: props.revalidation
+      };
+    }
+    return {
+      error: props.error !== void 0 ? props.error : state.error,
+      location: state.location,
+      revalidation: props.revalidation || state.revalidation
+    };
+  }
+  componentDidCatch(error, errorInfo) {
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    } else {
+      console.error(
+        "React Router caught the following error during render",
+        error
+      );
+    }
+  }
+  render() {
+    let error = this.state.error;
+    if (this.context && typeof error === "object" && error && "digest" in error && typeof error.digest === "string") {
+      const decoded = decodeRouteErrorResponseDigest(error.digest);
+      if (decoded) error = decoded;
+    }
+    let result = error !== void 0 ? /* @__PURE__ */ React2.createElement(RouteContext.Provider, { value: this.props.routeContext }, /* @__PURE__ */ React2.createElement(
+      RouteErrorContext.Provider,
+      {
+        value: error,
+        children: this.props.component
+      }
+    )) : this.props.children;
+    if (this.context) {
+      return /* @__PURE__ */ React2.createElement(RSCErrorHandler, { error }, result);
+    }
+    return result;
+  }
+};
+RenderErrorBoundary.contextType = RSCRouterContext;
+var errorRedirectHandledMap = /* @__PURE__ */ new WeakMap();
+function RSCErrorHandler({
+  children,
+  error
+}) {
+  let { basename } = React2.useContext(NavigationContext);
+  if (typeof error === "object" && error && "digest" in error && typeof error.digest === "string") {
+    let redirect2 = decodeRedirectErrorDigest(error.digest);
+    if (redirect2) {
+      let existingRedirect = errorRedirectHandledMap.get(error);
+      if (existingRedirect) throw existingRedirect;
+      let parsed = parseToInfo(redirect2.location, basename);
+      let target = parsed.absoluteURL || parsed.to;
+      if (hasInvalidProtocol(target)) {
+        throw new Error("Invalid redirect location");
+      }
+      if (isBrowser && !errorRedirectHandledMap.get(error)) {
+        if (parsed.isExternal || redirect2.reloadDocument) {
+          window.location.href = target;
+        } else {
+          const redirectPromise = Promise.resolve().then(
+            () => window.__reactRouterDataRouter.navigate(parsed.to, {
+              replace: redirect2.replace
+            })
+          );
+          errorRedirectHandledMap.set(error, redirectPromise);
+          throw redirectPromise;
+        }
+      }
+      return /* @__PURE__ */ React2.createElement("meta", { httpEquiv: "refresh", content: `0;url=${target}` });
+    }
+  }
+  return children;
+}
+function RenderedRoute({ routeContext, match, children }) {
+  let dataRouterContext = React2.useContext(DataRouterContext);
+  if (dataRouterContext && dataRouterContext.static && dataRouterContext.staticContext && (match.route.errorElement || match.route.ErrorBoundary)) {
+    dataRouterContext.staticContext._deepestRenderedBoundaryId = match.route.id;
+  }
+  return /* @__PURE__ */ React2.createElement(RouteContext.Provider, { value: routeContext }, children);
+}
+function _renderMatches(matches, parentMatches = [], dataRouterOpts) {
+  let dataRouterState = dataRouterOpts?.state;
+  if (matches == null) {
+    if (!dataRouterState) {
+      return null;
+    }
+    if (dataRouterState.errors) {
+      matches = dataRouterState.matches;
+    } else if (parentMatches.length === 0 && !dataRouterState.initialized && dataRouterState.matches.length > 0) {
+      matches = dataRouterState.matches;
+    } else {
+      return null;
+    }
+  }
+  let renderedMatches = matches;
+  let errors = dataRouterState?.errors;
+  if (errors != null) {
+    let errorIndex = renderedMatches.findIndex(
+      (m2) => m2.route.id && errors?.[m2.route.id] !== void 0
+    );
+    invariant(
+      errorIndex >= 0,
+      `Could not find a matching route for errors on route IDs: ${Object.keys(
+        errors
+      ).join(",")}`
+    );
+    renderedMatches = renderedMatches.slice(
+      0,
+      Math.min(renderedMatches.length, errorIndex + 1)
+    );
+  }
+  let renderFallback = false;
+  let fallbackIndex = -1;
+  if (dataRouterOpts && dataRouterState) {
+    renderFallback = dataRouterState.renderFallback;
+    for (let i = 0; i < renderedMatches.length; i++) {
+      let match = renderedMatches[i];
+      if (match.route.HydrateFallback || match.route.hydrateFallbackElement) {
+        fallbackIndex = i;
+      }
+      if (match.route.id) {
+        let { loaderData, errors: errors2 } = dataRouterState;
+        let needsToRunLoader = match.route.loader && !loaderData.hasOwnProperty(match.route.id) && (!errors2 || errors2[match.route.id] === void 0);
+        if (match.route.lazy || needsToRunLoader) {
+          if (dataRouterOpts.isStatic) {
+            renderFallback = true;
+          }
+          if (fallbackIndex >= 0) {
+            renderedMatches = renderedMatches.slice(0, fallbackIndex + 1);
+          } else {
+            renderedMatches = [renderedMatches[0]];
+          }
+          break;
+        }
+      }
+    }
+  }
+  let onErrorHandler = dataRouterOpts?.onError;
+  let onError = dataRouterState && onErrorHandler ? (error, errorInfo) => {
+    onErrorHandler(error, {
+      location: dataRouterState.location,
+      params: dataRouterState.matches?.[0]?.params ?? {},
+      pattern: getRoutePattern(dataRouterState.matches),
+      errorInfo
+    });
+  } : void 0;
+  return renderedMatches.reduceRight(
+    (outlet, match, index) => {
+      let error;
+      let shouldRenderHydrateFallback = false;
+      let errorElement = null;
+      let hydrateFallbackElement = null;
+      if (dataRouterState) {
+        error = errors && match.route.id ? errors[match.route.id] : void 0;
+        errorElement = match.route.errorElement || defaultErrorElement;
+        if (renderFallback) {
+          if (fallbackIndex < 0 && index === 0) {
+            warningOnce(
+              "route-fallback",
+              false,
+              "No `HydrateFallback` element provided to render during initial hydration"
+            );
+            shouldRenderHydrateFallback = true;
+            hydrateFallbackElement = null;
+          } else if (fallbackIndex === index) {
+            shouldRenderHydrateFallback = true;
+            hydrateFallbackElement = match.route.hydrateFallbackElement || null;
+          }
+        }
+      }
+      let matches2 = parentMatches.concat(renderedMatches.slice(0, index + 1));
+      let getChildren = () => {
+        let children;
+        if (error) {
+          children = errorElement;
+        } else if (shouldRenderHydrateFallback) {
+          children = hydrateFallbackElement;
+        } else if (match.route.Component) {
+          children = /* @__PURE__ */ React2.createElement(match.route.Component, null);
+        } else if (match.route.element) {
+          children = match.route.element;
+        } else {
+          children = outlet;
+        }
+        return /* @__PURE__ */ React2.createElement(
+          RenderedRoute,
+          {
+            match,
+            routeContext: {
+              outlet,
+              matches: matches2,
+              isDataRoute: dataRouterState != null
+            },
+            children
+          }
+        );
+      };
+      return dataRouterState && (match.route.ErrorBoundary || match.route.errorElement || index === 0) ? /* @__PURE__ */ React2.createElement(
+        RenderErrorBoundary,
+        {
+          location: dataRouterState.location,
+          revalidation: dataRouterState.revalidation,
+          component: errorElement,
+          error,
+          children: getChildren(),
+          routeContext: { outlet: null, matches: matches2, isDataRoute: true },
+          onError
+        }
+      ) : getChildren();
+    },
+    null
+  );
+}
+function getDataRouterConsoleError(hookName) {
+  return `${hookName} must be used within a data router.  See https://reactrouter.com/en/main/routers/picking-a-router.`;
+}
+function useDataRouterContext(hookName) {
+  let ctx = React2.useContext(DataRouterContext);
+  invariant(ctx, getDataRouterConsoleError(hookName));
+  return ctx;
+}
+function useDataRouterState(hookName) {
+  let state = React2.useContext(DataRouterStateContext);
+  invariant(state, getDataRouterConsoleError(hookName));
+  return state;
+}
+function useRouteContext(hookName) {
+  let route = React2.useContext(RouteContext);
+  invariant(route, getDataRouterConsoleError(hookName));
+  return route;
+}
+function useCurrentRouteId(hookName) {
+  let route = useRouteContext(hookName);
+  let thisRoute = route.matches[route.matches.length - 1];
+  invariant(
+    thisRoute.route.id,
+    `${hookName} can only be used on routes that contain a unique "id"`
+  );
+  return thisRoute.route.id;
+}
+function useRouteId() {
+  return useCurrentRouteId(
+    "useRouteId"
+    /* UseRouteId */
+  );
+}
+function useNavigation() {
+  let state = useDataRouterState(
+    "useNavigation"
+    /* UseNavigation */
+  );
+  return React2.useMemo(() => {
+    let { matches, historyAction, ...rest } = state.navigation;
+    return rest;
+  }, [state.navigation]);
+}
+function useMatches() {
+  let { matches, loaderData } = useDataRouterState(
+    "useMatches"
+    /* UseMatches */
+  );
+  return React2.useMemo(
+    () => matches.map((m2) => convertRouteMatchToUiMatch(m2, loaderData)),
+    [matches, loaderData]
+  );
+}
+function useRouteError() {
+  let error = React2.useContext(RouteErrorContext);
+  let state = useDataRouterState(
+    "useRouteError"
+    /* UseRouteError */
+  );
+  let routeId = useCurrentRouteId(
+    "useRouteError"
+    /* UseRouteError */
+  );
+  if (error !== void 0) {
+    return error;
+  }
+  return state.errors?.[routeId];
+}
+function useNavigateStable() {
+  let { router } = useDataRouterContext(
+    "useNavigate"
+    /* UseNavigateStable */
+  );
+  let id = useCurrentRouteId(
+    "useNavigate"
+    /* UseNavigateStable */
+  );
+  let activeRef = React2.useRef(false);
+  useIsomorphicLayoutEffect(() => {
+    activeRef.current = true;
+  });
+  let navigate = React2.useCallback(
+    async (to, options = {}) => {
+      warning(activeRef.current, navigateEffectWarning);
+      if (!activeRef.current) return;
+      if (typeof to === "number") {
+        await router.navigate(to);
+      } else {
+        await router.navigate(to, { fromRouteId: id, ...options });
+      }
+    },
+    [router, id]
+  );
+  return navigate;
+}
+var alreadyWarned = {};
+function warningOnce(key, cond, message) {
+  if (!cond && !alreadyWarned[key]) {
+    alreadyWarned[key] = true;
+    warning(false, message);
+  }
+}
+var USE_OPTIMISTIC = "useOptimistic";
+var useOptimisticImpl = React3[USE_OPTIMISTIC];
+var MemoizedDataRoutes = React3.memo(DataRoutes2);
+function DataRoutes2({
+  routes,
+  manifest,
+  future,
+  state,
+  isStatic,
+  onError
+}) {
+  return useRoutesImpl(routes, void 0, {
+    manifest,
+    state,
+    isStatic,
+    onError,
+    future
+  });
+}
+function Outlet(props) {
+  return useOutlet(props.context);
+}
+function Route(props) {
+  invariant(
+    false,
+    `A <Route> is only ever to be used as the child of <Routes> element, never rendered directly. Please wrap your <Route> in a <Routes>.`
+  );
+}
+function Router({
+  basename: basenameProp = "/",
+  children = null,
+  location: locationProp,
+  navigationType = "POP",
+  navigator: navigator2,
+  static: staticProp = false,
+  useTransitions
+}) {
+  invariant(
+    !useInRouterContext(),
+    `You cannot render a <Router> inside another <Router>. You should never have more than one in your app.`
+  );
+  let basename = basenameProp.replace(/^\/*/, "/");
+  let navigationContext = React3.useMemo(
+    () => ({
+      basename,
+      navigator: navigator2,
+      static: staticProp,
+      useTransitions,
+      future: {}
+    }),
+    [basename, navigator2, staticProp, useTransitions]
+  );
+  if (typeof locationProp === "string") {
+    locationProp = parsePath(locationProp);
+  }
+  let {
+    pathname = "/",
+    search = "",
+    hash = "",
+    state = null,
+    key = "default",
+    mask
+  } = locationProp;
+  let locationContext = React3.useMemo(() => {
+    let trailingPathname = stripBasename(pathname, basename);
+    if (trailingPathname == null) {
+      return null;
+    }
+    return {
+      location: {
+        pathname: trailingPathname,
+        search,
+        hash,
+        state,
+        key,
+        mask
+      },
+      navigationType
+    };
+  }, [basename, pathname, search, hash, state, key, navigationType, mask]);
+  warning(
+    locationContext != null,
+    `<Router basename="${basename}"> is not able to match the URL "${pathname}${search}${hash}" because it does not start with the basename, so the <Router> won't render anything.`
+  );
+  if (locationContext == null) {
+    return null;
+  }
+  return /* @__PURE__ */ React3.createElement(NavigationContext.Provider, { value: navigationContext }, /* @__PURE__ */ React3.createElement(LocationContext.Provider, { children, value: locationContext }));
+}
+function Routes({
+  children,
+  location
+}) {
+  return useRoutes(createRoutesFromChildren(children), location);
+}
+function createRoutesFromChildren(children, parentPath = []) {
+  let routes = [];
+  React3.Children.forEach(children, (element, index) => {
+    if (!React3.isValidElement(element)) {
+      return;
+    }
+    let treePath = [...parentPath, index];
+    if (element.type === React3.Fragment) {
+      routes.push.apply(
+        routes,
+        createRoutesFromChildren(element.props.children, treePath)
+      );
+      return;
+    }
+    invariant(
+      element.type === Route,
+      `[${typeof element.type === "string" ? element.type : element.type.name}] is not a <Route> component. All component children of <Routes> must be a <Route> or <React.Fragment>`
+    );
+    invariant(
+      !element.props.index || !element.props.children,
+      "An index route cannot have child routes."
+    );
+    let route = {
+      id: element.props.id || treePath.join("-"),
+      caseSensitive: element.props.caseSensitive,
+      element: element.props.element,
+      Component: element.props.Component,
+      index: element.props.index,
+      path: element.props.path,
+      middleware: element.props.middleware,
+      loader: element.props.loader,
+      action: element.props.action,
+      hydrateFallbackElement: element.props.hydrateFallbackElement,
+      HydrateFallback: element.props.HydrateFallback,
+      errorElement: element.props.errorElement,
+      ErrorBoundary: element.props.ErrorBoundary,
+      hasErrorBoundary: element.props.hasErrorBoundary === true || element.props.ErrorBoundary != null || element.props.errorElement != null,
+      shouldRevalidate: element.props.shouldRevalidate,
+      handle: element.props.handle,
+      lazy: element.props.lazy
+    };
+    if (element.props.children) {
+      route.children = createRoutesFromChildren(
+        element.props.children,
+        treePath
+      );
+    }
+    routes.push(route);
+  });
+  return routes;
+}
+var defaultMethod = "get";
+var defaultEncType = "application/x-www-form-urlencoded";
+function isHtmlElement(object) {
+  return typeof HTMLElement !== "undefined" && object instanceof HTMLElement;
+}
+function isButtonElement(object) {
+  return isHtmlElement(object) && object.tagName.toLowerCase() === "button";
+}
+function isFormElement(object) {
+  return isHtmlElement(object) && object.tagName.toLowerCase() === "form";
+}
+function isInputElement(object) {
+  return isHtmlElement(object) && object.tagName.toLowerCase() === "input";
+}
+function isModifiedEvent(event) {
+  return !!(event.metaKey || event.altKey || event.ctrlKey || event.shiftKey);
+}
+function shouldProcessLinkClick(event, target) {
+  return event.button === 0 && // Ignore everything but left clicks
+  (!target || target === "_self") && // Let browser handle "target=_blank" etc.
+  !isModifiedEvent(event);
+}
+var _formDataSupportsSubmitter = null;
+function isFormDataSubmitterSupported() {
+  if (_formDataSupportsSubmitter === null) {
+    try {
+      new FormData(
+        document.createElement("form"),
+        // @ts-expect-error if FormData supports the submitter parameter, this will throw
+        0
+      );
+      _formDataSupportsSubmitter = false;
+    } catch (e) {
+      _formDataSupportsSubmitter = true;
+    }
+  }
+  return _formDataSupportsSubmitter;
+}
+var supportedFormEncTypes = /* @__PURE__ */ new Set([
+  "application/x-www-form-urlencoded",
+  "multipart/form-data",
+  "text/plain"
+]);
+function getFormEncType(encType) {
+  if (encType != null && !supportedFormEncTypes.has(encType)) {
+    warning(
+      false,
+      `"${encType}" is not a valid \`encType\` for \`<Form>\`/\`<fetcher.Form>\` and will default to "${defaultEncType}"`
+    );
+    return null;
+  }
+  return encType;
+}
+function getFormSubmissionInfo(target, basename) {
+  let method;
+  let action;
+  let encType;
+  let formData;
+  let body;
+  if (isFormElement(target)) {
+    let attr = target.getAttribute("action");
+    action = attr ? stripBasename(attr, basename) : null;
+    method = target.getAttribute("method") || defaultMethod;
+    encType = getFormEncType(target.getAttribute("enctype")) || defaultEncType;
+    formData = new FormData(target);
+  } else if (isButtonElement(target) || isInputElement(target) && (target.type === "submit" || target.type === "image")) {
+    let form = target.form;
+    if (form == null) {
+      throw new Error(
+        `Cannot submit a <button> or <input type="submit"> without a <form>`
+      );
+    }
+    let attr = target.getAttribute("formaction") || form.getAttribute("action");
+    action = attr ? stripBasename(attr, basename) : null;
+    method = target.getAttribute("formmethod") || form.getAttribute("method") || defaultMethod;
+    encType = getFormEncType(target.getAttribute("formenctype")) || getFormEncType(form.getAttribute("enctype")) || defaultEncType;
+    formData = new FormData(form, target);
+    if (!isFormDataSubmitterSupported()) {
+      let { name, type, value } = target;
+      if (type === "image") {
+        let prefix = name ? `${name}.` : "";
+        formData.append(`${prefix}x`, "0");
+        formData.append(`${prefix}y`, "0");
+      } else if (name) {
+        formData.append(name, value);
+      }
+    }
+  } else if (isHtmlElement(target)) {
+    throw new Error(
+      `Cannot submit element that is not <form>, <button>, or <input type="submit|image">`
+    );
+  } else {
+    method = defaultMethod;
+    action = null;
+    encType = defaultEncType;
+    body = target;
+  }
+  if (formData && encType === "text/plain") {
+    body = formData;
+    formData = void 0;
+  }
+  return { action, method: method.toLowerCase(), encType, formData, body };
+}
+var objectProtoNames2 = Object.getOwnPropertyNames(Object.prototype).sort().join("\0");
+var ESCAPE_LOOKUP = {
+  "&": "\\u0026",
+  ">": "\\u003e",
+  "<": "\\u003c",
+  "\u2028": "\\u2028",
+  "\u2029": "\\u2029"
+};
+var ESCAPE_REGEX = /[&><\u2028\u2029]/g;
+function escapeHtml(html2) {
+  return html2.replace(ESCAPE_REGEX, (match) => ESCAPE_LOOKUP[match]);
+}
+function invariant2(value, message) {
+  if (value === false || value === null || typeof value === "undefined") {
+    throw new Error(message);
+  }
+}
+function singleFetchUrl(reqUrl, basename, trailingSlashAware, extension) {
+  let url = typeof reqUrl === "string" ? new URL(
+    reqUrl,
+    // This can be called during the SSR flow via PrefetchPageLinksImpl so
+    // don't assume window is available
+    typeof window === "undefined" ? "server://singlefetch/" : window.location.origin
+  ) : reqUrl;
+  if (trailingSlashAware) {
+    if (url.pathname.endsWith("/")) {
+      url.pathname = `${url.pathname}_.${extension}`;
+    } else {
+      url.pathname = `${url.pathname}.${extension}`;
+    }
+  } else {
+    if (url.pathname === "/") {
+      url.pathname = `_root.${extension}`;
+    } else if (basename && stripBasename(url.pathname, basename) === "/") {
+      url.pathname = `${removeTrailingSlash(basename)}/_root.${extension}`;
+    } else {
+      url.pathname = `${removeTrailingSlash(url.pathname)}.${extension}`;
+    }
+  }
+  return url;
+}
+async function loadRouteModule(route, routeModulesCache) {
+  if (route.id in routeModulesCache) {
+    return routeModulesCache[route.id];
+  }
+  try {
+    let routeModule = await import(
+      /* @vite-ignore */
+      /* webpackIgnore: true */
+      route.module
+    );
+    routeModulesCache[route.id] = routeModule;
+    return routeModule;
+  } catch (error) {
+    console.error(
+      `Error loading route module \`${route.module}\`, reloading page...`
+    );
+    console.error(error);
+    if (window.__reactRouterContext && window.__reactRouterContext.isSpaMode && // @ts-expect-error
+    import.meta.hot) {
+      throw error;
+    }
+    window.location.reload();
+    return new Promise(() => {
+    });
+  }
+}
+function isPageLinkDescriptor(object) {
+  return object != null && typeof object.page === "string";
+}
+function isHtmlLinkDescriptor(object) {
+  if (object == null) {
+    return false;
+  }
+  if (object.href == null) {
+    return object.rel === "preload" && typeof object.imageSrcSet === "string" && typeof object.imageSizes === "string";
+  }
+  return typeof object.rel === "string" && typeof object.href === "string";
+}
+async function getKeyedPrefetchLinks(matches, manifest, routeModules) {
+  let links = await Promise.all(
+    matches.map(async (match) => {
+      let route = manifest.routes[match.route.id];
+      if (route) {
+        let mod = await loadRouteModule(route, routeModules);
+        return mod.links ? mod.links() : [];
+      }
+      return [];
+    })
+  );
+  return dedupeLinkDescriptors(
+    links.flat(1).filter(isHtmlLinkDescriptor).filter((link) => link.rel === "stylesheet" || link.rel === "preload").map(
+      (link) => link.rel === "stylesheet" ? { ...link, rel: "prefetch", as: "style" } : { ...link, rel: "prefetch" }
+    )
+  );
+}
+function getNewMatchesForLinks(page, nextMatches, currentMatches, manifest, location, mode) {
+  let isNew = (match, index) => {
+    if (!currentMatches[index]) return true;
+    return match.route.id !== currentMatches[index].route.id;
+  };
+  let matchPathChanged = (match, index) => {
+    return (
+      // param change, /users/123 -> /users/456
+      currentMatches[index].pathname !== match.pathname || // splat param changed, which is not present in match.path
+      // e.g. /files/images/avatar.jpg -> files/finances.xls
+      currentMatches[index].route.path?.endsWith("*") && currentMatches[index].params["*"] !== match.params["*"]
+    );
+  };
+  if (mode === "assets") {
+    return nextMatches.filter(
+      (match, index) => isNew(match, index) || matchPathChanged(match, index)
+    );
+  }
+  if (mode === "data") {
+    return nextMatches.filter((match, index) => {
+      let manifestRoute = manifest.routes[match.route.id];
+      if (!manifestRoute || !manifestRoute.hasLoader) {
+        return false;
+      }
+      if (isNew(match, index) || matchPathChanged(match, index)) {
+        return true;
+      }
+      if (match.route.shouldRevalidate) {
+        let routeChoice = match.route.shouldRevalidate({
+          currentUrl: new URL(
+            location.pathname + location.search + location.hash,
+            window.origin
+          ),
+          currentParams: currentMatches[0]?.params || {},
+          nextUrl: new URL(page, window.origin),
+          nextParams: match.params,
+          defaultShouldRevalidate: true
+        });
+        if (typeof routeChoice === "boolean") {
+          return routeChoice;
+        }
+      }
+      return true;
+    });
+  }
+  return [];
+}
+function getModuleLinkHrefs(matches, manifest, { includeHydrateFallback } = {}) {
+  return dedupeHrefs(
+    matches.map((match) => {
+      let route = manifest.routes[match.route.id];
+      if (!route) return [];
+      let hrefs = [route.module];
+      if (route.clientActionModule) {
+        hrefs = hrefs.concat(route.clientActionModule);
+      }
+      if (route.clientLoaderModule) {
+        hrefs = hrefs.concat(route.clientLoaderModule);
+      }
+      if (includeHydrateFallback && route.hydrateFallbackModule) {
+        hrefs = hrefs.concat(route.hydrateFallbackModule);
+      }
+      if (route.imports) {
+        hrefs = hrefs.concat(route.imports);
+      }
+      return hrefs;
+    }).flat(1)
+  );
+}
+function dedupeHrefs(hrefs) {
+  return [...new Set(hrefs)];
+}
+function sortKeys(obj) {
+  let sorted = {};
+  let keys = Object.keys(obj).sort();
+  for (let key of keys) {
+    sorted[key] = obj[key];
+  }
+  return sorted;
+}
+function dedupeLinkDescriptors(descriptors, preloads) {
+  let set = /* @__PURE__ */ new Set();
+  let preloadsSet = new Set(preloads);
+  return descriptors.reduce((deduped, descriptor) => {
+    let alreadyModulePreload = preloads && !isPageLinkDescriptor(descriptor) && descriptor.as === "script" && descriptor.href && preloadsSet.has(descriptor.href);
+    if (alreadyModulePreload) {
+      return deduped;
+    }
+    let key = JSON.stringify(sortKeys(descriptor));
+    if (!set.has(key)) {
+      set.add(key);
+      deduped.push({ key, link: descriptor });
+    }
+    return deduped;
+  }, []);
+}
+function useDataRouterContext2() {
+  let context = React8.useContext(DataRouterContext);
+  invariant2(
+    context,
+    "You must render this element inside a <DataRouterContext.Provider> element"
+  );
+  return context;
+}
+function useDataRouterStateContext() {
+  let context = React8.useContext(DataRouterStateContext);
+  invariant2(
+    context,
+    "You must render this element inside a <DataRouterStateContext.Provider> element"
+  );
+  return context;
+}
+var FrameworkContext = React8.createContext(void 0);
+FrameworkContext.displayName = "FrameworkContext";
+function useFrameworkContext() {
+  let context = React8.useContext(FrameworkContext);
+  invariant2(
+    context,
+    "You must render this element inside a <HydratedRouter> element"
+  );
+  return context;
+}
+function usePrefetchBehavior(prefetch, theirElementProps) {
+  let frameworkContext = React8.useContext(FrameworkContext);
+  let [maybePrefetch, setMaybePrefetch] = React8.useState(false);
+  let [shouldPrefetch, setShouldPrefetch] = React8.useState(false);
+  let { onFocus, onBlur, onMouseEnter, onMouseLeave, onTouchStart } = theirElementProps;
+  let ref = React8.useRef(null);
+  React8.useEffect(() => {
+    if (prefetch === "render") {
+      setShouldPrefetch(true);
+    }
+    if (prefetch === "viewport") {
+      let callback = (entries2) => {
+        entries2.forEach((entry) => {
+          setShouldPrefetch(entry.isIntersecting);
+        });
+      };
+      let observer = new IntersectionObserver(callback, { threshold: 0.5 });
+      if (ref.current) observer.observe(ref.current);
+      return () => {
+        observer.disconnect();
+      };
+    }
+  }, [prefetch]);
+  React8.useEffect(() => {
+    if (maybePrefetch) {
+      let id = setTimeout(() => {
+        setShouldPrefetch(true);
+      }, 100);
+      return () => {
+        clearTimeout(id);
+      };
+    }
+  }, [maybePrefetch]);
+  let setIntent = () => {
+    setMaybePrefetch(true);
+  };
+  let cancelIntent = () => {
+    setMaybePrefetch(false);
+    setShouldPrefetch(false);
+  };
+  if (!frameworkContext) {
+    return [false, ref, {}];
+  }
+  if (prefetch !== "intent") {
+    return [shouldPrefetch, ref, {}];
+  }
+  return [
+    shouldPrefetch,
+    ref,
+    {
+      onFocus: composeEventHandlers(onFocus, setIntent),
+      onBlur: composeEventHandlers(onBlur, cancelIntent),
+      onMouseEnter: composeEventHandlers(onMouseEnter, setIntent),
+      onMouseLeave: composeEventHandlers(onMouseLeave, cancelIntent),
+      onTouchStart: composeEventHandlers(onTouchStart, setIntent)
+    }
+  ];
+}
+function composeEventHandlers(theirHandler, ourHandler) {
+  return (event) => {
+    theirHandler && theirHandler(event);
+    if (!event.defaultPrevented) {
+      ourHandler(event);
+    }
+  };
+}
+function PrefetchPageLinks({ page, ...linkProps }) {
+  let rsc = useIsRSCRouterContext();
+  let { nonce: contextNonce } = useFrameworkContext();
+  let { router } = useDataRouterContext2();
+  let matches = React8.useMemo(
+    () => matchRoutes(router.routes, page, router.basename),
+    [router.routes, page, router.basename]
+  );
+  if (!matches) {
+    return null;
+  }
+  if (linkProps.nonce == null && contextNonce) {
+    linkProps = { ...linkProps, nonce: contextNonce };
+  }
+  if (rsc) {
+    return /* @__PURE__ */ React8.createElement(RSCPrefetchPageLinksImpl, { page, matches, ...linkProps });
+  }
+  return /* @__PURE__ */ React8.createElement(PrefetchPageLinksImpl, { page, matches, ...linkProps });
+}
+function useKeyedPrefetchLinks(matches) {
+  let { manifest, routeModules } = useFrameworkContext();
+  let [keyedPrefetchLinks, setKeyedPrefetchLinks] = React8.useState([]);
+  React8.useEffect(() => {
+    let interrupted = false;
+    void getKeyedPrefetchLinks(matches, manifest, routeModules).then(
+      (links) => {
+        if (!interrupted) {
+          setKeyedPrefetchLinks(links);
+        }
+      }
+    );
+    return () => {
+      interrupted = true;
+    };
+  }, [matches, manifest, routeModules]);
+  return keyedPrefetchLinks;
+}
+function RSCPrefetchPageLinksImpl({
+  page,
+  matches: nextMatches,
+  ...linkProps
+}) {
+  let location = useLocation();
+  let { future } = useFrameworkContext();
+  let { basename } = useDataRouterContext2();
+  let dataHrefs = React8.useMemo(() => {
+    if (page === location.pathname + location.search + location.hash) {
+      return [];
+    }
+    let url = singleFetchUrl(
+      page,
+      basename,
+      future.v8_trailingSlashAwareDataRequests,
+      "rsc"
+    );
+    let hasSomeRoutesWithShouldRevalidate = false;
+    let targetRoutes = [];
+    for (let match of nextMatches) {
+      if (typeof match.route.shouldRevalidate === "function") {
+        hasSomeRoutesWithShouldRevalidate = true;
+      } else {
+        targetRoutes.push(match.route.id);
+      }
+    }
+    if (hasSomeRoutesWithShouldRevalidate && targetRoutes.length > 0) {
+      url.searchParams.set("_routes", targetRoutes.join(","));
+    }
+    return [url.pathname + url.search];
+  }, [
+    basename,
+    future.v8_trailingSlashAwareDataRequests,
+    page,
+    location,
+    nextMatches
+  ]);
+  return /* @__PURE__ */ React8.createElement(React8.Fragment, null, dataHrefs.map((href) => /* @__PURE__ */ React8.createElement("link", { key: href, rel: "prefetch", as: "fetch", href, ...linkProps })));
+}
+function PrefetchPageLinksImpl({
+  page,
+  matches: nextMatches,
+  ...linkProps
+}) {
+  let location = useLocation();
+  let { future, manifest, routeModules } = useFrameworkContext();
+  let { basename } = useDataRouterContext2();
+  let { loaderData, matches } = useDataRouterStateContext();
+  let newMatchesForData = React8.useMemo(
+    () => getNewMatchesForLinks(
+      page,
+      nextMatches,
+      matches,
+      manifest,
+      location,
+      "data"
+    ),
+    [page, nextMatches, matches, manifest, location]
+  );
+  let newMatchesForAssets = React8.useMemo(
+    () => getNewMatchesForLinks(
+      page,
+      nextMatches,
+      matches,
+      manifest,
+      location,
+      "assets"
+    ),
+    [page, nextMatches, matches, manifest, location]
+  );
+  let dataHrefs = React8.useMemo(() => {
+    if (page === location.pathname + location.search + location.hash) {
+      return [];
+    }
+    let routesParams = /* @__PURE__ */ new Set();
+    let foundOptOutRoute = false;
+    nextMatches.forEach((m2) => {
+      let manifestRoute = manifest.routes[m2.route.id];
+      if (!manifestRoute || !manifestRoute.hasLoader) {
+        return;
+      }
+      if (!newMatchesForData.some((m22) => m22.route.id === m2.route.id) && m2.route.id in loaderData && routeModules[m2.route.id]?.shouldRevalidate) {
+        foundOptOutRoute = true;
+      } else if (manifestRoute.hasClientLoader) {
+        foundOptOutRoute = true;
+      } else {
+        routesParams.add(m2.route.id);
+      }
+    });
+    if (routesParams.size === 0) {
+      return [];
+    }
+    let url = singleFetchUrl(
+      page,
+      basename,
+      future.v8_trailingSlashAwareDataRequests,
+      "data"
+    );
+    if (foundOptOutRoute && routesParams.size > 0) {
+      url.searchParams.set(
+        "_routes",
+        nextMatches.filter((m2) => routesParams.has(m2.route.id)).map((m2) => m2.route.id).join(",")
+      );
+    }
+    return [url.pathname + url.search];
+  }, [
+    basename,
+    future.v8_trailingSlashAwareDataRequests,
+    loaderData,
+    location,
+    manifest,
+    newMatchesForData,
+    nextMatches,
+    page,
+    routeModules
+  ]);
+  let moduleHrefs = React8.useMemo(
+    () => getModuleLinkHrefs(newMatchesForAssets, manifest),
+    [newMatchesForAssets, manifest]
+  );
+  let keyedPrefetchLinks = useKeyedPrefetchLinks(newMatchesForAssets);
+  return /* @__PURE__ */ React8.createElement(React8.Fragment, null, dataHrefs.map((href) => /* @__PURE__ */ React8.createElement("link", { key: href, rel: "prefetch", as: "fetch", href, ...linkProps })), moduleHrefs.map((href) => /* @__PURE__ */ React8.createElement("link", { key: href, rel: "modulepreload", href, ...linkProps })), keyedPrefetchLinks.map(({ key, link }) => (
+    // these don't spread `linkProps` because they are full link descriptors
+    // already with their own props
+    /* @__PURE__ */ React8.createElement(
+      "link",
+      {
+        key,
+        nonce: linkProps.nonce,
+        ...link,
+        crossOrigin: link.crossOrigin ?? linkProps.crossOrigin
+      }
+    )
+  )));
+}
+function mergeRefs(...refs) {
+  return (value) => {
+    refs.forEach((ref) => {
+      if (typeof ref === "function") {
+        ref(value);
+      } else if (ref != null) {
+        ref.current = value;
+      }
+    });
+  };
+}
+var isBrowser2 = typeof window !== "undefined" && typeof window.document !== "undefined" && typeof window.document.createElement !== "undefined";
+try {
+  if (isBrowser2) {
+    window.__reactRouterVersion = // @ts-expect-error
+    "7.18.1";
+  }
+} catch (e) {
+}
+function BrowserRouter({
+  basename,
+  children,
+  useTransitions,
+  window: window2
+}) {
+  let historyRef = React10.useRef();
+  if (historyRef.current == null) {
+    historyRef.current = createBrowserHistory({ window: window2, v5Compat: true });
+  }
+  let history = historyRef.current;
+  let [state, setStateImpl] = React10.useState({
+    action: history.action,
+    location: history.location
+  });
+  let setState = React10.useCallback(
+    (newState) => {
+      if (useTransitions === false) {
+        setStateImpl(newState);
+      } else {
+        React10.startTransition(() => setStateImpl(newState));
+      }
+    },
+    [useTransitions]
+  );
+  React10.useLayoutEffect(() => history.listen(setState), [history, setState]);
+  return /* @__PURE__ */ React10.createElement(
+    Router,
+    {
+      basename,
+      children,
+      location: state.location,
+      navigationType: state.action,
+      navigator: history,
+      useTransitions
+    }
+  );
+}
+function HistoryRouter({
+  basename,
+  children,
+  history,
+  useTransitions
+}) {
+  let [state, setStateImpl] = React10.useState({
+    action: history.action,
+    location: history.location
+  });
+  let setState = React10.useCallback(
+    (newState) => {
+      if (useTransitions === false) {
+        setStateImpl(newState);
+      } else {
+        React10.startTransition(() => setStateImpl(newState));
+      }
+    },
+    [useTransitions]
+  );
+  React10.useLayoutEffect(() => history.listen(setState), [history, setState]);
+  return /* @__PURE__ */ React10.createElement(
+    Router,
+    {
+      basename,
+      children,
+      location: state.location,
+      navigationType: state.action,
+      navigator: history,
+      useTransitions
+    }
+  );
+}
+HistoryRouter.displayName = "unstable_HistoryRouter";
+var Link = React10.forwardRef(
+  function LinkWithRef({
+    onClick,
+    discover = "render",
+    prefetch = "none",
+    relative,
+    reloadDocument,
+    replace: replace2,
+    mask,
+    state,
+    target,
+    to,
+    preventScrollReset,
+    viewTransition,
+    defaultShouldRevalidate,
+    ...rest
+  }, forwardedRef) {
+    let { basename, navigator: navigator2, useTransitions } = React10.useContext(NavigationContext);
+    let isAbsolute = typeof to === "string" && ABSOLUTE_URL_REGEX.test(to);
+    let parsed = parseToInfo(to, basename);
+    to = parsed.to;
+    let href = useHref(to, { relative });
+    let location = useLocation();
+    let maskedHref = null;
+    if (mask) {
+      let resolved = resolveTo(
+        mask,
+        [],
+        location.mask ? location.mask.pathname : "/",
+        true
+      );
+      if (basename !== "/") {
+        resolved.pathname = resolved.pathname === "/" ? basename : joinPaths([basename, resolved.pathname]);
+      }
+      maskedHref = navigator2.createHref(resolved);
+    }
+    let [shouldPrefetch, prefetchRef, prefetchHandlers] = usePrefetchBehavior(
+      prefetch,
+      rest
+    );
+    let internalOnClick = useLinkClickHandler(to, {
+      replace: replace2,
+      mask,
+      state,
+      target,
+      preventScrollReset,
+      relative,
+      viewTransition,
+      defaultShouldRevalidate,
+      useTransitions
+    });
+    function handleClick(event) {
+      if (onClick) onClick(event);
+      if (!event.defaultPrevented) {
+        internalOnClick(event);
+      }
+    }
+    let isSpaLink = !(parsed.isExternal || reloadDocument);
+    let link = (
+      // eslint-disable-next-line jsx-a11y/anchor-has-content
+      /* @__PURE__ */ React10.createElement(
+        "a",
+        {
+          ...rest,
+          ...prefetchHandlers,
+          href: (isSpaLink ? maskedHref : void 0) || parsed.absoluteURL || href,
+          onClick: isSpaLink ? handleClick : onClick,
+          ref: mergeRefs(forwardedRef, prefetchRef),
+          target,
+          "data-discover": !isAbsolute && discover === "render" ? "true" : void 0
+        }
+      )
+    );
+    return shouldPrefetch && !isAbsolute ? /* @__PURE__ */ React10.createElement(React10.Fragment, null, link, /* @__PURE__ */ React10.createElement(PrefetchPageLinks, { page: href })) : link;
+  }
+);
+Link.displayName = "Link";
+var NavLink = React10.forwardRef(
+  function NavLinkWithRef({
+    "aria-current": ariaCurrentProp = "page",
+    caseSensitive = false,
+    className: classNameProp = "",
+    end = false,
+    style: styleProp,
+    to,
+    viewTransition,
+    children,
+    ...rest
+  }, ref) {
+    let path = useResolvedPath(to, { relative: rest.relative });
+    let location = useLocation();
+    let routerState = React10.useContext(DataRouterStateContext);
+    let { navigator: navigator2, basename } = React10.useContext(NavigationContext);
+    let isTransitioning = routerState != null && // Conditional usage is OK here because the usage of a data router is static
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useViewTransitionState(path) && viewTransition === true;
+    let toPathname = navigator2.encodeLocation ? navigator2.encodeLocation(path).pathname : path.pathname;
+    let locationPathname = location.pathname;
+    let nextLocationPathname = routerState && routerState.navigation && routerState.navigation.location ? routerState.navigation.location.pathname : null;
+    if (!caseSensitive) {
+      locationPathname = locationPathname.toLowerCase();
+      nextLocationPathname = nextLocationPathname ? nextLocationPathname.toLowerCase() : null;
+      toPathname = toPathname.toLowerCase();
+    }
+    if (nextLocationPathname && basename) {
+      nextLocationPathname = stripBasename(nextLocationPathname, basename) || nextLocationPathname;
+    }
+    const endSlashPosition = toPathname !== "/" && toPathname.endsWith("/") ? toPathname.length - 1 : toPathname.length;
+    let isActive = locationPathname === toPathname || !end && locationPathname.startsWith(toPathname) && locationPathname.charAt(endSlashPosition) === "/";
+    let isPending = nextLocationPathname != null && (nextLocationPathname === toPathname || !end && nextLocationPathname.startsWith(toPathname) && nextLocationPathname.charAt(toPathname.length) === "/");
+    let renderProps = {
+      isActive,
+      isPending,
+      isTransitioning
+    };
+    let ariaCurrent = isActive ? ariaCurrentProp : void 0;
+    let className;
+    if (typeof classNameProp === "function") {
+      className = classNameProp(renderProps);
+    } else {
+      className = [
+        classNameProp,
+        isActive ? "active" : null,
+        isPending ? "pending" : null,
+        isTransitioning ? "transitioning" : null
+      ].filter(Boolean).join(" ");
+    }
+    let style = typeof styleProp === "function" ? styleProp(renderProps) : styleProp;
+    return /* @__PURE__ */ React10.createElement(
+      Link,
+      {
+        ...rest,
+        "aria-current": ariaCurrent,
+        className,
+        ref,
+        style,
+        to,
+        viewTransition
+      },
+      typeof children === "function" ? children(renderProps) : children
+    );
+  }
+);
+NavLink.displayName = "NavLink";
+var Form = React10.forwardRef(
+  ({
+    discover = "render",
+    fetcherKey,
+    navigate,
+    reloadDocument,
+    replace: replace2,
+    state,
+    method = defaultMethod,
+    action,
+    onSubmit,
+    relative,
+    preventScrollReset,
+    viewTransition,
+    defaultShouldRevalidate,
+    ...props
+  }, forwardedRef) => {
+    let { useTransitions } = React10.useContext(NavigationContext);
+    let submit = useSubmit();
+    let formAction = useFormAction(action, { relative });
+    let formMethod = method.toLowerCase() === "get" ? "get" : "post";
+    let isAbsolute = typeof action === "string" && ABSOLUTE_URL_REGEX.test(action);
+    let submitHandler = (event) => {
+      onSubmit && onSubmit(event);
+      if (event.defaultPrevented) return;
+      event.preventDefault();
+      let submitter = event.nativeEvent.submitter;
+      let submitMethod = submitter?.getAttribute("formmethod") || method;
+      let doSubmit = () => submit(submitter || event.currentTarget, {
+        fetcherKey,
+        method: submitMethod,
+        navigate,
+        replace: replace2,
+        state,
+        relative,
+        preventScrollReset,
+        viewTransition,
+        defaultShouldRevalidate
+      });
+      if (useTransitions && navigate !== false) {
+        React10.startTransition(() => doSubmit());
+      } else {
+        doSubmit();
+      }
+    };
+    return /* @__PURE__ */ React10.createElement(
+      "form",
+      {
+        ref: forwardedRef,
+        method: formMethod,
+        action: formAction,
+        onSubmit: reloadDocument ? onSubmit : submitHandler,
+        ...props,
+        "data-discover": !isAbsolute && discover === "render" ? "true" : void 0
+      }
+    );
+  }
+);
+Form.displayName = "Form";
+function ScrollRestoration({
+  getKey,
+  storageKey,
+  ...props
+}) {
+  let remixContext = React10.useContext(FrameworkContext);
+  let { basename } = React10.useContext(NavigationContext);
+  let location = useLocation();
+  let matches = useMatches();
+  useScrollRestoration({ getKey, storageKey });
+  let ssrKey = React10.useMemo(
+    () => {
+      if (!remixContext || !getKey) return null;
+      let userKey = getScrollRestorationKey(
+        location,
+        matches,
+        basename,
+        getKey
+      );
+      return userKey !== location.key ? userKey : null;
+    },
+    // Nah, we only need this the first time for the SSR render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+  if (!remixContext || remixContext.isSpaMode) {
+    return null;
+  }
+  let restoreScroll = ((storageKey2, restoreKey) => {
+    if (!window.history.state || !window.history.state.key) {
+      let key = Math.random().toString(32).slice(2);
+      window.history.replaceState({ key }, "");
+    }
+    try {
+      let positions = JSON.parse(sessionStorage.getItem(storageKey2) || "{}");
+      let storedY = positions[restoreKey || window.history.state.key];
+      if (typeof storedY === "number") {
+        window.scrollTo(0, storedY);
+      }
+    } catch (error) {
+      console.error(error);
+      sessionStorage.removeItem(storageKey2);
+    }
+  }).toString();
+  if (props.nonce == null && remixContext?.nonce) {
+    props.nonce = remixContext.nonce;
+  }
+  return /* @__PURE__ */ React10.createElement(
+    "script",
+    {
+      ...props,
+      suppressHydrationWarning: true,
+      dangerouslySetInnerHTML: {
+        __html: `(${restoreScroll})(${escapeHtml(
+          JSON.stringify(storageKey || SCROLL_RESTORATION_STORAGE_KEY)
+        )}, ${escapeHtml(JSON.stringify(ssrKey))})`
+      }
+    }
+  );
+}
+ScrollRestoration.displayName = "ScrollRestoration";
+function getDataRouterConsoleError2(hookName) {
+  return `${hookName} must be used within a data router.  See https://reactrouter.com/en/main/routers/picking-a-router.`;
+}
+function useDataRouterContext3(hookName) {
+  let ctx = React10.useContext(DataRouterContext);
+  invariant(ctx, getDataRouterConsoleError2(hookName));
+  return ctx;
+}
+function useDataRouterState2(hookName) {
+  let state = React10.useContext(DataRouterStateContext);
+  invariant(state, getDataRouterConsoleError2(hookName));
+  return state;
+}
+function useLinkClickHandler(to, {
+  target,
+  replace: replaceProp,
+  mask,
+  state,
+  preventScrollReset,
+  relative,
+  viewTransition,
+  defaultShouldRevalidate,
+  useTransitions
+} = {}) {
+  let navigate = useNavigate();
+  let location = useLocation();
+  let path = useResolvedPath(to, { relative });
+  return React10.useCallback(
+    (event) => {
+      if (shouldProcessLinkClick(event, target)) {
+        event.preventDefault();
+        let replace2 = replaceProp !== void 0 ? replaceProp : createPath(location) === createPath(path);
+        let doNavigate = () => navigate(to, {
+          replace: replace2,
+          mask,
+          state,
+          preventScrollReset,
+          relative,
+          viewTransition,
+          defaultShouldRevalidate
+        });
+        if (useTransitions) {
+          React10.startTransition(() => doNavigate());
+        } else {
+          doNavigate();
+        }
+      }
+    },
+    [
+      location,
+      navigate,
+      path,
+      replaceProp,
+      mask,
+      state,
+      target,
+      to,
+      preventScrollReset,
+      relative,
+      viewTransition,
+      defaultShouldRevalidate,
+      useTransitions
+    ]
+  );
+}
+var fetcherId = 0;
+var getUniqueFetcherId = () => `__${String(++fetcherId)}__`;
+function useSubmit() {
+  let { router } = useDataRouterContext3(
+    "useSubmit"
+    /* UseSubmit */
+  );
+  let { basename } = React10.useContext(NavigationContext);
+  let currentRouteId = useRouteId();
+  let routerFetch = router.fetch;
+  let routerNavigate = router.navigate;
+  return React10.useCallback(
+    async (target, options = {}) => {
+      let { action, method, encType, formData, body } = getFormSubmissionInfo(
+        target,
+        basename
+      );
+      if (options.navigate === false) {
+        let key = options.fetcherKey || getUniqueFetcherId();
+        await routerFetch(key, currentRouteId, options.action || action, {
+          defaultShouldRevalidate: options.defaultShouldRevalidate,
+          preventScrollReset: options.preventScrollReset,
+          formData,
+          body,
+          formMethod: options.method || method,
+          formEncType: options.encType || encType,
+          flushSync: options.flushSync
+        });
+      } else {
+        await routerNavigate(options.action || action, {
+          defaultShouldRevalidate: options.defaultShouldRevalidate,
+          preventScrollReset: options.preventScrollReset,
+          formData,
+          body,
+          formMethod: options.method || method,
+          formEncType: options.encType || encType,
+          replace: options.replace,
+          state: options.state,
+          fromRouteId: currentRouteId,
+          flushSync: options.flushSync,
+          viewTransition: options.viewTransition
+        });
+      }
+    },
+    [routerFetch, routerNavigate, basename, currentRouteId]
+  );
+}
+function useFormAction(action, { relative } = {}) {
+  let { basename } = React10.useContext(NavigationContext);
+  let routeContext = React10.useContext(RouteContext);
+  invariant(routeContext, "useFormAction must be used inside a RouteContext");
+  let [match] = routeContext.matches.slice(-1);
+  let path = { ...useResolvedPath(action ? action : ".", { relative }) };
+  let location = useLocation();
+  if (action == null) {
+    path.search = location.search;
+    let params = new URLSearchParams(path.search);
+    let indexValues = params.getAll("index");
+    let hasNakedIndexParam = indexValues.some((v2) => v2 === "");
+    if (hasNakedIndexParam) {
+      params.delete("index");
+      indexValues.filter((v2) => v2).forEach((v2) => params.append("index", v2));
+      let qs = params.toString();
+      path.search = qs ? `?${qs}` : "";
+    }
+  }
+  if ((!action || action === ".") && match.route.index) {
+    path.search = path.search ? path.search.replace(/^\?/, "?index&") : "?index";
+  }
+  if (basename !== "/") {
+    path.pathname = path.pathname === "/" ? basename : joinPaths([basename, path.pathname]);
+  }
+  return createPath(path);
+}
+var SCROLL_RESTORATION_STORAGE_KEY = "react-router-scroll-positions";
+var savedScrollPositions = {};
+function getScrollRestorationKey(location, matches, basename, getKey) {
+  let key = null;
+  if (getKey) {
+    if (basename !== "/") {
+      key = getKey(
+        {
+          ...location,
+          pathname: stripBasename(location.pathname, basename) || location.pathname
+        },
+        matches
+      );
+    } else {
+      key = getKey(location, matches);
+    }
+  }
+  if (key == null) {
+    key = location.key;
+  }
+  return key;
+}
+function useScrollRestoration({
+  getKey,
+  storageKey
+} = {}) {
+  let { router } = useDataRouterContext3(
+    "useScrollRestoration"
+    /* UseScrollRestoration */
+  );
+  let { restoreScrollPosition, preventScrollReset } = useDataRouterState2(
+    "useScrollRestoration"
+    /* UseScrollRestoration */
+  );
+  let { basename } = React10.useContext(NavigationContext);
+  let location = useLocation();
+  let matches = useMatches();
+  let navigation2 = useNavigation();
+  React10.useEffect(() => {
+    window.history.scrollRestoration = "manual";
+    return () => {
+      window.history.scrollRestoration = "auto";
+    };
+  }, []);
+  usePageHide(
+    React10.useCallback(() => {
+      if (navigation2.state === "idle") {
+        let key = getScrollRestorationKey(location, matches, basename, getKey);
+        savedScrollPositions[key] = window.scrollY;
+      }
+      try {
+        sessionStorage.setItem(
+          storageKey || SCROLL_RESTORATION_STORAGE_KEY,
+          JSON.stringify(savedScrollPositions)
+        );
+      } catch (error) {
+        warning(
+          false,
+          `Failed to save scroll positions in sessionStorage, <ScrollRestoration /> will not work properly (${error}).`
+        );
+      }
+      window.history.scrollRestoration = "auto";
+    }, [navigation2.state, getKey, basename, location, matches, storageKey])
+  );
+  if (typeof document !== "undefined") {
+    React10.useLayoutEffect(() => {
+      try {
+        let sessionPositions = sessionStorage.getItem(
+          storageKey || SCROLL_RESTORATION_STORAGE_KEY
+        );
+        if (sessionPositions) {
+          savedScrollPositions = JSON.parse(sessionPositions);
+        }
+      } catch (e) {
+      }
+    }, [storageKey]);
+    React10.useLayoutEffect(() => {
+      let disableScrollRestoration = router?.enableScrollRestoration(
+        savedScrollPositions,
+        () => window.scrollY,
+        getKey ? (location2, matches2) => getScrollRestorationKey(location2, matches2, basename, getKey) : void 0
+      );
+      return () => disableScrollRestoration && disableScrollRestoration();
+    }, [router, basename, getKey]);
+    React10.useLayoutEffect(() => {
+      if (restoreScrollPosition === false) {
+        return;
+      }
+      if (typeof restoreScrollPosition === "number") {
+        window.scrollTo(0, restoreScrollPosition);
+        return;
+      }
+      try {
+        if (location.hash) {
+          let el = document.getElementById(
+            decodeURIComponent(location.hash.slice(1))
+          );
+          if (el) {
+            el.scrollIntoView();
+            return;
+          }
+        }
+      } catch {
+        warning(
+          false,
+          `"${location.hash.slice(
+            1
+          )}" is not a decodable element ID. The view will not scroll to it.`
+        );
+      }
+      if (preventScrollReset === true) {
+        return;
+      }
+      window.scrollTo(0, 0);
+    }, [location, restoreScrollPosition, preventScrollReset]);
+  }
+}
+function usePageHide(callback, options) {
+  let { capture } = options || {};
+  React10.useEffect(() => {
+    let opts = capture != null ? { capture } : void 0;
+    window.addEventListener("pagehide", callback, opts);
+    return () => {
+      window.removeEventListener("pagehide", callback, opts);
+    };
+  }, [callback, capture]);
+}
+function useViewTransitionState(to, { relative } = {}) {
+  let vtContext = React10.useContext(ViewTransitionContext);
+  invariant(
+    vtContext != null,
+    "`useViewTransitionState` must be used within `react-router-dom`'s `RouterProvider`.  Did you accidentally import `RouterProvider` from `react-router`?"
+  );
+  let { basename } = useDataRouterContext3(
+    "useViewTransitionState"
+    /* useViewTransitionState */
+  );
+  let path = useResolvedPath(to, { relative });
+  if (!vtContext.isTransitioning) {
+    return false;
+  }
+  let currentPath = stripBasename(vtContext.currentLocation.pathname, basename) || vtContext.currentLocation.pathname;
+  let nextPath = stripBasename(vtContext.nextLocation.pathname, basename) || vtContext.nextLocation.pathname;
+  return matchPath(path.pathname, nextPath) != null || matchPath(path.pathname, currentPath) != null;
+}
+
+// src/AppContext.jsx
+var import_react = __toESM(require_react());
+var import_jsx_runtime = __toESM(require_jsx_runtime());
+var AppContext = (0, import_react.createContext)();
+function AppProvider({ children }) {
+  const [scan, setScan] = (0, import_react.useState)(null);
+  const [uploadState, setUploadState] = (0, import_react.useState)({ status: "Waiting", progress: 0, fileName: "", error: "" });
+  const [decision, setDecision] = (0, import_react.useState)({ choice: "", rationale: "", submittedAt: "" });
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AppContext.Provider, { value: {
+    scan,
+    setScan,
+    uploadState,
+    setUploadState,
+    decision,
+    setDecision
+  }, children });
+}
+function useAppContext() {
+  return (0, import_react.useContext)(AppContext);
+}
+
+// src/HomePage.jsx
+var import_react5 = __toESM(require_react());
+
 // node_modules/lucide-react/dist/esm/createLucideIcon.mjs
-var import_react3 = __toESM(require_react(), 1);
+var import_react4 = __toESM(require_react(), 1);
 
 // node_modules/lucide-react/dist/esm/shared/src/utils/mergeClasses.mjs
 var mergeClasses = (...classes) => classes.filter((className, index, array) => {
@@ -21476,7 +24511,7 @@ var toPascalCase = (string) => {
 };
 
 // node_modules/lucide-react/dist/esm/Icon.mjs
-var import_react2 = __toESM(require_react(), 1);
+var import_react3 = __toESM(require_react(), 1);
 
 // node_modules/lucide-react/dist/esm/defaultAttributes.mjs
 var defaultAttributes = {
@@ -21502,12 +24537,12 @@ var hasA11yProp = (props) => {
 };
 
 // node_modules/lucide-react/dist/esm/context.mjs
-var import_react = __toESM(require_react(), 1);
-var LucideContext = (0, import_react.createContext)({});
-var useLucideContext = () => (0, import_react.useContext)(LucideContext);
+var import_react2 = __toESM(require_react(), 1);
+var LucideContext = (0, import_react2.createContext)({});
+var useLucideContext = () => (0, import_react2.useContext)(LucideContext);
 
 // node_modules/lucide-react/dist/esm/Icon.mjs
-var Icon = (0, import_react2.forwardRef)(
+var Icon = (0, import_react3.forwardRef)(
   ({ color, size, strokeWidth, absoluteStrokeWidth, className = "", children, iconNode, ...rest }, ref) => {
     const {
       size: contextSize = 24,
@@ -21517,7 +24552,7 @@ var Icon = (0, import_react2.forwardRef)(
       className: contextClass = ""
     } = useLucideContext() ?? {};
     const calculatedStrokeWidth = absoluteStrokeWidth ?? contextAbsoluteStrokeWidth ? Number(strokeWidth ?? contextStrokeWidth) * 24 / Number(size ?? contextSize) : strokeWidth ?? contextStrokeWidth;
-    return (0, import_react2.createElement)(
+    return (0, import_react3.createElement)(
       "svg",
       {
         ref,
@@ -21531,7 +24566,7 @@ var Icon = (0, import_react2.forwardRef)(
         ...rest
       },
       [
-        ...iconNode.map(([tag, attrs]) => (0, import_react2.createElement)(tag, attrs)),
+        ...iconNode.map(([tag, attrs]) => (0, import_react3.createElement)(tag, attrs)),
         ...Array.isArray(children) ? children : [children]
       ]
     );
@@ -21540,8 +24575,8 @@ var Icon = (0, import_react2.forwardRef)(
 
 // node_modules/lucide-react/dist/esm/createLucideIcon.mjs
 var createLucideIcon = (iconName, iconNode) => {
-  const Component = (0, import_react3.forwardRef)(
-    ({ className, ...props }, ref) => (0, import_react3.createElement)(Icon, {
+  const Component4 = (0, import_react4.forwardRef)(
+    ({ className, ...props }, ref) => (0, import_react4.createElement)(Icon, {
       ref,
       iconNode,
       className: mergeClasses(
@@ -21552,8 +24587,8 @@ var createLucideIcon = (iconName, iconNode) => {
       ...props
     })
   );
-  Component.displayName = toPascalCase(iconName);
-  return Component;
+  Component4.displayName = toPascalCase(iconName);
+  return Component4;
 };
 
 // node_modules/lucide-react/dist/esm/icons/activity.mjs
@@ -21568,18 +24603,12 @@ var __iconNode = [
 ];
 var Activity = createLucideIcon("activity", __iconNode);
 
-// node_modules/lucide-react/dist/esm/icons/book-open.mjs
+// node_modules/lucide-react/dist/esm/icons/arrow-right.mjs
 var __iconNode2 = [
-  ["path", { d: "M12 7v14", key: "1akyts" }],
-  [
-    "path",
-    {
-      d: "M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z",
-      key: "ruj8y"
-    }
-  ]
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
 ];
-var BookOpen = createLucideIcon("book-open", __iconNode2);
+var ArrowRight = createLucideIcon("arrow-right", __iconNode2);
 
 // node_modules/lucide-react/dist/esm/icons/brain.mjs
 var __iconNode3 = [
@@ -21652,16 +24681,8 @@ var __iconNode9 = [
 ];
 var Download = createLucideIcon("download", __iconNode9);
 
-// node_modules/lucide-react/dist/esm/icons/external-link.mjs
-var __iconNode10 = [
-  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
-  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
-  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
-];
-var ExternalLink = createLucideIcon("external-link", __iconNode10);
-
 // node_modules/lucide-react/dist/esm/icons/eye.mjs
-var __iconNode11 = [
+var __iconNode10 = [
   [
     "path",
     {
@@ -21671,10 +24692,10 @@ var __iconNode11 = [
   ],
   ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-var Eye = createLucideIcon("eye", __iconNode11);
+var Eye = createLucideIcon("eye", __iconNode10);
 
 // node_modules/lucide-react/dist/esm/icons/file-text.mjs
-var __iconNode12 = [
+var __iconNode11 = [
   [
     "path",
     {
@@ -21687,36 +24708,36 @@ var __iconNode12 = [
   ["path", { d: "M16 13H8", key: "t4e002" }],
   ["path", { d: "M16 17H8", key: "z1uh3a" }]
 ];
-var FileText = createLucideIcon("file-text", __iconNode12);
+var FileText = createLucideIcon("file-text", __iconNode11);
 
 // node_modules/lucide-react/dist/esm/icons/history.mjs
-var __iconNode13 = [
+var __iconNode12 = [
   ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
   ["path", { d: "M12 7v5l4 2", key: "1fdv2h" }]
 ];
-var History = createLucideIcon("history", __iconNode13);
+var History = createLucideIcon("history", __iconNode12);
 
 // node_modules/lucide-react/dist/esm/icons/route.mjs
-var __iconNode14 = [
+var __iconNode13 = [
   ["circle", { cx: "6", cy: "19", r: "3", key: "1kj8tv" }],
   ["path", { d: "M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15", key: "1d8sl" }],
   ["circle", { cx: "18", cy: "5", r: "3", key: "gq8acd" }]
 ];
-var Route = createLucideIcon("route", __iconNode14);
+var Route2 = createLucideIcon("route", __iconNode13);
 
 // node_modules/lucide-react/dist/esm/icons/scan-line.mjs
-var __iconNode15 = [
+var __iconNode14 = [
   ["path", { d: "M3 7V5a2 2 0 0 1 2-2h2", key: "aa7l1z" }],
   ["path", { d: "M17 3h2a2 2 0 0 1 2 2v2", key: "4qcy5o" }],
   ["path", { d: "M21 17v2a2 2 0 0 1-2 2h-2", key: "6vwrx8" }],
   ["path", { d: "M7 21H5a2 2 0 0 1-2-2v-2", key: "ioqczr" }],
   ["path", { d: "M7 12h10", key: "b7w52i" }]
 ];
-var ScanLine = createLucideIcon("scan-line", __iconNode15);
+var ScanLine = createLucideIcon("scan-line", __iconNode14);
 
 // node_modules/lucide-react/dist/esm/icons/shield-alert.mjs
-var __iconNode16 = [
+var __iconNode15 = [
   [
     "path",
     {
@@ -21727,20 +24748,20 @@ var __iconNode16 = [
   ["path", { d: "M12 8v4", key: "1got3b" }],
   ["path", { d: "M12 16h.01", key: "1drbdi" }]
 ];
-var ShieldAlert = createLucideIcon("shield-alert", __iconNode16);
+var ShieldAlert = createLucideIcon("shield-alert", __iconNode15);
 
 // node_modules/lucide-react/dist/esm/icons/stethoscope.mjs
-var __iconNode17 = [
+var __iconNode16 = [
   ["path", { d: "M11 2v2", key: "1539x4" }],
   ["path", { d: "M5 2v2", key: "1yf1q8" }],
   ["path", { d: "M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1", key: "rb5t3r" }],
   ["path", { d: "M8 15a6 6 0 0 0 12 0v-3", key: "x18d4x" }],
   ["circle", { cx: "20", cy: "10", r: "2", key: "ts1r5v" }]
 ];
-var Stethoscope = createLucideIcon("stethoscope", __iconNode17);
+var Stethoscope = createLucideIcon("stethoscope", __iconNode16);
 
 // node_modules/lucide-react/dist/esm/icons/triangle-alert.mjs
-var __iconNode18 = [
+var __iconNode17 = [
   [
     "path",
     {
@@ -21751,60 +24772,3545 @@ var __iconNode18 = [
   ["path", { d: "M12 9v4", key: "juzpu7" }],
   ["path", { d: "M12 17h.01", key: "p32p05" }]
 ];
-var TriangleAlert = createLucideIcon("triangle-alert", __iconNode18);
+var TriangleAlert = createLucideIcon("triangle-alert", __iconNode17);
 
 // node_modules/lucide-react/dist/esm/icons/upload.mjs
-var __iconNode19 = [
+var __iconNode18 = [
   ["path", { d: "M12 3v12", key: "1x0j5s" }],
   ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
 ];
-var Upload = createLucideIcon("upload", __iconNode19);
+var Upload = createLucideIcon("upload", __iconNode18);
 
 // node_modules/lucide-react/dist/esm/icons/user-round.mjs
-var __iconNode20 = [
+var __iconNode19 = [
   ["circle", { cx: "12", cy: "8", r: "5", key: "1hypcn" }],
   ["path", { d: "M20 21a8 8 0 0 0-16 0", key: "rfgkzh" }]
 ];
-var UserRound = createLucideIcon("user-round", __iconNode20);
+var UserRound = createLucideIcon("user-round", __iconNode19);
+
+// src/HomePage.jsx
+var import_jsx_runtime2 = __toESM(require_jsx_runtime());
+function HomeNav() {
+  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("nav", { className: "bg-[#232f3e] text-white py-4 px-6 flex justify-between items-center shadow-md", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "flex items-center gap-3", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ScanLine, { className: "h-6 w-6 text-sky-400" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "text-lg font-bold tracking-wide", children: "OCT Analyzer" })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "flex items-center gap-4 text-sm font-medium", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("a", { href: "/docs/?doc=readme", className: "hover:text-sky-400 transition", children: "Documentation" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("a", { href: "/docs/?doc=implementation", className: "hover:text-sky-400 transition", children: "Architecture" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Link, { to: "/QC", className: "bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded font-bold transition", children: "Launch App" })
+    ] })
+  ] });
+}
+function HomePage() {
+  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "min-h-screen bg-slate-50 flex flex-col font-sans", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(HomeNav, {}),
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("main", { className: "flex-1 flex flex-col items-center justify-center p-8 text-center", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { className: "text-5xl font-black text-slate-900 mb-6 tracking-tight", children: "Clinical OCT Inference Engine" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "text-lg text-slate-600 max-w-2xl mb-10 leading-relaxed", children: "An end-to-end clinician workflow for triage, explainable scan review, active human justification, specialist routing, and safety monitoring. Powered by deep learning for 3D OCT and OCTA volumes." }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full mb-12", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-left", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Route2, { className: "h-8 w-8 text-sky-500 mb-4" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { className: "font-bold text-slate-900 text-lg mb-2", children: "Automated Triage" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "text-slate-600 text-sm", children: "AI rapidly processes routine scans, routing high-risk and ambiguous cases to specialists." })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-left", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Activity, { className: "h-8 w-8 text-emerald-500 mb-4" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { className: "font-bold text-slate-900 text-lg mb-2", children: "Explainable AI" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "text-slate-600 text-sm", children: "Clear confidence scores, uncertainty metrics, and overlay evidence for clinical validation." })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-left", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ShieldAlert, { className: "h-8 w-8 text-amber-500 mb-4" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { className: "font-bold text-slate-900 text-lg mb-2", children: "Human-in-the-Loop" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "text-slate-600 text-sm", children: "Critical sign-offs require active human rationale to prevent automation bias." })
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+        Link,
+        {
+          to: "/QC",
+          className: "inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-slate-800 transition shadow-lg hover:shadow-xl",
+          children: [
+            "Enter Clinical Workspace ",
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ArrowRight, { className: "h-5 w-5" })
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("footer", { className: "py-6 text-center text-slate-500 text-sm border-t border-slate-200 bg-white", children: [
+      "\xA9 ",
+      (/* @__PURE__ */ new Date()).getFullYear(),
+      " OCT Analyzer Capstone Project. Internal Use Only."
+    ] })
+  ] });
+}
+
+// src/docs/pages/DocsLandingPage.jsx
+var import_react7 = __toESM(require_react());
+
+// src/docs/components/Footer.tsx
+var import_jsx_runtime3 = __toESM(require_jsx_runtime());
+function Footer() {
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("footer", { className: "bg-[#232f3e] text-white py-8 px-6 border-t border-docs-header-border mt-auto", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "flex items-center gap-2", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "text-lg font-bold tracking-wide", children: "OCT Analyzer" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: "text-slate-400 text-sm ml-2", children: [
+        "\xA9 ",
+        (/* @__PURE__ */ new Date()).getFullYear(),
+        " Capstone Project"
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "flex items-center gap-6 text-sm font-medium", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Link, { to: "/docs/whitepaper", className: "hover:text-sky-400 transition-colors", children: "About Us" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("a", { href: "https://kanerika.com/contact-us/", target: "_blank", rel: "noopener noreferrer", className: "hover:text-sky-400 transition-colors", children: "Contact Us" })
+    ] })
+  ] }) });
+}
+
+// src/docs/modelDocsGenerated.json
+var modelDocsGenerated_default = {
+  categories: [
+    {
+      id: "classification",
+      title: "Classification Models",
+      sidebarTitle: "Classification",
+      color: "purple",
+      articles: [
+        {
+          slug: "classification-readme",
+          title: "OCT Hierarchical Classification Pipeline Documentation",
+          sidebarTitle: "OCT Hierarchical Classification Pipeline Documentation",
+          description: "This folder contains the comprehensive documentation for the design, architecture, and engineering decisions behind the PyTorch OCT Image Classificati..."
+        },
+        {
+          slug: "classification-todo",
+          title: "Project To-Do List",
+          sidebarTitle: "Project To-Do List",
+          description: "*Last updated: 1st July, 2026*"
+        },
+        {
+          slug: "classification-architecture",
+          title: "Hierarchical OCT/OCTA Image Classification Architecture",
+          sidebarTitle: "Hierarchical OCT/OCTA Image Classification Architecture",
+          description: "**What exactly did we build?** We built a **Hierarchical Convolutional Neural Network (CNN) Ensemble**. It is **NOT** a Recurrent Neural Network (RNN)..."
+        },
+        {
+          slug: "classification-data_pipeline",
+          title: "OCT Pipeline \u2014 Data & Imbalance Strategy",
+          sidebarTitle: "OCT Pipeline \u2014 Data & Imbalance Strategy",
+          description: "The pipeline aggregates data from three disparate sources to form a master dataset of **86,120 OCT/OCTA scans**:"
+        },
+        {
+          slug: "classification-dataset",
+          title: "OCT Image Dataset Documentation",
+          sidebarTitle: "OCT Image Dataset Documentation",
+          description: "The dataset used for training and testing the optical coherence tomography (OCT) image classification model is a curated amalgamation of several open-..."
+        },
+        {
+          slug: "classification-improvements",
+          title: "Level 1 Gatekeeper \u2014 Model Improvements (1st July, 2026)",
+          sidebarTitle: "Level 1 Gatekeeper \u2014 Model Improvements (1st July, 2026)",
+          description: "This document is the authoritative record of all improvements made to the Level 1 Gatekeeper model. Each improvement includes the **rationale**, **fil..."
+        },
+        {
+          slug: "classification-test_level1_sotoudeh",
+          title: "Level 1 Model Evaluation: Sotoudeh-Paima OCT Dataset",
+          sidebarTitle: "Level 1 Model Evaluation: Sotoudeh-Paima OCT Dataset",
+          description: "This document outlines the evaluation of the **Level 1 Gatekeeper Model** (Normal vs. Abnormal) on the labeled retinal Optical Coherence Tomography (O..."
+        },
+        {
+          slug: "classification-training",
+          title: "OCT Pipeline \u2014 Training Engine & Optimisations",
+          sidebarTitle: "OCT Pipeline \u2014 Training Engine & Optimisations",
+          description: "All levels of the pipeline (Gatekeeper, Router, and Specialists) share a unified training engine (`training/trainer.py`). This engine orchestrates the..."
+        }
+      ]
+    },
+    {
+      id: "segmentation",
+      title: "Segmentation Models",
+      sidebarTitle: "Segmentation",
+      color: "emerald",
+      articles: [
+        {
+          slug: "segmentation-api_reference",
+          title: "OCT Inference Output: Frontend Integration Guide",
+          sidebarTitle: "OCT Inference Output: Frontend Integration Guide",
+          description: "This guide explains how to consume the JSON payload generated by the OCT segmentation backend. The data is structured using an object-oriented approac..."
+        },
+        {
+          slug: "segmentation-architecture",
+          title: "Model Architecture: Hierarchical Multi-Head U-Net",
+          sidebarTitle: "Model Architecture: Hierarchical Multi-Head U-Net",
+          description: "This document outlines the architecture for the core segmentation model used in this pipeline. The model is built using PyTorch and follows a modified..."
+        },
+        {
+          slug: "segmentation-training_guide",
+          title: "Training Guide: Loss Functions, Class Weights & Metrics",
+          sidebarTitle: "Training Guide: Loss Functions, Class Weights & Metrics",
+          description: "This document covers the complete training setup for `HierarchicalUNet`, explaining *why* each design decision was made and how to tune it for your da..."
+        }
+      ]
+    }
+  ],
+  slugPaths: {
+    "classification-readme": "/public/docs/models/classification/README.md",
+    "classification-todo": "/public/docs/models/classification/TODO.md",
+    "classification-architecture": "/public/docs/models/classification/architecture.md",
+    "classification-data_pipeline": "/public/docs/models/classification/data_pipeline.md",
+    "classification-dataset": "/public/docs/models/classification/dataset.md",
+    "classification-improvements": "/public/docs/models/classification/improvements.md",
+    "classification-test_level1_sotoudeh": "/public/docs/models/classification/test_level1_sotoudeh.md",
+    "classification-training": "/public/docs/models/classification/training.md",
+    "segmentation-api_reference": "/public/docs/models/segmentation/api_reference.md",
+    "segmentation-architecture": "/public/docs/models/segmentation/architecture.md",
+    "segmentation-training_guide": "/public/docs/models/segmentation/training_guide.md"
+  }
+};
+
+// src/docs/manifest.ts
+var baseDocCategories = [
+  {
+    id: "getting-started",
+    title: "Overview",
+    sidebarTitle: "Overview",
+    color: "blue",
+    articles: [
+      {
+        slug: "readme",
+        sidebarTitle: "Project README",
+        title: "OCT/OCTA Clinical Inference Interface",
+        description: "Core project overview, features, setup instructions, and architecture for the Capstone interface."
+      }
+    ]
+  },
+  {
+    id: "technical",
+    title: "Technical Implementation",
+    sidebarTitle: "Technical Implementation",
+    color: "purple",
+    articles: [
+      {
+        slug: "implementation-info",
+        sidebarTitle: "Implementation Specs",
+        title: "Implementation Details & Specs",
+        description: "Technical specifications detailing integration with local servers, dicom image viewing, and python API."
+      },
+      {
+        slug: "ipnv2-readme",
+        sidebarTitle: "IPNV2 Architecture",
+        title: "IPNV2 System Architecture",
+        description: "Details regarding the Inference Pipeline Network version 2 and how images are processed."
+      }
+    ]
+  },
+  {
+    id: "clinical",
+    title: "Clinical Reference",
+    sidebarTitle: "Clinical Reference",
+    color: "emerald",
+    articles: [
+      {
+        slug: "biomarker-mapping",
+        sidebarTitle: "Biomarker Mapping",
+        title: "3D OCT/OCTA Biomarker Mapping",
+        description: "Layer-specific structural and vascular biomarkers with OCT/OCTA reference images and disease-feature mappings.",
+        externalHref: "/public/docs/biomarker_mapping_docs/oct_biomarker_mapping.html"
+      },
+      {
+        slug: "wireframe-demo",
+        sidebarTitle: "Wireframe Demo",
+        title: "Clinical Workflow Demo",
+        description: "Standalone clinical workflow prototype covering triage, upload/QC, review, decision gate, and outcomes/audit screens.",
+        externalHref: "/demo/"
+      }
+    ]
+  },
+  {
+    id: "diagrams",
+    title: "Architecture & Workflows",
+    sidebarTitle: "Architecture Diagrams",
+    color: "blue",
+    articles: [
+      {
+        slug: "architecture-flowchart",
+        sidebarTitle: "Architecture Flowchart",
+        title: "Deep Learning Architecture Flowchart",
+        description: "Mermaid source for the 3D tensor pipeline, shared backbone, prediction heads, uncertainty, and report assembly.",
+        externalHref: "/diagrams/?diagram=architecture"
+      },
+      {
+        slug: "online-workflow",
+        sidebarTitle: "Online Inference Workflow",
+        title: "Online Clinical Inference Workflow",
+        description: "Sequence diagram source for clinician upload, API ingestion, preprocessing, QC, inference, explanation, and reporting.",
+        externalHref: "/diagrams/?diagram=online"
+      },
+      {
+        slug: "offline-workflow",
+        sidebarTitle: "Offline Training Workflow",
+        title: "Offline Training and Validation Workflow",
+        description: "Sequence diagram source for research ingestion, standardization, model training, evaluation, metrics, and versioned storage.",
+        externalHref: "/diagrams/?diagram=offline"
+      }
+    ]
+  }
+];
+var docCategories = [
+  ...baseDocCategories,
+  ...modelDocsGenerated_default.categories
+];
+var docSlugs = docCategories.flatMap(
+  (category) => category.articles.map((article) => article.slug)
+);
+function getDocArticle(slug) {
+  for (const category of docCategories) {
+    const article = category.articles.find((entry) => entry.slug === slug);
+    if (article) return article;
+  }
+  return void 0;
+}
+var categoryColorStyles = {
+  blue: {
+    dot: "bg-cat-blue",
+    hover: "hover:text-cat-blue",
+    iconBg: "bg-cat-blue/10",
+    iconBorder: "border-cat-blue/20",
+    iconText: "text-cat-blue",
+    cardFrom: "hover:from-cat-blue/10",
+    cardTo: "hover:to-cat-blue/5",
+    cardShadow: "hover:shadow-[0_8px_32px_-10px_var(--shadow-blue)]",
+    cardGlow: "bg-cat-blue/5",
+    cardGlowHover: "group-hover:bg-cat-blue/10",
+    cardTitleHover: "group-hover:text-cat-blue",
+    tocActive: "text-cat-blue",
+    tocShadow: "bg-cat-blue shadow-[0_0_8px_var(--toc-shadow-blue)]",
+    cardBorderHover: "hover:border-cat-blue"
+  },
+  purple: {
+    dot: "bg-cat-purple",
+    hover: "hover:text-cat-purple",
+    iconBg: "bg-cat-purple/10",
+    iconBorder: "border-cat-purple/20",
+    iconText: "text-cat-purple",
+    cardFrom: "hover:from-cat-purple/10",
+    cardTo: "hover:to-cat-purple/5",
+    cardShadow: "hover:shadow-[0_8px_32px_-10px_var(--shadow-purple)]",
+    cardGlow: "bg-cat-purple/5",
+    cardGlowHover: "group-hover:bg-cat-purple/10",
+    cardTitleHover: "group-hover:text-cat-purple",
+    tocActive: "text-cat-purple",
+    tocShadow: "bg-cat-purple shadow-[0_0_8px_var(--toc-shadow-purple)]",
+    cardBorderHover: "hover:border-cat-purple"
+  },
+  emerald: {
+    dot: "bg-cat-emerald",
+    hover: "hover:text-cat-emerald",
+    iconBg: "bg-cat-emerald/10",
+    iconBorder: "border-cat-emerald/20",
+    iconText: "text-cat-emerald",
+    cardFrom: "hover:from-cat-emerald/10",
+    cardTo: "hover:to-cat-emerald/5",
+    cardShadow: "hover:shadow-[0_8px_32px_-10px_var(--shadow-emerald)]",
+    cardGlow: "bg-cat-emerald/5",
+    cardGlowHover: "group-hover:bg-cat-emerald/10",
+    cardTitleHover: "group-hover:text-cat-emerald",
+    tocActive: "text-cat-emerald",
+    tocShadow: "bg-cat-emerald shadow-[0_0_8px_var(--toc-shadow-emerald)]",
+    cardBorderHover: "hover:border-cat-emerald"
+  }
+};
+
+// src/docs/components/DocsSidebar.tsx
+var import_jsx_runtime4 = __toESM(require_jsx_runtime());
+function DocsSidebar() {
+  const pathname = useLocation().pathname;
+  return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("aside", { className: "hidden md:flex flex-col sticky top-[68px] h-[calc(100vh-68px)] w-[280px] shrink-0 border-r border-docs-border-main bg-docs-bg-sidebar overflow-y-auto scrollbar-hide transition-colors duration-200", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "relative px-6 pt-8 pb-6 flex flex-col gap-8", children: docCategories.map((category) => {
+    const styles = categoryColorStyles[category.color];
+    return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("h4", { className: "text-xs font-semibold text-docs-text-primary uppercase tracking-widest mb-3 flex items-center gap-2 transition-colors duration-200", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: `w-2 h-2 rounded-full shrink-0 ${styles.dot}` }),
+        category.sidebarTitle
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("ul", { className: "flex flex-col gap-1.5 border-l border-docs-border-main ml-1 pl-4 text-sm transition-colors duration-200", children: category.articles.map((article) => {
+        const href = `/docs/${article.slug}`;
+        const isActive = pathname === href;
+        return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
+          Link,
+          {
+            to: href,
+            className: `block py-1 transition-colors duration-200 ${isActive ? `${styles.tocActive} font-medium` : `text-docs-text-muted hover:text-docs-text-primary`}`,
+            children: article.sidebarTitle
+          }
+        ) }, article.slug);
+      }) })
+    ] }, category.id);
+  }) }) });
+}
+
+// src/docs/components/DocsCardGrid.tsx
+var import_jsx_runtime5 = __toESM(require_jsx_runtime());
+function DocsCardGrid({ category }) {
+  const styles = categoryColorStyles[category.color];
+  return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(
+    "section",
+    {
+      id: category.id,
+      className: "mb-24 scroll-mt-28 relative",
+      children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "flex items-center gap-4 mb-8", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+            "div",
+            {
+              className: `p-2.5 rounded-xl ${styles.iconBg} border ${styles.iconBorder} ${styles.iconText}`,
+              children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(CategoryIcon, { categoryId: category.id })
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("h2", { className: "text-3xl font-light text-docs-text-primary transition-colors duration-200", children: category.title })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "grid gap-6 sm:grid-cols-2", children: category.articles.map((article) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(
+          Link,
+          {
+            href: `/docs/${article.slug}`,
+            className: `group relative flex flex-col rounded-2xl border border-docs-card-border bg-docs-bg-card p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${styles.cardBorderHover} ${article.wide ? "col-span-2" : ""}`,
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+                "h3",
+                {
+                  className: `text-lg font-light text-docs-text-primary mb-3 ${styles.cardTitleHover} transition-colors duration-200`,
+                  children: article.title
+                }
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("p", { className: "text-sm text-docs-text-muted flex-1 leading-relaxed transition-colors duration-200", children: article.description })
+            ]
+          },
+          article.slug
+        )) })
+      ]
+    }
+  );
+}
+function CategoryIcon({ categoryId }) {
+  if (categoryId === "getting-started") {
+    return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+      "svg",
+      {
+        className: "w-6 h-6",
+        fill: "none",
+        viewBox: "0 0 24 24",
+        stroke: "currentColor",
+        children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+          "path",
+          {
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+            strokeWidth: "2",
+            d: "M13 10V3L4 14h7v7l9-11h-7z"
+          }
+        )
+      }
+    );
+  }
+  if (categoryId === "product-info") {
+    return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+      "svg",
+      {
+        className: "w-6 h-6",
+        fill: "none",
+        viewBox: "0 0 24 24",
+        stroke: "currentColor",
+        children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+          "path",
+          {
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+            strokeWidth: "2",
+            d: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+          }
+        )
+      }
+    );
+  }
+  return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+    "svg",
+    {
+      className: "w-6 h-6",
+      fill: "none",
+      viewBox: "0 0 24 24",
+      stroke: "currentColor",
+      children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+        "path",
+        {
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+          strokeWidth: "2",
+          d: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+        }
+      )
+    }
+  );
+}
+
+// src/docs/components/DocsTableOfContents.tsx
+var import_react6 = __toESM(require_react());
+var import_jsx_runtime6 = __toESM(require_jsx_runtime());
+function DocsTableOfContents({
+  activeSection: propActiveSection
+}) {
+  const [activeSection, setActiveSection] = (0, import_react6.useState)("getting-started");
+  const [indicatorStyle, setIndicatorStyle] = (0, import_react6.useState)({
+    opacity: 0,
+    top: 0,
+    height: 0
+  });
+  (0, import_react6.useEffect)(() => {
+    const handleScroll = () => {
+      let active = "";
+      const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10;
+      if (isAtBottom && docCategories.length > 0) {
+        setActiveSection(docCategories[docCategories.length - 1].id);
+        return;
+      }
+      for (let i = 0; i < docCategories.length; i++) {
+        const el = document.getElementById(docCategories[i].id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 130) {
+            active = docCategories[i].id;
+          }
+        }
+      }
+      if (!active && docCategories.length > 0) {
+        active = docCategories[0].id;
+      }
+      setActiveSection(active);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
+    const interval = setInterval(handleScroll, 1e3);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+      clearInterval(interval);
+    };
+  }, []);
+  (0, import_react6.useEffect)(() => {
+    const currentActive = propActiveSection || activeSection;
+    if (!currentActive) {
+      setIndicatorStyle({ opacity: 0 });
+      return;
+    }
+    const activeEl = document.getElementById(`toc-link-${currentActive}`);
+    if (activeEl) {
+      setIndicatorStyle({
+        opacity: 1,
+        top: `${activeEl.offsetTop}px`,
+        height: `${activeEl.offsetHeight}px`
+      });
+      activeEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [propActiveSection, activeSection]);
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("aside", { className: "hidden xl:flex flex-col shrink-0 sticky top-[68px] h-[calc(100vh-120px)] w-[240px] bg-docs-bg-page overflow-y-auto scrollbar-hide transition-colors duration-200", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "sticky top-0 z-50 bg-docs-bg-page px-6 pt-10 pb-4 transition-colors duration-200", children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("h4", { className: "text-xs font-semibold text-docs-text-primary uppercase tracking-widest transition-colors duration-200", children: "On this page" }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "relative px-6 pt-4 pb-8 flex flex-col gap-1 text-sm text-docs-text-muted mt-4 transition-colors duration-200", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "absolute left-6 top-4 bottom-8 w-[1px] bg-docs-border-main transition-colors duration-200" }),
+      docCategories.map((category) => {
+        const isActive = (propActiveSection || activeSection) === category.id;
+        if (!isActive) return null;
+        const styles = categoryColorStyles[category.color];
+        return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+          "div",
+          {
+            className: `absolute left-6 w-[2px] rounded-full transition-all duration-300 ease-out -translate-x-[0.5px] ${styles.tocShadow}`,
+            style: indicatorStyle
+          },
+          category.id
+        );
+      }),
+      docCategories.map((category) => {
+        const styles = categoryColorStyles[category.color];
+        const isActive = (propActiveSection || activeSection) === category.id;
+        return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+          "a",
+          {
+            id: `toc-link-${category.id}`,
+            href: `#${category.id}`,
+            className: `relative flex items-center pl-4 py-1.5 transition-colors hover:text-docs-text-primary ${isActive ? `${styles.tocActive} font-medium` : ""}`,
+            children: category.sidebarTitle
+          },
+          category.id
+        );
+      })
+    ] })
+  ] });
+}
+
+// src/docs/pages/DocsLandingPage.jsx
+var import_jsx_runtime7 = __toESM(require_jsx_runtime());
+function DocsLandingPage() {
+  const [activeSection, setActiveSection] = (0, import_react7.useState)("getting-started");
+  (0, import_react7.useEffect)(() => {
+    const observer = new IntersectionObserver(
+      (entries2) => {
+        entries2.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: "-90px 0px -60% 0px" }
+    );
+    docCategories.forEach((category) => {
+      const el = document.getElementById(category.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+  return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "docs-theme flex flex-col min-h-screen bg-docs-bg-page text-docs-text-primary selection:bg-blue-500/30 font-sans transition-colors duration-200", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(HomeNav, {}),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "flex flex-1 w-full relative", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(DocsSidebar, {}),
+      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("main", { className: "flex-1 min-w-0 px-6 py-12 md:px-12 lg:px-16 xl:px-24", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "max-w-4xl mx-auto", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "relative mb-20 mt-8 overflow-hidden", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "absolute -top-10 -left-10 w-40 h-40 bg-docs-glow-bg blur-[100px] rounded-full pointer-events-none" }),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("h1", { className: "text-5xl md:text-6xl font-light text-slate-900 dark:text-white mb-6 tracking-tight transition-colors duration-200", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-blue-500 dark:from-rose-400 dark:via-purple-400 dark:to-blue-400", children: "OCT Analyser" }),
+            " ",
+            "Documentation"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "text-lg md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl transition-colors duration-200", children: "Everything you need to set up, operate, and extend the OCT/OCTA Clinical Inference Interface." })
+        ] }),
+        docCategories.map((category) => /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(DocsCardGrid, { category }, category.id))
+      ] }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(DocsTableOfContents, { activeSection })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Footer, {})
+  ] });
+}
+
+// src/docs/pages/DocArticlePage.jsx
+var import_react8 = __toESM(require_react());
+
+// node_modules/marked/lib/marked.esm.js
+function M() {
+  return { async: false, breaks: false, extensions: null, gfm: true, hooks: null, pedantic: false, renderer: null, silent: false, tokenizer: null, walkTokens: null };
+}
+var T = M();
+function N(l3) {
+  T = l3;
+}
+var _ = { exec: () => null };
+function E(l3) {
+  let e = [];
+  return (t) => {
+    let n = Math.max(0, Math.min(3, t - 1)), s = e[n];
+    return s || (s = l3(n), e[n] = s), s;
+  };
+}
+function d(l3, e = "") {
+  let t = typeof l3 == "string" ? l3 : l3.source, n = { replace: (s, r) => {
+    let i = typeof r == "string" ? r : r.source;
+    return i = i.replace(m.caret, "$1"), t = t.replace(s, i), n;
+  }, getRegex: () => new RegExp(t, e) };
+  return n;
+}
+var Te = ((l3 = "") => {
+  try {
+    return !!new RegExp("(?<=1)(?<!1)" + l3);
+  } catch {
+    return false;
+  }
+})();
+var m = { codeRemoveIndent: /^(?: {1,4}| {0,3}\t)/gm, outputLinkReplace: /\\([\[\]])/g, indentCodeCompensation: /^(\s+)(?:```)/, beginningSpace: /^\s+/, endingHash: /#$/, startingSpaceChar: /^ /, endingSpaceChar: / $/, nonSpaceChar: /[^ ]/, newLineCharGlobal: /\n/g, tabCharGlobal: /\t/g, multipleSpaceGlobal: /\s+/g, blankLine: /^[ \t]*$/, doubleBlankLine: /\n[ \t]*\n[ \t]*$/, blockquoteStart: /^ {0,3}>/, blockquoteSetextReplace: /\n {0,3}((?:=+|-+) *)(?=\n|$)/g, blockquoteSetextReplace2: /^ {0,3}>[ \t]?/gm, listReplaceNesting: /^ {1,4}(?=( {4})*[^ ])/g, listIsTask: /^\[[ xX]\] +\S/, listReplaceTask: /^\[[ xX]\] +/, listTaskCheckbox: /\[[ xX]\]/, anyLine: /\n.*\n/, hrefBrackets: /^<(.*)>$/, tableDelimiter: /[:|]/, tableAlignChars: /^\||\| *$/g, tableRowBlankLine: /\n[ \t]*$/, tableAlignRight: /^ *-+: *$/, tableAlignCenter: /^ *:-+: *$/, tableAlignLeft: /^ *:-+ *$/, startATag: /^<a /i, endATag: /^<\/a>/i, startPreScriptTag: /^<(pre|code|kbd|script)(\s|>)/i, endPreScriptTag: /^<\/(pre|code|kbd|script)(\s|>)/i, startAngleBracket: /^</, endAngleBracket: />$/, pedanticHrefTitle: /^([^'"]*[^\s])\s+(['"])(.*)\2/, unicodeAlphaNumeric: /[\p{L}\p{N}]/u, escapeTest: /[&<>"']/, escapeReplace: /[&<>"']/g, escapeTestNoEncode: /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/, escapeReplaceNoEncode: /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/g, caret: /(^|[^\[])\^/g, percentDecode: /%25/g, findPipe: /\|/g, splitPipe: / \|/, slashPipe: /\\\|/g, carriageReturn: /\r\n|\r/g, spaceLine: /^ +$/gm, notSpaceStart: /^\S*/, endingNewline: /\n$/, listItemRegex: (l3) => new RegExp(`^( {0,3}${l3})((?:[	 ][^\\n]*)?(?:\\n|$))`), nextBulletRegex: E((l3) => new RegExp(`^ {0,${l3}}(?:[*+-]|\\d{1,9}[.)])((?:[ 	][^\\n]*)?(?:\\n|$))`)), hrRegex: E((l3) => new RegExp(`^ {0,${l3}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`)), fencesBeginRegex: E((l3) => new RegExp(`^ {0,${l3}}(?:\`\`\`|~~~)`)), headingBeginRegex: E((l3) => new RegExp(`^ {0,${l3}}#`)), htmlBeginRegex: E((l3) => new RegExp(`^ {0,${l3}}<(?:[a-z].*>|!--)`, "i")), blockquoteBeginRegex: E((l3) => new RegExp(`^ {0,${l3}}>`)) };
+var Oe = /^(?:[ \t]*(?:\n|$))+/;
+var we = /^((?: {4}| {0,3}\t)[^\n]+(?:\n(?:[ \t]*(?:\n|$))*)?)+/;
+var ye = /^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)/;
+var B = /^ {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)/;
+var Pe = /^ {0,3}(#{1,6})(?=\s|$)(.*)(?:\n+|$)/;
+var j = / {0,3}(?:[*+-]|\d{1,9}[.)])/;
+var oe = /^(?!bull |blockCode|fences|blockquote|heading|html|table)((?:.|\n(?!\s*?\n|bull |blockCode|fences|blockquote|heading|html|table))+?)\n {0,3}(=+|-+) *(?:\n+|$)/;
+var ae = d(oe).replace(/bull/g, j).replace(/blockCode/g, /(?: {4}| {0,3}\t)/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}/).replace(/html/g, / {0,3}<[^\n>]+>\n/).replace(/\|table/g, "").getRegex();
+var Se = d(oe).replace(/bull/g, j).replace(/blockCode/g, /(?: {4}| {0,3}\t)/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}/).replace(/html/g, / {0,3}<[^\n>]+>\n/).replace(/table/g, / {0,3}\|?(?:[:\- ]*\|)+[\:\- ]*\n/).getRegex();
+var F = /^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html|table| +\n)[^\n]+)*)/;
+var $e = /^[^\n]+/;
+var U = /(?!\s*\])(?:\\[\s\S]|[^\[\]\\])+/;
+var Le = d(/^ {0,3}\[(label)\]: *(?:\n[ \t]*)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n[ \t]*)?| *\n[ \t]*)(title))? *(?:\n+|$)/).replace("label", U).replace("title", /(?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))/).getRegex();
+var _e = d(/^(bull)([ \t][^\n]*?)?(?:\n|$)/).replace(/bull/g, j).getRegex();
+var H = "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul";
+var K = /<!--(?:-?>|[\s\S]*?(?:-->|$))/;
+var ze = d("^ {0,3}(?:<(script|pre|style|textarea)[\\s>][\\s\\S]*?(?:</\\1>[^\\n]*\\n+|$)|comment[^\\n]*(\\n+|$)|<\\?[\\s\\S]*?(?:\\?>\\n*|$)|<![A-Z][\\s\\S]*?(?:>\\n*|$)|<!\\[CDATA\\[[\\s\\S]*?(?:\\]\\]>\\n*|$)|</?(tag)(?: +|\\n|/?>)[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$)|<(?!script|pre|style|textarea)([a-z][\\w-]*)(?:attribute)*? */?>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$)|</(?!script|pre|style|textarea)[a-z][\\w-]*\\s*>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$))", "i").replace("comment", K).replace("tag", H).replace("attribute", / +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?/).getRegex();
+var le = d(F).replace("hr", B).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("|lheading", "").replace("|table", "").replace("blockquote", " {0,3}>").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list", " {0,3}(?:[*+-]|1[.)])[ \\t]+[^ \\t\\n]").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", H).getRegex();
+var Me = d(/^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/).replace("paragraph", le).getRegex();
+var W = { blockquote: Me, code: we, def: Le, fences: ye, heading: Pe, hr: B, html: ze, lheading: ae, list: _e, newline: Oe, paragraph: le, table: _, text: $e };
+var se = d("^ *([^\\n ].*)\\n {0,3}((?:\\| *)?:?-+:? *(?:\\| *:?-+:? *)*(?:\\| *)?)(?:\\n((?:(?! *\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)").replace("hr", B).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("blockquote", " {0,3}>").replace("code", "(?: {4}| {0,3}	)[^\\n]").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list", " {0,3}(?:[*+-]|1[.)])[ \\t]").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", H).getRegex();
+var Ee = { ...W, lheading: Se, table: se, paragraph: d(F).replace("hr", B).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("|lheading", "").replace("table", se).replace("blockquote", " {0,3}>").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list", " {0,3}(?:[*+-]|1[.)])[ \\t]+[^ \\t\\n]").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", H).getRegex() };
+var Ie = { ...W, html: d(`^ *(?:comment *(?:\\n|\\s*$)|<(tag)[\\s\\S]+?</\\1> *(?:\\n{2,}|\\s*$)|<tag(?:"[^"]*"|'[^']*'|\\s[^'"/>\\s]*)*?/?> *(?:\\n{2,}|\\s*$))`).replace("comment", K).replace(/tag/g, "(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\b)\\w+(?!:|[^\\w\\s@]*@)\\b").getRegex(), def: /^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +(["(][^\n]+[")]))? *(?:\n+|$)/, heading: /^(#{1,6})(.*)(?:\n+|$)/, fences: _, lheading: /^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/, paragraph: d(F).replace("hr", B).replace("heading", ` *#{1,6} *[^
+]`).replace("lheading", ae).replace("|table", "").replace("blockquote", " {0,3}>").replace("|fences", "").replace("|list", "").replace("|html", "").replace("|tag", "").getRegex() };
+var Ae = /^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/;
+var Ce = /^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/;
+var ue = /^( {2,}|\\)\n(?!\s*$)/;
+var Be = /^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/;
+var I = /[\p{P}\p{S}]/u;
+var Z = /[\s\p{P}\p{S}]/u;
+var X = /[^\s\p{P}\p{S}]/u;
+var De = d(/^((?![*_])punctSpace)/, "u").replace(/punctSpace/g, Z).getRegex();
+var pe = /(?!~)[\p{P}\p{S}]/u;
+var qe = /(?!~)[\s\p{P}\p{S}]/u;
+var ve = /(?:[^\s\p{P}\p{S}]|~)/u;
+var He = d(/link|precode-code|html/, "g").replace("link", /\[(?:[^\[\]`]|(?<a>`+)[^`]+\k<a>(?!`))*?\]\((?:\\[\s\S]|[^\\\(\)]|\((?:\\[\s\S]|[^\\\(\)])*\))*\)/).replace("precode-", Te ? "(?<!`)()" : "(^^|[^`])").replace("code", /(?<b>`+)[^`]+\k<b>(?!`)/).replace("html", /<(?! )[^<>]*?>/).getRegex();
+var ce = /^(?:\*+(?:((?!\*)punct)|([^\s*]))?)|^_+(?:((?!_)punct)|([^\s_]))?/;
+var Ze = d(ce, "u").replace(/punct/g, I).getRegex();
+var Ge = d(ce, "u").replace(/punct/g, pe).getRegex();
+var he = "^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)punct(\\*+)(?=[\\s]|$)|notPunctSpace(\\*+)(?!\\*)(?=punctSpace|$)|(?!\\*)punctSpace(\\*+)(?=notPunctSpace)|[\\s](\\*+)(?!\\*)(?=punct)|(?!\\*)punct(\\*+)(?!\\*)(?=punct)|notPunctSpace(\\*+)(?=notPunctSpace)";
+var Ne = d(he, "gu").replace(/notPunctSpace/g, X).replace(/punctSpace/g, Z).replace(/punct/g, I).getRegex();
+var Qe = d(he, "gu").replace(/notPunctSpace/g, ve).replace(/punctSpace/g, qe).replace(/punct/g, pe).getRegex();
+var je = d("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)punct(_+)(?=[\\s]|$)|notPunctSpace(_+)(?!_)(?=punctSpace|$)|(?!_)punctSpace(_+)(?=notPunctSpace)|[\\s](_+)(?!_)(?=punct)|(?!_)punct(_+)(?!_)(?=punct)", "gu").replace(/notPunctSpace/g, X).replace(/punctSpace/g, Z).replace(/punct/g, I).getRegex();
+var Fe = d(/^~~?(?:((?!~)punct)|[^\s~])/, "u").replace(/punct/g, I).getRegex();
+var Ue = "^[^~]+(?=[^~])|(?!~)punct(~~?)(?=[\\s]|$)|notPunctSpace(~~?)(?!~)(?=punctSpace|$)|(?!~)punctSpace(~~?)(?=notPunctSpace)|[\\s](~~?)(?!~)(?=punct)|(?!~)punct(~~?)(?!~)(?=punct)|notPunctSpace(~~?)(?=notPunctSpace)";
+var Ke = d(Ue, "gu").replace(/notPunctSpace/g, X).replace(/punctSpace/g, Z).replace(/punct/g, I).getRegex();
+var We = d(/\\(punct)/, "gu").replace(/punct/g, I).getRegex();
+var Xe = d(/^<(scheme:[^\s\x00-\x1f<>]*|email)>/).replace("scheme", /[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace("email", /[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex();
+var Je = d(K).replace("(?:-->|$)", "-->").getRegex();
+var Ve = d("^comment|^</[a-zA-Z][\\w:-]*\\s*>|^<[a-zA-Z][\\w-]*(?:attribute)*?\\s*/?>|^<\\?[\\s\\S]*?\\?>|^<![a-zA-Z]+\\s[\\s\\S]*?>|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>").replace("comment", Je).replace("attribute", /\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?/).getRegex();
+var v = /(?:\[(?:\\[\s\S]|[^\[\]\\])*\]|\\[\s\S]|`+(?!`)[^`]*?`+(?!`)|``+(?=\])|[^\[\]\\`])*?/;
+var Ye = d(/^!?\[(label)\]\(\s*(href)(?:(?:[ \t]+(?:\n[ \t]*)?|\n[ \t]*)(title))?\s*\)/).replace("label", v).replace("href", /<(?:\\.|[^\n<>\\])+>|[^ \t\n\x00-\x1f]*/).replace("title", /"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/).getRegex();
+var ke = d(/^!?\[(label)\]\[(ref)\]/).replace("label", v).replace("ref", U).getRegex();
+var de = d(/^!?\[(ref)\](?:\[\])?/).replace("ref", U).getRegex();
+var et = d("reflink|nolink(?!\\()", "g").replace("reflink", ke).replace("nolink", de).getRegex();
+var ie = /[hH][tT][tT][pP][sS]?|[fF][tT][pP]/;
+var J = { _backpedal: _, anyPunctuation: We, autolink: Xe, blockSkip: He, br: ue, code: Ce, del: _, delLDelim: _, delRDelim: _, emStrongLDelim: Ze, emStrongRDelimAst: Ne, emStrongRDelimUnd: je, escape: Ae, link: Ye, nolink: de, punctuation: De, reflink: ke, reflinkSearch: et, tag: Ve, text: Be, url: _ };
+var tt = { ...J, link: d(/^!?\[(label)\]\((.*?)\)/).replace("label", v).getRegex(), reflink: d(/^!?\[(label)\]\s*\[([^\]]*)\]/).replace("label", v).getRegex() };
+var Q = { ...J, emStrongRDelimAst: Qe, emStrongLDelim: Ge, delLDelim: Fe, delRDelim: Ke, url: d(/^((?:protocol):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/).replace("protocol", ie).replace("email", /[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(), _backpedal: /(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/, del: /^(~~?)(?=[^\s~])((?:\\[\s\S]|[^\\])*?(?:\\[\s\S]|[^\s~\\]))\1(?=[^~]|$)/, text: d(/^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|protocol:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))/).replace("protocol", ie).getRegex() };
+var nt = { ...Q, br: d(ue).replace("{2,}", "*").getRegex(), text: d(Q.text).replace("\\b_", "\\b_| {2,}\\n").replace(/\{2,\}/g, "*").getRegex() };
+var D = { normal: W, gfm: Ee, pedantic: Ie };
+var A = { normal: J, gfm: Q, breaks: nt, pedantic: tt };
+var rt = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+var ge = (l3) => rt[l3];
+function O(l3, e) {
+  if (e) {
+    if (m.escapeTest.test(l3)) return l3.replace(m.escapeReplace, ge);
+  } else if (m.escapeTestNoEncode.test(l3)) return l3.replace(m.escapeReplaceNoEncode, ge);
+  return l3;
+}
+function V(l3) {
+  try {
+    l3 = encodeURI(l3).replace(m.percentDecode, "%");
+  } catch {
+    return null;
+  }
+  return l3;
+}
+function Y(l3, e) {
+  let t = l3.replace(m.findPipe, (r, i, o) => {
+    let u = false, a = i;
+    for (; --a >= 0 && o[a] === "\\"; ) u = !u;
+    return u ? "|" : " |";
+  }), n = t.split(m.splitPipe), s = 0;
+  if (n[0].trim() || n.shift(), n.length > 0 && !n.at(-1)?.trim() && n.pop(), e) if (n.length > e) n.splice(e);
+  else for (; n.length < e; ) n.push("");
+  for (; s < n.length; s++) n[s] = n[s].trim().replace(m.slashPipe, "|");
+  return n;
+}
+function $(l3, e, t) {
+  let n = l3.length;
+  if (n === 0) return "";
+  let s = 0;
+  for (; s < n; ) {
+    let r = l3.charAt(n - s - 1);
+    if (r === e && !t) s++;
+    else if (r !== e && t) s++;
+    else break;
+  }
+  return l3.slice(0, n - s);
+}
+function ee(l3) {
+  let e = l3.split(`
+`), t = e.length - 1;
+  for (; t >= 0 && m.blankLine.test(e[t]); ) t--;
+  return e.length - t <= 2 ? l3 : e.slice(0, t + 1).join(`
+`);
+}
+function fe(l3, e) {
+  if (l3.indexOf(e[1]) === -1) return -1;
+  let t = 0;
+  for (let n = 0; n < l3.length; n++) if (l3[n] === "\\") n++;
+  else if (l3[n] === e[0]) t++;
+  else if (l3[n] === e[1] && (t--, t < 0)) return n;
+  return t > 0 ? -2 : -1;
+}
+function me(l3, e = 0) {
+  let t = e, n = "";
+  for (let s of l3) if (s === "	") {
+    let r = 4 - t % 4;
+    n += " ".repeat(r), t += r;
+  } else n += s, t++;
+  return n;
+}
+function xe(l3, e, t, n, s) {
+  let r = e.href, i = e.title || null, o = l3[1].replace(s.other.outputLinkReplace, "$1");
+  n.state.inLink = true;
+  let u = { type: l3[0].charAt(0) === "!" ? "image" : "link", raw: t, href: r, title: i, text: o, tokens: n.inlineTokens(o) };
+  return n.state.inLink = false, u;
+}
+function st(l3, e, t) {
+  let n = l3.match(t.other.indentCodeCompensation);
+  if (n === null) return e;
+  let s = n[1];
+  return e.split(`
+`).map((r) => {
+    let i = r.match(t.other.beginningSpace);
+    if (i === null) return r;
+    let [o] = i;
+    return o.length >= s.length ? r.slice(s.length) : r;
+  }).join(`
+`);
+}
+var w = class {
+  options;
+  rules;
+  lexer;
+  constructor(e) {
+    this.options = e || T;
+  }
+  space(e) {
+    let t = this.rules.block.newline.exec(e);
+    if (t && t[0].length > 0) return { type: "space", raw: t[0] };
+  }
+  code(e) {
+    let t = this.rules.block.code.exec(e);
+    if (t) {
+      let n = this.options.pedantic ? t[0] : ee(t[0]), s = n.replace(this.rules.other.codeRemoveIndent, "");
+      return { type: "code", raw: n, codeBlockStyle: "indented", text: s };
+    }
+  }
+  fences(e) {
+    let t = this.rules.block.fences.exec(e);
+    if (t) {
+      let n = t[0], s = st(n, t[3] || "", this.rules);
+      return { type: "code", raw: n, lang: t[2] ? t[2].trim().replace(this.rules.inline.anyPunctuation, "$1") : t[2], text: s };
+    }
+  }
+  heading(e) {
+    let t = this.rules.block.heading.exec(e);
+    if (t) {
+      let n = t[2].trim();
+      if (this.rules.other.endingHash.test(n)) {
+        let s = $(n, "#");
+        (this.options.pedantic || !s || this.rules.other.endingSpaceChar.test(s)) && (n = s.trim());
+      }
+      return { type: "heading", raw: $(t[0], `
+`), depth: t[1].length, text: n, tokens: this.lexer.inline(n) };
+    }
+  }
+  hr(e) {
+    let t = this.rules.block.hr.exec(e);
+    if (t) return { type: "hr", raw: $(t[0], `
+`) };
+  }
+  blockquote(e) {
+    let t = this.rules.block.blockquote.exec(e);
+    if (t) {
+      let n = $(t[0], `
+`).split(`
+`), s = "", r = "", i = [];
+      for (; n.length > 0; ) {
+        let o = false, u = [], a;
+        for (a = 0; a < n.length; a++) if (this.rules.other.blockquoteStart.test(n[a])) u.push(n[a]), o = true;
+        else if (!o) u.push(n[a]);
+        else break;
+        n = n.slice(a);
+        let c = u.join(`
+`), p = c.replace(this.rules.other.blockquoteSetextReplace, `
+    $1`).replace(this.rules.other.blockquoteSetextReplace2, "");
+        s = s ? `${s}
+${c}` : c, r = r ? `${r}
+${p}` : p;
+        let k = this.lexer.state.top;
+        if (this.lexer.state.top = true, this.lexer.blockTokens(p, i, true), this.lexer.state.top = k, n.length === 0) break;
+        let h = i.at(-1);
+        if (h?.type === "code") break;
+        if (h?.type === "blockquote") {
+          let R = h, f = R.raw + `
+` + n.join(`
+`), S = this.blockquote(f);
+          i[i.length - 1] = S, s = s.substring(0, s.length - R.raw.length) + S.raw, r = r.substring(0, r.length - R.text.length) + S.text;
+          break;
+        } else if (h?.type === "list") {
+          let R = h, f = R.raw + `
+` + n.join(`
+`), S = this.list(f);
+          i[i.length - 1] = S, s = s.substring(0, s.length - h.raw.length) + S.raw, r = r.substring(0, r.length - R.raw.length) + S.raw, n = f.substring(i.at(-1).raw.length).split(`
+`);
+          continue;
+        }
+      }
+      return { type: "blockquote", raw: s, tokens: i, text: r };
+    }
+  }
+  list(e) {
+    let t = this.rules.block.list.exec(e);
+    if (t) {
+      let n = t[1].trim(), s = n.length > 1, r = { type: "list", raw: "", ordered: s, start: s ? +n.slice(0, -1) : "", loose: false, items: [] };
+      n = s ? `\\d{1,9}\\${n.slice(-1)}` : `\\${n}`, this.options.pedantic && (n = s ? n : "[*+-]");
+      let i = this.rules.other.listItemRegex(n), o = false;
+      for (; e; ) {
+        let a = false, c = "", p = "";
+        if (!(t = i.exec(e)) || this.rules.block.hr.test(e)) break;
+        c = t[0], e = e.substring(c.length);
+        let k = me(t[2].split(`
+`, 1)[0], t[1].length), h = e.split(`
+`, 1)[0], R = !k.trim(), f = 0;
+        if (this.options.pedantic ? (f = 2, p = k.trimStart()) : R ? f = t[1].length + 1 : (f = k.search(this.rules.other.nonSpaceChar), f = f > 4 ? 1 : f, p = k.slice(f), f += t[1].length), R && this.rules.other.blankLine.test(h) && (c += h + `
+`, e = e.substring(h.length + 1), a = true), !a) {
+          let S = this.rules.other.nextBulletRegex(f), te = this.rules.other.hrRegex(f), ne = this.rules.other.fencesBeginRegex(f), re = this.rules.other.headingBeginRegex(f), be = this.rules.other.htmlBeginRegex(f), Re = this.rules.other.blockquoteBeginRegex(f);
+          for (; e; ) {
+            let G = e.split(`
+`, 1)[0], C;
+            if (h = G, this.options.pedantic ? (h = h.replace(this.rules.other.listReplaceNesting, "  "), C = h) : C = h.replace(this.rules.other.tabCharGlobal, "    "), ne.test(h) || re.test(h) || be.test(h) || Re.test(h) || S.test(h) || te.test(h)) break;
+            if (C.search(this.rules.other.nonSpaceChar) >= f || !h.trim()) p += `
+` + C.slice(f);
+            else {
+              if (R || k.replace(this.rules.other.tabCharGlobal, "    ").search(this.rules.other.nonSpaceChar) >= 4 || ne.test(k) || re.test(k) || te.test(k)) break;
+              p += `
+` + h;
+            }
+            R = !h.trim(), c += G + `
+`, e = e.substring(G.length + 1), k = C.slice(f);
+          }
+        }
+        r.loose || (o ? r.loose = true : this.rules.other.doubleBlankLine.test(c) && (o = true)), r.items.push({ type: "list_item", raw: c, task: !!this.options.gfm && this.rules.other.listIsTask.test(p), loose: false, text: p, tokens: [] }), r.raw += c;
+      }
+      let u = r.items.at(-1);
+      if (u) u.raw = u.raw.trimEnd(), u.text = u.text.trimEnd();
+      else return;
+      r.raw = r.raw.trimEnd();
+      for (let a of r.items) {
+        this.lexer.state.top = false, a.tokens = this.lexer.blockTokens(a.text, []);
+        let c = a.tokens[0];
+        if (a.task && (c?.type === "text" || c?.type === "paragraph")) {
+          a.text = a.text.replace(this.rules.other.listReplaceTask, ""), c.raw = c.raw.replace(this.rules.other.listReplaceTask, ""), c.text = c.text.replace(this.rules.other.listReplaceTask, "");
+          for (let k = this.lexer.inlineQueue.length - 1; k >= 0; k--) if (this.rules.other.listIsTask.test(this.lexer.inlineQueue[k].src)) {
+            this.lexer.inlineQueue[k].src = this.lexer.inlineQueue[k].src.replace(this.rules.other.listReplaceTask, "");
+            break;
+          }
+          let p = this.rules.other.listTaskCheckbox.exec(a.raw);
+          if (p) {
+            let k = { type: "checkbox", raw: p[0] + " ", checked: p[0] !== "[ ]" };
+            a.checked = k.checked, r.loose ? a.tokens[0] && ["paragraph", "text"].includes(a.tokens[0].type) && "tokens" in a.tokens[0] && a.tokens[0].tokens ? (a.tokens[0].raw = k.raw + a.tokens[0].raw, a.tokens[0].text = k.raw + a.tokens[0].text, a.tokens[0].tokens.unshift(k)) : a.tokens.unshift({ type: "paragraph", raw: k.raw, text: k.raw, tokens: [k] }) : a.tokens.unshift(k);
+          }
+        } else a.task && (a.task = false);
+        if (!r.loose) {
+          let p = a.tokens.filter((h) => h.type === "space"), k = p.length > 0 && p.some((h) => this.rules.other.anyLine.test(h.raw));
+          r.loose = k;
+        }
+      }
+      if (r.loose) for (let a of r.items) {
+        a.loose = true;
+        for (let c of a.tokens) c.type === "text" && (c.type = "paragraph");
+      }
+      return r;
+    }
+  }
+  html(e) {
+    let t = this.rules.block.html.exec(e);
+    if (t) {
+      let n = ee(t[0]);
+      return { type: "html", block: true, raw: n, pre: t[1] === "pre" || t[1] === "script" || t[1] === "style", text: n };
+    }
+  }
+  def(e) {
+    let t = this.rules.block.def.exec(e);
+    if (t) {
+      let n = t[1].toLowerCase().replace(this.rules.other.multipleSpaceGlobal, " "), s = t[2] ? t[2].replace(this.rules.other.hrefBrackets, "$1").replace(this.rules.inline.anyPunctuation, "$1") : "", r = t[3] ? t[3].substring(1, t[3].length - 1).replace(this.rules.inline.anyPunctuation, "$1") : t[3];
+      return { type: "def", tag: n, raw: $(t[0], `
+`), href: s, title: r };
+    }
+  }
+  table(e) {
+    let t = this.rules.block.table.exec(e);
+    if (!t || !this.rules.other.tableDelimiter.test(t[2])) return;
+    let n = Y(t[1]), s = t[2].replace(this.rules.other.tableAlignChars, "").split("|"), r = t[3]?.trim() ? t[3].replace(this.rules.other.tableRowBlankLine, "").split(`
+`) : [], i = { type: "table", raw: $(t[0], `
+`), header: [], align: [], rows: [] };
+    if (n.length === s.length) {
+      for (let o of s) this.rules.other.tableAlignRight.test(o) ? i.align.push("right") : this.rules.other.tableAlignCenter.test(o) ? i.align.push("center") : this.rules.other.tableAlignLeft.test(o) ? i.align.push("left") : i.align.push(null);
+      for (let o = 0; o < n.length; o++) i.header.push({ text: n[o], tokens: this.lexer.inline(n[o]), header: true, align: i.align[o] });
+      for (let o of r) i.rows.push(Y(o, i.header.length).map((u, a) => ({ text: u, tokens: this.lexer.inline(u), header: false, align: i.align[a] })));
+      return i;
+    }
+  }
+  lheading(e) {
+    let t = this.rules.block.lheading.exec(e);
+    if (t) {
+      let n = t[1].trim();
+      return { type: "heading", raw: $(t[0], `
+`), depth: t[2].charAt(0) === "=" ? 1 : 2, text: n, tokens: this.lexer.inline(n) };
+    }
+  }
+  paragraph(e) {
+    let t = this.rules.block.paragraph.exec(e);
+    if (t) {
+      let n = t[1].charAt(t[1].length - 1) === `
+` ? t[1].slice(0, -1) : t[1];
+      return { type: "paragraph", raw: t[0], text: n, tokens: this.lexer.inline(n) };
+    }
+  }
+  text(e) {
+    let t = this.rules.block.text.exec(e);
+    if (t) return { type: "text", raw: t[0], text: t[0], tokens: this.lexer.inline(t[0]) };
+  }
+  escape(e) {
+    let t = this.rules.inline.escape.exec(e);
+    if (t) return { type: "escape", raw: t[0], text: t[1] };
+  }
+  tag(e) {
+    let t = this.rules.inline.tag.exec(e);
+    if (t) return !this.lexer.state.inLink && this.rules.other.startATag.test(t[0]) ? this.lexer.state.inLink = true : this.lexer.state.inLink && this.rules.other.endATag.test(t[0]) && (this.lexer.state.inLink = false), !this.lexer.state.inRawBlock && this.rules.other.startPreScriptTag.test(t[0]) ? this.lexer.state.inRawBlock = true : this.lexer.state.inRawBlock && this.rules.other.endPreScriptTag.test(t[0]) && (this.lexer.state.inRawBlock = false), { type: "html", raw: t[0], inLink: this.lexer.state.inLink, inRawBlock: this.lexer.state.inRawBlock, block: false, text: t[0] };
+  }
+  link(e) {
+    let t = this.rules.inline.link.exec(e);
+    if (t) {
+      let n = t[2].trim();
+      if (!this.options.pedantic && this.rules.other.startAngleBracket.test(n)) {
+        if (!this.rules.other.endAngleBracket.test(n)) return;
+        let i = $(n.slice(0, -1), "\\");
+        if ((n.length - i.length) % 2 === 0) return;
+      } else {
+        let i = fe(t[2], "()");
+        if (i === -2) return;
+        if (i > -1) {
+          let u = (t[0].indexOf("!") === 0 ? 5 : 4) + t[1].length + i;
+          t[2] = t[2].substring(0, i), t[0] = t[0].substring(0, u).trim(), t[3] = "";
+        }
+      }
+      let s = t[2], r = "";
+      if (this.options.pedantic) {
+        let i = this.rules.other.pedanticHrefTitle.exec(s);
+        i && (s = i[1], r = i[3]);
+      } else r = t[3] ? t[3].slice(1, -1) : "";
+      return s = s.trim(), this.rules.other.startAngleBracket.test(s) && (this.options.pedantic && !this.rules.other.endAngleBracket.test(n) ? s = s.slice(1) : s = s.slice(1, -1)), xe(t, { href: s && s.replace(this.rules.inline.anyPunctuation, "$1"), title: r && r.replace(this.rules.inline.anyPunctuation, "$1") }, t[0], this.lexer, this.rules);
+    }
+  }
+  reflink(e, t) {
+    let n;
+    if ((n = this.rules.inline.reflink.exec(e)) || (n = this.rules.inline.nolink.exec(e))) {
+      let s = (n[2] || n[1]).replace(this.rules.other.multipleSpaceGlobal, " "), r = t[s.toLowerCase()];
+      if (!r) {
+        let i = n[0].charAt(0);
+        return { type: "text", raw: i, text: i };
+      }
+      return xe(n, r, n[0], this.lexer, this.rules);
+    }
+  }
+  emStrong(e, t, n = "") {
+    let s = this.rules.inline.emStrongLDelim.exec(e);
+    if (!s || !s[1] && !s[2] && !s[3] && !s[4] || s[4] && n.match(this.rules.other.unicodeAlphaNumeric)) return;
+    if (!(s[1] || s[3] || "") || !n || this.rules.inline.punctuation.exec(n)) {
+      let i = [...s[0]].length - 1, o, u, a = i, c = 0, p = s[0][0] === "*" ? this.rules.inline.emStrongRDelimAst : this.rules.inline.emStrongRDelimUnd;
+      for (p.lastIndex = 0, t = t.slice(-1 * e.length + i); (s = p.exec(t)) !== null; ) {
+        if (o = s[1] || s[2] || s[3] || s[4] || s[5] || s[6], !o) continue;
+        if (u = [...o].length, s[3] || s[4]) {
+          a += u;
+          continue;
+        } else if ((s[5] || s[6]) && i % 3 && !((i + u) % 3)) {
+          c += u;
+          continue;
+        }
+        if (a -= u, a > 0) continue;
+        u = Math.min(u, u + a + c);
+        let k = [...s[0]][0].length, h = e.slice(0, i + s.index + k + u);
+        if (Math.min(i, u) % 2) {
+          let f = h.slice(1, -1);
+          return { type: "em", raw: h, text: f, tokens: this.lexer.inlineTokens(f) };
+        }
+        let R = h.slice(2, -2);
+        return { type: "strong", raw: h, text: R, tokens: this.lexer.inlineTokens(R) };
+      }
+    }
+  }
+  codespan(e) {
+    let t = this.rules.inline.code.exec(e);
+    if (t) {
+      let n = t[2].replace(this.rules.other.newLineCharGlobal, " "), s = this.rules.other.nonSpaceChar.test(n), r = this.rules.other.startingSpaceChar.test(n) && this.rules.other.endingSpaceChar.test(n);
+      return s && r && (n = n.substring(1, n.length - 1)), { type: "codespan", raw: t[0], text: n };
+    }
+  }
+  br(e) {
+    let t = this.rules.inline.br.exec(e);
+    if (t) return { type: "br", raw: t[0] };
+  }
+  del(e, t, n = "") {
+    let s = this.rules.inline.delLDelim.exec(e);
+    if (!s) return;
+    if (!(s[1] || "") || !n || this.rules.inline.punctuation.exec(n)) {
+      let i = [...s[0]].length - 1, o, u, a = i, c = this.rules.inline.delRDelim;
+      for (c.lastIndex = 0, t = t.slice(-1 * e.length + i); (s = c.exec(t)) !== null; ) {
+        if (o = s[1] || s[2] || s[3] || s[4] || s[5] || s[6], !o || (u = [...o].length, u !== i)) continue;
+        if (s[3] || s[4]) {
+          a += u;
+          continue;
+        }
+        if (a -= u, a > 0) continue;
+        u = Math.min(u, u + a);
+        let p = [...s[0]][0].length, k = e.slice(0, i + s.index + p + u), h = k.slice(i, -i);
+        return { type: "del", raw: k, text: h, tokens: this.lexer.inlineTokens(h) };
+      }
+    }
+  }
+  autolink(e) {
+    let t = this.rules.inline.autolink.exec(e);
+    if (t) {
+      let n, s;
+      return t[2] === "@" ? (n = t[1], s = "mailto:" + n) : (n = t[1], s = n), { type: "link", raw: t[0], text: n, href: s, tokens: [{ type: "text", raw: n, text: n }] };
+    }
+  }
+  url(e) {
+    let t;
+    if (t = this.rules.inline.url.exec(e)) {
+      let n, s;
+      if (t[2] === "@") n = t[0], s = "mailto:" + n;
+      else {
+        let r;
+        do
+          r = t[0], t[0] = this.rules.inline._backpedal.exec(t[0])?.[0] ?? "";
+        while (r !== t[0]);
+        n = t[0], t[1] === "www." ? s = "http://" + t[0] : s = t[0];
+      }
+      return { type: "link", raw: t[0], text: n, href: s, tokens: [{ type: "text", raw: n, text: n }] };
+    }
+  }
+  inlineText(e) {
+    let t = this.rules.inline.text.exec(e);
+    if (t) {
+      let n = this.lexer.state.inRawBlock;
+      return { type: "text", raw: t[0], text: t[0], escaped: n };
+    }
+  }
+};
+var x = class l {
+  tokens;
+  options;
+  state;
+  inlineQueue;
+  tokenizer;
+  constructor(e) {
+    this.tokens = [], this.tokens.links = /* @__PURE__ */ Object.create(null), this.options = e || T, this.options.tokenizer = this.options.tokenizer || new w(), this.tokenizer = this.options.tokenizer, this.tokenizer.options = this.options, this.tokenizer.lexer = this, this.inlineQueue = [], this.state = { inLink: false, inRawBlock: false, top: true };
+    let t = { other: m, block: D.normal, inline: A.normal };
+    this.options.pedantic ? (t.block = D.pedantic, t.inline = A.pedantic) : this.options.gfm && (t.block = D.gfm, this.options.breaks ? t.inline = A.breaks : t.inline = A.gfm), this.tokenizer.rules = t;
+  }
+  static get rules() {
+    return { block: D, inline: A };
+  }
+  static lex(e, t) {
+    return new l(t).lex(e);
+  }
+  static lexInline(e, t) {
+    return new l(t).inlineTokens(e);
+  }
+  lex(e) {
+    e = e.replace(m.carriageReturn, `
+`), this.blockTokens(e, this.tokens);
+    for (let t = 0; t < this.inlineQueue.length; t++) {
+      let n = this.inlineQueue[t];
+      this.inlineTokens(n.src, n.tokens);
+    }
+    return this.inlineQueue = [], this.tokens;
+  }
+  blockTokens(e, t = [], n = false) {
+    this.tokenizer.lexer = this, this.options.pedantic && (e = e.replace(m.tabCharGlobal, "    ").replace(m.spaceLine, ""));
+    let s = 1 / 0;
+    for (; e; ) {
+      if (e.length < s) s = e.length;
+      else {
+        this.infiniteLoopError(e.charCodeAt(0));
+        break;
+      }
+      let r;
+      if (this.options.extensions?.block?.some((o) => (r = o.call({ lexer: this }, e, t)) ? (e = e.substring(r.raw.length), t.push(r), true) : false)) continue;
+      if (r = this.tokenizer.space(e)) {
+        e = e.substring(r.raw.length);
+        let o = t.at(-1);
+        r.raw.length === 1 && o !== void 0 ? o.raw += `
+` : t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.code(e)) {
+        e = e.substring(r.raw.length);
+        let o = t.at(-1);
+        o?.type === "paragraph" || o?.type === "text" ? (o.raw += (o.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, o.text += `
+` + r.text, this.inlineQueue.at(-1).src = o.text) : t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.fences(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.heading(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.hr(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.blockquote(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.list(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.html(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.def(e)) {
+        e = e.substring(r.raw.length);
+        let o = t.at(-1);
+        o?.type === "paragraph" || o?.type === "text" ? (o.raw += (o.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, o.text += `
+` + r.raw, this.inlineQueue.at(-1).src = o.text) : this.tokens.links[r.tag] || (this.tokens.links[r.tag] = { href: r.href, title: r.title }, t.push(r));
+        continue;
+      }
+      if (r = this.tokenizer.table(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.lheading(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      let i = e;
+      if (this.options.extensions?.startBlock) {
+        let o = 1 / 0, u = e.slice(1), a;
+        this.options.extensions.startBlock.forEach((c) => {
+          a = c.call({ lexer: this }, u), typeof a == "number" && a >= 0 && (o = Math.min(o, a));
+        }), o < 1 / 0 && o >= 0 && (i = e.substring(0, o + 1));
+      }
+      if (this.state.top && (r = this.tokenizer.paragraph(i))) {
+        let o = t.at(-1);
+        n && o?.type === "paragraph" ? (o.raw += (o.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, o.text += `
+` + r.text, this.inlineQueue.pop(), this.inlineQueue.at(-1).src = o.text) : t.push(r), n = i.length !== e.length, e = e.substring(r.raw.length);
+        continue;
+      }
+      if (r = this.tokenizer.text(e)) {
+        e = e.substring(r.raw.length);
+        let o = t.at(-1);
+        o?.type === "text" ? (o.raw += (o.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, o.text += `
+` + r.text, this.inlineQueue.pop(), this.inlineQueue.at(-1).src = o.text) : t.push(r);
+        continue;
+      }
+      if (e) {
+        this.infiniteLoopError(e.charCodeAt(0));
+        break;
+      }
+    }
+    return this.state.top = true, t;
+  }
+  inline(e, t = []) {
+    return this.inlineQueue.push({ src: e, tokens: t }), t;
+  }
+  inlineTokens(e, t = []) {
+    this.tokenizer.lexer = this;
+    let n = e, s = null;
+    if (this.tokens.links) {
+      let a = Object.keys(this.tokens.links);
+      if (a.length > 0) for (; (s = this.tokenizer.rules.inline.reflinkSearch.exec(n)) !== null; ) a.includes(s[0].slice(s[0].lastIndexOf("[") + 1, -1)) && (n = n.slice(0, s.index) + "[" + "a".repeat(s[0].length - 2) + "]" + n.slice(this.tokenizer.rules.inline.reflinkSearch.lastIndex));
+    }
+    for (; (s = this.tokenizer.rules.inline.anyPunctuation.exec(n)) !== null; ) n = n.slice(0, s.index) + "++" + n.slice(this.tokenizer.rules.inline.anyPunctuation.lastIndex);
+    let r;
+    for (; (s = this.tokenizer.rules.inline.blockSkip.exec(n)) !== null; ) r = s[2] ? s[2].length : 0, n = n.slice(0, s.index + r) + "[" + "a".repeat(s[0].length - r - 2) + "]" + n.slice(this.tokenizer.rules.inline.blockSkip.lastIndex);
+    n = this.options.hooks?.emStrongMask?.call({ lexer: this }, n) ?? n;
+    let i = false, o = "", u = 1 / 0;
+    for (; e; ) {
+      if (e.length < u) u = e.length;
+      else {
+        this.infiniteLoopError(e.charCodeAt(0));
+        break;
+      }
+      i || (o = ""), i = false;
+      let a;
+      if (this.options.extensions?.inline?.some((p) => (a = p.call({ lexer: this }, e, t)) ? (e = e.substring(a.raw.length), t.push(a), true) : false)) continue;
+      if (a = this.tokenizer.escape(e)) {
+        e = e.substring(a.raw.length), t.push(a);
+        continue;
+      }
+      if (a = this.tokenizer.tag(e)) {
+        e = e.substring(a.raw.length), t.push(a);
+        continue;
+      }
+      if (a = this.tokenizer.link(e)) {
+        e = e.substring(a.raw.length), t.push(a);
+        continue;
+      }
+      if (a = this.tokenizer.reflink(e, this.tokens.links)) {
+        e = e.substring(a.raw.length);
+        let p = t.at(-1);
+        a.type === "text" && p?.type === "text" ? (p.raw += a.raw, p.text += a.text) : t.push(a);
+        continue;
+      }
+      if (a = this.tokenizer.emStrong(e, n, o)) {
+        e = e.substring(a.raw.length), t.push(a);
+        continue;
+      }
+      if (a = this.tokenizer.codespan(e)) {
+        e = e.substring(a.raw.length), t.push(a);
+        continue;
+      }
+      if (a = this.tokenizer.br(e)) {
+        e = e.substring(a.raw.length), t.push(a);
+        continue;
+      }
+      if (a = this.tokenizer.del(e, n, o)) {
+        e = e.substring(a.raw.length), t.push(a);
+        continue;
+      }
+      if (a = this.tokenizer.autolink(e)) {
+        e = e.substring(a.raw.length), t.push(a);
+        continue;
+      }
+      if (!this.state.inLink && (a = this.tokenizer.url(e))) {
+        e = e.substring(a.raw.length), t.push(a);
+        continue;
+      }
+      let c = e;
+      if (this.options.extensions?.startInline) {
+        let p = 1 / 0, k = e.slice(1), h;
+        this.options.extensions.startInline.forEach((R) => {
+          h = R.call({ lexer: this }, k), typeof h == "number" && h >= 0 && (p = Math.min(p, h));
+        }), p < 1 / 0 && p >= 0 && (c = e.substring(0, p + 1));
+      }
+      if (a = this.tokenizer.inlineText(c)) {
+        e = e.substring(a.raw.length), a.raw.slice(-1) !== "_" && (o = a.raw.slice(-1)), i = true;
+        let p = t.at(-1);
+        p?.type === "text" ? (p.raw += a.raw, p.text += a.text) : t.push(a);
+        continue;
+      }
+      if (e) {
+        this.infiniteLoopError(e.charCodeAt(0));
+        break;
+      }
+    }
+    return t;
+  }
+  infiniteLoopError(e) {
+    let t = "Infinite loop on byte: " + e;
+    if (this.options.silent) console.error(t);
+    else throw new Error(t);
+  }
+};
+var y = class {
+  options;
+  parser;
+  constructor(e) {
+    this.options = e || T;
+  }
+  space(e) {
+    return "";
+  }
+  code({ text: e, lang: t, escaped: n }) {
+    let s = (t || "").match(m.notSpaceStart)?.[0], r = e.replace(m.endingNewline, "") + `
+`;
+    return s ? '<pre><code class="language-' + O(s) + '">' + (n ? r : O(r, true)) + `</code></pre>
+` : "<pre><code>" + (n ? r : O(r, true)) + `</code></pre>
+`;
+  }
+  blockquote({ tokens: e }) {
+    return `<blockquote>
+${this.parser.parse(e)}</blockquote>
+`;
+  }
+  html({ text: e }) {
+    return e;
+  }
+  def(e) {
+    return "";
+  }
+  heading({ tokens: e, depth: t }) {
+    return `<h${t}>${this.parser.parseInline(e)}</h${t}>
+`;
+  }
+  hr(e) {
+    return `<hr>
+`;
+  }
+  list(e) {
+    let t = e.ordered, n = e.start, s = "";
+    for (let o = 0; o < e.items.length; o++) {
+      let u = e.items[o];
+      s += this.listitem(u);
+    }
+    let r = t ? "ol" : "ul", i = t && n !== 1 ? ' start="' + n + '"' : "";
+    return "<" + r + i + `>
+` + s + "</" + r + `>
+`;
+  }
+  listitem(e) {
+    return `<li>${this.parser.parse(e.tokens)}</li>
+`;
+  }
+  checkbox({ checked: e }) {
+    return "<input " + (e ? 'checked="" ' : "") + 'disabled="" type="checkbox"> ';
+  }
+  paragraph({ tokens: e }) {
+    return `<p>${this.parser.parseInline(e)}</p>
+`;
+  }
+  table(e) {
+    let t = "", n = "";
+    for (let r = 0; r < e.header.length; r++) n += this.tablecell(e.header[r]);
+    t += this.tablerow({ text: n });
+    let s = "";
+    for (let r = 0; r < e.rows.length; r++) {
+      let i = e.rows[r];
+      n = "";
+      for (let o = 0; o < i.length; o++) n += this.tablecell(i[o]);
+      s += this.tablerow({ text: n });
+    }
+    return s && (s = `<tbody>${s}</tbody>`), `<table>
+<thead>
+` + t + `</thead>
+` + s + `</table>
+`;
+  }
+  tablerow({ text: e }) {
+    return `<tr>
+${e}</tr>
+`;
+  }
+  tablecell(e) {
+    let t = this.parser.parseInline(e.tokens), n = e.header ? "th" : "td";
+    return (e.align ? `<${n} align="${e.align}">` : `<${n}>`) + t + `</${n}>
+`;
+  }
+  strong({ tokens: e }) {
+    return `<strong>${this.parser.parseInline(e)}</strong>`;
+  }
+  em({ tokens: e }) {
+    return `<em>${this.parser.parseInline(e)}</em>`;
+  }
+  codespan({ text: e }) {
+    return `<code>${O(e, true)}</code>`;
+  }
+  br(e) {
+    return "<br>";
+  }
+  del({ tokens: e }) {
+    return `<del>${this.parser.parseInline(e)}</del>`;
+  }
+  link({ href: e, title: t, tokens: n }) {
+    let s = this.parser.parseInline(n), r = V(e);
+    if (r === null) return s;
+    e = r;
+    let i = '<a href="' + e + '"';
+    return t && (i += ' title="' + O(t) + '"'), i += ">" + s + "</a>", i;
+  }
+  image({ href: e, title: t, text: n, tokens: s }) {
+    s && (n = this.parser.parseInline(s, this.parser.textRenderer));
+    let r = V(e);
+    if (r === null) return O(n);
+    e = r;
+    let i = `<img src="${e}" alt="${O(n)}"`;
+    return t && (i += ` title="${O(t)}"`), i += ">", i;
+  }
+  text(e) {
+    return "tokens" in e && e.tokens ? this.parser.parseInline(e.tokens) : "escaped" in e && e.escaped ? e.text : O(e.text);
+  }
+};
+var L = class {
+  strong({ text: e }) {
+    return e;
+  }
+  em({ text: e }) {
+    return e;
+  }
+  codespan({ text: e }) {
+    return e;
+  }
+  del({ text: e }) {
+    return e;
+  }
+  html({ text: e }) {
+    return e;
+  }
+  text({ text: e }) {
+    return e;
+  }
+  link({ text: e }) {
+    return "" + e;
+  }
+  image({ text: e }) {
+    return "" + e;
+  }
+  br() {
+    return "";
+  }
+  checkbox({ raw: e }) {
+    return e;
+  }
+};
+var b = class l2 {
+  options;
+  renderer;
+  textRenderer;
+  constructor(e) {
+    this.options = e || T, this.options.renderer = this.options.renderer || new y(), this.renderer = this.options.renderer, this.renderer.options = this.options, this.renderer.parser = this, this.textRenderer = new L();
+  }
+  static parse(e, t) {
+    return new l2(t).parse(e);
+  }
+  static parseInline(e, t) {
+    return new l2(t).parseInline(e);
+  }
+  parse(e) {
+    this.renderer.parser = this;
+    let t = "";
+    for (let n = 0; n < e.length; n++) {
+      let s = e[n];
+      if (this.options.extensions?.renderers?.[s.type]) {
+        let i = s, o = this.options.extensions.renderers[i.type].call({ parser: this }, i);
+        if (o !== false || !["space", "hr", "heading", "code", "table", "blockquote", "list", "html", "def", "paragraph", "text"].includes(i.type)) {
+          t += o || "";
+          continue;
+        }
+      }
+      let r = s;
+      switch (r.type) {
+        case "space": {
+          t += this.renderer.space(r);
+          break;
+        }
+        case "hr": {
+          t += this.renderer.hr(r);
+          break;
+        }
+        case "heading": {
+          t += this.renderer.heading(r);
+          break;
+        }
+        case "code": {
+          t += this.renderer.code(r);
+          break;
+        }
+        case "table": {
+          t += this.renderer.table(r);
+          break;
+        }
+        case "blockquote": {
+          t += this.renderer.blockquote(r);
+          break;
+        }
+        case "list": {
+          t += this.renderer.list(r);
+          break;
+        }
+        case "checkbox": {
+          t += this.renderer.checkbox(r);
+          break;
+        }
+        case "html": {
+          t += this.renderer.html(r);
+          break;
+        }
+        case "def": {
+          t += this.renderer.def(r);
+          break;
+        }
+        case "paragraph": {
+          t += this.renderer.paragraph(r);
+          break;
+        }
+        case "text": {
+          t += this.renderer.text(r);
+          break;
+        }
+        default: {
+          let i = 'Token with "' + r.type + '" type was not found.';
+          if (this.options.silent) return console.error(i), "";
+          throw new Error(i);
+        }
+      }
+    }
+    return t;
+  }
+  parseInline(e, t = this.renderer) {
+    this.renderer.parser = this;
+    let n = "";
+    for (let s = 0; s < e.length; s++) {
+      let r = e[s];
+      if (this.options.extensions?.renderers?.[r.type]) {
+        let o = this.options.extensions.renderers[r.type].call({ parser: this }, r);
+        if (o !== false || !["escape", "html", "link", "image", "strong", "em", "codespan", "br", "del", "text"].includes(r.type)) {
+          n += o || "";
+          continue;
+        }
+      }
+      let i = r;
+      switch (i.type) {
+        case "escape": {
+          n += t.text(i);
+          break;
+        }
+        case "html": {
+          n += t.html(i);
+          break;
+        }
+        case "link": {
+          n += t.link(i);
+          break;
+        }
+        case "image": {
+          n += t.image(i);
+          break;
+        }
+        case "checkbox": {
+          n += t.checkbox(i);
+          break;
+        }
+        case "strong": {
+          n += t.strong(i);
+          break;
+        }
+        case "em": {
+          n += t.em(i);
+          break;
+        }
+        case "codespan": {
+          n += t.codespan(i);
+          break;
+        }
+        case "br": {
+          n += t.br(i);
+          break;
+        }
+        case "del": {
+          n += t.del(i);
+          break;
+        }
+        case "text": {
+          n += t.text(i);
+          break;
+        }
+        default: {
+          let o = 'Token with "' + i.type + '" type was not found.';
+          if (this.options.silent) return console.error(o), "";
+          throw new Error(o);
+        }
+      }
+    }
+    return n;
+  }
+};
+var P = class {
+  options;
+  block;
+  constructor(e) {
+    this.options = e || T;
+  }
+  static passThroughHooks = /* @__PURE__ */ new Set(["preprocess", "postprocess", "processAllTokens", "emStrongMask"]);
+  static passThroughHooksRespectAsync = /* @__PURE__ */ new Set(["preprocess", "postprocess", "processAllTokens"]);
+  preprocess(e) {
+    return e;
+  }
+  postprocess(e) {
+    return e;
+  }
+  processAllTokens(e) {
+    return e;
+  }
+  emStrongMask(e) {
+    return e;
+  }
+  provideLexer(e = this.block) {
+    return e ? x.lex : x.lexInline;
+  }
+  provideParser(e = this.block) {
+    return e ? b.parse : b.parseInline;
+  }
+};
+var q = class {
+  defaults = M();
+  options = this.setOptions;
+  parse = this.parseMarkdown(true);
+  parseInline = this.parseMarkdown(false);
+  Parser = b;
+  Renderer = y;
+  TextRenderer = L;
+  Lexer = x;
+  Tokenizer = w;
+  Hooks = P;
+  constructor(...e) {
+    this.use(...e);
+  }
+  walkTokens(e, t) {
+    let n = [];
+    for (let s of e) switch (n = n.concat(t.call(this, s)), s.type) {
+      case "table": {
+        let r = s;
+        for (let i of r.header) n = n.concat(this.walkTokens(i.tokens, t));
+        for (let i of r.rows) for (let o of i) n = n.concat(this.walkTokens(o.tokens, t));
+        break;
+      }
+      case "list": {
+        let r = s;
+        n = n.concat(this.walkTokens(r.items, t));
+        break;
+      }
+      default: {
+        let r = s;
+        this.defaults.extensions?.childTokens?.[r.type] ? this.defaults.extensions.childTokens[r.type].forEach((i) => {
+          let o = r[i].flat(1 / 0);
+          n = n.concat(this.walkTokens(o, t));
+        }) : r.tokens && (n = n.concat(this.walkTokens(r.tokens, t)));
+      }
+    }
+    return n;
+  }
+  use(...e) {
+    let t = this.defaults.extensions || { renderers: {}, childTokens: {} };
+    return e.forEach((n) => {
+      let s = { ...n };
+      if (s.async = this.defaults.async || s.async || false, n.extensions && (n.extensions.forEach((r) => {
+        if (!r.name) throw new Error("extension name required");
+        if ("renderer" in r) {
+          let i = t.renderers[r.name];
+          i ? t.renderers[r.name] = function(...o) {
+            let u = r.renderer.apply(this, o);
+            return u === false && (u = i.apply(this, o)), u;
+          } : t.renderers[r.name] = r.renderer;
+        }
+        if ("tokenizer" in r) {
+          if (!r.level || r.level !== "block" && r.level !== "inline") throw new Error("extension level must be 'block' or 'inline'");
+          let i = t[r.level];
+          i ? i.unshift(r.tokenizer) : t[r.level] = [r.tokenizer], r.start && (r.level === "block" ? t.startBlock ? t.startBlock.push(r.start) : t.startBlock = [r.start] : r.level === "inline" && (t.startInline ? t.startInline.push(r.start) : t.startInline = [r.start]));
+        }
+        "childTokens" in r && r.childTokens && (t.childTokens[r.name] = r.childTokens);
+      }), s.extensions = t), n.renderer) {
+        let r = this.defaults.renderer || new y(this.defaults);
+        for (let i in n.renderer) {
+          if (!(i in r)) throw new Error(`renderer '${i}' does not exist`);
+          if (["options", "parser"].includes(i)) continue;
+          let o = i, u = n.renderer[o], a = r[o];
+          r[o] = (...c) => {
+            let p = u.apply(r, c);
+            return p === false && (p = a.apply(r, c)), p || "";
+          };
+        }
+        s.renderer = r;
+      }
+      if (n.tokenizer) {
+        let r = this.defaults.tokenizer || new w(this.defaults);
+        for (let i in n.tokenizer) {
+          if (!(i in r)) throw new Error(`tokenizer '${i}' does not exist`);
+          if (["options", "rules", "lexer"].includes(i)) continue;
+          let o = i, u = n.tokenizer[o], a = r[o];
+          r[o] = (...c) => {
+            let p = u.apply(r, c);
+            return p === false && (p = a.apply(r, c)), p;
+          };
+        }
+        s.tokenizer = r;
+      }
+      if (n.hooks) {
+        let r = this.defaults.hooks || new P();
+        for (let i in n.hooks) {
+          if (!(i in r)) throw new Error(`hook '${i}' does not exist`);
+          if (["options", "block"].includes(i)) continue;
+          let o = i, u = n.hooks[o], a = r[o];
+          P.passThroughHooks.has(i) ? r[o] = (c) => {
+            if (this.defaults.async && P.passThroughHooksRespectAsync.has(i)) return (async () => {
+              let k = await u.call(r, c);
+              return a.call(r, k);
+            })();
+            let p = u.call(r, c);
+            return a.call(r, p);
+          } : r[o] = (...c) => {
+            if (this.defaults.async) return (async () => {
+              let k = await u.apply(r, c);
+              return k === false && (k = await a.apply(r, c)), k;
+            })();
+            let p = u.apply(r, c);
+            return p === false && (p = a.apply(r, c)), p;
+          };
+        }
+        s.hooks = r;
+      }
+      if (n.walkTokens) {
+        let r = this.defaults.walkTokens, i = n.walkTokens;
+        s.walkTokens = function(o) {
+          let u = [];
+          return u.push(i.call(this, o)), r && (u = u.concat(r.call(this, o))), u;
+        };
+      }
+      this.defaults = { ...this.defaults, ...s };
+    }), this;
+  }
+  setOptions(e) {
+    return this.defaults = { ...this.defaults, ...e }, this;
+  }
+  lexer(e, t) {
+    return x.lex(e, t ?? this.defaults);
+  }
+  parser(e, t) {
+    return b.parse(e, t ?? this.defaults);
+  }
+  parseMarkdown(e) {
+    return (n, s) => {
+      let r = { ...s }, i = { ...this.defaults, ...r }, o = this.onError(!!i.silent, !!i.async);
+      if (this.defaults.async === true && r.async === false) return o(new Error("marked(): The async option was set to true by an extension. Remove async: false from the parse options object to return a Promise."));
+      if (typeof n > "u" || n === null) return o(new Error("marked(): input parameter is undefined or null"));
+      if (typeof n != "string") return o(new Error("marked(): input parameter is of type " + Object.prototype.toString.call(n) + ", string expected"));
+      if (i.hooks && (i.hooks.options = i, i.hooks.block = e), i.async) return (async () => {
+        let u = i.hooks ? await i.hooks.preprocess(n) : n, c = await (i.hooks ? await i.hooks.provideLexer(e) : e ? x.lex : x.lexInline)(u, i), p = i.hooks ? await i.hooks.processAllTokens(c) : c;
+        i.walkTokens && await Promise.all(this.walkTokens(p, i.walkTokens));
+        let h = await (i.hooks ? await i.hooks.provideParser(e) : e ? b.parse : b.parseInline)(p, i);
+        return i.hooks ? await i.hooks.postprocess(h) : h;
+      })().catch(o);
+      try {
+        i.hooks && (n = i.hooks.preprocess(n));
+        let a = (i.hooks ? i.hooks.provideLexer(e) : e ? x.lex : x.lexInline)(n, i);
+        i.hooks && (a = i.hooks.processAllTokens(a)), i.walkTokens && this.walkTokens(a, i.walkTokens);
+        let p = (i.hooks ? i.hooks.provideParser(e) : e ? b.parse : b.parseInline)(a, i);
+        return i.hooks && (p = i.hooks.postprocess(p)), p;
+      } catch (u) {
+        return o(u);
+      }
+    };
+  }
+  onError(e, t) {
+    return (n) => {
+      if (n.message += `
+Please report this to https://github.com/markedjs/marked.`, e) {
+        let s = "<p>An error occurred:</p><pre>" + O(n.message + "", true) + "</pre>";
+        return t ? Promise.resolve(s) : s;
+      }
+      if (t) return Promise.reject(n);
+      throw n;
+    };
+  }
+};
+var z = new q();
+function g(l3, e) {
+  return z.parse(l3, e);
+}
+g.options = g.setOptions = function(l3) {
+  return z.setOptions(l3), g.defaults = z.defaults, N(g.defaults), g;
+};
+g.getDefaults = M;
+g.defaults = T;
+g.use = function(...l3) {
+  return z.use(...l3), g.defaults = z.defaults, N(g.defaults), g;
+};
+g.walkTokens = function(l3, e) {
+  return z.walkTokens(l3, e);
+};
+g.parseInline = z.parseInline;
+g.Parser = b;
+g.parser = b.parse;
+g.Renderer = y;
+g.TextRenderer = L;
+g.Lexer = x;
+g.lexer = x.lex;
+g.Tokenizer = w;
+g.Hooks = P;
+g.parse = g;
+var Ft = g.options;
+var Ut = g.setOptions;
+var Kt = g.use;
+var Wt = g.walkTokens;
+var Xt = g.parseInline;
+var Vt = b.parse;
+var Yt = x.lex;
+
+// node_modules/dompurify/dist/purify.es.mjs
+function _arrayLikeToArray(r, a) {
+  (null == a || a > r.length) && (a = r.length);
+  for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
+  return n;
+}
+function _arrayWithHoles(r) {
+  if (Array.isArray(r)) return r;
+}
+function _iterableToArrayLimit(r, l3) {
+  var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
+  if (null != t) {
+    var e, n, i, u, a = [], f = true, o = false;
+    try {
+      if (i = (t = t.call(r)).next, 0 === l3) ;
+      else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l3); f = true) ;
+    } catch (r2) {
+      o = true, n = r2;
+    } finally {
+      try {
+        if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return;
+      } finally {
+        if (o) throw n;
+      }
+    }
+    return a;
+  }
+}
+function _nonIterableRest() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+}
+function _slicedToArray(r, e) {
+  return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest();
+}
+function _unsupportedIterableToArray(r, a) {
+  if (r) {
+    if ("string" == typeof r) return _arrayLikeToArray(r, a);
+    var t = {}.toString.call(r).slice(8, -1);
+    return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0;
+  }
+}
+var entries = Object.entries;
+var setPrototypeOf = Object.setPrototypeOf;
+var isFrozen = Object.isFrozen;
+var getPrototypeOf = Object.getPrototypeOf;
+var getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+var freeze = Object.freeze;
+var seal = Object.seal;
+var create = Object.create;
+var _ref = typeof Reflect !== "undefined" && Reflect;
+var apply = _ref.apply;
+var construct = _ref.construct;
+if (!freeze) {
+  freeze = function freeze2(x2) {
+    return x2;
+  };
+}
+if (!seal) {
+  seal = function seal2(x2) {
+    return x2;
+  };
+}
+if (!apply) {
+  apply = function apply2(func, thisArg) {
+    for (var _len = arguments.length, args = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+      args[_key - 2] = arguments[_key];
+    }
+    return func.apply(thisArg, args);
+  };
+}
+if (!construct) {
+  construct = function construct2(Func) {
+    for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+      args[_key2 - 1] = arguments[_key2];
+    }
+    return new Func(...args);
+  };
+}
+var arrayForEach = unapply(Array.prototype.forEach);
+var arrayLastIndexOf = unapply(Array.prototype.lastIndexOf);
+var arrayPop = unapply(Array.prototype.pop);
+var arrayPush = unapply(Array.prototype.push);
+var arraySplice = unapply(Array.prototype.splice);
+var arrayIsArray = Array.isArray;
+var stringToLowerCase = unapply(String.prototype.toLowerCase);
+var stringToString = unapply(String.prototype.toString);
+var stringMatch = unapply(String.prototype.match);
+var stringReplace = unapply(String.prototype.replace);
+var stringIndexOf = unapply(String.prototype.indexOf);
+var stringTrim = unapply(String.prototype.trim);
+var numberToString = unapply(Number.prototype.toString);
+var booleanToString = unapply(Boolean.prototype.toString);
+var bigintToString = typeof BigInt === "undefined" ? null : unapply(BigInt.prototype.toString);
+var symbolToString = typeof Symbol === "undefined" ? null : unapply(Symbol.prototype.toString);
+var objectHasOwnProperty = unapply(Object.prototype.hasOwnProperty);
+var objectToString = unapply(Object.prototype.toString);
+var regExpTest = unapply(RegExp.prototype.test);
+var typeErrorCreate = unconstruct(TypeError);
+function unapply(func) {
+  return function(thisArg) {
+    if (thisArg instanceof RegExp) {
+      thisArg.lastIndex = 0;
+    }
+    for (var _len3 = arguments.length, args = new Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+      args[_key3 - 1] = arguments[_key3];
+    }
+    return apply(func, thisArg, args);
+  };
+}
+function unconstruct(Func) {
+  return function() {
+    for (var _len4 = arguments.length, args = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+      args[_key4] = arguments[_key4];
+    }
+    return construct(Func, args);
+  };
+}
+function addToSet(set, array) {
+  let transformCaseFunc = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : stringToLowerCase;
+  if (setPrototypeOf) {
+    setPrototypeOf(set, null);
+  }
+  if (!arrayIsArray(array)) {
+    return set;
+  }
+  let l3 = array.length;
+  while (l3--) {
+    let element = array[l3];
+    if (typeof element === "string") {
+      const lcElement = transformCaseFunc(element);
+      if (lcElement !== element) {
+        if (!isFrozen(array)) {
+          array[l3] = lcElement;
+        }
+        element = lcElement;
+      }
+    }
+    set[element] = true;
+  }
+  return set;
+}
+function cleanArray(array) {
+  for (let index = 0; index < array.length; index++) {
+    const isPropertyExist = objectHasOwnProperty(array, index);
+    if (!isPropertyExist) {
+      array[index] = null;
+    }
+  }
+  return array;
+}
+function clone(object) {
+  const newObject = create(null);
+  for (const _ref2 of entries(object)) {
+    var _ref3 = _slicedToArray(_ref2, 2);
+    const property = _ref3[0];
+    const value = _ref3[1];
+    const isPropertyExist = objectHasOwnProperty(object, property);
+    if (isPropertyExist) {
+      if (arrayIsArray(value)) {
+        newObject[property] = cleanArray(value);
+      } else if (value && typeof value === "object" && value.constructor === Object) {
+        newObject[property] = clone(value);
+      } else {
+        newObject[property] = value;
+      }
+    }
+  }
+  return newObject;
+}
+function stringifyValue(value) {
+  switch (typeof value) {
+    case "string": {
+      return value;
+    }
+    case "number": {
+      return numberToString(value);
+    }
+    case "boolean": {
+      return booleanToString(value);
+    }
+    case "bigint": {
+      return bigintToString ? bigintToString(value) : "0";
+    }
+    case "symbol": {
+      return symbolToString ? symbolToString(value) : "Symbol()";
+    }
+    case "undefined": {
+      return objectToString(value);
+    }
+    case "function":
+    case "object": {
+      if (value === null) {
+        return objectToString(value);
+      }
+      const valueAsRecord = value;
+      const valueToString = lookupGetter(valueAsRecord, "toString");
+      if (typeof valueToString === "function") {
+        const stringified = valueToString(valueAsRecord);
+        return typeof stringified === "string" ? stringified : objectToString(stringified);
+      }
+      return objectToString(value);
+    }
+    default: {
+      return objectToString(value);
+    }
+  }
+}
+function lookupGetter(object, prop) {
+  while (object !== null) {
+    const desc = getOwnPropertyDescriptor(object, prop);
+    if (desc) {
+      if (desc.get) {
+        return unapply(desc.get);
+      }
+      if (typeof desc.value === "function") {
+        return unapply(desc.value);
+      }
+    }
+    object = getPrototypeOf(object);
+  }
+  function fallbackValue() {
+    return null;
+  }
+  return fallbackValue;
+}
+function isRegex(value) {
+  try {
+    regExpTest(value, "");
+    return true;
+  } catch (_unused) {
+    return false;
+  }
+}
+var html$1 = freeze(["a", "abbr", "acronym", "address", "area", "article", "aside", "audio", "b", "bdi", "bdo", "big", "blink", "blockquote", "body", "br", "button", "canvas", "caption", "center", "cite", "code", "col", "colgroup", "content", "data", "datalist", "dd", "decorator", "del", "details", "dfn", "dialog", "dir", "div", "dl", "dt", "element", "em", "fieldset", "figcaption", "figure", "font", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "i", "img", "input", "ins", "kbd", "label", "legend", "li", "main", "map", "mark", "marquee", "menu", "menuitem", "meter", "nav", "nobr", "ol", "optgroup", "option", "output", "p", "picture", "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "search", "section", "select", "shadow", "slot", "small", "source", "spacer", "span", "strike", "strong", "style", "sub", "summary", "sup", "table", "tbody", "td", "template", "textarea", "tfoot", "th", "thead", "time", "tr", "track", "tt", "u", "ul", "var", "video", "wbr"]);
+var svg$1 = freeze(["svg", "a", "altglyph", "altglyphdef", "altglyphitem", "animatecolor", "animatemotion", "animatetransform", "circle", "clippath", "defs", "desc", "ellipse", "enterkeyhint", "exportparts", "filter", "font", "g", "glyph", "glyphref", "hkern", "image", "inputmode", "line", "lineargradient", "marker", "mask", "metadata", "mpath", "part", "path", "pattern", "polygon", "polyline", "radialgradient", "rect", "stop", "style", "switch", "symbol", "text", "textpath", "title", "tref", "tspan", "view", "vkern"]);
+var svgFilters = freeze(["feBlend", "feColorMatrix", "feComponentTransfer", "feComposite", "feConvolveMatrix", "feDiffuseLighting", "feDisplacementMap", "feDistantLight", "feDropShadow", "feFlood", "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur", "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset", "fePointLight", "feSpecularLighting", "feSpotLight", "feTile", "feTurbulence"]);
+var svgDisallowed = freeze(["animate", "color-profile", "cursor", "discard", "font-face", "font-face-format", "font-face-name", "font-face-src", "font-face-uri", "foreignobject", "hatch", "hatchpath", "mesh", "meshgradient", "meshpatch", "meshrow", "missing-glyph", "script", "set", "solidcolor", "unknown", "use"]);
+var mathMl$1 = freeze(["math", "menclose", "merror", "mfenced", "mfrac", "mglyph", "mi", "mlabeledtr", "mmultiscripts", "mn", "mo", "mover", "mpadded", "mphantom", "mroot", "mrow", "ms", "mspace", "msqrt", "mstyle", "msub", "msup", "msubsup", "mtable", "mtd", "mtext", "mtr", "munder", "munderover", "mprescripts"]);
+var mathMlDisallowed = freeze(["maction", "maligngroup", "malignmark", "mlongdiv", "mscarries", "mscarry", "msgroup", "mstack", "msline", "msrow", "semantics", "annotation", "annotation-xml", "mprescripts", "none"]);
+var text = freeze(["#text"]);
+var html = freeze(["accept", "action", "align", "alt", "autocapitalize", "autocomplete", "autopictureinpicture", "autoplay", "background", "bgcolor", "border", "capture", "cellpadding", "cellspacing", "checked", "cite", "class", "clear", "color", "cols", "colspan", "command", "commandfor", "controls", "controlslist", "coords", "crossorigin", "datetime", "decoding", "default", "dir", "disabled", "disablepictureinpicture", "disableremoteplayback", "download", "draggable", "enctype", "enterkeyhint", "exportparts", "face", "for", "headers", "height", "hidden", "high", "href", "hreflang", "id", "inert", "inputmode", "integrity", "ismap", "kind", "label", "lang", "list", "loading", "loop", "low", "max", "maxlength", "media", "method", "min", "minlength", "multiple", "muted", "name", "nonce", "noshade", "novalidate", "nowrap", "open", "optimum", "part", "pattern", "placeholder", "playsinline", "popover", "popovertarget", "popovertargetaction", "poster", "preload", "pubdate", "radiogroup", "readonly", "rel", "required", "rev", "reversed", "role", "rows", "rowspan", "spellcheck", "scope", "selected", "shape", "size", "sizes", "slot", "span", "srclang", "start", "src", "srcset", "step", "style", "summary", "tabindex", "title", "translate", "type", "usemap", "valign", "value", "width", "wrap", "xmlns"]);
+var svg = freeze(["accent-height", "accumulate", "additive", "alignment-baseline", "amplitude", "ascent", "attributename", "attributetype", "azimuth", "basefrequency", "baseline-shift", "begin", "bias", "by", "class", "clip", "clippathunits", "clip-path", "clip-rule", "color", "color-interpolation", "color-interpolation-filters", "color-profile", "color-rendering", "cx", "cy", "d", "dx", "dy", "diffuseconstant", "direction", "display", "divisor", "dur", "edgemode", "elevation", "end", "exponent", "fill", "fill-opacity", "fill-rule", "filter", "filterunits", "flood-color", "flood-opacity", "font-family", "font-size", "font-size-adjust", "font-stretch", "font-style", "font-variant", "font-weight", "fx", "fy", "g1", "g2", "glyph-name", "glyphref", "gradientunits", "gradienttransform", "height", "href", "id", "image-rendering", "in", "in2", "intercept", "k", "k1", "k2", "k3", "k4", "kerning", "keypoints", "keysplines", "keytimes", "lang", "lengthadjust", "letter-spacing", "kernelmatrix", "kernelunitlength", "lighting-color", "local", "marker-end", "marker-mid", "marker-start", "markerheight", "markerunits", "markerwidth", "maskcontentunits", "maskunits", "max", "mask", "mask-type", "media", "method", "mode", "min", "name", "numoctaves", "offset", "operator", "opacity", "order", "orient", "orientation", "origin", "overflow", "paint-order", "path", "pathlength", "patterncontentunits", "patterntransform", "patternunits", "points", "preservealpha", "preserveaspectratio", "primitiveunits", "r", "rx", "ry", "radius", "refx", "refy", "repeatcount", "repeatdur", "restart", "result", "rotate", "scale", "seed", "shape-rendering", "slope", "specularconstant", "specularexponent", "spreadmethod", "startoffset", "stddeviation", "stitchtiles", "stop-color", "stop-opacity", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-opacity", "stroke", "stroke-width", "style", "surfacescale", "systemlanguage", "tabindex", "tablevalues", "targetx", "targety", "transform", "transform-origin", "text-anchor", "text-decoration", "text-rendering", "textlength", "type", "u1", "u2", "unicode", "values", "viewbox", "visibility", "version", "vert-adv-y", "vert-origin-x", "vert-origin-y", "width", "word-spacing", "wrap", "writing-mode", "xchannelselector", "ychannelselector", "x", "x1", "x2", "xmlns", "y", "y1", "y2", "z", "zoomandpan"]);
+var mathMl = freeze(["accent", "accentunder", "align", "bevelled", "close", "columnalign", "columnlines", "columnspacing", "columnspan", "denomalign", "depth", "dir", "display", "displaystyle", "encoding", "fence", "frame", "height", "href", "id", "largeop", "length", "linethickness", "lquote", "lspace", "mathbackground", "mathcolor", "mathsize", "mathvariant", "maxsize", "minsize", "movablelimits", "notation", "numalign", "open", "rowalign", "rowlines", "rowspacing", "rowspan", "rspace", "rquote", "scriptlevel", "scriptminsize", "scriptsizemultiplier", "selection", "separator", "separators", "stretchy", "subscriptshift", "supscriptshift", "symmetric", "voffset", "width", "xmlns"]);
+var xml = freeze(["xlink:href", "xml:id", "xlink:title", "xml:space", "xmlns:xlink"]);
+var MUSTACHE_EXPR = seal(/{{[\w\W]*|^[\w\W]*}}/g);
+var ERB_EXPR = seal(/<%[\w\W]*|^[\w\W]*%>/g);
+var TMPLIT_EXPR = seal(/\${[\w\W]*/g);
+var DATA_ATTR = seal(/^data-[\-\w.\u00B7-\uFFFF]+$/);
+var ARIA_ATTR = seal(/^aria-[\-\w]+$/);
+var IS_ALLOWED_URI = seal(
+  /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+  // eslint-disable-line no-useless-escape
+);
+var IS_SCRIPT_OR_DATA = seal(/^(?:\w+script|data):/i);
+var ATTR_WHITESPACE = seal(
+  /[\u0000-\u0020\u00A0\u1680\u180E\u2000-\u2029\u205F\u3000]/g
+  // eslint-disable-line no-control-regex
+);
+var DOCTYPE_NAME = seal(/^html$/i);
+var CUSTOM_ELEMENT = seal(/^[a-z][.\w]*(-[.\w]+)+$/i);
+var ELEMENT_MARKUP_PROBE = seal(/<[/\w!]/g);
+var COMMENT_MARKUP_PROBE = seal(/<[/\w]/g);
+var FALLBACK_TAG_CLOSE = seal(/<\/no(script|embed|frames)/i);
+var SELF_CLOSING_TAG = seal(/\/>/i);
+var NODE_TYPE = {
+  element: 1,
+  attribute: 2,
+  text: 3,
+  cdataSection: 4,
+  entityReference: 5,
+  // Deprecated
+  entityNode: 6,
+  // Deprecated
+  processingInstruction: 7,
+  comment: 8,
+  document: 9,
+  documentType: 10,
+  documentFragment: 11,
+  notation: 12
+  // Deprecated
+};
+var getGlobal = function getGlobal2() {
+  return typeof window === "undefined" ? null : window;
+};
+var _createTrustedTypesPolicy = function _createTrustedTypesPolicy2(trustedTypes, purifyHostElement) {
+  if (typeof trustedTypes !== "object" || typeof trustedTypes.createPolicy !== "function") {
+    return null;
+  }
+  let suffix = null;
+  const ATTR_NAME = "data-tt-policy-suffix";
+  if (purifyHostElement && purifyHostElement.hasAttribute(ATTR_NAME)) {
+    suffix = purifyHostElement.getAttribute(ATTR_NAME);
+  }
+  const policyName = "dompurify" + (suffix ? "#" + suffix : "");
+  try {
+    return trustedTypes.createPolicy(policyName, {
+      createHTML(html2) {
+        return html2;
+      },
+      createScriptURL(scriptUrl) {
+        return scriptUrl;
+      }
+    });
+  } catch (_2) {
+    console.warn("TrustedTypes policy " + policyName + " could not be created.");
+    return null;
+  }
+};
+var _createHooksMap = function _createHooksMap2() {
+  return {
+    afterSanitizeAttributes: [],
+    afterSanitizeElements: [],
+    afterSanitizeShadowDOM: [],
+    beforeSanitizeAttributes: [],
+    beforeSanitizeElements: [],
+    beforeSanitizeShadowDOM: [],
+    uponSanitizeAttribute: [],
+    uponSanitizeElement: [],
+    uponSanitizeShadowNode: []
+  };
+};
+var _resolveSetOption = function _resolveSetOption2(cfg, key, fallback, options) {
+  return objectHasOwnProperty(cfg, key) && arrayIsArray(cfg[key]) ? addToSet(options.base ? clone(options.base) : {}, cfg[key], options.transform) : fallback;
+};
+function createDOMPurify() {
+  let window2 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : getGlobal();
+  const DOMPurify = (root) => createDOMPurify(root);
+  DOMPurify.version = "3.4.11";
+  DOMPurify.removed = [];
+  if (!window2 || !window2.document || window2.document.nodeType !== NODE_TYPE.document || !window2.Element) {
+    DOMPurify.isSupported = false;
+    return DOMPurify;
+  }
+  let document2 = window2.document;
+  const originalDocument = document2;
+  const currentScript = originalDocument.currentScript;
+  window2.DocumentFragment;
+  const HTMLTemplateElement = window2.HTMLTemplateElement, Node = window2.Node, Element = window2.Element, NodeFilter = window2.NodeFilter, _window$NamedNodeMap = window2.NamedNodeMap;
+  _window$NamedNodeMap === void 0 ? window2.NamedNodeMap || window2.MozNamedAttrMap : _window$NamedNodeMap;
+  window2.HTMLFormElement;
+  const DOMParser = window2.DOMParser, trustedTypes = window2.trustedTypes;
+  const ElementPrototype = Element.prototype;
+  const cloneNode = lookupGetter(ElementPrototype, "cloneNode");
+  const remove = lookupGetter(ElementPrototype, "remove");
+  const getNextSibling = lookupGetter(ElementPrototype, "nextSibling");
+  const getChildNodes = lookupGetter(ElementPrototype, "childNodes");
+  const getParentNode = lookupGetter(ElementPrototype, "parentNode");
+  const getShadowRoot = lookupGetter(ElementPrototype, "shadowRoot");
+  const getAttributes = lookupGetter(ElementPrototype, "attributes");
+  const getNodeType = Node && Node.prototype ? lookupGetter(Node.prototype, "nodeType") : null;
+  const getNodeName = Node && Node.prototype ? lookupGetter(Node.prototype, "nodeName") : null;
+  if (typeof HTMLTemplateElement === "function") {
+    const template = document2.createElement("template");
+    if (template.content && template.content.ownerDocument) {
+      document2 = template.content.ownerDocument;
+    }
+  }
+  let trustedTypesPolicy;
+  let emptyHTML = "";
+  let defaultTrustedTypesPolicy;
+  let defaultTrustedTypesPolicyResolved = false;
+  let IN_TRUSTED_TYPES_POLICY = 0;
+  const _assertNotInTrustedTypesPolicy = function _assertNotInTrustedTypesPolicy2() {
+    if (IN_TRUSTED_TYPES_POLICY > 0) {
+      throw typeErrorCreate('A configured TRUSTED_TYPES_POLICY callback (createHTML or createScriptURL) must not call DOMPurify.sanitize, as that causes infinite recursion. Do not pass a policy whose callbacks wrap DOMPurify as TRUSTED_TYPES_POLICY; see the "DOMPurify and Trusted Types" section of the README.');
+    }
+  };
+  const _createTrustedHTML = function _createTrustedHTML2(html2) {
+    _assertNotInTrustedTypesPolicy();
+    IN_TRUSTED_TYPES_POLICY++;
+    try {
+      return trustedTypesPolicy.createHTML(html2);
+    } finally {
+      IN_TRUSTED_TYPES_POLICY--;
+    }
+  };
+  const _createTrustedScriptURL = function _createTrustedScriptURL2(scriptUrl) {
+    _assertNotInTrustedTypesPolicy();
+    IN_TRUSTED_TYPES_POLICY++;
+    try {
+      return trustedTypesPolicy.createScriptURL(scriptUrl);
+    } finally {
+      IN_TRUSTED_TYPES_POLICY--;
+    }
+  };
+  const _getDefaultTrustedTypesPolicy = function _getDefaultTrustedTypesPolicy2() {
+    if (!defaultTrustedTypesPolicyResolved) {
+      defaultTrustedTypesPolicy = _createTrustedTypesPolicy(trustedTypes, currentScript);
+      defaultTrustedTypesPolicyResolved = true;
+    }
+    return defaultTrustedTypesPolicy;
+  };
+  const _document = document2, implementation = _document.implementation, createNodeIterator = _document.createNodeIterator, createDocumentFragment = _document.createDocumentFragment, getElementsByTagName = _document.getElementsByTagName;
+  const importNode = originalDocument.importNode;
+  let hooks = _createHooksMap();
+  DOMPurify.isSupported = typeof entries === "function" && typeof getParentNode === "function" && implementation && implementation.createHTMLDocument !== void 0;
+  const MUSTACHE_EXPR$1 = MUSTACHE_EXPR, ERB_EXPR$1 = ERB_EXPR, TMPLIT_EXPR$1 = TMPLIT_EXPR, DATA_ATTR$1 = DATA_ATTR, ARIA_ATTR$1 = ARIA_ATTR, IS_SCRIPT_OR_DATA$1 = IS_SCRIPT_OR_DATA, ATTR_WHITESPACE$1 = ATTR_WHITESPACE, CUSTOM_ELEMENT$1 = CUSTOM_ELEMENT;
+  let IS_ALLOWED_URI$1 = IS_ALLOWED_URI;
+  let ALLOWED_TAGS = null;
+  const DEFAULT_ALLOWED_TAGS = addToSet({}, [...html$1, ...svg$1, ...svgFilters, ...mathMl$1, ...text]);
+  let ALLOWED_ATTR = null;
+  const DEFAULT_ALLOWED_ATTR = addToSet({}, [...html, ...svg, ...mathMl, ...xml]);
+  let CUSTOM_ELEMENT_HANDLING = Object.seal(create(null, {
+    tagNameCheck: {
+      writable: true,
+      configurable: false,
+      enumerable: true,
+      value: null
+    },
+    attributeNameCheck: {
+      writable: true,
+      configurable: false,
+      enumerable: true,
+      value: null
+    },
+    allowCustomizedBuiltInElements: {
+      writable: true,
+      configurable: false,
+      enumerable: true,
+      value: false
+    }
+  }));
+  let FORBID_TAGS = null;
+  let FORBID_ATTR = null;
+  const EXTRA_ELEMENT_HANDLING = Object.seal(create(null, {
+    tagCheck: {
+      writable: true,
+      configurable: false,
+      enumerable: true,
+      value: null
+    },
+    attributeCheck: {
+      writable: true,
+      configurable: false,
+      enumerable: true,
+      value: null
+    }
+  }));
+  let ALLOW_ARIA_ATTR = true;
+  let ALLOW_DATA_ATTR = true;
+  let ALLOW_UNKNOWN_PROTOCOLS = false;
+  let ALLOW_SELF_CLOSE_IN_ATTR = true;
+  let SAFE_FOR_TEMPLATES = false;
+  let SAFE_FOR_XML = true;
+  let WHOLE_DOCUMENT = false;
+  let SET_CONFIG = false;
+  let SET_CONFIG_ALLOWED_TAGS = null;
+  let SET_CONFIG_ALLOWED_ATTR = null;
+  let FORCE_BODY = false;
+  let RETURN_DOM = false;
+  let RETURN_DOM_FRAGMENT = false;
+  let RETURN_TRUSTED_TYPE = false;
+  let SANITIZE_DOM = true;
+  let SANITIZE_NAMED_PROPS = false;
+  const SANITIZE_NAMED_PROPS_PREFIX = "user-content-";
+  let KEEP_CONTENT = true;
+  let IN_PLACE = false;
+  let USE_PROFILES = {};
+  let FORBID_CONTENTS = null;
+  const DEFAULT_FORBID_CONTENTS = addToSet({}, [
+    "annotation-xml",
+    "audio",
+    "colgroup",
+    "desc",
+    "foreignobject",
+    "head",
+    "iframe",
+    "math",
+    "mi",
+    "mn",
+    "mo",
+    "ms",
+    "mtext",
+    "noembed",
+    "noframes",
+    "noscript",
+    "plaintext",
+    "script",
+    // <selectedcontent> mirrors the selected <option>'s subtree, cloned by
+    // the UA (customizable <select>) — including any on* handlers — and the
+    // engine re-mirrors synchronously whenever a removal changes which
+    // option/selectedcontent is current, even inside DOMPurify's inert
+    // DOMParser document. Hoisting its children on removal re-inserts a fresh
+    // mirror target ahead of the walk, which the engine refills, looping
+    // forever (DoS) and amplifying output. Dropping its content on removal
+    // (rather than hoisting) breaks that cascade; the content is a duplicate
+    // of the option, which is sanitized on its own. See campaign-3 F1/F6.
+    "selectedcontent",
+    "style",
+    "svg",
+    "template",
+    "thead",
+    "title",
+    "video",
+    "xmp"
+  ]);
+  let DATA_URI_TAGS = null;
+  const DEFAULT_DATA_URI_TAGS = addToSet({}, ["audio", "video", "img", "source", "image", "track"]);
+  let URI_SAFE_ATTRIBUTES = null;
+  const DEFAULT_URI_SAFE_ATTRIBUTES = addToSet({}, ["alt", "class", "for", "id", "label", "name", "pattern", "placeholder", "role", "summary", "title", "value", "style", "xmlns"]);
+  const MATHML_NAMESPACE = "http://www.w3.org/1998/Math/MathML";
+  const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+  const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
+  let NAMESPACE = HTML_NAMESPACE;
+  let IS_EMPTY_INPUT = false;
+  let ALLOWED_NAMESPACES = null;
+  const DEFAULT_ALLOWED_NAMESPACES = addToSet({}, [MATHML_NAMESPACE, SVG_NAMESPACE, HTML_NAMESPACE], stringToString);
+  const DEFAULT_MATHML_TEXT_INTEGRATION_POINTS = freeze(["mi", "mo", "mn", "ms", "mtext"]);
+  let MATHML_TEXT_INTEGRATION_POINTS = addToSet({}, DEFAULT_MATHML_TEXT_INTEGRATION_POINTS);
+  const DEFAULT_HTML_INTEGRATION_POINTS = freeze(["annotation-xml"]);
+  let HTML_INTEGRATION_POINTS = addToSet({}, DEFAULT_HTML_INTEGRATION_POINTS);
+  const COMMON_SVG_AND_HTML_ELEMENTS = addToSet({}, ["title", "style", "font", "a", "script"]);
+  let PARSER_MEDIA_TYPE = null;
+  const SUPPORTED_PARSER_MEDIA_TYPES = ["application/xhtml+xml", "text/html"];
+  const DEFAULT_PARSER_MEDIA_TYPE = "text/html";
+  let transformCaseFunc = null;
+  let CONFIG = null;
+  const formElement = document2.createElement("form");
+  const isRegexOrFunction = function isRegexOrFunction2(testValue) {
+    return testValue instanceof RegExp || testValue instanceof Function;
+  };
+  const _parseConfig = function _parseConfig2() {
+    let cfg = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+    if (CONFIG && CONFIG === cfg) {
+      return;
+    }
+    if (!cfg || typeof cfg !== "object") {
+      cfg = {};
+    }
+    cfg = clone(cfg);
+    PARSER_MEDIA_TYPE = // eslint-disable-next-line unicorn/prefer-includes
+    SUPPORTED_PARSER_MEDIA_TYPES.indexOf(cfg.PARSER_MEDIA_TYPE) === -1 ? DEFAULT_PARSER_MEDIA_TYPE : cfg.PARSER_MEDIA_TYPE;
+    transformCaseFunc = PARSER_MEDIA_TYPE === "application/xhtml+xml" ? stringToString : stringToLowerCase;
+    ALLOWED_TAGS = _resolveSetOption(cfg, "ALLOWED_TAGS", DEFAULT_ALLOWED_TAGS, {
+      transform: transformCaseFunc
+    });
+    ALLOWED_ATTR = _resolveSetOption(cfg, "ALLOWED_ATTR", DEFAULT_ALLOWED_ATTR, {
+      transform: transformCaseFunc
+    });
+    ALLOWED_NAMESPACES = _resolveSetOption(cfg, "ALLOWED_NAMESPACES", DEFAULT_ALLOWED_NAMESPACES, {
+      transform: stringToString
+    });
+    URI_SAFE_ATTRIBUTES = _resolveSetOption(cfg, "ADD_URI_SAFE_ATTR", DEFAULT_URI_SAFE_ATTRIBUTES, {
+      transform: transformCaseFunc,
+      base: DEFAULT_URI_SAFE_ATTRIBUTES
+    });
+    DATA_URI_TAGS = _resolveSetOption(cfg, "ADD_DATA_URI_TAGS", DEFAULT_DATA_URI_TAGS, {
+      transform: transformCaseFunc,
+      base: DEFAULT_DATA_URI_TAGS
+    });
+    FORBID_CONTENTS = _resolveSetOption(cfg, "FORBID_CONTENTS", DEFAULT_FORBID_CONTENTS, {
+      transform: transformCaseFunc
+    });
+    FORBID_TAGS = _resolveSetOption(cfg, "FORBID_TAGS", clone({}), {
+      transform: transformCaseFunc
+    });
+    FORBID_ATTR = _resolveSetOption(cfg, "FORBID_ATTR", clone({}), {
+      transform: transformCaseFunc
+    });
+    USE_PROFILES = objectHasOwnProperty(cfg, "USE_PROFILES") ? cfg.USE_PROFILES && typeof cfg.USE_PROFILES === "object" ? clone(cfg.USE_PROFILES) : cfg.USE_PROFILES : false;
+    ALLOW_ARIA_ATTR = cfg.ALLOW_ARIA_ATTR !== false;
+    ALLOW_DATA_ATTR = cfg.ALLOW_DATA_ATTR !== false;
+    ALLOW_UNKNOWN_PROTOCOLS = cfg.ALLOW_UNKNOWN_PROTOCOLS || false;
+    ALLOW_SELF_CLOSE_IN_ATTR = cfg.ALLOW_SELF_CLOSE_IN_ATTR !== false;
+    SAFE_FOR_TEMPLATES = cfg.SAFE_FOR_TEMPLATES || false;
+    SAFE_FOR_XML = cfg.SAFE_FOR_XML !== false;
+    WHOLE_DOCUMENT = cfg.WHOLE_DOCUMENT || false;
+    RETURN_DOM = cfg.RETURN_DOM || false;
+    RETURN_DOM_FRAGMENT = cfg.RETURN_DOM_FRAGMENT || false;
+    RETURN_TRUSTED_TYPE = cfg.RETURN_TRUSTED_TYPE || false;
+    FORCE_BODY = cfg.FORCE_BODY || false;
+    SANITIZE_DOM = cfg.SANITIZE_DOM !== false;
+    SANITIZE_NAMED_PROPS = cfg.SANITIZE_NAMED_PROPS || false;
+    KEEP_CONTENT = cfg.KEEP_CONTENT !== false;
+    IN_PLACE = cfg.IN_PLACE || false;
+    IS_ALLOWED_URI$1 = isRegex(cfg.ALLOWED_URI_REGEXP) ? cfg.ALLOWED_URI_REGEXP : IS_ALLOWED_URI;
+    NAMESPACE = typeof cfg.NAMESPACE === "string" ? cfg.NAMESPACE : HTML_NAMESPACE;
+    MATHML_TEXT_INTEGRATION_POINTS = objectHasOwnProperty(cfg, "MATHML_TEXT_INTEGRATION_POINTS") && cfg.MATHML_TEXT_INTEGRATION_POINTS && typeof cfg.MATHML_TEXT_INTEGRATION_POINTS === "object" ? clone(cfg.MATHML_TEXT_INTEGRATION_POINTS) : addToSet({}, DEFAULT_MATHML_TEXT_INTEGRATION_POINTS);
+    HTML_INTEGRATION_POINTS = objectHasOwnProperty(cfg, "HTML_INTEGRATION_POINTS") && cfg.HTML_INTEGRATION_POINTS && typeof cfg.HTML_INTEGRATION_POINTS === "object" ? clone(cfg.HTML_INTEGRATION_POINTS) : addToSet({}, DEFAULT_HTML_INTEGRATION_POINTS);
+    const customElementHandling = objectHasOwnProperty(cfg, "CUSTOM_ELEMENT_HANDLING") && cfg.CUSTOM_ELEMENT_HANDLING && typeof cfg.CUSTOM_ELEMENT_HANDLING === "object" ? clone(cfg.CUSTOM_ELEMENT_HANDLING) : create(null);
+    CUSTOM_ELEMENT_HANDLING = create(null);
+    if (objectHasOwnProperty(customElementHandling, "tagNameCheck") && isRegexOrFunction(customElementHandling.tagNameCheck)) {
+      CUSTOM_ELEMENT_HANDLING.tagNameCheck = customElementHandling.tagNameCheck;
+    }
+    if (objectHasOwnProperty(customElementHandling, "attributeNameCheck") && isRegexOrFunction(customElementHandling.attributeNameCheck)) {
+      CUSTOM_ELEMENT_HANDLING.attributeNameCheck = customElementHandling.attributeNameCheck;
+    }
+    if (objectHasOwnProperty(customElementHandling, "allowCustomizedBuiltInElements") && typeof customElementHandling.allowCustomizedBuiltInElements === "boolean") {
+      CUSTOM_ELEMENT_HANDLING.allowCustomizedBuiltInElements = customElementHandling.allowCustomizedBuiltInElements;
+    }
+    seal(CUSTOM_ELEMENT_HANDLING);
+    if (SAFE_FOR_TEMPLATES) {
+      ALLOW_DATA_ATTR = false;
+    }
+    if (RETURN_DOM_FRAGMENT) {
+      RETURN_DOM = true;
+    }
+    if (USE_PROFILES) {
+      ALLOWED_TAGS = addToSet({}, text);
+      ALLOWED_ATTR = create(null);
+      if (USE_PROFILES.html === true) {
+        addToSet(ALLOWED_TAGS, html$1);
+        addToSet(ALLOWED_ATTR, html);
+      }
+      if (USE_PROFILES.svg === true) {
+        addToSet(ALLOWED_TAGS, svg$1);
+        addToSet(ALLOWED_ATTR, svg);
+        addToSet(ALLOWED_ATTR, xml);
+      }
+      if (USE_PROFILES.svgFilters === true) {
+        addToSet(ALLOWED_TAGS, svgFilters);
+        addToSet(ALLOWED_ATTR, svg);
+        addToSet(ALLOWED_ATTR, xml);
+      }
+      if (USE_PROFILES.mathMl === true) {
+        addToSet(ALLOWED_TAGS, mathMl$1);
+        addToSet(ALLOWED_ATTR, mathMl);
+        addToSet(ALLOWED_ATTR, xml);
+      }
+    }
+    EXTRA_ELEMENT_HANDLING.tagCheck = null;
+    EXTRA_ELEMENT_HANDLING.attributeCheck = null;
+    if (objectHasOwnProperty(cfg, "ADD_TAGS")) {
+      if (typeof cfg.ADD_TAGS === "function") {
+        EXTRA_ELEMENT_HANDLING.tagCheck = cfg.ADD_TAGS;
+      } else if (arrayIsArray(cfg.ADD_TAGS)) {
+        if (ALLOWED_TAGS === DEFAULT_ALLOWED_TAGS) {
+          ALLOWED_TAGS = clone(ALLOWED_TAGS);
+        }
+        addToSet(ALLOWED_TAGS, cfg.ADD_TAGS, transformCaseFunc);
+      }
+    }
+    if (objectHasOwnProperty(cfg, "ADD_ATTR")) {
+      if (typeof cfg.ADD_ATTR === "function") {
+        EXTRA_ELEMENT_HANDLING.attributeCheck = cfg.ADD_ATTR;
+      } else if (arrayIsArray(cfg.ADD_ATTR)) {
+        if (ALLOWED_ATTR === DEFAULT_ALLOWED_ATTR) {
+          ALLOWED_ATTR = clone(ALLOWED_ATTR);
+        }
+        addToSet(ALLOWED_ATTR, cfg.ADD_ATTR, transformCaseFunc);
+      }
+    }
+    if (objectHasOwnProperty(cfg, "ADD_URI_SAFE_ATTR") && arrayIsArray(cfg.ADD_URI_SAFE_ATTR)) {
+      addToSet(URI_SAFE_ATTRIBUTES, cfg.ADD_URI_SAFE_ATTR, transformCaseFunc);
+    }
+    if (objectHasOwnProperty(cfg, "FORBID_CONTENTS") && arrayIsArray(cfg.FORBID_CONTENTS)) {
+      if (FORBID_CONTENTS === DEFAULT_FORBID_CONTENTS) {
+        FORBID_CONTENTS = clone(FORBID_CONTENTS);
+      }
+      addToSet(FORBID_CONTENTS, cfg.FORBID_CONTENTS, transformCaseFunc);
+    }
+    if (objectHasOwnProperty(cfg, "ADD_FORBID_CONTENTS") && arrayIsArray(cfg.ADD_FORBID_CONTENTS)) {
+      if (FORBID_CONTENTS === DEFAULT_FORBID_CONTENTS) {
+        FORBID_CONTENTS = clone(FORBID_CONTENTS);
+      }
+      addToSet(FORBID_CONTENTS, cfg.ADD_FORBID_CONTENTS, transformCaseFunc);
+    }
+    if (KEEP_CONTENT) {
+      ALLOWED_TAGS["#text"] = true;
+    }
+    if (WHOLE_DOCUMENT) {
+      addToSet(ALLOWED_TAGS, ["html", "head", "body"]);
+    }
+    if (ALLOWED_TAGS.table) {
+      addToSet(ALLOWED_TAGS, ["tbody"]);
+      delete FORBID_TAGS.tbody;
+    }
+    if (cfg.TRUSTED_TYPES_POLICY) {
+      if (typeof cfg.TRUSTED_TYPES_POLICY.createHTML !== "function") {
+        throw typeErrorCreate('TRUSTED_TYPES_POLICY configuration option must provide a "createHTML" hook.');
+      }
+      if (typeof cfg.TRUSTED_TYPES_POLICY.createScriptURL !== "function") {
+        throw typeErrorCreate('TRUSTED_TYPES_POLICY configuration option must provide a "createScriptURL" hook.');
+      }
+      const previousTrustedTypesPolicy = trustedTypesPolicy;
+      trustedTypesPolicy = cfg.TRUSTED_TYPES_POLICY;
+      try {
+        emptyHTML = _createTrustedHTML("");
+      } catch (error) {
+        trustedTypesPolicy = previousTrustedTypesPolicy;
+        throw error;
+      }
+    } else if (cfg.TRUSTED_TYPES_POLICY === null) {
+      trustedTypesPolicy = void 0;
+      emptyHTML = "";
+    } else {
+      if (trustedTypesPolicy === void 0) {
+        trustedTypesPolicy = _getDefaultTrustedTypesPolicy();
+      }
+      if (trustedTypesPolicy && typeof emptyHTML === "string") {
+        emptyHTML = _createTrustedHTML("");
+      }
+    }
+    if (freeze) {
+      freeze(cfg);
+    }
+    CONFIG = cfg;
+  };
+  const ALL_SVG_TAGS = addToSet({}, [...svg$1, ...svgFilters, ...svgDisallowed]);
+  const ALL_MATHML_TAGS = addToSet({}, [...mathMl$1, ...mathMlDisallowed]);
+  const _checkSvgNamespace = function _checkSvgNamespace2(tagName, parent, parentTagName) {
+    if (parent.namespaceURI === HTML_NAMESPACE) {
+      return tagName === "svg";
+    }
+    if (parent.namespaceURI === MATHML_NAMESPACE) {
+      return tagName === "svg" && (parentTagName === "annotation-xml" || MATHML_TEXT_INTEGRATION_POINTS[parentTagName]);
+    }
+    return Boolean(ALL_SVG_TAGS[tagName]);
+  };
+  const _checkMathMlNamespace = function _checkMathMlNamespace2(tagName, parent, parentTagName) {
+    if (parent.namespaceURI === HTML_NAMESPACE) {
+      return tagName === "math";
+    }
+    if (parent.namespaceURI === SVG_NAMESPACE) {
+      return tagName === "math" && HTML_INTEGRATION_POINTS[parentTagName];
+    }
+    return Boolean(ALL_MATHML_TAGS[tagName]);
+  };
+  const _checkHtmlNamespace = function _checkHtmlNamespace2(tagName, parent, parentTagName) {
+    if (parent.namespaceURI === SVG_NAMESPACE && !HTML_INTEGRATION_POINTS[parentTagName]) {
+      return false;
+    }
+    if (parent.namespaceURI === MATHML_NAMESPACE && !MATHML_TEXT_INTEGRATION_POINTS[parentTagName]) {
+      return false;
+    }
+    return !ALL_MATHML_TAGS[tagName] && (COMMON_SVG_AND_HTML_ELEMENTS[tagName] || !ALL_SVG_TAGS[tagName]);
+  };
+  const _checkValidNamespace = function _checkValidNamespace2(element) {
+    let parent = getParentNode(element);
+    if (!parent || !parent.tagName) {
+      parent = {
+        namespaceURI: NAMESPACE,
+        tagName: "template"
+      };
+    }
+    const tagName = stringToLowerCase(element.tagName);
+    const parentTagName = stringToLowerCase(parent.tagName);
+    if (!ALLOWED_NAMESPACES[element.namespaceURI]) {
+      return false;
+    }
+    if (element.namespaceURI === SVG_NAMESPACE) {
+      return _checkSvgNamespace(tagName, parent, parentTagName);
+    }
+    if (element.namespaceURI === MATHML_NAMESPACE) {
+      return _checkMathMlNamespace(tagName, parent, parentTagName);
+    }
+    if (element.namespaceURI === HTML_NAMESPACE) {
+      return _checkHtmlNamespace(tagName, parent, parentTagName);
+    }
+    if (PARSER_MEDIA_TYPE === "application/xhtml+xml" && ALLOWED_NAMESPACES[element.namespaceURI]) {
+      return true;
+    }
+    return false;
+  };
+  const _forceRemove = function _forceRemove2(node) {
+    arrayPush(DOMPurify.removed, {
+      element: node
+    });
+    try {
+      getParentNode(node).removeChild(node);
+    } catch (_2) {
+      remove(node);
+      if (!getParentNode(node)) {
+        throw typeErrorCreate("a node selected for removal could not be detached from its tree and cannot be safely returned; refusing to sanitize in place");
+      }
+    }
+  };
+  const _neutralizeRoot = function _neutralizeRoot2(root) {
+    const childNodes = getChildNodes(root);
+    if (childNodes) {
+      const snapshot = [];
+      arrayForEach(childNodes, (child) => {
+        arrayPush(snapshot, child);
+      });
+      arrayForEach(snapshot, (child) => {
+        try {
+          remove(child);
+        } catch (_2) {
+        }
+      });
+    }
+    const attributes = getAttributes(root);
+    if (attributes) {
+      for (let i = attributes.length - 1; i >= 0; --i) {
+        const attribute = attributes[i];
+        const name = attribute && attribute.name;
+        if (typeof name === "string") {
+          try {
+            root.removeAttribute(name);
+          } catch (_2) {
+          }
+        }
+      }
+    }
+  };
+  const _removeAttribute = function _removeAttribute2(name, element) {
+    try {
+      arrayPush(DOMPurify.removed, {
+        attribute: element.getAttributeNode(name),
+        from: element
+      });
+    } catch (_2) {
+      arrayPush(DOMPurify.removed, {
+        attribute: null,
+        from: element
+      });
+    }
+    element.removeAttribute(name);
+    if (name === "is") {
+      if (RETURN_DOM || RETURN_DOM_FRAGMENT) {
+        try {
+          _forceRemove(element);
+        } catch (_2) {
+        }
+      } else {
+        try {
+          element.setAttribute(name, "");
+        } catch (_2) {
+        }
+      }
+    }
+  };
+  const _stripDisallowedAttributes = function _stripDisallowedAttributes2(element) {
+    const attributes = getAttributes(element);
+    if (!attributes) {
+      return;
+    }
+    for (let i = attributes.length - 1; i >= 0; --i) {
+      const attribute = attributes[i];
+      const name = attribute && attribute.name;
+      if (typeof name !== "string" || ALLOWED_ATTR[transformCaseFunc(name)]) {
+        continue;
+      }
+      try {
+        element.removeAttribute(name);
+      } catch (_2) {
+      }
+    }
+  };
+  const _neutralizeSubtree = function _neutralizeSubtree2(root) {
+    const stack = [root];
+    while (stack.length > 0) {
+      const node = stack.pop();
+      const nodeType = getNodeType ? getNodeType(node) : node.nodeType;
+      if (nodeType === NODE_TYPE.element) {
+        _stripDisallowedAttributes(node);
+      }
+      const childNodes = getChildNodes(node);
+      if (childNodes) {
+        for (let i = childNodes.length - 1; i >= 0; --i) {
+          stack.push(childNodes[i]);
+        }
+      }
+    }
+  };
+  const _initDocument = function _initDocument2(dirty) {
+    let doc = null;
+    let leadingWhitespace = null;
+    if (FORCE_BODY) {
+      dirty = "<remove></remove>" + dirty;
+    } else {
+      const matches = stringMatch(dirty, /^[\r\n\t ]+/);
+      leadingWhitespace = matches && matches[0];
+    }
+    if (PARSER_MEDIA_TYPE === "application/xhtml+xml" && NAMESPACE === HTML_NAMESPACE) {
+      dirty = '<html xmlns="http://www.w3.org/1999/xhtml"><head></head><body>' + dirty + "</body></html>";
+    }
+    const dirtyPayload = trustedTypesPolicy ? _createTrustedHTML(dirty) : dirty;
+    if (NAMESPACE === HTML_NAMESPACE) {
+      try {
+        doc = new DOMParser().parseFromString(dirtyPayload, PARSER_MEDIA_TYPE);
+      } catch (_2) {
+      }
+    }
+    if (!doc || !doc.documentElement) {
+      doc = implementation.createDocument(NAMESPACE, "template", null);
+      try {
+        doc.documentElement.innerHTML = IS_EMPTY_INPUT ? emptyHTML : dirtyPayload;
+      } catch (_2) {
+      }
+    }
+    const body = doc.body || doc.documentElement;
+    if (dirty && leadingWhitespace) {
+      body.insertBefore(document2.createTextNode(leadingWhitespace), body.childNodes[0] || null);
+    }
+    if (NAMESPACE === HTML_NAMESPACE) {
+      return getElementsByTagName.call(doc, WHOLE_DOCUMENT ? "html" : "body")[0];
+    }
+    return WHOLE_DOCUMENT ? doc.documentElement : body;
+  };
+  const _createNodeIterator = function _createNodeIterator2(root) {
+    return createNodeIterator.call(
+      root.ownerDocument || root,
+      root,
+      // eslint-disable-next-line no-bitwise
+      NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_TEXT | NodeFilter.SHOW_PROCESSING_INSTRUCTION | NodeFilter.SHOW_CDATA_SECTION,
+      null
+    );
+  };
+  const _stripTemplateExpressions = function _stripTemplateExpressions2(value) {
+    value = stringReplace(value, MUSTACHE_EXPR$1, " ");
+    value = stringReplace(value, ERB_EXPR$1, " ");
+    value = stringReplace(value, TMPLIT_EXPR$1, " ");
+    return value;
+  };
+  const _scrubTemplateExpressions2 = function _scrubTemplateExpressions(node) {
+    var _node$querySelectorAl;
+    node.normalize();
+    const walker = createNodeIterator.call(
+      node.ownerDocument || node,
+      node,
+      // eslint-disable-next-line no-bitwise
+      NodeFilter.SHOW_TEXT | NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_CDATA_SECTION | NodeFilter.SHOW_PROCESSING_INSTRUCTION,
+      null
+    );
+    let currentNode = walker.nextNode();
+    while (currentNode) {
+      currentNode.data = _stripTemplateExpressions(currentNode.data);
+      currentNode = walker.nextNode();
+    }
+    const templates = (_node$querySelectorAl = node.querySelectorAll) === null || _node$querySelectorAl === void 0 ? void 0 : _node$querySelectorAl.call(node, "template");
+    if (templates) {
+      arrayForEach(templates, (tmpl) => {
+        if (_isDocumentFragment(tmpl.content)) {
+          _scrubTemplateExpressions2(tmpl.content);
+        }
+      });
+    }
+  };
+  const _isClobbered = function _isClobbered2(element) {
+    const realTagName = getNodeName ? getNodeName(element) : null;
+    if (typeof realTagName !== "string") {
+      return false;
+    }
+    if (transformCaseFunc(realTagName) !== "form") {
+      return false;
+    }
+    return typeof element.nodeName !== "string" || typeof element.textContent !== "string" || typeof element.removeChild !== "function" || // Realm-safe NamedNodeMap detection: equality against the cached
+    // prototype getter. Clobbered .attributes (e.g. <input name="attributes">)
+    // makes the direct read diverge from the cached read; a clean form
+    // (same-realm OR foreign-realm) has both reads pointing at the same
+    // canonical NamedNodeMap.
+    element.attributes !== getAttributes(element) || typeof element.removeAttribute !== "function" || typeof element.setAttribute !== "function" || typeof element.namespaceURI !== "string" || typeof element.insertBefore !== "function" || typeof element.hasChildNodes !== "function" || // NodeType clobbering probe. Cached Node.prototype.nodeType getter
+    // returns the integer 1 for any Element regardless of realm; direct
+    // read on a clobbered form (e.g. <input name="nodeType">) returns
+    // the named child element. Cheap addition — nodeType is read from
+    // an internal slot, no serialization cost — and removes a residual
+    // clobbering surface used by several mXSS / PI / comment branches
+    // in _sanitizeElements that compare currentNode.nodeType directly.
+    element.nodeType !== getNodeType(element) || // HTMLFormElement has [LegacyOverrideBuiltIns]: a descendant named
+    // "childNodes" shadows the prototype getter. Direct reads of
+    // form.childNodes from a clobbered form return the named child
+    // instead of the real NodeList, so any walk that reads it directly
+    // skips the form's real children. Compare the direct read to the
+    // cached Node.prototype getter — when the form's named-property
+    // getter intercepts the read, the two values differ and we flag
+    // the form. This catches every clobbering child type (input,
+    // select, etc.) regardless of whether the named child happens to
+    // carry a numeric .length, which a typeof-based probe would miss
+    // (e.g. HTMLSelectElement.length is a defined unsigned-long).
+    element.childNodes !== getChildNodes(element);
+  };
+  const _isDocumentFragment = function _isDocumentFragment2(value) {
+    if (!getNodeType || typeof value !== "object" || value === null) {
+      return false;
+    }
+    try {
+      return getNodeType(value) === NODE_TYPE.documentFragment;
+    } catch (_2) {
+      return false;
+    }
+  };
+  const _isNode = function _isNode2(value) {
+    if (!getNodeType || typeof value !== "object" || value === null) {
+      return false;
+    }
+    try {
+      return typeof getNodeType(value) === "number";
+    } catch (_2) {
+      return false;
+    }
+  };
+  function _executeHooks(hooks2, currentNode, data2) {
+    if (hooks2.length === 0) {
+      return;
+    }
+    arrayForEach(hooks2, (hook) => {
+      hook.call(DOMPurify, currentNode, data2, CONFIG);
+    });
+  }
+  const _isUnsafeNode = function _isUnsafeNode2(currentNode, tagName) {
+    if (SAFE_FOR_XML && currentNode.hasChildNodes() && !_isNode(currentNode.firstElementChild) && regExpTest(ELEMENT_MARKUP_PROBE, currentNode.textContent) && regExpTest(ELEMENT_MARKUP_PROBE, currentNode.innerHTML)) {
+      return true;
+    }
+    if (SAFE_FOR_XML && currentNode.namespaceURI === HTML_NAMESPACE && tagName === "style" && _isNode(currentNode.firstElementChild)) {
+      return true;
+    }
+    if (currentNode.nodeType === NODE_TYPE.processingInstruction) {
+      return true;
+    }
+    if (SAFE_FOR_XML && currentNode.nodeType === NODE_TYPE.comment && regExpTest(COMMENT_MARKUP_PROBE, currentNode.data)) {
+      return true;
+    }
+    return false;
+  };
+  const _sanitizeDisallowedNode = function _sanitizeDisallowedNode2(currentNode, tagName) {
+    if (!FORBID_TAGS[tagName] && _isBasicCustomElement(tagName)) {
+      if (CUSTOM_ELEMENT_HANDLING.tagNameCheck instanceof RegExp && regExpTest(CUSTOM_ELEMENT_HANDLING.tagNameCheck, tagName)) {
+        return false;
+      }
+      if (CUSTOM_ELEMENT_HANDLING.tagNameCheck instanceof Function && CUSTOM_ELEMENT_HANDLING.tagNameCheck(tagName)) {
+        return false;
+      }
+    }
+    if (KEEP_CONTENT && !FORBID_CONTENTS[tagName]) {
+      const parentNode = getParentNode(currentNode);
+      const childNodes = getChildNodes(currentNode);
+      if (childNodes && parentNode) {
+        const childCount = childNodes.length;
+        for (let i = childCount - 1; i >= 0; --i) {
+          const hoisted = IN_PLACE ? childNodes[i] : cloneNode(childNodes[i], true);
+          parentNode.insertBefore(hoisted, getNextSibling(currentNode));
+        }
+      }
+    }
+    _forceRemove(currentNode);
+    return true;
+  };
+  const _sanitizeElements = function _sanitizeElements2(currentNode) {
+    _executeHooks(hooks.beforeSanitizeElements, currentNode, null);
+    if (_isClobbered(currentNode)) {
+      _forceRemove(currentNode);
+      return true;
+    }
+    const tagName = transformCaseFunc(getNodeName ? getNodeName(currentNode) : currentNode.nodeName);
+    _executeHooks(hooks.uponSanitizeElement, currentNode, {
+      tagName,
+      allowedTags: ALLOWED_TAGS
+    });
+    if (_isUnsafeNode(currentNode, tagName)) {
+      _forceRemove(currentNode);
+      return true;
+    }
+    if (FORBID_TAGS[tagName] || !(EXTRA_ELEMENT_HANDLING.tagCheck instanceof Function && EXTRA_ELEMENT_HANDLING.tagCheck(tagName)) && !ALLOWED_TAGS[tagName]) {
+      return _sanitizeDisallowedNode(currentNode, tagName);
+    }
+    const nt2 = getNodeType ? getNodeType(currentNode) : currentNode.nodeType;
+    if (nt2 === NODE_TYPE.element && !_checkValidNamespace(currentNode)) {
+      _forceRemove(currentNode);
+      return true;
+    }
+    if ((tagName === "noscript" || tagName === "noembed" || tagName === "noframes") && regExpTest(FALLBACK_TAG_CLOSE, currentNode.innerHTML)) {
+      _forceRemove(currentNode);
+      return true;
+    }
+    if (SAFE_FOR_TEMPLATES && currentNode.nodeType === NODE_TYPE.text) {
+      const content = _stripTemplateExpressions(currentNode.textContent);
+      if (currentNode.textContent !== content) {
+        arrayPush(DOMPurify.removed, {
+          element: currentNode.cloneNode()
+        });
+        currentNode.textContent = content;
+      }
+    }
+    _executeHooks(hooks.afterSanitizeElements, currentNode, null);
+    return false;
+  };
+  const _isValidAttribute = function _isValidAttribute2(lcTag, lcName, value) {
+    if (FORBID_ATTR[lcName]) {
+      return false;
+    }
+    if (SANITIZE_DOM && (lcName === "id" || lcName === "name") && (value in document2 || value in formElement)) {
+      return false;
+    }
+    const nameIsPermitted = ALLOWED_ATTR[lcName] || EXTRA_ELEMENT_HANDLING.attributeCheck instanceof Function && EXTRA_ELEMENT_HANDLING.attributeCheck(lcName, lcTag);
+    if (ALLOW_DATA_ATTR && regExpTest(DATA_ATTR$1, lcName)) ;
+    else if (ALLOW_ARIA_ATTR && regExpTest(ARIA_ATTR$1, lcName)) ;
+    else if (!nameIsPermitted) {
+      if (
+        // First condition does a very basic check if a) it's basically a valid custom element tagname AND
+        // b) if the tagName passes whatever the user has configured for CUSTOM_ELEMENT_HANDLING.tagNameCheck
+        // and c) if the attribute name passes whatever the user has configured for CUSTOM_ELEMENT_HANDLING.attributeNameCheck
+        _isBasicCustomElement(lcTag) && (CUSTOM_ELEMENT_HANDLING.tagNameCheck instanceof RegExp && regExpTest(CUSTOM_ELEMENT_HANDLING.tagNameCheck, lcTag) || CUSTOM_ELEMENT_HANDLING.tagNameCheck instanceof Function && CUSTOM_ELEMENT_HANDLING.tagNameCheck(lcTag)) && (CUSTOM_ELEMENT_HANDLING.attributeNameCheck instanceof RegExp && regExpTest(CUSTOM_ELEMENT_HANDLING.attributeNameCheck, lcName) || CUSTOM_ELEMENT_HANDLING.attributeNameCheck instanceof Function && CUSTOM_ELEMENT_HANDLING.attributeNameCheck(lcName, lcTag)) || // Alternative, second condition checks if it's an `is`-attribute, AND
+        // the value passes whatever the user has configured for CUSTOM_ELEMENT_HANDLING.tagNameCheck
+        lcName === "is" && CUSTOM_ELEMENT_HANDLING.allowCustomizedBuiltInElements && (CUSTOM_ELEMENT_HANDLING.tagNameCheck instanceof RegExp && regExpTest(CUSTOM_ELEMENT_HANDLING.tagNameCheck, value) || CUSTOM_ELEMENT_HANDLING.tagNameCheck instanceof Function && CUSTOM_ELEMENT_HANDLING.tagNameCheck(value))
+      ) ;
+      else {
+        return false;
+      }
+    } else if (URI_SAFE_ATTRIBUTES[lcName]) ;
+    else if (regExpTest(IS_ALLOWED_URI$1, stringReplace(value, ATTR_WHITESPACE$1, ""))) ;
+    else if ((lcName === "src" || lcName === "xlink:href" || lcName === "href") && lcTag !== "script" && stringIndexOf(value, "data:") === 0 && DATA_URI_TAGS[lcTag]) ;
+    else if (ALLOW_UNKNOWN_PROTOCOLS && !regExpTest(IS_SCRIPT_OR_DATA$1, stringReplace(value, ATTR_WHITESPACE$1, ""))) ;
+    else if (value) {
+      return false;
+    } else ;
+    return true;
+  };
+  const RESERVED_CUSTOM_ELEMENT_NAMES = addToSet({}, ["annotation-xml", "color-profile", "font-face", "font-face-format", "font-face-name", "font-face-src", "font-face-uri", "missing-glyph"]);
+  const _isBasicCustomElement = function _isBasicCustomElement2(tagName) {
+    return !RESERVED_CUSTOM_ELEMENT_NAMES[stringToLowerCase(tagName)] && regExpTest(CUSTOM_ELEMENT$1, tagName);
+  };
+  const _applyTrustedTypesToAttribute = function _applyTrustedTypesToAttribute2(lcTag, lcName, namespaceURI, value) {
+    if (trustedTypesPolicy && typeof trustedTypes === "object" && typeof trustedTypes.getAttributeType === "function" && !namespaceURI) {
+      switch (trustedTypes.getAttributeType(lcTag, lcName)) {
+        case "TrustedHTML": {
+          return _createTrustedHTML(value);
+        }
+        case "TrustedScriptURL": {
+          return _createTrustedScriptURL(value);
+        }
+      }
+    }
+    return value;
+  };
+  const _setAttributeValue = function _setAttributeValue2(currentNode, name, namespaceURI, value) {
+    try {
+      if (namespaceURI) {
+        currentNode.setAttributeNS(namespaceURI, name, value);
+      } else {
+        currentNode.setAttribute(name, value);
+      }
+      if (_isClobbered(currentNode)) {
+        _forceRemove(currentNode);
+      } else {
+        arrayPop(DOMPurify.removed);
+      }
+    } catch (_2) {
+      _removeAttribute(name, currentNode);
+    }
+  };
+  const _sanitizeAttributes = function _sanitizeAttributes2(currentNode) {
+    _executeHooks(hooks.beforeSanitizeAttributes, currentNode, null);
+    const attributes = currentNode.attributes;
+    if (!attributes || _isClobbered(currentNode)) {
+      return;
+    }
+    const hookEvent = {
+      attrName: "",
+      attrValue: "",
+      keepAttr: true,
+      allowedAttributes: ALLOWED_ATTR,
+      forceKeepAttr: void 0
+    };
+    let l3 = attributes.length;
+    const lcTag = transformCaseFunc(currentNode.nodeName);
+    while (l3--) {
+      const attr = attributes[l3];
+      const name = attr.name, namespaceURI = attr.namespaceURI, attrValue = attr.value;
+      const lcName = transformCaseFunc(name);
+      const initValue = attrValue;
+      let value = name === "value" ? initValue : stringTrim(initValue);
+      hookEvent.attrName = lcName;
+      hookEvent.attrValue = value;
+      hookEvent.keepAttr = true;
+      hookEvent.forceKeepAttr = void 0;
+      _executeHooks(hooks.uponSanitizeAttribute, currentNode, hookEvent);
+      value = hookEvent.attrValue;
+      if (SANITIZE_NAMED_PROPS && (lcName === "id" || lcName === "name") && stringIndexOf(value, SANITIZE_NAMED_PROPS_PREFIX) !== 0) {
+        _removeAttribute(name, currentNode);
+        value = SANITIZE_NAMED_PROPS_PREFIX + value;
+      }
+      if (SAFE_FOR_XML && regExpTest(/((--!?|])>)|<\/(style|script|title|xmp|textarea|noscript|iframe|noembed|noframes)/i, value)) {
+        _removeAttribute(name, currentNode);
+        continue;
+      }
+      if (lcName === "attributename" && stringMatch(value, "href")) {
+        _removeAttribute(name, currentNode);
+        continue;
+      }
+      if (hookEvent.forceKeepAttr) {
+        continue;
+      }
+      if (!hookEvent.keepAttr) {
+        _removeAttribute(name, currentNode);
+        continue;
+      }
+      if (!ALLOW_SELF_CLOSE_IN_ATTR && regExpTest(SELF_CLOSING_TAG, value)) {
+        _removeAttribute(name, currentNode);
+        continue;
+      }
+      if (SAFE_FOR_TEMPLATES) {
+        value = _stripTemplateExpressions(value);
+      }
+      if (!_isValidAttribute(lcTag, lcName, value)) {
+        _removeAttribute(name, currentNode);
+        continue;
+      }
+      value = _applyTrustedTypesToAttribute(lcTag, lcName, namespaceURI, value);
+      if (value !== initValue) {
+        _setAttributeValue(currentNode, name, namespaceURI, value);
+      }
+    }
+    _executeHooks(hooks.afterSanitizeAttributes, currentNode, null);
+  };
+  const _sanitizeShadowDOM2 = function _sanitizeShadowDOM(fragment) {
+    let shadowNode = null;
+    const shadowIterator = _createNodeIterator(fragment);
+    _executeHooks(hooks.beforeSanitizeShadowDOM, fragment, null);
+    while (shadowNode = shadowIterator.nextNode()) {
+      _executeHooks(hooks.uponSanitizeShadowNode, shadowNode, null);
+      _sanitizeElements(shadowNode);
+      _sanitizeAttributes(shadowNode);
+      if (_isDocumentFragment(shadowNode.content)) {
+        _sanitizeShadowDOM2(shadowNode.content);
+      }
+      const shadowNodeType = getNodeType ? getNodeType(shadowNode) : shadowNode.nodeType;
+      if (shadowNodeType === NODE_TYPE.element) {
+        const innerSr = getShadowRoot(shadowNode);
+        if (_isDocumentFragment(innerSr)) {
+          _sanitizeAttachedShadowRoots(innerSr);
+          _sanitizeShadowDOM2(innerSr);
+        }
+      }
+    }
+    _executeHooks(hooks.afterSanitizeShadowDOM, fragment, null);
+  };
+  const _sanitizeAttachedShadowRoots = function _sanitizeAttachedShadowRoots2(root) {
+    const stack = [{
+      node: root,
+      shadow: null
+    }];
+    while (stack.length > 0) {
+      const item = stack.pop();
+      if (item.shadow) {
+        _sanitizeShadowDOM2(item.shadow);
+        continue;
+      }
+      const node = item.node;
+      const nodeType = getNodeType ? getNodeType(node) : node.nodeType;
+      const isElement = nodeType === NODE_TYPE.element;
+      const childNodes = getChildNodes(node);
+      if (childNodes) {
+        for (let i = childNodes.length - 1; i >= 0; --i) {
+          stack.push({
+            node: childNodes[i],
+            shadow: null
+          });
+        }
+      }
+      if (isElement) {
+        const rootName = getNodeName ? getNodeName(node) : null;
+        if (typeof rootName === "string" && transformCaseFunc(rootName) === "template") {
+          const content = node.content;
+          if (_isDocumentFragment(content)) {
+            stack.push({
+              node: content,
+              shadow: null
+            });
+          }
+        }
+      }
+      if (isElement) {
+        const sr = getShadowRoot(node);
+        if (_isDocumentFragment(sr)) {
+          stack.push({
+            node: null,
+            shadow: sr
+          }, {
+            node: sr,
+            shadow: null
+          });
+        }
+      }
+    }
+  };
+  DOMPurify.sanitize = function(dirty) {
+    let cfg = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
+    let body = null;
+    let importedNode = null;
+    let currentNode = null;
+    let returnNode = null;
+    IS_EMPTY_INPUT = !dirty;
+    if (IS_EMPTY_INPUT) {
+      dirty = "<!-->";
+    }
+    if (typeof dirty !== "string" && !_isNode(dirty)) {
+      dirty = stringifyValue(dirty);
+      if (typeof dirty !== "string") {
+        throw typeErrorCreate("dirty is not a string, aborting");
+      }
+    }
+    if (!DOMPurify.isSupported) {
+      return dirty;
+    }
+    if (SET_CONFIG) {
+      ALLOWED_TAGS = SET_CONFIG_ALLOWED_TAGS;
+      ALLOWED_ATTR = SET_CONFIG_ALLOWED_ATTR;
+    } else {
+      _parseConfig(cfg);
+    }
+    if (hooks.uponSanitizeElement.length > 0 || hooks.uponSanitizeAttribute.length > 0) {
+      ALLOWED_TAGS = clone(ALLOWED_TAGS);
+    }
+    if (hooks.uponSanitizeAttribute.length > 0) {
+      ALLOWED_ATTR = clone(ALLOWED_ATTR);
+    }
+    DOMPurify.removed = [];
+    const inPlace = IN_PLACE && typeof dirty !== "string" && _isNode(dirty);
+    if (inPlace) {
+      const nn = getNodeName ? getNodeName(dirty) : dirty.nodeName;
+      if (typeof nn === "string") {
+        const tagName = transformCaseFunc(nn);
+        if (!ALLOWED_TAGS[tagName] || FORBID_TAGS[tagName]) {
+          throw typeErrorCreate("root node is forbidden and cannot be sanitized in-place");
+        }
+      }
+      if (_isClobbered(dirty)) {
+        throw typeErrorCreate("root node is clobbered and cannot be sanitized in-place");
+      }
+      try {
+        _sanitizeAttachedShadowRoots(dirty);
+      } catch (error) {
+        _neutralizeRoot(dirty);
+        throw error;
+      }
+    } else if (_isNode(dirty)) {
+      body = _initDocument("<!---->");
+      importedNode = body.ownerDocument.importNode(dirty, true);
+      if (importedNode.nodeType === NODE_TYPE.element && importedNode.nodeName === "BODY") {
+        body = importedNode;
+      } else if (importedNode.nodeName === "HTML") {
+        body = importedNode;
+      } else {
+        body.appendChild(importedNode);
+      }
+      _sanitizeAttachedShadowRoots(importedNode);
+    } else {
+      if (!RETURN_DOM && !SAFE_FOR_TEMPLATES && !WHOLE_DOCUMENT && // eslint-disable-next-line unicorn/prefer-includes
+      dirty.indexOf("<") === -1) {
+        return trustedTypesPolicy && RETURN_TRUSTED_TYPE ? _createTrustedHTML(dirty) : dirty;
+      }
+      body = _initDocument(dirty);
+      if (!body) {
+        return RETURN_DOM ? null : RETURN_TRUSTED_TYPE ? emptyHTML : "";
+      }
+    }
+    if (body && FORCE_BODY) {
+      _forceRemove(body.firstChild);
+    }
+    const nodeIterator = _createNodeIterator(inPlace ? dirty : body);
+    try {
+      while (currentNode = nodeIterator.nextNode()) {
+        _sanitizeElements(currentNode);
+        _sanitizeAttributes(currentNode);
+        if (_isDocumentFragment(currentNode.content)) {
+          _sanitizeShadowDOM2(currentNode.content);
+        }
+      }
+    } catch (error) {
+      if (inPlace) {
+        _neutralizeRoot(dirty);
+      }
+      throw error;
+    }
+    if (inPlace) {
+      arrayForEach(DOMPurify.removed, (entry) => {
+        if (entry.element) {
+          _neutralizeSubtree(entry.element);
+        }
+      });
+      if (SAFE_FOR_TEMPLATES) {
+        _scrubTemplateExpressions2(dirty);
+      }
+      return dirty;
+    }
+    if (RETURN_DOM) {
+      if (SAFE_FOR_TEMPLATES) {
+        _scrubTemplateExpressions2(body);
+      }
+      if (RETURN_DOM_FRAGMENT) {
+        returnNode = createDocumentFragment.call(body.ownerDocument);
+        while (body.firstChild) {
+          returnNode.appendChild(body.firstChild);
+        }
+      } else {
+        returnNode = body;
+      }
+      if (ALLOWED_ATTR.shadowroot || ALLOWED_ATTR.shadowrootmode) {
+        returnNode = importNode.call(originalDocument, returnNode, true);
+      }
+      return returnNode;
+    }
+    let serializedHTML = WHOLE_DOCUMENT ? body.outerHTML : body.innerHTML;
+    if (WHOLE_DOCUMENT && ALLOWED_TAGS["!doctype"] && body.ownerDocument && body.ownerDocument.doctype && body.ownerDocument.doctype.name && regExpTest(DOCTYPE_NAME, body.ownerDocument.doctype.name)) {
+      serializedHTML = "<!DOCTYPE " + body.ownerDocument.doctype.name + ">\n" + serializedHTML;
+    }
+    if (SAFE_FOR_TEMPLATES) {
+      serializedHTML = _stripTemplateExpressions(serializedHTML);
+    }
+    return trustedTypesPolicy && RETURN_TRUSTED_TYPE ? _createTrustedHTML(serializedHTML) : serializedHTML;
+  };
+  DOMPurify.setConfig = function() {
+    let cfg = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+    _parseConfig(cfg);
+    SET_CONFIG = true;
+    SET_CONFIG_ALLOWED_TAGS = ALLOWED_TAGS;
+    SET_CONFIG_ALLOWED_ATTR = ALLOWED_ATTR;
+  };
+  DOMPurify.clearConfig = function() {
+    CONFIG = null;
+    SET_CONFIG = false;
+    SET_CONFIG_ALLOWED_TAGS = null;
+    SET_CONFIG_ALLOWED_ATTR = null;
+    trustedTypesPolicy = defaultTrustedTypesPolicy;
+    emptyHTML = "";
+  };
+  DOMPurify.isValidAttribute = function(tag, attr, value) {
+    if (!CONFIG) {
+      _parseConfig({});
+    }
+    const lcTag = transformCaseFunc(tag);
+    const lcName = transformCaseFunc(attr);
+    return _isValidAttribute(lcTag, lcName, value);
+  };
+  DOMPurify.addHook = function(entryPoint, hookFunction) {
+    if (typeof hookFunction !== "function") {
+      return;
+    }
+    if (!objectHasOwnProperty(hooks, entryPoint)) {
+      return;
+    }
+    arrayPush(hooks[entryPoint], hookFunction);
+  };
+  DOMPurify.removeHook = function(entryPoint, hookFunction) {
+    if (!objectHasOwnProperty(hooks, entryPoint)) {
+      return void 0;
+    }
+    if (hookFunction !== void 0) {
+      const index = arrayLastIndexOf(hooks[entryPoint], hookFunction);
+      return index === -1 ? void 0 : arraySplice(hooks[entryPoint], index, 1)[0];
+    }
+    return arrayPop(hooks[entryPoint]);
+  };
+  DOMPurify.removeHooks = function(entryPoint) {
+    if (!objectHasOwnProperty(hooks, entryPoint)) {
+      return;
+    }
+    hooks[entryPoint] = [];
+  };
+  DOMPurify.removeAllHooks = function() {
+    hooks = _createHooksMap();
+  };
+  return DOMPurify;
+}
+var purify = createDOMPurify();
+
+// src/docs/components/DocLayout.tsx
+var import_jsx_runtime8 = __toESM(require_jsx_runtime());
+function DocLayout({ children, toc }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "docs-theme flex flex-col min-h-screen bg-docs-bg-page text-docs-text-primary selection:bg-blue-500/30 font-sans transition-colors duration-200", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(HomeNav, {}),
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "flex flex-1 w-full relative", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(DocsSidebar, {}),
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("main", { className: "flex-1 min-w-0 px-6 py-12 md:px-12 lg:px-16", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+          Link,
+          {
+            to: "/docs",
+            className: "inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 transition-colors mb-10 group",
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                "svg",
+                {
+                  className: "w-4 h-4 transition-transform group-hover:-translate-x-0.5",
+                  fill: "none",
+                  viewBox: "0 0 24 24",
+                  stroke: "currentColor",
+                  children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                    "path",
+                    {
+                      strokeLinecap: "round",
+                      strokeLinejoin: "round",
+                      strokeWidth: "2",
+                      d: "M10 19l-7-7m0 0l7-7m-7 7h18"
+                    }
+                  )
+                }
+              ),
+              "Back to Docs"
+            ]
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "max-w-3xl mx-auto", children })
+      ] }),
+      toc && toc
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(Footer, {})
+  ] });
+}
+
+// src/docs/components/DocArticle.tsx
+var import_jsx_runtime9 = __toESM(require_jsx_runtime());
+function DocArticle({ title, description, children }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "docs-content-wrapper", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "docs-header mb-12 border-b border-docs-border-main pb-8 transition-colors duration-200", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h1", { className: "text-4xl font-light text-docs-text-primary tracking-tight mb-4 transition-colors duration-200", children: title }),
+      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-xl text-docs-text-secondary transition-colors duration-200", children: description })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "docs-content", children })
+  ] });
+}
+
+// src/docs/utils/content.js
+var slugToPath = {
+  "readme": "/public/docs/README.md",
+  "implementation-info": "/public/docs/implementation-info.txt",
+  "ipnv2-readme": "/public/docs/IPNV2_README.md",
+  ...modelDocsGenerated_default.slugPaths
+};
+async function fetchDocContent(slug) {
+  const path = slugToPath[slug];
+  if (!path) return void 0;
+  try {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error("Failed to fetch doc");
+    const text2 = await res.text();
+    return text2;
+  } catch (err) {
+    console.error(err);
+    return void 0;
+  }
+}
+function extractHeadingsFromMdx(mdx) {
+  const headings = [];
+  const headingRegex = /^##\s+(.+)$/gm;
+  let match;
+  while ((match = headingRegex.exec(mdx)) !== null) {
+    let text2 = match[1].trim();
+    text2 = text2.replace(/[*_]+/g, "");
+    text2 = text2.replace(/\\(.)/g, "$1");
+    const id = text2.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const level = 2;
+    let finalId = id;
+    let counter = 1;
+    while (headings.some((h) => h.id === finalId)) {
+      finalId = `${id}-${counter}`;
+      counter++;
+    }
+    headings.push({ id: finalId, text: text2, level });
+  }
+  return headings;
+}
+function getHeadingIdGenerator() {
+  const seenIds = /* @__PURE__ */ new Set();
+  return (text2) => {
+    let cleanText = text2.replace(/[*_]+/g, "");
+    const id = cleanText.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    let finalId = id;
+    let counter = 1;
+    while (seenIds.has(finalId)) {
+      finalId = `${id}-${counter}`;
+      counter++;
+    }
+    seenIds.add(finalId);
+    return finalId;
+  };
+}
+
+// src/docs/pages/DocArticlePage.jsx
+var import_jsx_runtime10 = __toESM(require_jsx_runtime());
+function DocArticlePage() {
+  const { slug } = useParams();
+  const [content, setContent] = (0, import_react8.useState)("");
+  const [headings, setHeadings] = (0, import_react8.useState)([]);
+  const [loading, setLoading] = (0, import_react8.useState)(true);
+  const articleInfo = getDocArticle(slug);
+  (0, import_react8.useEffect)(() => {
+    async function load() {
+      setLoading(true);
+      const mdx = await fetchDocContent(slug);
+      if (mdx) {
+        setHeadings(extractHeadingsFromMdx(mdx));
+        const generateId = getHeadingIdGenerator();
+        const renderer = new g.Renderer();
+        renderer.heading = function({ text: text2, depth, tokens }) {
+          const content2 = this.parser.parseInline(tokens);
+          if (depth === 2) {
+            const id = generateId(text2);
+            return `<h2 id="${id}">${content2}</h2>
+`;
+          }
+          return `<h${depth}>${content2}</h${depth}>
+`;
+        };
+        g.setOptions({ renderer });
+        const html2 = purify.sanitize(g.parse(mdx));
+        setContent(html2);
+      } else {
+        setContent("<h1>Article not found</h1><p>The requested document could not be found.</p>");
+        setHeadings([]);
+      }
+      setLoading(false);
+    }
+    if (slug) {
+      load();
+    }
+  }, [slug]);
+  if (!articleInfo && !loading) {
+    return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(DocLayout, { children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "py-12", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h1", { className: "text-3xl font-light", children: "Document Not Found" }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { className: "mt-4 text-docs-text-secondary", children: "We couldn't find the requested documentation page." })
+    ] }) });
+  }
+  const toc = headings.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(DocsTableOfContents, { headings }) : null;
+  return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(DocLayout, { toc, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+    DocArticle,
+    {
+      title: articleInfo?.title || "Documentation",
+      description: articleInfo?.description || "",
+      children: articleInfo?.externalHref ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        "iframe",
+        {
+          src: articleInfo.externalHref,
+          className: "w-full h-[800px] border-0 rounded-lg shadow-sm bg-white mt-8",
+          title: articleInfo.title
+        }
+      ) : loading ? /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "py-8 animate-pulse", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "h-8 bg-docs-border-main rounded w-1/3 mb-6" }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "h-4 bg-docs-border-main rounded w-full mb-4" }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "h-4 bg-docs-border-main rounded w-5/6 mb-4" }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "h-4 bg-docs-border-main rounded w-4/6" })
+      ] }) : /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { dangerouslySetInnerHTML: { __html: content } })
+    }
+  ) });
+}
 
 // src/api/octAnalyzerClient.js
 var queryApiBase = globalThis.location ? new URLSearchParams(globalThis.location.search).get("apiBase") : "";
-var DEFAULT_API_BASE = globalThis.location?.port && globalThis.location.port !== "8000" ? `${globalThis.location.protocol}//${globalThis.location.hostname}:8000` : "";
+var DEFAULT_API_BASE = "https://nmundhra-oct-image-classifier-model.hf.space";
 var OCT_ANALYZER_API_BASE = (globalThis.OCT_ANALYZER_API_BASE || queryApiBase || DEFAULT_API_BASE).replace(/\/$/, "");
 async function createScan(file) {
   const form = new FormData();
   form.append("file", file);
-  const response = await fetch(apiUrl("/api/scans"), {
+  const localImageUrl = URL.createObjectURL(file);
+  const predictReq = fetch(apiUrl("/predict"), {
     method: "POST",
     body: form
-  });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.detail || "Upload failed");
+  }).then((res) => res.json());
+  const segmentReq = fetch("https://nmundhra-oct-segmentation-model.hf.space/predict", {
+    method: "POST",
+    body: form
+  }).then((res) => res.ok ? res.json() : null).catch(() => null);
+  const [predictPayload, segmentPayload] = await Promise.all([predictReq, segmentReq]);
+  if (predictPayload.detail) {
+    throw new Error(predictPayload.detail || "Upload failed");
   }
-  return normalizeScanResult(payload);
+  const normalized = normalizeScanResult(predictPayload);
+  normalized.segmentation = segmentPayload;
+  normalized.localImageUrl = localImageUrl;
+  return normalized;
 }
 function normalizeScanResult(scan) {
   if (!scan || typeof scan !== "object") {
     return scan;
   }
+  const isAbnormal = scan.level1_prediction === "ABNORMAL";
+  let diagnosis = "NORMAL";
+  if (isAbnormal && scan.level2_prediction) {
+    if (scan.level2_prediction === "Macular_Degeneration") diagnosis = "AMD";
+    else if (scan.level2_prediction === "Diabetic_Complications") diagnosis = "DR";
+    else diagnosis = scan.level2_prediction;
+  }
   return {
-    ...scan,
-    previews: normalizePreviewMap(scan.previews),
-    ipnv2: scan.ipnv2 ? {
-      ...scan.ipnv2,
-      previews: normalizePreviewMap(scan.ipnv2.previews)
-    } : scan.ipnv2
+    status: "completed",
+    diagnosis,
+    confidence: isAbnormal ? scan.level2_confidence : scan.level1_confidence,
+    level1: {
+      prediction: scan.level1_prediction,
+      confidence: scan.level1_confidence
+    },
+    level2: {
+      prediction: scan.level2_prediction,
+      confidence: scan.level2_confidence
+    },
+    previews: {},
+    ipnv2: null
   };
-}
-function normalizePreviewMap(previews = {}) {
-  return Object.fromEntries(
-    Object.entries(previews).map(([key, value]) => [
-      key,
-      Array.isArray(value) ? value.map(apiUrl) : apiUrl(value)
-    ])
-  );
 }
 function apiUrl(path) {
   if (!path || /^https?:\/\//i.test(path)) {
@@ -21814,77 +28320,20 @@ function apiUrl(path) {
 }
 
 // src/App.jsx
+var import_jsx_runtime11 = __toESM(require_jsx_runtime());
 var screens = [
-  { id: "home", label: "Home" },
-  { id: "worklist", label: "1. Triage Worklist" },
-  { id: "upload", label: "2. Upload and QC" },
-  { id: "review", label: "3. Scan Review" },
-  { id: "decision", label: "4. Human Decision Gate" },
-  { id: "outcomes", label: "5. Outcomes and Safety" }
+  { id: "dashboard", path: "/dashboard", label: "Dashboard" },
+  { id: "worklist", path: "/worklist", label: "1. Triage Worklist" },
+  { id: "upload", path: "/QC", label: "2. Upload and QC" },
+  { id: "review", path: "/review", label: "3. Scan Review" },
+  { id: "decision", path: "/human-check", label: "4. Human Decision Gate" },
+  { id: "outcomes", path: "/outcomes", label: "5. Outcomes and Safety" }
 ];
 var demoRows = [
   ["P-1029", "Macula OCT", "Low risk", "92%", "AI cleared, clinician sample review", "safe"],
   ["P-1184", "OCTA", "Ambiguous", "61%", "Send to human audit", "warning"],
   ["P-1210", "Optic disc OCT", "High risk", "88%", "Specialist review required", "danger"],
   ["P-1244", "Macula OCT", "Poor quality", "N/A", "Re-upload or manual review", "warning"]
-];
-var documentationLinks = [
-  {
-    title: "Project README",
-    type: "Overview",
-    href: "/docs/?doc=readme",
-    source: "README.md",
-    summary: "Current capabilities, local API contract, setup commands, and deployment notes for the OCT Analyzer MVP."
-  },
-  {
-    title: "Implementation Blueprint",
-    type: "Architecture",
-    href: "/docs/?doc=implementation",
-    source: "implementation-info.txt",
-    summary: "Step-by-step design notes for ingestion, preprocessing, feature extraction, classification, and Solix export handling."
-  },
-  {
-    title: "3D OCT/OCTA Biomarker Mapping",
-    type: "Clinical Reference",
-    href: "/public/docs/biomarker_mapping_docs/oct_biomarker_mapping.html",
-    source: "biomarker_mapping_docs/oct_biomarker_mapping.html",
-    summary: "Layer-specific structural and vascular biomarkers with OCT/OCTA reference images and disease-feature mappings."
-  },
-  {
-    title: "IPN-V2 OCTA Segmentation",
-    type: "Model Reference",
-    href: "/docs/?doc=ipnv2",
-    source: "IPNV2_pytorch/README.md",
-    summary: "Reference notes for the IPN-V2/OCTA-500 segmentation model, dataset preprocessing, related papers, and upstream code."
-  },
-  {
-    title: "Deep Learning Architecture Flowchart",
-    type: "Diagram",
-    href: "/diagrams/?diagram=architecture",
-    source: "frontend/Deep-learning-model-architecture-flowchart.js",
-    summary: "Mermaid source for the 3D tensor pipeline, shared backbone, prediction heads, uncertainty, and report assembly."
-  },
-  {
-    title: "Online Clinical Inference Workflow",
-    type: "Diagram",
-    href: "/diagrams/?diagram=online",
-    source: "frontend/Online-clinical-inference-workflow..js",
-    summary: "Sequence diagram source for clinician upload, API ingestion, preprocessing, QC, inference, explanation, and reporting."
-  },
-  {
-    title: "Offline Training and Validation Workflow",
-    type: "Diagram",
-    href: "/diagrams/?diagram=offline",
-    source: "frontend/Offline-training-and-validation-workflow.js",
-    summary: "Sequence diagram source for research ingestion, standardization, model training, evaluation, metrics, and versioned storage."
-  },
-  {
-    title: "Wireframe Demo",
-    type: "Prototype",
-    href: "/demo/",
-    source: "frontend/demo/index.html",
-    summary: "Standalone clinical workflow prototype covering triage, upload/QC, review, decision gate, and outcomes/audit screens."
-  }
 ];
 function StatusBadge({ children, tone = "neutral" }) {
   const tones = {
@@ -21895,13 +28344,22 @@ function StatusBadge({ children, tone = "neutral" }) {
     info: "bg-sky-50 text-sky-700 border-sky-200",
     purple: "bg-violet-50 text-violet-700 border-violet-200"
   };
-  return /* @__PURE__ */ import_react4.default.createElement("span", { className: `inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${tones[tone]}` }, children);
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: `inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${tones[tone]}`, children });
 }
 function Card({ title, subtitle, icon: Icon2, children, className = "" }) {
-  return /* @__PURE__ */ import_react4.default.createElement("section", { className: `rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}` }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-4 flex items-start gap-3" }, Icon2 ? /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-100 p-2 text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement(Icon2, { className: "h-5 w-5" })) : null, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("h3", { className: "text-base font-bold text-slate-900" }, title), subtitle ? /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-1 text-sm text-slate-500" }, subtitle) : null)), children);
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("section", { className: `rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mb-4 flex items-start gap-3", children: [
+      Icon2 ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "rounded-2xl bg-slate-100 p-2 text-slate-700", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Icon2, { className: "h-5 w-5" }) }) : null,
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h3", { className: "text-base font-bold text-slate-900", children: title }),
+        subtitle ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mt-1 text-sm text-slate-500", children: subtitle }) : null
+      ] })
+    ] }),
+    children
+  ] });
 }
 function WireBox({ className = "", height = "h-24", children }) {
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: `rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 ${height} ${className}` }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex h-full items-center justify-center p-4 text-center text-sm font-medium text-slate-500" }, children));
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: `rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 ${height} ${className}`, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "flex h-full items-center justify-center p-4 text-center text-sm font-medium text-slate-500", children }) });
 }
 function Metric({ label, value, tone = "neutral" }) {
   const tones = {
@@ -21911,29 +28369,64 @@ function Metric({ label, value, tone = "neutral" }) {
     danger: "bg-rose-50 text-rose-800 border-rose-200",
     info: "bg-sky-50 text-sky-800 border-sky-200"
   };
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: `rounded-2xl border p-4 ${tones[tone]}` }, /* @__PURE__ */ import_react4.default.createElement("p", { className: "text-xs font-semibold uppercase tracking-wide opacity-70" }, label), /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-2 text-2xl font-black" }, value));
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: `rounded-2xl border p-4 ${tones[tone]}`, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "text-xs font-semibold uppercase tracking-wide opacity-70", children: label }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mt-2 text-2xl font-black", children: value })
+  ] });
 }
 function Header({ scan }) {
-  return /* @__PURE__ */ import_react4.default.createElement("header", { className: "rounded-3xl border border-slate-200 bg-white p-5 shadow-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-2 flex flex-wrap gap-2" }, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "info" }, "Clinical decision support"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "purple" }, "Human in the loop"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "warning" }, "Not autonomous diagnosis"), scan?.is_demo_model ? /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "warning" }, "Demo model") : null), /* @__PURE__ */ import_react4.default.createElement("h1", { className: "text-3xl font-black tracking-tight text-slate-950" }, "OCT/OCTA Clinical Inference Interface"), /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-2 max-w-3xl text-sm leading-6 text-slate-600" }, "End-to-end clinician workflow for triage, explainable scan review, active human justification, specialist routing, and safety monitoring.")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid grid-cols-2 gap-3 text-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("p", { className: "font-semibold text-slate-500" }, "Current user"), /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-1 font-bold text-slate-900" }, "Ophthalmologist")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("p", { className: "font-semibold text-slate-500" }, "Mode"), /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-1 font-bold text-slate-900" }, scan ? "Active case" : "Review queue")))));
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("header", { className: "rounded-3xl border border-slate-200 bg-white p-5 shadow-sm", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mb-2 flex flex-wrap gap-2", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(StatusBadge, { tone: "info", children: "Clinical decision support" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(StatusBadge, { tone: "purple", children: "Human in the loop" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(StatusBadge, { tone: "warning", children: "Not autonomous diagnosis" }),
+        scan?.is_demo_model ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(StatusBadge, { tone: "warning", children: "Demo model" }) : null
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h1", { className: "text-3xl font-black tracking-tight text-slate-950", children: "OCT/OCTA Clinical Inference Interface" }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mt-2 max-w-3xl text-sm leading-6 text-slate-600", children: "End-to-end clinician workflow for triage, explainable scan review, active human justification, specialist routing, and safety monitoring." })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid grid-cols-2 gap-3 text-sm", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "font-semibold text-slate-500", children: "Current user" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mt-1 font-bold text-slate-900", children: "Ophthalmologist" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "font-semibold text-slate-500", children: "Mode" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mt-1 font-bold text-slate-900", children: scan ? "Active case" : "Review queue" })
+      ] })
+    ] })
+  ] }) });
 }
-function StickyNav({ active, setActive, scan }) {
-  return /* @__PURE__ */ import_react4.default.createElement("nav", { className: "sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mx-auto flex max-w-7xl flex-col gap-3 px-6 py-3 lg:flex-row lg:items-center lg:justify-between" }, /* @__PURE__ */ import_react4.default.createElement(
-    "button",
-    {
-      onClick: () => setActive("home"),
-      className: "flex min-h-0 items-center gap-3 rounded-xl border-0 bg-transparent p-0 text-left"
-    },
-    /* @__PURE__ */ import_react4.default.createElement("span", { className: "flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white" }, /* @__PURE__ */ import_react4.default.createElement(ScanLine, { className: "h-5 w-5" })),
-    /* @__PURE__ */ import_react4.default.createElement("span", null, /* @__PURE__ */ import_react4.default.createElement("span", { className: "block text-sm font-black text-slate-950" }, "OCT Analyzer"), /* @__PURE__ */ import_react4.default.createElement("span", { className: "block text-xs font-semibold text-slate-500" }, scan ? "Active case loaded" : "Documentation and workflow"))
-  ), /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:justify-end lg:pb-0" }, screens.map((screen) => /* @__PURE__ */ import_react4.default.createElement(
-    "button",
-    {
-      key: screen.id,
-      onClick: () => setActive(screen.id),
-      className: `shrink-0 rounded-xl px-4 py-2 text-sm font-bold transition ${active === screen.id ? "bg-slate-900 text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`
-    },
-    screen.label
-  )))));
+function StickyNav() {
+  const { scan } = useAppContext();
+  const location = useLocation();
+  const activePath = location.pathname;
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("nav", { className: "sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mx-auto flex max-w-7xl flex-col gap-3 px-6 py-3 lg:flex-row lg:items-center lg:justify-between", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+      Link,
+      {
+        to: "/",
+        className: "flex min-h-0 items-center gap-3 rounded-xl border-0 bg-transparent p-0 text-left",
+        children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(ScanLine, { className: "h-5 w-5" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("span", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "block text-sm font-black text-slate-950", children: "OCT Analyzer" }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "block text-xs font-semibold text-slate-500", children: scan ? "Active case loaded" : "Documentation and workflow" })
+          ] })
+        ]
+      }
+    ),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:justify-end lg:pb-0", children: screens.map((screen) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+      Link,
+      {
+        to: screen.path,
+        className: `shrink-0 rounded-xl px-4 py-2 text-sm font-bold transition ${activePath === screen.path ? "bg-slate-900 text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`,
+        children: screen.label
+      },
+      screen.id
+    )) })
+  ] }) });
 }
 function riskFromScan(scan) {
   if (!scan || scan.status !== "completed") {
@@ -21947,7 +28440,9 @@ function riskFromScan(scan) {
   }
   return { label: "Low risk", tone: "safe", confidence: `${Math.round(scan.confidence * 100)}%`, action: "Clinician sample review" };
 }
-function HomeScreen({ scan, uploadState, decision, setActive }) {
+function DashboardScreen() {
+  const { scan, uploadState, decision } = useAppContext();
+  const navigate = useNavigate();
   const risk = riskFromScan(scan);
   const completed = scan?.status === "completed";
   const workflow = [
@@ -21956,68 +28451,185 @@ function HomeScreen({ scan, uploadState, decision, setActive }) {
     ["Review", "Inspect previews and layer evidence", completed ? "Ready" : "Waiting", ScanLine],
     ["Decision", "Capture clinician rationale", decision.choice ? "Saved" : "Open", ClipboardCheck]
   ];
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-5 lg:grid-cols-12" }, /* @__PURE__ */ import_react4.default.createElement("section", { className: "overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:col-span-7" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-0 lg:grid-cols-[1.05fr_0.95fr]" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "p-6 lg:p-8" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-4 flex flex-wrap gap-2" }, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "info" }, "OCT/OCTA workflow"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: completed ? risk.tone : "warning" }, completed ? `${risk.label} case loaded` : "Awaiting scan")), /* @__PURE__ */ import_react4.default.createElement("h2", { className: "max-w-2xl text-3xl font-black leading-tight text-slate-950" }, "Clinical OCT review workspace for triage, QC, evidence, and sign-off"), /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-4 max-w-2xl text-sm leading-6 text-slate-600" }, "Start a local scan intake, continue reviewing the active case, or jump into the queue while preserving human oversight at every decision point."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-6 flex flex-wrap gap-3" }, /* @__PURE__ */ import_react4.default.createElement(
-    "button",
-    {
-      onClick: () => setActive("upload"),
-      className: "inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
-    },
-    /* @__PURE__ */ import_react4.default.createElement(Upload, { className: "h-4 w-4" }),
-    " Upload scan"
-  ), /* @__PURE__ */ import_react4.default.createElement(
-    "button",
-    {
-      onClick: () => setActive(completed ? "review" : "worklist"),
-      className: "inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700"
-    },
-    /* @__PURE__ */ import_react4.default.createElement(CirclePlay, { className: "h-4 w-4" }),
-    " ",
-    completed ? "Continue review" : "Open worklist"
-  ))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "border-t border-slate-200 bg-slate-950 p-5 lg:border-l lg:border-t-0" }, /* @__PURE__ */ import_react4.default.createElement(HomeScanPreview, { scan })))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Current Case", subtitle: "Live summary of the active local scan.", icon: Activity, className: "lg:col-span-5" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-3 sm:grid-cols-2" }, /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Case state", value: completed ? "Review ready" : uploadState.status, tone: completed ? "safe" : uploadState.error ? "danger" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Risk tier", value: risk.label, tone: risk.tone }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Confidence", value: risk.confidence, tone: completed ? "info" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Decision", value: decision.choice ? "Saved" : "Pending", tone: decision.choice ? "safe" : "warning" })), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Active file:"), " ", scan?.filename || uploadState.fileName || "No scan selected")), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Workflow Overview", subtitle: "Each step keeps evidence and clinician agency visible.", icon: Route, className: "lg:col-span-8" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-3 md:grid-cols-4" }, workflow.map(([title, detail, state, Icon2]) => /* @__PURE__ */ import_react4.default.createElement(
-    "button",
-    {
-      key: title,
-      onClick: () => setActive(title === "Intake" ? "upload" : title === "Review" ? "review" : title === "Decision" ? "decision" : "upload"),
-      className: "flex min-h-44 flex-col items-start justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-white"
-    },
-    /* @__PURE__ */ import_react4.default.createElement(Icon2, { className: "h-5 w-5 text-slate-700" }),
-    /* @__PURE__ */ import_react4.default.createElement("span", null, /* @__PURE__ */ import_react4.default.createElement("span", { className: "block text-base font-black text-slate-950" }, title), /* @__PURE__ */ import_react4.default.createElement("span", { className: "mt-2 block text-sm font-medium leading-5 text-slate-600" }, detail)),
-    /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: state === "Passed" || state === "Saved" || state === "Ready" ? "safe" : state === "Active" ? "info" : "neutral" }, state)
-  )))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Safety Snapshot", subtitle: "Deployment state for the demo workflow.", icon: ShieldAlert, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-amber-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Model status:"), " Demo model, not autonomous diagnosis."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-sky-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Backend:"), " Local FastAPI scan processor or explicit hosted API base."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-emerald-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Guardrail:"), " Clinician rationale required before sign-off."))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Documentation Library", subtitle: "Repo documentation and diagram artifacts surfaced from the app.", icon: BookOpen, className: "lg:col-span-12" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-3 md:grid-cols-2 xl:grid-cols-4" }, documentationLinks.map((doc) => /* @__PURE__ */ import_react4.default.createElement(
-    "a",
-    {
-      key: doc.title,
-      href: doc.href,
-      target: "_blank",
-      rel: "noreferrer",
-      className: "flex min-h-64 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700 transition hover:border-slate-300 hover:bg-white hover:shadow-sm"
-    },
-    /* @__PURE__ */ import_react4.default.createElement("span", null, /* @__PURE__ */ import_react4.default.createElement("span", { className: "mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600" }, /* @__PURE__ */ import_react4.default.createElement(FileText, { className: "h-3 w-3" }), " ", doc.type), /* @__PURE__ */ import_react4.default.createElement("span", { className: "block text-base font-black text-slate-950" }, doc.title), /* @__PURE__ */ import_react4.default.createElement("span", { className: "mt-3 block text-sm font-medium leading-6 text-slate-600" }, doc.summary)),
-    /* @__PURE__ */ import_react4.default.createElement("span", { className: "mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3 text-xs font-bold text-slate-500" }, /* @__PURE__ */ import_react4.default.createElement("span", { className: "truncate" }, doc.source), /* @__PURE__ */ import_react4.default.createElement(ExternalLink, { className: "h-4 w-4 shrink-0" }))
-  )))));
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid gap-5 lg:grid-cols-12", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("section", { className: "overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:col-span-7", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid gap-0 lg:grid-cols-[1.05fr_0.95fr]", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "p-6 lg:p-8", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mb-4 flex flex-wrap gap-2", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(StatusBadge, { tone: "info", children: "OCT/OCTA workflow" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(StatusBadge, { tone: completed ? risk.tone : "warning", children: completed ? `${risk.label} case loaded` : "Awaiting scan" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h2", { className: "max-w-2xl text-3xl font-black leading-tight text-slate-950", children: "Clinical OCT review workspace for triage, QC, evidence, and sign-off" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mt-4 max-w-2xl text-sm leading-6 text-slate-600", children: "Start a local scan intake, continue reviewing the active case, or jump into the queue while preserving human oversight at every decision point." }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-6 flex flex-wrap gap-3", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+            "button",
+            {
+              onClick: () => navigate("/QC"),
+              className: "inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white",
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Upload, { className: "h-4 w-4" }),
+                " Upload scan"
+              ]
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+            "button",
+            {
+              onClick: () => navigate(completed ? "/review" : "/worklist"),
+              className: "inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700",
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(CirclePlay, { className: "h-4 w-4" }),
+                " ",
+                completed ? "Continue review" : "Open worklist"
+              ]
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "border-t border-slate-200 bg-slate-950 p-5 lg:border-l lg:border-t-0", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(HomeScanPreview, { scan }) })
+    ] }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(Card, { title: "Current Case", subtitle: "Live summary of the active local scan.", icon: Activity, className: "lg:col-span-5", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid gap-3 sm:grid-cols-2", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Case state", value: completed ? "Review ready" : uploadState.status, tone: completed ? "safe" : uploadState.error ? "danger" : "neutral" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Risk tier", value: risk.label, tone: risk.tone }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Confidence", value: risk.confidence, tone: completed ? "info" : "neutral" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Decision", value: decision.choice ? "Saved" : "Pending", tone: decision.choice ? "safe" : "warning" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Active file:" }),
+        " ",
+        scan?.filename || uploadState.fileName || "No scan selected"
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "Workflow Overview", subtitle: "Each step keeps evidence and clinician agency visible.", icon: Route2, className: "lg:col-span-8", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "grid gap-3 md:grid-cols-4", children: workflow.map(([title, detail, state, Icon2]) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+      "button",
+      {
+        onClick: () => navigate(title === "Intake" ? "/QC" : title === "Review" ? "/review" : title === "Decision" ? "/human-check" : "/QC"),
+        className: "flex min-h-44 flex-col items-start justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-white",
+        children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Icon2, { className: "h-5 w-5 text-slate-700" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("span", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "block text-base font-black text-slate-950", children: title }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "mt-2 block text-sm font-medium leading-5 text-slate-600", children: detail })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(StatusBadge, { tone: state === "Passed" || state === "Saved" || state === "Ready" ? "safe" : state === "Active" ? "info" : "neutral", children: state })
+        ]
+      },
+      title
+    )) }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "Safety Snapshot", subtitle: "Deployment state for the demo workflow.", icon: ShieldAlert, className: "lg:col-span-4", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "space-y-3 text-sm text-slate-700", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-amber-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Model status:" }),
+        " Demo model, not autonomous diagnosis."
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-sky-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Backend:" }),
+        " Local FastAPI scan processor or explicit hosted API base."
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-emerald-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Guardrail:" }),
+        " Clinician rationale required before sign-off."
+      ] })
+    ] }) })
+  ] });
 }
 function HomeScanPreview({ scan }) {
   if (scan?.previews?.overlay || scan?.previews?.raw) {
     const src = scan.previews.overlay || scan.previews.raw;
-    return /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex h-full min-h-72 items-center justify-center" }, /* @__PURE__ */ import_react4.default.createElement("img", { src, alt: "Active OCT scan preview", className: "max-h-80 w-full rounded-2xl object-contain" }));
+    return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "flex h-full min-h-72 items-center justify-center", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("img", { src, alt: "Active OCT scan preview", className: "max-h-80 w-full rounded-2xl object-contain" }) });
   }
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex min-h-72 flex-col justify-between rounded-2xl border border-slate-700 bg-slate-900 p-5" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex items-center justify-between text-xs font-bold uppercase text-slate-400" }, /* @__PURE__ */ import_react4.default.createElement("span", null, "Preview Bay"), /* @__PURE__ */ import_react4.default.createElement("span", null, "No scan")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-2" }, Array.from({ length: 14 }).map((_, index) => /* @__PURE__ */ import_react4.default.createElement(
-    "div",
-    {
-      key: index,
-      className: `h-2 rounded-full ${index % 5 === 0 ? "bg-cyan-300/70" : index % 3 === 0 ? "bg-emerald-300/65" : "bg-slate-500/60"}`,
-      style: { width: `${62 + index * 17 % 34}%`, marginLeft: `${index * 11 % 24}%` }
-    }
-  ))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid grid-cols-3 gap-3 text-xs font-semibold text-slate-300" }, /* @__PURE__ */ import_react4.default.createElement("span", { className: "rounded-xl bg-slate-800 p-3" }, "Raw"), /* @__PURE__ */ import_react4.default.createElement("span", { className: "rounded-xl bg-slate-800 p-3" }, "Overlay"), /* @__PURE__ */ import_react4.default.createElement("span", { className: "rounded-xl bg-slate-800 p-3" }, "CDF")));
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "flex min-h-72 flex-col justify-between rounded-2xl border border-slate-700 bg-slate-900 p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "flex items-center justify-between text-xs font-bold uppercase text-slate-400", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: "Preview Bay" }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: "No scan" })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "space-y-2", children: Array.from({ length: 14 }).map((_2, index) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+      "div",
+      {
+        className: `h-2 rounded-full ${index % 5 === 0 ? "bg-cyan-300/70" : index % 3 === 0 ? "bg-emerald-300/65" : "bg-slate-500/60"}`,
+        style: { width: `${62 + index * 17 % 34}%`, marginLeft: `${index * 11 % 24}%` }
+      },
+      index
+    )) }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid grid-cols-3 gap-3 text-xs font-semibold text-slate-300", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "rounded-xl bg-slate-800 p-3", children: "Raw" }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "rounded-xl bg-slate-800 p-3", children: "Overlay" }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "rounded-xl bg-slate-800 p-3", children: "CDF" })
+    ] })
+  ] });
 }
-function WorklistScreen({ scan, setActive }) {
+function WorklistScreen() {
+  const { scan } = useAppContext();
+  const navigate = useNavigate();
   const liveRisk = riskFromScan(scan);
   const rows = scan?.status === "completed" ? [["LOCAL-001", scan.source_format, liveRisk.label, liveRisk.confidence, liveRisk.action, liveRisk.tone], ...demoRows] : demoRows;
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-5 lg:grid-cols-12" }, /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Triage Queue", subtitle: "AI rapidly processes routine scans and protects specialist bandwidth.", icon: Route, className: "lg:col-span-8" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "overflow-hidden rounded-2xl border border-slate-200" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid grid-cols-5 bg-slate-100 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500" }, /* @__PURE__ */ import_react4.default.createElement("span", null, "Patient"), /* @__PURE__ */ import_react4.default.createElement("span", null, "Scan"), /* @__PURE__ */ import_react4.default.createElement("span", null, "AI route"), /* @__PURE__ */ import_react4.default.createElement("span", null, "Confidence"), /* @__PURE__ */ import_react4.default.createElement("span", null, "Action")), rows.map((row) => /* @__PURE__ */ import_react4.default.createElement("div", { key: row[0], className: "grid grid-cols-5 items-center border-t border-slate-100 px-4 py-4 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("span", { className: "font-bold text-slate-900" }, row[0]), /* @__PURE__ */ import_react4.default.createElement("span", null, row[1]), /* @__PURE__ */ import_react4.default.createElement("span", null, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: row[5] }, row[2])), /* @__PURE__ */ import_react4.default.createElement("span", { className: "font-bold" }, row[3]), /* @__PURE__ */ import_react4.default.createElement("span", null, row[4])))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 flex flex-wrap gap-3" }, /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => setActive("upload"), className: "rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white" }, "Upload new scan"), scan?.status === "completed" ? /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => setActive("review"), className: "rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700" }, "Review active case") : null)), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Triage Rules", subtitle: "Routing logic is visible to reduce blind trust.", icon: ShieldAlert, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-emerald-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Low risk:"), " routine queue, optional clinician sampling."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-amber-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Ambiguous:"), " requires human audit before report sign-off."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-rose-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "High risk:"), " route to specialist with anomaly overlays and history."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Poor QC:"), " no model claim, request re-upload or manual inspection."))));
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid gap-5 lg:grid-cols-12", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(Card, { title: "Triage Queue", subtitle: "AI rapidly processes routine scans and protects specialist bandwidth.", icon: Route2, className: "lg:col-span-8", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "overflow-hidden rounded-2xl border border-slate-200", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid grid-cols-5 bg-slate-100 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: "Patient" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: "Scan" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: "AI route" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: "Confidence" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: "Action" })
+        ] }),
+        rows.map((row) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid grid-cols-5 items-center border-t border-slate-100 px-4 py-4 text-sm text-slate-700", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "font-bold text-slate-900", children: row[0] }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: row[1] }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(StatusBadge, { tone: row[5], children: row[2] }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "font-bold", children: row[3] }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: row[4] })
+        ] }, row[0]))
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-4 flex flex-wrap gap-3", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { onClick: () => navigate("/QC"), className: "rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white", children: "Upload new scan" }),
+        scan?.status === "completed" ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { onClick: () => navigate("/review"), className: "rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700", children: "Review active case" }) : null
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "Triage Rules", subtitle: "Routing logic is visible to reduce blind trust.", icon: ShieldAlert, className: "lg:col-span-4", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "space-y-3 text-sm text-slate-700", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-emerald-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Low risk:" }),
+        " routine queue, optional clinician sampling."
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-amber-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Ambiguous:" }),
+        " requires human audit before report sign-off."
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-rose-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "High risk:" }),
+        " route to specialist with anomaly overlays and history."
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Poor QC:" }),
+        " no model claim, request re-upload or manual inspection."
+      ] })
+    ] }) })
+  ] });
 }
-function UploadScreen({ scan, uploadState, onUpload }) {
-  const inputRef = (0, import_react4.useRef)(null);
-  const [dragging, setDragging] = (0, import_react4.useState)(false);
+function UploadScreen() {
+  const { scan, uploadState, setUploadState, setDecision, setScan } = useAppContext();
+  const navigate = useNavigate();
+  async function onUpload(file) {
+    setUploadState({ status: "Uploading", progress: 20, fileName: file.name, error: "" });
+    setDecision({ choice: "", rationale: "", submittedAt: "" });
+    try {
+      setUploadState({ status: "Processing", progress: 55, fileName: file.name, error: "" });
+      const payload = await createScan(file);
+      setScan(payload);
+      setUploadState({ status: "Completed", progress: 100, fileName: file.name, error: "" });
+      navigate("/review");
+    } catch (error) {
+      setScan(null);
+      setUploadState({
+        status: "Failed",
+        progress: 0,
+        fileName: file.name,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+  const inputRef = (0, import_react9.useRef)(null);
+  const [dragging, setDragging] = (0, import_react9.useState)(false);
   function handleFiles(files) {
     const file = files?.[0];
     if (file) {
@@ -22027,71 +28639,151 @@ function UploadScreen({ scan, uploadState, onUpload }) {
   const qcWarnings = scan?.qc?.warnings || [];
   const signalRange = scan?.qc?.signal_range || [];
   const completed = scan?.status === "completed";
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-5 lg:grid-cols-12" }, /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Scan Intake", subtitle: ".vol, .dcm, zipped TIFF, or 2D Image (.png, .jpg)", icon: Upload, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement(
-    "div",
-    {
-      onDragOver: (event) => {
-        event.preventDefault();
-        setDragging(true);
-      },
-      onDragLeave: () => setDragging(false),
-      onDrop: (event) => {
-        event.preventDefault();
-        setDragging(false);
-        handleFiles(event.dataTransfer.files);
-      },
-      className: `flex h-52 flex-col items-center justify-center rounded-2xl border-2 border-dashed p-4 text-center ${dragging ? "border-sky-400 bg-sky-50 text-sky-800" : "border-slate-300 bg-slate-50 text-slate-500"}`
-    },
-    /* @__PURE__ */ import_react4.default.createElement("input", { ref: inputRef, type: "file", accept: ".vol,.dcm,.zip,image/png,image/jpeg,image/webp", className: "hidden", onChange: (event) => handleFiles(event.target.files) }),
-    /* @__PURE__ */ import_react4.default.createElement(Upload, { className: "mb-3 h-9 w-9" }),
-    /* @__PURE__ */ import_react4.default.createElement("p", { className: "font-bold text-slate-800" }, "Drag OCT/OCTA volume here"),
-    /* @__PURE__ */ import_react4.default.createElement("p", { className: "mt-1 text-sm" }, "or select scan from local system"),
-    /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => inputRef.current?.click(), className: "mt-4 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-bold text-white" }, "Select scan")
-  ), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 grid gap-3 text-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "File:"), " ", scan?.filename || uploadState.fileName || "No scan uploaded"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Format:"), " ", scan?.source_format || "Awaiting upload"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Shape:"), " ", scan?.volume_shape?.join(" x ") || "N/A"))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Quality Control Gate", subtitle: "The model can be blocked before inference if scan quality is unsafe.", icon: CircleCheck, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Signal range", value: signalRange.length ? `${signalRange[0].toFixed(1)}-${signalRange[1].toFixed(1)}` : "N/A", tone: completed ? "safe" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Crop applied", value: scan?.qc?.crop_applied ? "Yes" : completed ? "No" : "N/A", tone: scan?.qc?.crop_applied ? "info" : completed ? "safe" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Warnings", value: qcWarnings.length, tone: qcWarnings.length ? "warning" : completed ? "safe" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "QC decision", value: uploadState.error ? "Blocked" : completed ? "Proceed" : uploadState.status, tone: uploadState.error ? "danger" : completed ? "info" : "neutral" })), uploadState.error ? /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 rounded-2xl bg-rose-50 p-4 text-sm text-rose-800" }, uploadState.error) : null, qcWarnings.length ? /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900" }, qcWarnings.join(" ")) : null), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Pipeline Status", subtitle: "Clinician sees where the case is in the system.", icon: Activity, className: "lg:col-span-4" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-4" }, ["Upload received", "Preprocessing complete", "QC passed", "Inference complete", "Report ready"].map((step, index) => {
-    const done = completed || uploadState.progress > index * 20;
-    return /* @__PURE__ */ import_react4.default.createElement("div", { key: step, className: `flex items-center gap-3 rounded-2xl p-4 ${done ? "bg-emerald-50" : "bg-slate-50"}` }, /* @__PURE__ */ import_react4.default.createElement("div", { className: `flex h-8 w-8 items-center justify-center rounded-full text-sm font-black ${done ? "bg-emerald-600 text-white" : "bg-white text-slate-700"}` }, index + 1), /* @__PURE__ */ import_react4.default.createElement("span", { className: "font-semibold text-slate-700" }, step));
-  }))));
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid gap-5 lg:grid-cols-12", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(Card, { title: "Scan Intake", subtitle: ".vol, .dcm, zipped TIFF, or 2D Image (.png, .jpg, .tif, .tiff)", icon: Upload, className: "lg:col-span-4", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+        "div",
+        {
+          onDragOver: (event) => {
+            event.preventDefault();
+            setDragging(true);
+          },
+          onDragLeave: () => setDragging(false),
+          onDrop: (event) => {
+            event.preventDefault();
+            setDragging(false);
+            handleFiles(event.dataTransfer.files);
+          },
+          className: `flex h-52 flex-col items-center justify-center rounded-2xl border-2 border-dashed p-4 text-center ${dragging ? "border-sky-400 bg-sky-50 text-sky-800" : "border-slate-300 bg-slate-50 text-slate-500"}`,
+          children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("input", { ref: inputRef, type: "file", accept: ".vol,.dcm,.zip,.tif,.tiff,image/png,image/jpeg,image/webp,image/tiff", className: "hidden", onChange: (event) => handleFiles(event.target.files) }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Upload, { className: "mb-3 h-9 w-9" }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "font-bold text-slate-800", children: "Drag OCT/OCTA volume here" }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mt-1 text-sm", children: "or select scan from local system" }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { onClick: () => inputRef.current?.click(), className: "mt-4 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-bold text-white", children: "Select scan" })
+          ]
+        }
+      ),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-4 grid gap-3 text-sm", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "File:" }),
+          " ",
+          scan?.filename || uploadState.fileName || "No scan uploaded"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Format:" }),
+          " ",
+          scan?.source_format || "Awaiting upload"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Shape:" }),
+          " ",
+          scan?.volume_shape?.join(" x ") || "N/A"
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(Card, { title: "Quality Control Gate", subtitle: "The model can be blocked before inference if scan quality is unsafe.", icon: CircleCheck, className: "lg:col-span-4", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "space-y-3", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Signal range", value: signalRange.length ? `${signalRange[0].toFixed(1)}-${signalRange[1].toFixed(1)}` : "N/A", tone: completed ? "safe" : "neutral" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Crop applied", value: scan?.qc?.crop_applied ? "Yes" : completed ? "No" : "N/A", tone: scan?.qc?.crop_applied ? "info" : completed ? "safe" : "neutral" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Warnings", value: qcWarnings.length, tone: qcWarnings.length ? "warning" : completed ? "safe" : "neutral" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "QC decision", value: uploadState.error ? "Blocked" : completed ? "Proceed" : uploadState.status, tone: uploadState.error ? "danger" : completed ? "info" : "neutral" })
+      ] }),
+      uploadState.error ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-4 rounded-2xl bg-rose-50 p-4 text-sm text-rose-800", children: uploadState.error }) : null,
+      qcWarnings.length ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900", children: qcWarnings.join(" ") }) : null
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "Pipeline Status", subtitle: "Clinician sees where the case is in the system.", icon: Activity, className: "lg:col-span-4", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "space-y-4", children: ["Upload received", "Preprocessing complete", "QC passed", "Inference complete", "Report ready"].map((step, index) => {
+      const done = completed || uploadState.progress > index * 20;
+      return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: `flex items-center gap-3 rounded-2xl p-4 ${done ? "bg-emerald-50" : "bg-slate-50"}`, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: `flex h-8 w-8 items-center justify-center rounded-full text-sm font-black ${done ? "bg-emerald-600 text-white" : "bg-white text-slate-700"}`, children: index + 1 }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "font-semibold text-slate-700", children: step })
+      ] }, step);
+    }) }) })
+  ] });
 }
-function ReviewScreen({ scan }) {
-  const [preview, setPreview] = (0, import_react4.useState)("overlay");
+function ReviewScreen() {
+  const { scan } = useAppContext();
+  const [viewMode, setViewMode] = (0, import_react9.useState)("segmented");
   const completed = scan?.status === "completed";
-  const previewUrl = completed ? scan.previews?.[preview] : "";
   const risk = riskFromScan(scan);
-  const drLayers = scan?.layers?.filter((layer) => layer.vote === "DR").length || 0;
-  const ipnv2 = scan?.ipnv2;
-  const previewOptions = [
-    ["raw", "Raw"],
-    ["overlay", "Layer demo"],
-    ["features", "CDF chart"]
-  ];
-  if (ipnv2?.previews?.ipnv2_overlay) {
-    previewOptions.push(["ipnv2_overlay", "OCTA/IPN-V2"]);
-  }
-  if (ipnv2?.previews?.ipnv2_probability) {
-    previewOptions.push(["ipnv2_probability", "IPN prob"]);
-  }
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-5 lg:grid-cols-12" }, /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Volumetric Scan Viewer", subtitle: "Slice viewer with layer demo overlays, CDF chart, and optional IPN-V2 OCTA output.", icon: ScanLine, className: "lg:col-span-7" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-4 lg:grid-cols-3" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 lg:col-span-2" }, previewUrl ? /* @__PURE__ */ import_react4.default.createElement("img", { src: previewUrl, alt: `${preview} preview`, className: "h-72 w-full object-contain" }) : /* @__PURE__ */ import_react4.default.createElement(WireBox, { height: "h-72" }, "Upload a scan to view generated previews")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ import_react4.default.createElement(PreviewThumb, { src: scan?.previews?.raw, label: "Raw center slice" }), /* @__PURE__ */ import_react4.default.createElement(PreviewThumb, { src: ipnv2?.previews?.ipnv2_probability || scan?.previews?.features, label: ipnv2?.previews?.ipnv2_probability ? "IPN-V2 probability" : "CDF feature chart" }))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 grid gap-3 text-xs font-semibold text-slate-600 md:grid-cols-5" }, previewOptions.map(([id, label]) => /* @__PURE__ */ import_react4.default.createElement(
-    "button",
-    {
-      key: id,
-      onClick: () => setPreview(id),
-      className: `rounded-xl border px-3 py-2 ${preview === id ? "bg-slate-900 text-white" : "bg-white"}`
-    },
-    label
-  ))), ipnv2 ? /* @__PURE__ */ import_react4.default.createElement("div", { className: `mt-4 rounded-2xl border p-4 text-sm ${ipnv2.mode === "checkpoint" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}` }, /* @__PURE__ */ import_react4.default.createElement("b", null, "IPN-V2:"), " ", ipnv2.mode === "checkpoint" ? "Checkpoint-backed OCTA segmentation path." : "Untrained smoke mode. This output proves integration plumbing only.") : null), /* @__PURE__ */ import_react4.default.createElement("div", { className: "lg:col-span-5 space-y-5" }, /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Level 1: RelayNet Analysis", subtitle: "Layer-by-layer segmentation and risk scoring.", icon: Brain }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Risk tier", value: risk.label, tone: risk.tone }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Model confidence", value: risk.confidence, tone: risk.tone === "danger" ? "warning" : "safe" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Layer votes flagged", value: `${drLayers}/12`, tone: drLayers ? "warning" : completed ? "safe" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Explainability:"), " Diagnosis is based on RelayNet CDF feature extraction across 12 retinal layers."), /* @__PURE__ */ import_react4.default.createElement(LayerVoteList, { layers: scan?.layers || [] }))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Level 2: IPN-V2 Verification", subtitle: "Secondary OCTA segmentation output for safety.", icon: Activity }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "IPN-V2 mode", value: ipnv2?.mode ? ipnv2.mode.replace("_", " ") : "N/A", tone: ipnv2?.mode === "checkpoint" ? "safe" : ipnv2 ? "warning" : "neutral" }), ipnv2?.warning ? /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" }, ipnv2.warning) : null, ipnv2?.previews?.ipnv2_probability ? /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl border border-slate-200 bg-slate-950 overflow-hidden" }, /* @__PURE__ */ import_react4.default.createElement("img", { src: ipnv2.previews.ipnv2_probability, alt: "IPN-V2 Probability", className: "w-full h-40 object-contain" })) : /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 text-center" }, "Awaiting IPN-V2 probability map"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Safety check:"), " IPN-V2 acts as a secondary verification path. High discrepancies between Level 1 and Level 2 flag the scan for immediate specialist review.")))));
+  const l1 = scan?.level1;
+  const l22 = scan?.level2;
+  const l1Abnormal = l1?.prediction === "ABNORMAL";
+  const getClassColor = (className) => {
+    if (className === "IRF") return "rgba(255, 255, 255, 0.7)";
+    if (className === "SRF") return "rgba(239, 68, 68, 0.7)";
+    return "rgba(34, 197, 94, 0.3)";
+  };
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid gap-5 lg:grid-cols-12", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "OCT Image Classification", subtitle: "Hugging Face & Local Segmentation", icon: ScanLine, className: "lg:col-span-7", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "grid gap-4", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 flex flex-col justify-between", style: { minHeight: "24rem" }, children: completed && scan.localImageUrl ? /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "absolute inset-0 flex items-center justify-center p-4", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "relative max-h-full max-w-full", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("img", { src: scan.localImageUrl, alt: "Uploaded OCT", className: "max-h-full max-w-full block rounded" }),
+        viewMode === "segmented" && scan.segmentation && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("svg", { viewBox: "0 0 512 512", className: "absolute top-0 left-0 h-full w-full pointer-events-none", preserveAspectRatio: "none", children: [
+          (scan.segmentation.layers || []).map((layer, idx) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+            "polyline",
+            {
+              points: layer.boundary_points.map((p) => `${p.x},${p.y}`).join(" "),
+              fill: "none",
+              stroke: getClassColor(layer.class_name).replace("0.3", "0.8").replace("0.7", "1.0"),
+              strokeWidth: "2"
+            },
+            `layer-${idx}`
+          )),
+          (scan.segmentation.lesions || []).map((lesion, idx) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+            "polygon",
+            {
+              points: lesion.polygon.map((p) => `${p.x},${p.y}`).join(" "),
+              fill: getClassColor(lesion.class_name),
+              stroke: getClassColor(lesion.class_name).replace("0.3", "0.8").replace("0.7", "1.0"),
+              strokeWidth: "2"
+            },
+            `lesion-${idx}`
+          ))
+        ] })
+      ] }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "absolute bottom-4 left-0 right-0 flex justify-center z-10", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "flex bg-slate-800/80 backdrop-blur-md rounded-xl p-1 gap-1 border border-slate-700", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+          "button",
+          {
+            onClick: () => setViewMode("raw"),
+            className: `px-4 py-1.5 rounded-lg text-xs font-bold transition ${viewMode === "raw" ? "bg-white text-slate-900" : "text-slate-300 hover:text-white"}`,
+            children: "Raw"
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+          "button",
+          {
+            onClick: () => setViewMode("segmented"),
+            className: `px-4 py-1.5 rounded-lg text-xs font-bold transition ${viewMode === "segmented" ? "bg-white text-slate-900" : "text-slate-300 hover:text-white"}`,
+            children: "Segmented"
+          }
+        )
+      ] }) })
+    ] }) : /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(WireBox, { height: "h-72", children: "Upload a scan to view predictions" }) }) }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "lg:col-span-5 space-y-5", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "Level 1: Gatekeeper (ResNet-50)", subtitle: "Binary triage screening.", icon: Brain, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "space-y-3", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Gatekeeper Prediction", value: l1?.prediction || "N/A", tone: l1Abnormal ? "danger" : "safe" }),
+        l1?.confidence && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Model Confidence", value: `${Math.round(l1.confidence * 100)}%`, tone: "neutral" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Explainability:" }),
+          " Diagnosis is based on a ResNet-50 model analyzing spatial features to triage ABNORMAL vs NORMAL scans."
+        ] })
+      ] }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "Level 2: Disease Router (EfficientNet-B2)", subtitle: "Specific disease classification.", icon: Activity, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "space-y-3", children: l1Abnormal ? /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Router Prediction", value: l22?.prediction?.replace(/_/g, " ") || "N/A", tone: "warning" }),
+        l22?.confidence && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Model Confidence", value: `${Math.round(l22.confidence * 100)}%`, tone: "neutral" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Safety check:" }),
+          " Specific pathology successfully identified."
+        ] })
+      ] }) : /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 text-center", children: "Level 2 routing bypassed. Scan is healthy." }) }) })
+    ] })
+  ] });
 }
-function PreviewThumb({ src, label }) {
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "overflow-hidden rounded-2xl border border-slate-200 bg-slate-950" }, src ? /* @__PURE__ */ import_react4.default.createElement("img", { src, alt: label, className: "h-32 w-full object-contain" }) : /* @__PURE__ */ import_react4.default.createElement(WireBox, { height: "h-32" }, label));
-}
-function LayerVoteList({ layers }) {
-  if (!layers.length) {
-    return /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4 text-sm text-slate-600" }, "Layer votes will appear after upload.");
-  }
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "max-h-64 overflow-auto rounded-2xl border border-slate-200" }, layers.map((layer) => /* @__PURE__ */ import_react4.default.createElement("div", { key: layer.name, className: "grid grid-cols-3 gap-2 border-b border-slate-100 px-4 py-3 text-sm last:border-b-0" }, /* @__PURE__ */ import_react4.default.createElement("span", { className: "font-bold text-slate-900" }, layer.name), /* @__PURE__ */ import_react4.default.createElement("span", { className: layer.vote === "DR" ? "font-bold text-rose-700" : "font-bold text-emerald-700" }, layer.vote), /* @__PURE__ */ import_react4.default.createElement("span", { className: "text-right text-slate-600" }, layer.score.toFixed(4)))));
-}
-function DecisionScreen({ scan, decision, setDecision }) {
-  const [choice, setChoice] = (0, import_react4.useState)(decision.choice || "");
-  const [rationale, setRationale] = (0, import_react4.useState)(decision.rationale || "");
+function DecisionScreen() {
+  const { scan, decision, setDecision } = useAppContext();
+  const [choice, setChoice] = (0, import_react9.useState)(decision.choice || "");
+  const [rationale, setRationale] = (0, import_react9.useState)(decision.rationale || "");
   const risk = riskFromScan(scan);
   const canSubmit = choice && rationale.trim().length >= 12 && scan?.status === "completed";
   function submitDecision() {
@@ -22104,15 +28796,66 @@ function DecisionScreen({ scan, decision, setDecision }) {
       submittedAt: (/* @__PURE__ */ new Date()).toLocaleString()
     });
   }
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-5 lg:grid-cols-12" }, /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Specialist Routing Packet", subtitle: "High-risk or ambiguous scans are routed with history and highlighted anomalies.", icon: Stethoscope, className: "lg:col-span-5" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Recipient:"), " ", risk.tone === "danger" ? "Retina specialist review queue" : "Ophthalmology review queue"), /* @__PURE__ */ import_react4.default.createElement("div", { className: `rounded-2xl p-4 ${risk.tone === "danger" ? "bg-rose-50" : "bg-slate-50"}` }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Reason:"), " ", risk.action), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Attached:"), " OCT volume, segmentation overlay, CDF chart, layer vote table"), scan?.previews?.overlay ? /* @__PURE__ */ import_react4.default.createElement("img", { src: scan.previews.overlay, alt: "Anomaly snapshot", className: "h-40 w-full rounded-2xl border object-contain" }) : /* @__PURE__ */ import_react4.default.createElement(WireBox, { height: "h-40" }, "Anomaly snapshot summary"))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Active Human Justification", subtitle: "Critical decisions cannot be accepted with one passive click.", icon: ClipboardCheck, className: "lg:col-span-7" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-4 lg:grid-cols-2" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl border border-slate-200 p-4" }, /* @__PURE__ */ import_react4.default.createElement("p", { className: "mb-3 text-sm font-bold text-slate-900" }, "Clinician decision"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-2 text-sm text-slate-700" }, ["Agree with AI triage", "Override AI triage", "Defer to specialist"].map((label) => /* @__PURE__ */ import_react4.default.createElement("label", { key: label, className: "block rounded-xl border p-3" }, /* @__PURE__ */ import_react4.default.createElement("input", { type: "radio", name: "decision", className: "mr-2", checked: choice === label, onChange: () => setChoice(label) }), label)))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl border border-slate-200 p-4" }, /* @__PURE__ */ import_react4.default.createElement("p", { className: "mb-3 text-sm font-bold text-slate-900" }, "Required justification"), /* @__PURE__ */ import_react4.default.createElement(
-    "textarea",
-    {
-      value: rationale,
-      onChange: (event) => setRationale(event.target.value),
-      className: "h-40 w-full resize-none rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-700 outline-none focus:border-sky-400",
-      placeholder: "Type rationale: image evidence, clinical history, uncertainty concerns, or reason for override."
-    }
-  ))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Automation bias guardrail:"), " Sign-off remains disabled until the clinician reviews overlays, sees confidence, and enters a decision rationale."), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 flex flex-wrap gap-3" }, /* @__PURE__ */ import_react4.default.createElement("button", { disabled: !canSubmit, onClick: submitDecision, className: "rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40" }, "Submit reviewed decision"), /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => setChoice("Defer to specialist"), className: "rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700" }, "Request second opinion"), /* @__PURE__ */ import_react4.default.createElement("button", { onClick: downloadCaseJson(scan, decision), className: "inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement(Download, { className: "h-4 w-4" }), " Export JSON")), decision.submittedAt ? /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-800" }, "Decision saved: ", /* @__PURE__ */ import_react4.default.createElement("b", null, decision.choice), " at ", decision.submittedAt) : null));
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid gap-5 lg:grid-cols-12", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "Specialist Routing Packet", subtitle: "High-risk or ambiguous scans are routed with history and highlighted anomalies.", icon: Stethoscope, className: "lg:col-span-5", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "space-y-3 text-sm text-slate-700", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Recipient:" }),
+        " ",
+        risk.tone === "danger" ? "Retina specialist review queue" : "Ophthalmology review queue"
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: `rounded-2xl p-4 ${risk.tone === "danger" ? "bg-rose-50" : "bg-slate-50"}`, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Reason:" }),
+        " ",
+        risk.action
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Attached:" }),
+        " OCT volume, segmentation overlay, CDF chart, layer vote table"
+      ] }),
+      scan?.previews?.overlay ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("img", { src: scan.previews.overlay, alt: "Anomaly snapshot", className: "h-40 w-full rounded-2xl border object-contain" }) : /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(WireBox, { height: "h-40", children: "Anomaly snapshot summary" })
+    ] }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(Card, { title: "Active Human Justification", subtitle: "Critical decisions cannot be accepted with one passive click.", icon: ClipboardCheck, className: "lg:col-span-7", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid gap-4 lg:grid-cols-2", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl border border-slate-200 p-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mb-3 text-sm font-bold text-slate-900", children: "Clinician decision" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "space-y-2 text-sm text-slate-700", children: ["Agree with AI triage", "Override AI triage", "Defer to specialist"].map((label) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("label", { className: "block rounded-xl border p-3", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("input", { type: "radio", name: "decision", className: "mr-2", checked: choice === label, onChange: () => setChoice(label) }),
+            label
+          ] }, label)) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl border border-slate-200 p-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mb-3 text-sm font-bold text-slate-900", children: "Required justification" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+            "textarea",
+            {
+              value: rationale,
+              onChange: (event) => setRationale(event.target.value),
+              className: "h-40 w-full resize-none rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-700 outline-none focus:border-sky-400",
+              placeholder: "Type rationale: image evidence, clinical history, uncertainty concerns, or reason for override."
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Automation bias guardrail:" }),
+        " Sign-off remains disabled until the clinician reviews overlays, sees confidence, and enters a decision rationale."
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-4 flex flex-wrap gap-3", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { disabled: !canSubmit, onClick: submitDecision, className: "rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40", children: "Submit reviewed decision" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { onClick: () => setChoice("Defer to specialist"), className: "rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700", children: "Request second opinion" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("button", { onClick: downloadCaseJson(scan, decision), className: "inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Download, { className: "h-4 w-4" }),
+          " Export JSON"
+        ] })
+      ] }),
+      decision.submittedAt ? /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-4 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-800", children: [
+        "Decision saved: ",
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: decision.choice }),
+        " at ",
+        decision.submittedAt
+      ] }) : null
+    ] })
+  ] });
 }
 function downloadCaseJson(scan, decision) {
   return () => {
@@ -22128,43 +28871,125 @@ function downloadCaseJson(scan, decision) {
     URL.revokeObjectURL(url);
   };
 }
-function OutcomesScreen({ scan, decision }) {
-  return /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-5 lg:grid-cols-12" }, /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Outcome and Safety Monitor", subtitle: "The system is evaluated by patient impact, not isolated algorithm accuracy.", icon: ChartColumn, className: "lg:col-span-7" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "grid gap-4 md:grid-cols-2" }, /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Time to specialist review", value: scan ? "Ready now" : "N/A", tone: scan ? "safe" : "neutral" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Missed high-risk reviews", value: "0 flagged", tone: "safe" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Clinician decision", value: decision.choice ? "Saved" : "Pending", tone: decision.choice ? "info" : "warning" }), /* @__PURE__ */ import_react4.default.createElement(Metric, { label: "Adverse safety signals", value: "Monitor", tone: "warning" })), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mt-4 rounded-2xl border border-slate-200 bg-white p-4" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-3 flex items-center gap-2 text-sm font-bold text-slate-900" }, /* @__PURE__ */ import_react4.default.createElement(FileText, { className: "h-4 w-4" }), " Active case summary"), /* @__PURE__ */ import_react4.default.createElement("pre", { className: "max-h-64 overflow-auto rounded-2xl bg-slate-950 p-4 text-xs text-slate-100" }, JSON.stringify({
-    scan_id: scan?.scan_id || null,
-    diagnosis: scan?.diagnosis || null,
-    confidence: scan?.confidence || null,
-    decision: decision.choice || null,
-    submitted_at: decision.submittedAt || null
-  }, null, 2)))), /* @__PURE__ */ import_react4.default.createElement(Card, { title: "Audit Trail", subtitle: "Every AI claim, human action, and model version is traceable.", icon: History, className: "lg:col-span-5" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "space-y-3 text-sm text-slate-700" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Model:"), " Local OCT MVP placeholder, demo mode"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Case events:"), " upload, QC pass, inference, explanation, clinician sign-off"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Feedback loop:"), " override cases can be exported as JSON"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "rounded-2xl bg-slate-50 p-4" }, /* @__PURE__ */ import_react4.default.createElement("b", null, "Report export:"), " structured JSON summary"))));
+function OutcomesScreen() {
+  const { scan, decision } = useAppContext();
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid gap-5 lg:grid-cols-12", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(Card, { title: "Outcome and Safety Monitor", subtitle: "The system is evaluated by patient impact, not isolated algorithm accuracy.", icon: ChartColumn, className: "lg:col-span-7", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid gap-4 md:grid-cols-2", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Time to specialist review", value: scan ? "Ready now" : "N/A", tone: scan ? "safe" : "neutral" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Missed high-risk reviews", value: "0 flagged", tone: "safe" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Clinician decision", value: decision.choice ? "Saved" : "Pending", tone: decision.choice ? "info" : "warning" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Adverse safety signals", value: "Monitor", tone: "warning" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-4 rounded-2xl border border-slate-200 bg-white p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mb-3 flex items-center gap-2 text-sm font-bold text-slate-900", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(FileText, { className: "h-4 w-4" }),
+          " Active case summary"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("pre", { className: "max-h-64 overflow-auto rounded-2xl bg-slate-950 p-4 text-xs text-slate-100", children: JSON.stringify({
+          scan_id: scan?.scan_id || null,
+          diagnosis: scan?.diagnosis || null,
+          confidence: scan?.confidence || null,
+          decision: decision.choice || null,
+          submitted_at: decision.submittedAt || null
+        }, null, 2) })
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "Audit Trail", subtitle: "Every AI claim, human action, and model version is traceable.", icon: History, className: "lg:col-span-5", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "space-y-3 text-sm text-slate-700", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Model:" }),
+        " Local OCT MVP placeholder, demo mode"
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Case events:" }),
+        " upload, QC pass, inference, explanation, clinician sign-off"
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Feedback loop:" }),
+        " override cases can be exported as JSON"
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl bg-slate-50 p-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Report export:" }),
+        " structured JSON summary"
+      ] })
+    ] }) })
+  ] });
+}
+function AppLayout() {
+  const { scan } = useAppContext();
+  const location = useLocation();
+  const activeScreen = (0, import_react9.useMemo)(() => screens.find((screen) => screen.path === location.pathname) || screens[0], [location.pathname]);
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "min-h-screen bg-slate-50 text-slate-900", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(StickyNav, {}),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mx-auto max-w-7xl space-y-6 px-6 py-6", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Header, { scan }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("section", { className: "rounded-3xl border border-slate-200 bg-white/60 p-4 shadow-sm", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-center", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "text-xs font-bold uppercase tracking-widest text-slate-500", children: "Clinical screen" }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h2", { className: "mt-1 text-2xl font-black text-slate-950", children: activeScreen?.label })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "flex flex-wrap gap-2", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(StatusBadge, { tone: "info", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Clock, { className: "mr-1 h-3 w-3" }),
+              " Fast response"
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(StatusBadge, { tone: "warning", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(TriangleAlert, { className: "mr-1 h-3 w-3" }),
+              " Confidence shown"
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(StatusBadge, { tone: "purple", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(UserRound, { className: "mr-1 h-3 w-3" }),
+              " Human justification"
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(StatusBadge, { tone: "safe", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Eye, { className: "mr-1 h-3 w-3" }),
+              " Visual evidence"
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Outlet, {})
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("footer", { className: "grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm lg:grid-cols-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { className: "text-slate-900", children: "Triage:" }),
+          " low-risk cases move quickly, uncertain cases are escalated."
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { className: "text-slate-900", children: "Transparency:" }),
+          " confidence, uncertainty, and overlays are visible."
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { className: "text-slate-900", children: "Safety:" }),
+          " critical sign-off requires human rationale."
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { className: "text-slate-900", children: "Evaluation:" }),
+          " monitor outcomes, latency, overrides, and safety signals."
+        ] })
+      ] })
+    ] })
+  ] });
 }
 function ClinicalInterfaceApp() {
-  const [active, setActive] = (0, import_react4.useState)("home");
-  const [scan, setScan] = (0, import_react4.useState)(null);
-  const [uploadState, setUploadState] = (0, import_react4.useState)({ status: "Waiting", progress: 0, fileName: "", error: "" });
-  const [decision, setDecision] = (0, import_react4.useState)({ choice: "", rationale: "", submittedAt: "" });
-  const activeScreen = (0, import_react4.useMemo)(() => screens.find((screen) => screen.id === active), [active]);
-  async function uploadScan(file) {
-    setUploadState({ status: "Uploading", progress: 20, fileName: file.name, error: "" });
-    setDecision({ choice: "", rationale: "", submittedAt: "" });
-    try {
-      setUploadState({ status: "Processing", progress: 55, fileName: file.name, error: "" });
-      const payload = await createScan(file);
-      setScan(payload);
-      setUploadState({ status: "Completed", progress: 100, fileName: file.name, error: "" });
-      setActive("review");
-    } catch (error) {
-      setScan(null);
-      setUploadState({
-        status: "Failed",
-        progress: 0,
-        fileName: file.name,
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  }
-  return /* @__PURE__ */ import_react4.default.createElement("main", { className: "min-h-screen bg-slate-50 text-slate-900" }, /* @__PURE__ */ import_react4.default.createElement(StickyNav, { active, setActive, scan }), /* @__PURE__ */ import_react4.default.createElement("div", { className: "mx-auto max-w-7xl space-y-6 px-6 py-6" }, /* @__PURE__ */ import_react4.default.createElement(Header, { scan }), /* @__PURE__ */ import_react4.default.createElement("section", { className: "rounded-3xl border border-slate-200 bg-white/60 p-4 shadow-sm" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-center" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-slate-500" }, "Clinical screen"), /* @__PURE__ */ import_react4.default.createElement("h2", { className: "mt-1 text-2xl font-black text-slate-950" }, activeScreen?.label)), /* @__PURE__ */ import_react4.default.createElement("div", { className: "flex flex-wrap gap-2" }, /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "info" }, /* @__PURE__ */ import_react4.default.createElement(Clock, { className: "mr-1 h-3 w-3" }), " Fast response"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "warning" }, /* @__PURE__ */ import_react4.default.createElement(TriangleAlert, { className: "mr-1 h-3 w-3" }), " Confidence shown"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "purple" }, /* @__PURE__ */ import_react4.default.createElement(UserRound, { className: "mr-1 h-3 w-3" }), " Human justification"), /* @__PURE__ */ import_react4.default.createElement(StatusBadge, { tone: "safe" }, /* @__PURE__ */ import_react4.default.createElement(Eye, { className: "mr-1 h-3 w-3" }), " Visual evidence"))), active === "worklist" && /* @__PURE__ */ import_react4.default.createElement(WorklistScreen, { scan, setActive }), active === "home" && /* @__PURE__ */ import_react4.default.createElement(HomeScreen, { scan, uploadState, decision, setActive }), active === "upload" && /* @__PURE__ */ import_react4.default.createElement(UploadScreen, { scan, uploadState, onUpload: uploadScan, tmState }), active === "review" && /* @__PURE__ */ import_react4.default.createElement(ReviewScreen, { scan }), active === "decision" && /* @__PURE__ */ import_react4.default.createElement(DecisionScreen, { scan, decision, setDecision }), active === "outcomes" && /* @__PURE__ */ import_react4.default.createElement(OutcomesScreen, { scan, decision })), /* @__PURE__ */ import_react4.default.createElement("footer", { className: "grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm lg:grid-cols-4" }, /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Triage:"), " low-risk cases move quickly, uncertain cases are escalated."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Transparency:"), " confidence, uncertainty, and overlays are visible."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Safety:"), " critical sign-off requires human rationale."), /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("b", { className: "text-slate-900" }, "Evaluation:"), " monitor outcomes, latency, overrides, and safety signals."))));
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(AppProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(BrowserRouter, { children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(Routes, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Route, { path: "/", element: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(HomePage, {}) }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Route, { path: "/docs", element: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(DocsLandingPage, {}) }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Route, { path: "/docs/:slug", element: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(DocArticlePage, {}) }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(Route, { element: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(AppLayout, {}), children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Route, { path: "/dashboard", element: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(DashboardScreen, {}) }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Route, { path: "/worklist", element: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(WorklistScreen, {}) }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Route, { path: "/QC", element: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(UploadScreen, {}) }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Route, { path: "/review", element: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(ReviewScreen, {}) }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Route, { path: "/human-check", element: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(DecisionScreen, {}) }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Route, { path: "/outcomes", element: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(OutcomesScreen, {}) })
+    ] })
+  ] }) }) });
 }
-(0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ import_react4.default.createElement(ClinicalInterfaceApp, null));
+(0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime11.jsx)(ClinicalInterfaceApp, {}));
+export {
+  StickyNav
+};
 /*! Bundled license information:
 
 react/cjs/react.development.js:
@@ -22211,6 +29036,30 @@ react-dom/cjs/react-dom-client.development.js:
    * LICENSE file in the root directory of this source tree.
    *)
 
+react/cjs/react-jsx-runtime.development.js:
+  (**
+   * @license React
+   * react-jsx-runtime.development.js
+   *
+   * Copyright (c) Meta Platforms, Inc. and affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
+   *)
+
+react-router/dist/development/chunk-KS7C4IRE.mjs:
+react-router/dist/development/index.mjs:
+  (**
+   * react-router v7.18.1
+   *
+   * Copyright (c) Remix Software Inc.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE.md file in the root directory of this source tree.
+   *
+   * @license MIT
+   *)
+
 lucide-react/dist/esm/shared/src/utils/mergeClasses.mjs:
 lucide-react/dist/esm/shared/src/utils/toKebabCase.mjs:
 lucide-react/dist/esm/shared/src/utils/toCamelCase.mjs:
@@ -22221,7 +29070,7 @@ lucide-react/dist/esm/context.mjs:
 lucide-react/dist/esm/Icon.mjs:
 lucide-react/dist/esm/createLucideIcon.mjs:
 lucide-react/dist/esm/icons/activity.mjs:
-lucide-react/dist/esm/icons/book-open.mjs:
+lucide-react/dist/esm/icons/arrow-right.mjs:
 lucide-react/dist/esm/icons/brain.mjs:
 lucide-react/dist/esm/icons/chart-column.mjs:
 lucide-react/dist/esm/icons/circle-check.mjs:
@@ -22229,7 +29078,6 @@ lucide-react/dist/esm/icons/circle-play.mjs:
 lucide-react/dist/esm/icons/clipboard-check.mjs:
 lucide-react/dist/esm/icons/clock.mjs:
 lucide-react/dist/esm/icons/download.mjs:
-lucide-react/dist/esm/icons/external-link.mjs:
 lucide-react/dist/esm/icons/eye.mjs:
 lucide-react/dist/esm/icons/file-text.mjs:
 lucide-react/dist/esm/icons/history.mjs:
@@ -22247,4 +29095,7 @@ lucide-react/dist/esm/lucide-react.mjs:
    * This source code is licensed under the ISC license.
    * See the LICENSE file in the root directory of this source tree.
    *)
+
+dompurify/dist/purify.es.mjs:
+  (*! @license DOMPurify 3.4.11 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.4.11/LICENSE *)
 */

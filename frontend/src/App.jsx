@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation, Outlet } from "react-router-dom";
+import { AppProvider, useAppContext } from "./AppContext.jsx";
+import { HomePage } from "./HomePage.jsx";
+import DocsLandingPage from './docs/pages/DocsLandingPage.jsx';
+import DocArticlePage from './docs/pages/DocArticlePage.jsx';
 import {
   Activity,
   AlertTriangle,
@@ -15,7 +20,7 @@ import {
   FileText,
   History,
   PlayCircle,
-  Route,
+  Route as RouteIcon,
   ScanLine,
   ShieldAlert,
   Stethoscope,
@@ -26,12 +31,12 @@ import {
 import { createScan } from "./api/octAnalyzerClient.js";
 
 const screens = [
-  { id: "home", label: "Home" },
-  { id: "worklist", label: "1. Triage Worklist" },
-  { id: "upload", label: "2. Upload and QC" },
-  { id: "review", label: "3. Scan Review" },
-  { id: "decision", label: "4. Human Decision Gate" },
-  { id: "outcomes", label: "5. Outcomes and Safety" },
+  { id: "dashboard", path: "/dashboard", label: "Dashboard" },
+  { id: "worklist", path: "/worklist", label: "1. Triage Worklist" },
+  { id: "upload", path: "/QC", label: "2. Upload and QC" },
+  { id: "review", path: "/review", label: "3. Scan Review" },
+  { id: "decision", path: "/human-check", label: "4. Human Decision Gate" },
+  { id: "outcomes", path: "/outcomes", label: "5. Outcomes and Safety" },
 ];
 
 const demoRows = [
@@ -39,65 +44,6 @@ const demoRows = [
   ["P-1184", "OCTA", "Ambiguous", "61%", "Send to human audit", "warning"],
   ["P-1210", "Optic disc OCT", "High risk", "88%", "Specialist review required", "danger"],
   ["P-1244", "Macula OCT", "Poor quality", "N/A", "Re-upload or manual review", "warning"],
-];
-
-const documentationLinks = [
-  {
-    title: "Project README",
-    type: "Overview",
-    href: "/docs/?doc=readme",
-    source: "README.md",
-    summary: "Current capabilities, local API contract, setup commands, and deployment notes for the OCT Analyzer MVP.",
-  },
-  {
-    title: "Implementation Blueprint",
-    type: "Architecture",
-    href: "/docs/?doc=implementation",
-    source: "implementation-info.txt",
-    summary: "Step-by-step design notes for ingestion, preprocessing, feature extraction, classification, and Solix export handling.",
-  },
-  {
-    title: "3D OCT/OCTA Biomarker Mapping",
-    type: "Clinical Reference",
-    href: "/public/docs/biomarker_mapping_docs/oct_biomarker_mapping.html",
-    source: "biomarker_mapping_docs/oct_biomarker_mapping.html",
-    summary: "Layer-specific structural and vascular biomarkers with OCT/OCTA reference images and disease-feature mappings.",
-  },
-  {
-    title: "IPN-V2 OCTA Segmentation",
-    type: "Model Reference",
-    href: "/docs/?doc=ipnv2",
-    source: "IPNV2_pytorch/README.md",
-    summary: "Reference notes for the IPN-V2/OCTA-500 segmentation model, dataset preprocessing, related papers, and upstream code.",
-  },
-  {
-    title: "Deep Learning Architecture Flowchart",
-    type: "Diagram",
-    href: "/diagrams/?diagram=architecture",
-    source: "frontend/Deep-learning-model-architecture-flowchart.js",
-    summary: "Mermaid source for the 3D tensor pipeline, shared backbone, prediction heads, uncertainty, and report assembly.",
-  },
-  {
-    title: "Online Clinical Inference Workflow",
-    type: "Diagram",
-    href: "/diagrams/?diagram=online",
-    source: "frontend/Online-clinical-inference-workflow..js",
-    summary: "Sequence diagram source for clinician upload, API ingestion, preprocessing, QC, inference, explanation, and reporting.",
-  },
-  {
-    title: "Offline Training and Validation Workflow",
-    type: "Diagram",
-    href: "/diagrams/?diagram=offline",
-    source: "frontend/Offline-training-and-validation-workflow.js",
-    summary: "Sequence diagram source for research ingestion, standardization, model training, evaluation, metrics, and versioned storage.",
-  },
-  {
-    title: "Wireframe Demo",
-    type: "Prototype",
-    href: "/demo/",
-    source: "frontend/demo/index.html",
-    summary: "Standalone clinical workflow prototype covering triage, upload/QC, review, decision gate, and outcomes/audit screens.",
-  },
 ];
 
 function StatusBadge({ children, tone = "neutral" }) {
@@ -193,12 +139,16 @@ function Header({ scan }) {
   );
 }
 
-function StickyNav({ active, setActive, scan }) {
+export function StickyNav() {
+  const { scan } = useAppContext();
+  const location = useLocation();
+  const activePath = location.pathname;
+
   return (
     <nav className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-3 lg:flex-row lg:items-center lg:justify-between">
-        <button
-          onClick={() => setActive("home")}
+        <Link
+          to="/"
           className="flex min-h-0 items-center gap-3 rounded-xl border-0 bg-transparent p-0 text-left"
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
@@ -208,21 +158,21 @@ function StickyNav({ active, setActive, scan }) {
             <span className="block text-sm font-black text-slate-950">OCT Analyzer</span>
             <span className="block text-xs font-semibold text-slate-500">{scan ? "Active case loaded" : "Documentation and workflow"}</span>
           </span>
-        </button>
+        </Link>
 
         <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:justify-end lg:pb-0">
           {screens.map((screen) => (
-            <button
+            <Link
               key={screen.id}
-              onClick={() => setActive(screen.id)}
+              to={screen.path}
               className={`shrink-0 rounded-xl px-4 py-2 text-sm font-bold transition ${
-                active === screen.id
+                activePath === screen.path
                   ? "bg-slate-900 text-white shadow-sm"
                   : "bg-slate-50 text-slate-600 hover:bg-slate-100"
               }`}
             >
               {screen.label}
-            </button>
+            </Link>
           ))}
         </div>
       </div>
@@ -243,7 +193,9 @@ function riskFromScan(scan) {
   return { label: "Low risk", tone: "safe", confidence: `${Math.round(scan.confidence * 100)}%`, action: "Clinician sample review" };
 }
 
-function HomeScreen({ scan, uploadState, decision, setActive }) {
+function DashboardScreen() {
+  const { scan, uploadState, decision } = useAppContext();
+  const navigate = useNavigate();
   const risk = riskFromScan(scan);
   const completed = scan?.status === "completed";
   const workflow = [
@@ -272,13 +224,13 @@ function HomeScreen({ scan, uploadState, decision, setActive }) {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <button
-                onClick={() => setActive("upload")}
+                onClick={() => navigate("/QC")}
                 className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
               >
                 <Upload className="h-4 w-4" /> Upload scan
               </button>
               <button
-                onClick={() => setActive(completed ? "review" : "worklist")}
+                onClick={() => navigate(completed ? "/review" : "/worklist")}
                 className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700"
               >
                 <PlayCircle className="h-4 w-4" /> {completed ? "Continue review" : "Open worklist"}
@@ -303,12 +255,12 @@ function HomeScreen({ scan, uploadState, decision, setActive }) {
         </div>
       </Card>
 
-      <Card title="Workflow Overview" subtitle="Each step keeps evidence and clinician agency visible." icon={Route} className="lg:col-span-8">
+      <Card title="Workflow Overview" subtitle="Each step keeps evidence and clinician agency visible." icon={RouteIcon} className="lg:col-span-8">
         <div className="grid gap-3 md:grid-cols-4">
           {workflow.map(([title, detail, state, Icon]) => (
             <button
               key={title}
-              onClick={() => setActive(title === "Intake" ? "upload" : title === "Review" ? "review" : title === "Decision" ? "decision" : "upload")}
+              onClick={() => navigate(title === "Intake" ? "/QC" : title === "Review" ? "/review" : title === "Decision" ? "/human-check" : "/QC")}
               className="flex min-h-44 flex-col items-start justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-white"
             >
               <Icon className="h-5 w-5 text-slate-700" />
@@ -323,38 +275,11 @@ function HomeScreen({ scan, uploadState, decision, setActive }) {
           ))}
         </div>
       </Card>
-
       <Card title="Safety Snapshot" subtitle="Deployment state for the demo workflow." icon={ShieldAlert} className="lg:col-span-4">
         <div className="space-y-3 text-sm text-slate-700">
           <div className="rounded-2xl bg-amber-50 p-4"><b>Model status:</b> Demo model, not autonomous diagnosis.</div>
           <div className="rounded-2xl bg-sky-50 p-4"><b>Backend:</b> Local FastAPI scan processor or explicit hosted API base.</div>
           <div className="rounded-2xl bg-emerald-50 p-4"><b>Guardrail:</b> Clinician rationale required before sign-off.</div>
-        </div>
-      </Card>
-
-      <Card title="Documentation Library" subtitle="Repo documentation and diagram artifacts surfaced from the app." icon={BookOpen} className="lg:col-span-12">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {documentationLinks.map((doc) => (
-            <a
-              key={doc.title}
-              href={doc.href}
-              target="_blank"
-              rel="noreferrer"
-              className="flex min-h-64 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700 transition hover:border-slate-300 hover:bg-white hover:shadow-sm"
-            >
-              <span>
-                <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600">
-                  <FileText className="h-3 w-3" /> {doc.type}
-                </span>
-                <span className="block text-base font-black text-slate-950">{doc.title}</span>
-                <span className="mt-3 block text-sm font-medium leading-6 text-slate-600">{doc.summary}</span>
-              </span>
-              <span className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3 text-xs font-bold text-slate-500">
-                <span className="truncate">{doc.source}</span>
-                <ExternalLink className="h-4 w-4 shrink-0" />
-              </span>
-            </a>
-          ))}
         </div>
       </Card>
     </div>
@@ -401,7 +326,9 @@ function HomeScanPreview({ scan }) {
   );
 }
 
-function WorklistScreen({ scan, setActive }) {
+function WorklistScreen() {
+  const { scan } = useAppContext();
+  const navigate = useNavigate();
   const liveRisk = riskFromScan(scan);
   const rows = scan?.status === "completed"
     ? [["LOCAL-001", scan.source_format, liveRisk.label, liveRisk.confidence, liveRisk.action, liveRisk.tone], ...demoRows]
@@ -409,7 +336,7 @@ function WorklistScreen({ scan, setActive }) {
 
   return (
     <div className="grid gap-5 lg:grid-cols-12">
-      <Card title="Triage Queue" subtitle="AI rapidly processes routine scans and protects specialist bandwidth." icon={Route} className="lg:col-span-8">
+      <Card title="Triage Queue" subtitle="AI rapidly processes routine scans and protects specialist bandwidth." icon={RouteIcon} className="lg:col-span-8">
         <div className="overflow-hidden rounded-2xl border border-slate-200">
           <div className="grid grid-cols-5 bg-slate-100 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">
             <span>Patient</span>
@@ -429,11 +356,11 @@ function WorklistScreen({ scan, setActive }) {
           ))}
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button onClick={() => setActive("upload")} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white">
+          <button onClick={() => navigate("/QC")} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white">
             Upload new scan
           </button>
           {scan?.status === "completed" ? (
-            <button onClick={() => setActive("review")} className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700">
+            <button onClick={() => navigate("/review")} className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700">
               Review active case
             </button>
           ) : null}
@@ -452,7 +379,29 @@ function WorklistScreen({ scan, setActive }) {
   );
 }
 
-function UploadScreen({ scan, uploadState, onUpload }) {
+function UploadScreen() {
+  const { scan, uploadState, setUploadState, setDecision, setScan } = useAppContext();
+  const navigate = useNavigate();
+  async function onUpload(file) {
+    setUploadState({ status: "Uploading", progress: 20, fileName: file.name, error: "" });
+    setDecision({ choice: "", rationale: "", submittedAt: "" });
+
+    try {
+      setUploadState({ status: "Processing", progress: 55, fileName: file.name, error: "" });
+      const payload = await createScan(file);
+      setScan(payload);
+      setUploadState({ status: "Completed", progress: 100, fileName: file.name, error: "" });
+      navigate("/review");
+    } catch (error) {
+      setScan(null);
+      setUploadState({
+        status: "Failed",
+        progress: 0,
+        fileName: file.name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
 
@@ -469,7 +418,7 @@ function UploadScreen({ scan, uploadState, onUpload }) {
 
   return (
     <div className="grid gap-5 lg:grid-cols-12">
-      <Card title="Scan Intake" subtitle=".vol, .dcm, zipped TIFF, or 2D Image (.png, .jpg)" icon={Upload} className="lg:col-span-4">
+      <Card title="Scan Intake" subtitle=".vol, .dcm, zipped TIFF, or 2D Image (.png, .jpg, .tif, .tiff)" icon={Upload} className="lg:col-span-4">
         <div
           onDragOver={(event) => {
             event.preventDefault();
@@ -485,7 +434,7 @@ function UploadScreen({ scan, uploadState, onUpload }) {
             dragging ? "border-sky-400 bg-sky-50 text-sky-800" : "border-slate-300 bg-slate-50 text-slate-500"
           }`}
         >
-          <input ref={inputRef} type="file" accept=".vol,.dcm,.zip,image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => handleFiles(event.target.files)} />
+          <input ref={inputRef} type="file" accept=".vol,.dcm,.zip,.tif,.tiff,image/png,image/jpeg,image/webp,image/tiff" className="hidden" onChange={(event) => handleFiles(event.target.files)} />
           <Upload className="mb-3 h-9 w-9" />
           <p className="font-bold text-slate-800">Drag OCT/OCTA volume here</p>
           <p className="mt-1 text-sm">or select scan from local system</p>
@@ -530,7 +479,10 @@ function UploadScreen({ scan, uploadState, onUpload }) {
   );
 }
 
-function ReviewScreen({ scan }) {
+function ReviewScreen() {
+  const { scan } = useAppContext();
+  const [viewMode, setViewMode] = useState("segmented");
+  
   const completed = scan?.status === "completed";
   const risk = riskFromScan(scan);
   
@@ -538,15 +490,63 @@ function ReviewScreen({ scan }) {
   const l2 = scan?.level2;
   const l1Abnormal = l1?.prediction === "ABNORMAL";
 
+  const getClassColor = (className) => {
+    if (className === "IRF") return "rgba(255, 255, 255, 0.7)"; // White (Edema/Supranormal)
+    if (className === "SRF") return "rgba(239, 68, 68, 0.7)"; // Red (Edema)
+    return "rgba(34, 197, 94, 0.3)"; // Green (Normal)
+  };
+
   return (
     <div className="grid gap-5 lg:grid-cols-12">
-      <Card title="OCT Image Classification" subtitle="Hugging Face Deployment" icon={ScanLine} className="lg:col-span-7">
+      <Card title="OCT Image Classification" subtitle="Hugging Face & Local Segmentation" icon={ScanLine} className="lg:col-span-7">
         <div className="grid gap-4">
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-            {completed ? (
-              <div className="flex h-72 items-center justify-center text-white p-4 text-center">
-                Scan successfully classified by remote Hugging Face endpoints.
-              </div>
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 flex flex-col justify-between" style={{ minHeight: "24rem" }}>
+            {completed && scan.localImageUrl ? (
+              <>
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                  <div className="relative max-h-full max-w-full">
+                    <img src={scan.localImageUrl} alt="Uploaded OCT" className="max-h-full max-w-full block rounded" />
+                    {viewMode === "segmented" && scan.segmentation && (
+                      <svg viewBox="0 0 512 512" className="absolute top-0 left-0 h-full w-full pointer-events-none" preserveAspectRatio="none">
+                        {(scan.segmentation.layers || []).map((layer, idx) => (
+                          <polyline
+                            key={`layer-${idx}`}
+                            points={layer.boundary_points.map(p => `${p.x},${p.y}`).join(" ")}
+                            fill="none"
+                            stroke={getClassColor(layer.class_name).replace("0.3", "0.8").replace("0.7", "1.0")}
+                            strokeWidth="2"
+                          />
+                        ))}
+                        {(scan.segmentation.lesions || []).map((lesion, idx) => (
+                          <polygon
+                            key={`lesion-${idx}`}
+                            points={lesion.polygon.map(p => `${p.x},${p.y}`).join(" ")}
+                            fill={getClassColor(lesion.class_name)}
+                            stroke={getClassColor(lesion.class_name).replace("0.3", "0.8").replace("0.7", "1.0")}
+                            strokeWidth="2"
+                          />
+                        ))}
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center z-10">
+                  <div className="flex bg-slate-800/80 backdrop-blur-md rounded-xl p-1 gap-1 border border-slate-700">
+                    <button
+                      onClick={() => setViewMode("raw")}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${viewMode === "raw" ? "bg-white text-slate-900" : "text-slate-300 hover:text-white"}`}
+                    >
+                      Raw
+                    </button>
+                    <button
+                      onClick={() => setViewMode("segmented")}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${viewMode === "segmented" ? "bg-white text-slate-900" : "text-slate-300 hover:text-white"}`}
+                    >
+                      Segmented
+                    </button>
+                  </div>
+                </div>
+              </>
             ) : (
               <WireBox height="h-72">Upload a scan to view predictions</WireBox>
             )}
@@ -617,7 +617,8 @@ function LayerVoteList({ layers }) {
   );
 }
 
-function DecisionScreen({ scan, decision, setDecision }) {
+function DecisionScreen() {
+  const { scan, decision, setDecision } = useAppContext();
   const [choice, setChoice] = useState(decision.choice || "");
   const [rationale, setRationale] = useState(decision.rationale || "");
   const risk = riskFromScan(scan);
@@ -705,7 +706,8 @@ function downloadCaseJson(scan, decision) {
   };
 }
 
-function OutcomesScreen({ scan, decision }) {
+function OutcomesScreen() {
+  const { scan, decision } = useAppContext();
   return (
     <div className="grid gap-5 lg:grid-cols-12">
       <Card title="Outcome and Safety Monitor" subtitle="The system is evaluated by patient impact, not isolated algorithm accuracy." icon={BarChart3} className="lg:col-span-7">
@@ -743,41 +745,16 @@ function OutcomesScreen({ scan, decision }) {
   );
 }
 
-function ClinicalInterfaceApp() {
-  const [active, setActive] = useState("home");
-  const [scan, setScan] = useState(null);
-  const [uploadState, setUploadState] = useState({ status: "Waiting", progress: 0, fileName: "", error: "" });
-  const [decision, setDecision] = useState({ choice: "", rationale: "", submittedAt: "" });
-  const activeScreen = useMemo(() => screens.find((screen) => screen.id === active), [active]);
-
-  async function uploadScan(file) {
-    setUploadState({ status: "Uploading", progress: 20, fileName: file.name, error: "" });
-    setDecision({ choice: "", rationale: "", submittedAt: "" });
-
-    try {
-      setUploadState({ status: "Processing", progress: 55, fileName: file.name, error: "" });
-      const payload = await createScan(file);
-      setScan(payload);
-      setUploadState({ status: "Completed", progress: 100, fileName: file.name, error: "" });
-      setActive("review");
-    } catch (error) {
-      setScan(null);
-      setUploadState({
-        status: "Failed",
-        progress: 0,
-        fileName: file.name,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
+function AppLayout() {
+  const { scan } = useAppContext();
+  const location = useLocation();
+  const activeScreen = useMemo(() => screens.find((screen) => screen.path === location.pathname) || screens[0], [location.pathname]);
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <StickyNav active={active} setActive={setActive} scan={scan} />
-
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <StickyNav />
       <div className="mx-auto max-w-7xl space-y-6 px-6 py-6">
         <Header scan={scan} />
-
         <section className="rounded-3xl border border-slate-200 bg-white/60 p-4 shadow-sm">
           <div className="mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
             <div>
@@ -791,15 +768,8 @@ function ClinicalInterfaceApp() {
               <StatusBadge tone="safe"><Eye className="mr-1 h-3 w-3" /> Visual evidence</StatusBadge>
             </div>
           </div>
-
-          {active === "worklist" && <WorklistScreen scan={scan} setActive={setActive} />}
-          {active === "home" && <HomeScreen scan={scan} uploadState={uploadState} decision={decision} setActive={setActive} />}
-          {active === "upload" && <UploadScreen scan={scan} uploadState={uploadState} onUpload={uploadScan} />}
-          {active === "review" && <ReviewScreen scan={scan} />}
-          {active === "decision" && <DecisionScreen scan={scan} decision={decision} setDecision={setDecision} />}
-          {active === "outcomes" && <OutcomesScreen scan={scan} decision={decision} />}
+          <Outlet />
         </section>
-
         <footer className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm lg:grid-cols-4">
           <div><b className="text-slate-900">Triage:</b> low-risk cases move quickly, uncertain cases are escalated.</div>
           <div><b className="text-slate-900">Transparency:</b> confidence, uncertainty, and overlays are visible.</div>
@@ -807,7 +777,29 @@ function ClinicalInterfaceApp() {
           <div><b className="text-slate-900">Evaluation:</b> monitor outcomes, latency, overrides, and safety signals.</div>
         </footer>
       </div>
-    </main>
+    </div>
+  );
+}
+
+function ClinicalInterfaceApp() {
+  return (
+    <AppProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/docs" element={<DocsLandingPage />} />
+          <Route path="/docs/:slug" element={<DocArticlePage />} />
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<DashboardScreen />} />
+            <Route path="/worklist" element={<WorklistScreen />} />
+            <Route path="/QC" element={<UploadScreen />} />
+            <Route path="/review" element={<ReviewScreen />} />
+            <Route path="/human-check" element={<DecisionScreen />} />
+            <Route path="/outcomes" element={<OutcomesScreen />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AppProvider>
   );
 }
 

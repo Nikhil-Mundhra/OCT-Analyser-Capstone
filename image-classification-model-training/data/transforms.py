@@ -67,17 +67,21 @@ class CLAHETransform:
         clip_limit: float = 2.0,
         tile_grid: tuple = (8, 8),
     ) -> None:
-        self.clahe = cv2.createCLAHE(
-            clipLimit=clip_limit,
-            tileGridSize=tile_grid,
-        )
+        self.clip_limit = clip_limit
+        self.tile_grid = tile_grid
+        self._clahe = None
 
     def __call__(self, img) -> "PIL.Image.Image":
         from PIL import Image as PILImage
+        if self._clahe is None:
+            self._clahe = cv2.createCLAHE(
+                clipLimit=self.clip_limit,
+                tileGridSize=self.tile_grid,
+            )
         # Convert to numpy grayscale — OCT images carry most diagnostic
         # information in luminance; colour channels are usually redundant
         img_np = np.array(img.convert("L"), dtype=np.uint8)
-        equalized = self.clahe.apply(img_np)
+        equalized = self._clahe.apply(img_np)
         # Stack to 3-channel RGB — required for ImageNet-pretrained backbones
         rgb = np.stack([equalized, equalized, equalized], axis=-1)
         return PILImage.fromarray(rgb, mode="RGB")

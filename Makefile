@@ -89,7 +89,7 @@ run: build
 		wait $$API_PID; \
 		exit $$?; \
 	fi; \
-	$(VENV_PYTHON) -m http.server $$RESOLVED_WEB_PORT --bind $(HOST) --directory frontend & \
+	cd frontend && npx serve . -l $$RESOLVED_WEB_PORT & \
 	WEB_PID=$$!; \
 	sleep 1; \
 	if ! kill -0 $$WEB_PID 2>/dev/null; then \

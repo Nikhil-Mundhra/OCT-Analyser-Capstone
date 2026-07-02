@@ -70,7 +70,7 @@ def load_normalized_scan(file_path: str | Path) -> NormalizedScan:
     if suffix == ".zip":
         return _load_image_stack_zip(path)
 
-    if suffix in {".png", ".jpg", ".jpeg", ".webp", ".tif", ".bmp"}:
+    if suffix in {".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".bmp"}:
         return _load_single_image(path)
 
     raise ValueError("Unsupported file format. Please provide .vol, .dcm, .zip, or a 2D image")

@@ -13,11 +13,13 @@ from .preview import preview_path
 
 
 import tempfile
-
+import subprocess
+import json
+import os
 RUNTIME_DIR = Path(tempfile.gettempdir()) / "runtime_uploads"
 UPLOAD_DIR = RUNTIME_DIR / "uploads"
 PREVIEW_DIR = RUNTIME_DIR / "previews"
-SUPPORTED_SUFFIXES = {".vol", ".dcm", ".zip", ".png", ".jpg", ".jpeg", ".webp", ".tif", ".bmp"}
+SUPPORTED_SUFFIXES = {".vol", ".dcm", ".zip", ".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".bmp"}
 
 app = FastAPI(title="Local OCT Analyzer MVP")
 app.add_middleware(
@@ -44,7 +46,7 @@ def read_root() -> dict[str, str]:
 def create_scan(file: UploadFile) -> dict:
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in SUPPORTED_SUFFIXES:
-        raise HTTPException(status_code=400, detail="Upload a .vol, .dcm, .zip OCT export, or a 2D image (.png, .jpg)")
+        raise HTTPException(status_code=400, detail="Upload a .vol, .dcm, .zip OCT export, or a 2D image (.png, .jpg, .tif, .tiff)")
 
     scan_id = uuid4().hex
     upload_path = UPLOAD_DIR / scan_id / f"scan{suffix}"
@@ -81,6 +83,57 @@ def create_scan(file: UploadFile) -> dict:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return SCAN_STORE[scan_id]
+
+
+@app.post("/api/segment_2d")
+def segment_2d(file: UploadFile) -> dict:
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in SUPPORTED_SUFFIXES:
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+        
+    scan_id = uuid4().hex
+    # Save the file temporarily
+    temp_dir = Path(tempfile.gettempdir()) / "oct_segmentation"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    
+    img_path = temp_dir / f"{scan_id}{suffix}"
+    out_json = temp_dir / f"{scan_id}_out.json"
+    
+    with img_path.open("wb") as handle:
+        copyfileobj(file.file, handle)
+        
+    script_path = Path(__file__).resolve().parent.parent.parent / "image-segmentation-model-training" / "scripts" / "predict.py"
+    checkpoint_path = Path(__file__).resolve().parent.parent.parent / "image-segmentation-model-training" / "checkpoints" / "unet_hierarchical_best.pth"
+    
+    env = os.environ.copy()
+    env["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+    
+    try:
+        subprocess.run(
+            [
+                "python3", str(script_path),
+                "--image", str(img_path),
+                "--checkpoint", str(checkpoint_path),
+                "--output", str(out_json)
+            ],
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        
+        with open(out_json, "r") as f:
+            result = json.load(f)
+            
+        return result
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=f"Segmentation failed: {e.stderr}")
+    finally:
+        # Cleanup
+        if img_path.exists():
+            img_path.unlink()
+        if out_json.exists():
+            out_json.unlink()
 
 
 @app.get("/api/scans/{scan_id}", response_model=ScanResult)

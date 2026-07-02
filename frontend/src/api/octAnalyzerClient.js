@@ -17,17 +17,29 @@ export async function createScan(file) {
   const form = new FormData();
   form.append("file", file);
 
-  const response = await fetch(apiUrl("/predict"), {
+  const localImageUrl = URL.createObjectURL(file);
+
+  const predictReq = fetch(apiUrl("/predict"), {
     method: "POST",
     body: form,
-  });
-  const payload = await response.json();
+  }).then(res => res.json());
 
-  if (!response.ok) {
-    throw new Error(payload.detail || "Upload failed");
+  // Remote HF Space for segmentation
+  const segmentReq = fetch("https://nmundhra-oct-segmentation-model.hf.space/predict", {
+    method: "POST",
+    body: form,
+  }).then(res => res.ok ? res.json() : null).catch(() => null);
+
+  const [predictPayload, segmentPayload] = await Promise.all([predictReq, segmentReq]);
+
+  if (predictPayload.detail) {
+    throw new Error(predictPayload.detail || "Upload failed");
   }
 
-  return normalizeScanResult(payload);
+  const normalized = normalizeScanResult(predictPayload);
+  normalized.segmentation = segmentPayload;
+  normalized.localImageUrl = localImageUrl;
+  return normalized;
 }
 
 export function normalizeScanResult(scan) {

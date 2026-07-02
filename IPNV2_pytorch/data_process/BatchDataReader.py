@@ -36,7 +36,6 @@ class BatchDatset:
         self.pos_start = 0
 
     def read_images(self):
-        # TODO: remake the cube 
         if not os.path.exists(os.path.join(self.saveroot,self.dataclass+"data.hdf5")):
             print(self.dataclass+"picking ...It will take some minutes")
             modality_num = -1

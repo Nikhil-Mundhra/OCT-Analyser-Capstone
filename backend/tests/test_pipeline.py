@@ -674,7 +674,7 @@ def test_process_scan_returns_completed_payload_and_previews(tmp_path, monkeypat
 
     assert result["status"] == "completed"
     assert result["is_demo_model"] is True
-    assert set(result["previews"]) == {"raw", "cropped", "overlay", "features", "ipnv2_probability", "ipnv2_overlay"}
+    assert set(result["previews"]) == {"raw", "cropped", "overlay", "features", "ipnv2_probability", "ipnv2_overlay", "frames"}
     assert result["ipnv2"]["mode"] == "untrained_smoke"
     assert result["ipnv2"]["previews"] == {
         "ipnv2_probability": "preview/ipnv2_probability",
@@ -682,6 +682,7 @@ def test_process_scan_returns_completed_payload_and_previews(tmp_path, monkeypat
     }
     assert (tmp_path / "overlay.png").exists()
     assert (tmp_path / "ipnv2_overlay.png").exists()
+    assert (tmp_path / "frames").exists()
 
 
 def test_process_scan_keeps_working_when_ipnv2_fails(tmp_path, monkeypatch):
@@ -710,6 +711,7 @@ def test_preview_rejects_unknown_kind(tmp_path):
 
     assert preview_path(tmp_path, "ipnv2_overlay") == tmp_path / "ipnv2_overlay.png"
     assert preview_path(tmp_path, "raw") == tmp_path / "raw.png"
+    assert preview_path(tmp_path, "frames/frame_0.png") == tmp_path / "frames/frame_0.png"
     resized_overlay = _ipnv2_overlay_image(
         reference=np.ones((3, 3), dtype=np.float32),
         probability=np.ones((2, 2), dtype=np.float32),
@@ -789,6 +791,112 @@ def test_api_upload_get_and_preview(tmp_path, monkeypatch):
     assert scan_response.status_code == 200
     assert preview_response.status_code == 200
     assert preview_response.headers["content-type"] == "image/png"
+
+
+def test_api_accepts_tiff_uploads(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+    import backend.oct_analyzer.api as api
+    from backend.oct_analyzer.scan_types import NormalizedScan
+
+    monkeypatch.setattr(api, "UPLOAD_DIR", tmp_path / "uploads")
+    monkeypatch.setattr(api, "PREVIEW_DIR", tmp_path / "previews")
+
+def test_api_segment_2d(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+    import backend.oct_analyzer.api as api
+    import subprocess
+    import json
+
+    client = TestClient(api.app)
+
+    # Test unsupported suffix
+    resp = client.post("/api/segment_2d", files={"file": ("test.txt", b"dummy")})
+    assert resp.status_code == 400
+
+    class MockProcess:
+        def __init__(self, *args, **kwargs):
+            self.stdout = b""
+            self.stderr = b""
+            # Create the output json
+            out_json = kwargs.get("output")
+            if out_json:
+                pass
+            args_list = args[0] if args else kwargs.get("args", [])
+            for i, arg in enumerate(args_list):
+                if arg == "--output":
+                    out_path = args_list[i+1]
+                    with open(out_path, "w") as f:
+                        json.dump({"segmentation": "success"}, f)
+            
+    def mock_run(*args, **kwargs):
+        return MockProcess(*args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    resp = client.post("/api/segment_2d", files={"file": ("image.png", b"dummy", "image/png")})
+    assert resp.status_code == 200
+    assert resp.json() == {"segmentation": "success"}
+
+    def mock_run_fail(*args, **kwargs):
+        raise subprocess.CalledProcessError(1, "cmd", stderr="error output")
+
+    monkeypatch.setattr(subprocess, "run", mock_run_fail)
+    resp = client.post("/api/segment_2d", files={"file": ("image.png", b"dummy", "image/png")})
+    assert resp.status_code == 500
+    assert "error output" in resp.json()["detail"]
+
+
+def test_data_loader_single_image(tmp_path):
+    from PIL import Image
+    from backend.oct_analyzer.data_loader import load_normalized_scan
+
+    image_path = tmp_path / "image.png"
+    Image.fromarray(np.full((3, 4), 20, dtype=np.uint8)).save(image_path)
+    
+    scan = load_normalized_scan(image_path)
+    assert scan.source_format == "single-image"
+    assert scan.volume_shape == (1, 3, 4)
+    assert scan.spacing_mm == (1.0, 1.0, 1.0)
+
+def test_api_accepts_tiff_uploads(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+    import backend.oct_analyzer.api as api
+    from backend.oct_analyzer.scan_types import NormalizedScan
+
+    monkeypatch.setattr(api, "UPLOAD_DIR", tmp_path / "uploads")
+    monkeypatch.setattr(api, "PREVIEW_DIR", tmp_path / "previews")
+    def fake_load(path):
+        return NormalizedScan(
+            volume=np.ones((3, 3, 3), dtype=np.float32),
+            spacing_mm=(1.0, 1.0, 1.0),
+            source_format="single-image",
+        )
+
+    monkeypatch.setattr(api, "load_normalized_scan", fake_load)
+
+    def fake_process(scan, preview_dir):
+        preview_dir.mkdir(parents=True, exist_ok=True)
+        return {
+            "status": "completed",
+            "diagnosis": "Healthy",
+            "confidence": 1.0,
+            "source_format": scan.source_format,
+            "volume_shape": [3, 3, 3],
+            "spacing_mm": [1.0, 1.0, 1.0],
+            "is_demo_model": True,
+            "qc": {"warnings": []},
+            "layers": [],
+            "previews": {},
+            "ipnv2": {"available": False, "warning": ""},
+            "metadata": {},
+        }
+
+    monkeypatch.setattr(api, "process_scan", fake_process)
+    client = TestClient(api.app)
+
+    response = client.post("/api/scans", files={"file": ("scan.tiff", b"fake", "image/tiff")})
+
+    assert response.status_code == 200
+    assert response.json()["source_format"] == "single-image"
 
 
 def test_api_rejects_bad_uploads_and_missing_resources(tmp_path, monkeypatch):

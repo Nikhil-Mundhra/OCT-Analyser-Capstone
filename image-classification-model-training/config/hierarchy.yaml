@@ -173,6 +173,13 @@ class_map:
     l3_specialist: Vascular
     l3_class:     MH
 
+  - path: "Vascular Occlusions (Blockages)/Macular-Hole-Retinal-OCT-images/CHU_MH"
+    fine_class:   MH
+    l1:           ABNORMAL
+    l2:           Vascular_Occlusions
+    l3_specialist: Vascular
+    l3_class:     MH
+
   - path: "Vascular Occlusions (Blockages)/RVO"
     fine_class:   RVO
     l1:           ABNORMAL
