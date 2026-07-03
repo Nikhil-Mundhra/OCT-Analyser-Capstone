@@ -61,7 +61,7 @@
       "has": [
         { "type": "query", "key": "doc", "value": "readme" }
       ],
-      "destination": "/docs/readme",
+      "destination": "/docs/readme?",
       "statusCode": 308
     },
     {
@@ -69,7 +69,15 @@
       "has": [
         { "type": "query", "key": "doc", "value": "readme" }
       ],
-      "destination": "/docs/readme",
+      "destination": "/docs/readme?",
+      "statusCode": 308
+    },
+    {
+      "source": "/docs/readme",
+      "has": [
+        { "type": "query", "key": "doc", "value": "readme" }
+      ],
+      "destination": "/docs/readme?",
       "statusCode": 308
     },
     {
@@ -77,7 +85,7 @@
       "has": [
         { "type": "query", "key": "doc", "value": "implementation" }
       ],
-      "destination": "/docs/implementation-info",
+      "destination": "/docs/implementation-info?",
       "statusCode": 308
     },
     {
@@ -85,7 +93,16 @@
       "has": [
         { "type": "query", "key": "doc", "value": "implementation" }
       ],
-      "destination": "/docs/implementation-info",
+      "destination": "/docs/implementation-info?",
       "statusCode": 308
-    }  ]
+    },
+    {
+      "source": "/docs/implementation-info",
+      "has": [
+        { "type": "query", "key": "doc", "value": "implementation" }
+      ],
+      "destination": "/docs/implementation-info?",
+      "statusCode": 308
+    }
+  ]
 }
