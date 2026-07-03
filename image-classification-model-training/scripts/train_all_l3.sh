@@ -42,10 +42,10 @@ for SPEC in "${SPECIALISTS[@]}"; do
     LOG_FILE="logs/orchestration/train_l3_${SPEC}_$(date +%Y%m%d_%H%M%S).log"
     echo "Logging output to: $LOG_FILE"
     
-    # Run the training script
+    # Run the training script wrapped in caffeinate to prevent macOS App Nap / sleep
     # - KMP_DUPLICATE_LIB_OK=TRUE is required on macOS to prevent OpenMP crashes
     # - `tee` streams output to the console and writes it to the log file
-    KMP_DUPLICATE_LIB_OK=TRUE ../.venv/bin/python scripts/train_level3.py --specialist "$SPEC" $RESUME_FLAG | tee "$LOG_FILE"
+    KMP_DUPLICATE_LIB_OK=TRUE caffeinate -i ../.venv/bin/python scripts/train_level3.py --specialist "$SPEC" $RESUME_FLAG | tee "$LOG_FILE"
     
     # PIPESTATUS captures the exit code of the python script before tee
     if [ ${PIPESTATUS[0]} -ne 0 ]; then
