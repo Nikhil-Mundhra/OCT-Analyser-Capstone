@@ -10,8 +10,8 @@ export function HomeNav() {
         <span className="text-lg font-bold tracking-wide">OCT Analyzer</span>
       </div>
       <div className="flex items-center gap-4 text-sm font-medium">
-        <a href="/docs/?doc=readme" className="hover:text-sky-400 transition">Documentation</a>
-        <a href="/docs/?doc=implementation" className="hover:text-sky-400 transition">Architecture</a>
+        <Link to="/docs/readme" className="hover:text-sky-400 transition">Documentation</Link>
+        <Link to="/docs/implementation-info" className="hover:text-sky-400 transition">Architecture</Link>
         <Link to="/QC" className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded font-bold transition">
           Launch App
         </Link>

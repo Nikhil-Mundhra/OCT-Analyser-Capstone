@@ -54,6 +54,38 @@
     {
       "source": "/((?!dist/|public/|.*\\..*$).*)",
       "destination": "/index.html"
-    }
-  ]
+    }  ],
+  "redirects": [
+    {
+      "source": "/docs",
+      "has": [
+        { "type": "query", "key": "doc", "value": "readme" }
+      ],
+      "destination": "/docs/readme",
+      "statusCode": 308
+    },
+    {
+      "source": "/docs/",
+      "has": [
+        { "type": "query", "key": "doc", "value": "readme" }
+      ],
+      "destination": "/docs/readme",
+      "statusCode": 308
+    },
+    {
+      "source": "/docs",
+      "has": [
+        { "type": "query", "key": "doc", "value": "implementation" }
+      ],
+      "destination": "/docs/implementation-info",
+      "statusCode": 308
+    },
+    {
+      "source": "/docs/",
+      "has": [
+        { "type": "query", "key": "doc", "value": "implementation" }
+      ],
+      "destination": "/docs/implementation-info",
+      "statusCode": 308
+    }  ]
 }

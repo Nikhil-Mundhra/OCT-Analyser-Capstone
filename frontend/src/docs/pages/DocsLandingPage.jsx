@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { HomeNav } from '../../HomePage.jsx';
 import Footer from '../components/Footer';
 import DocsSidebar from '../components/DocsSidebar';
@@ -6,10 +7,32 @@ import DocsCardGrid from '../components/DocsCardGrid';
 import DocsTableOfContents from '../components/DocsTableOfContents';
 import { docCategories } from '../manifest';
 
+const queryDocToSlugMap = {
+  readme: 'readme',
+  implementation: 'implementation-info',
+};
+
 export default function DocsLandingPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("getting-started");
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const queryDoc = params.get('doc')?.trim().toLowerCase();
+
+    if (queryDoc) {
+      const targetSlug = queryDocToSlugMap[queryDoc] ?? queryDoc;
+      const exists = docCategories.some((category) =>
+        category.articles.some((article) => article.slug === targetSlug)
+      );
+
+      if (exists) {
+        navigate(`/docs/${targetSlug}`, { replace: true });
+        return;
+      }
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -27,7 +50,7 @@ export default function DocsLandingPage() {
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [location.search, navigate]);
 
   return (
     <div className="docs-theme flex flex-col min-h-screen bg-docs-bg-page text-docs-text-primary selection:bg-blue-500/30 font-sans transition-colors duration-200">

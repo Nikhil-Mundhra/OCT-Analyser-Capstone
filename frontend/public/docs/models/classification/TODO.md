@@ -6,9 +6,9 @@
 
 ## 🔴 High Priority
 
-- [ ] **Review Level 2 Router** — audit architecture, training protocol, and test script against industry standards (same methodology as the Level 1 review)
+- [x] **Review Level 2 Router** — audit architecture, training protocol, and test script against industry standards (same methodology as the Level 1 review)
 - [ ] **Review Level 3 Specialists** — audit all 5 specialist models (Macular, Diabetic, Vascular, Fluid, Structural) individually
-- [ ] **Build end-to-end inference pipeline** — connect L1 → L2 → L3 into a single callable function that takes a raw OCT scan and returns a final diagnosis with confidence scores
+- [x] **Build end-to-end inference pipeline** — connect L1 → L2 → L3 into a single callable function that takes a raw OCT scan and returns a final diagnosis with confidence scores
 
 ---
 

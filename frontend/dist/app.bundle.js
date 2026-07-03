@@ -24798,8 +24798,8 @@ function HomeNav() {
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "text-lg font-bold tracking-wide", children: "OCT Analyzer" })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "flex items-center gap-4 text-sm font-medium", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("a", { href: "/docs/?doc=readme", className: "hover:text-sky-400 transition", children: "Documentation" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("a", { href: "/docs/?doc=implementation", className: "hover:text-sky-400 transition", children: "Architecture" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Link, { to: "/docs/readme", className: "hover:text-sky-400 transition", children: "Documentation" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Link, { to: "/docs/implementation-info", className: "hover:text-sky-400 transition", children: "Architecture" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Link, { to: "/QC", className: "bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded font-bold transition", children: "Launch App" })
     ] })
   ] });
@@ -25350,9 +25350,27 @@ function DocsTableOfContents({
 
 // src/docs/pages/DocsLandingPage.jsx
 var import_jsx_runtime7 = __toESM(require_jsx_runtime());
+var queryDocToSlugMap = {
+  readme: "readme",
+  implementation: "implementation-info"
+};
 function DocsLandingPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = (0, import_react7.useState)("getting-started");
   (0, import_react7.useEffect)(() => {
+    const params = new URLSearchParams(location.search);
+    const queryDoc = params.get("doc")?.trim().toLowerCase();
+    if (queryDoc) {
+      const targetSlug = queryDocToSlugMap[queryDoc] ?? queryDoc;
+      const exists = docCategories.some(
+        (category) => category.articles.some((article) => article.slug === targetSlug)
+      );
+      if (exists) {
+        navigate(`/docs/${targetSlug}`, { replace: true });
+        return;
+      }
+    }
     const observer = new IntersectionObserver(
       (entries2) => {
         entries2.forEach((entry) => {
@@ -25368,7 +25386,7 @@ function DocsLandingPage() {
       if (el) observer.observe(el);
     });
     return () => observer.disconnect();
-  }, []);
+  }, [location.search, navigate]);
   return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "docs-theme flex flex-col min-h-screen bg-docs-bg-page text-docs-text-primary selection:bg-blue-500/30 font-sans transition-colors duration-200", children: [
     /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(HomeNav, {}),
     /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "flex flex-1 w-full relative", children: [
