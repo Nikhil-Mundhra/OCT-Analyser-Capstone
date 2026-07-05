@@ -28316,8 +28316,8 @@ function normalizeScanResult(scan) {
   }
   return {
     status: "completed",
-    diagnosis,
-    confidence: isAbnormal ? scan.level2_confidence : scan.level1_confidence,
+    diagnosis: scan.final_diagnosis || diagnosis,
+    confidence: isAbnormal ? scan.level3_confidence || scan.level2_confidence : scan.level1_confidence,
     level1: {
       prediction: scan.level1_prediction,
       confidence: scan.level1_confidence
@@ -28326,6 +28326,11 @@ function normalizeScanResult(scan) {
       prediction: scan.level2_prediction,
       confidence: scan.level2_confidence
     },
+    level3: {
+      prediction: scan.level3_prediction,
+      confidence: scan.level3_confidence
+    },
+    gradcams: scan.gradcams || {},
     previews: {},
     ipnv2: null
   };
@@ -28726,7 +28731,9 @@ function ReviewScreen() {
   const risk = riskFromScan(scan);
   const l1 = scan?.level1;
   const l22 = scan?.level2;
+  const l3 = scan?.level3;
   const l1Abnormal = l1?.prediction === "ABNORMAL";
+  const gradcams = scan?.gradcams;
   const getClassColor = (className) => {
     if (className === "IRF") return "rgba(255, 255, 255, 0.7)";
     if (className === "SRF") return "rgba(239, 68, 68, 0.7)";
@@ -28794,8 +28801,30 @@ function ReviewScreen() {
           /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Safety check:" }),
           " Specific pathology successfully identified."
         ] })
-      ] }) : /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 text-center", children: "Level 2 routing bypassed. Scan is healthy." }) }) })
-    ] })
+      ] }) : /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 text-center", children: "Level 2 routing bypassed. Scan is healthy." }) }) }),
+      l1Abnormal && l3?.prediction && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "Level 3: Specialist (EfficientNet-B0)", subtitle: "Fine-grained subclass verification.", icon: Activity, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "space-y-3", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Specialist Diagnosis", value: l3.prediction.replace(/_/g, " "), tone: "danger" }),
+        l3.confidence && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Metric, { label: "Model Confidence", value: `${Math.round(l3.confidence * 100)}%`, tone: "neutral" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("b", { children: "Deep analysis:" }),
+          " Specialist model activated to verify the exact subclass of the pathology."
+        ] })
+      ] }) })
+    ] }),
+    completed && gradcams && Object.keys(gradcams).length > 0 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Card, { title: "Explainability: Grad-CAM Heatmaps", subtitle: "Visualizing network attention mapping across the pipeline.", icon: Activity, className: "lg:col-span-12 mt-5", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4", children: [
+      gradcams.L1 && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "space-y-2", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "text-sm font-bold text-slate-700 text-center", children: "Level 1 (Gatekeeper)" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("img", { src: gradcams.L1, alt: "L1 Grad-CAM", className: "w-full rounded-2xl border border-slate-200 object-contain" })
+      ] }),
+      gradcams.L2 && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "space-y-2", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "text-sm font-bold text-slate-700 text-center", children: "Level 2 (Router)" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("img", { src: gradcams.L2, alt: "L2 Grad-CAM", className: "w-full rounded-2xl border border-slate-200 object-contain" })
+      ] }),
+      gradcams.L3 && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "space-y-2", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "text-sm font-bold text-slate-700 text-center", children: "Level 3 (Specialist)" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("img", { src: gradcams.L3, alt: "L3 Grad-CAM", className: "w-full rounded-2xl border border-slate-200 object-contain" })
+      ] })
+    ] }) })
   ] });
 }
 function DecisionScreen() {

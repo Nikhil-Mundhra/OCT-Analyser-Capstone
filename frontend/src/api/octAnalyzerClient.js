@@ -59,8 +59,8 @@ export function normalizeScanResult(scan) {
 
   return {
     status: "completed",
-    diagnosis: diagnosis,
-    confidence: isAbnormal ? scan.level2_confidence : scan.level1_confidence,
+    diagnosis: scan.final_diagnosis || diagnosis,
+    confidence: isAbnormal ? (scan.level3_confidence || scan.level2_confidence) : scan.level1_confidence,
     level1: {
       prediction: scan.level1_prediction,
       confidence: scan.level1_confidence
@@ -69,6 +69,11 @@ export function normalizeScanResult(scan) {
       prediction: scan.level2_prediction,
       confidence: scan.level2_confidence
     },
+    level3: {
+      prediction: scan.level3_prediction,
+      confidence: scan.level3_confidence
+    },
+    gradcams: scan.gradcams || {},
     previews: {},
     ipnv2: null
   };

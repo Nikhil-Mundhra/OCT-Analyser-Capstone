@@ -488,7 +488,9 @@ function ReviewScreen() {
   
   const l1 = scan?.level1;
   const l2 = scan?.level2;
+  const l3 = scan?.level3;
   const l1Abnormal = l1?.prediction === "ABNORMAL";
+  const gradcams = scan?.gradcams;
 
   const getClassColor = (className) => {
     if (className === "IRF") return "rgba(255, 255, 255, 0.7)"; // White (Edema/Supranormal)
@@ -586,7 +588,46 @@ function ReviewScreen() {
              )}
            </div>
         </Card>
+
+        {l1Abnormal && l3?.prediction && (
+          <Card title="Level 3: Specialist (EfficientNet-B0)" subtitle="Fine-grained subclass verification." icon={Activity}>
+            <div className="space-y-3">
+              <Metric label="Specialist Diagnosis" value={l3.prediction.replace(/_/g, " ")} tone="danger" />
+              {l3.confidence && (
+                <Metric label="Model Confidence" value={`${Math.round(l3.confidence * 100)}%`} tone="neutral" />
+              )}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+                <b>Deep analysis:</b> Specialist model activated to verify the exact subclass of the pathology.
+              </div>
+            </div>
+          </Card>
+        )}
       </div>
+
+      {completed && gradcams && Object.keys(gradcams).length > 0 && (
+        <Card title="Explainability: Grad-CAM Heatmaps" subtitle="Visualizing network attention mapping across the pipeline." icon={Activity} className="lg:col-span-12 mt-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {gradcams.L1 && (
+              <div className="space-y-2">
+                <p className="text-sm font-bold text-slate-700 text-center">Level 1 (Gatekeeper)</p>
+                <img src={gradcams.L1} alt="L1 Grad-CAM" className="w-full rounded-2xl border border-slate-200 object-contain" />
+              </div>
+            )}
+            {gradcams.L2 && (
+              <div className="space-y-2">
+                <p className="text-sm font-bold text-slate-700 text-center">Level 2 (Router)</p>
+                <img src={gradcams.L2} alt="L2 Grad-CAM" className="w-full rounded-2xl border border-slate-200 object-contain" />
+              </div>
+            )}
+            {gradcams.L3 && (
+              <div className="space-y-2">
+                <p className="text-sm font-bold text-slate-700 text-center">Level 3 (Specialist)</p>
+                <img src={gradcams.L3} alt="L3 Grad-CAM" className="w-full rounded-2xl border border-slate-200 object-contain" />
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
