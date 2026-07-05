@@ -203,14 +203,14 @@ class_map:
     l3_class:     CSR
 
   # ── VITREOMACULAR & STRUCTURAL DISORDERS ───────────────────────────────────
-  - path: "Vitreomacular & Structural Disorders/ERM"
+  - path: "Vitreomacular and Structural Disorders/ERM"
     fine_class:   ERM
     l1:           ABNORMAL
     l2:           Structural_Issues
     l3_specialist: Structural
     l3_class:     ERM
 
-  - path: "Vitreomacular & Structural Disorders/VID"
+  - path: "Vitreomacular and Structural Disorders/VID"
     fine_class:   VID
     l1:           ABNORMAL
     l2:           Structural_Issues

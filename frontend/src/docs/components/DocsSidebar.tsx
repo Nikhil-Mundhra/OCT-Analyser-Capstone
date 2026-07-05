@@ -1,14 +1,14 @@
 "use client";
 
-import { Link } from "react-router-dom";
-import { useLocation, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   categoryColorStyles,
   docCategories,
 } from "../manifest";
 
 export default function DocsSidebar() {
-  const pathname = useLocation().pathname;
+  const pathname = usePathname();
 
   return (
     <aside className="hidden md:flex flex-col sticky top-[68px] h-[calc(100vh-68px)] w-[280px] shrink-0 border-r border-docs-border-main bg-docs-bg-sidebar overflow-y-auto scrollbar-hide transition-colors duration-200">
@@ -30,7 +30,7 @@ export default function DocsSidebar() {
 
                   return (
                     <li key={article.slug}>
-                      <Link to={href}
+                      <Link href={href}
                         className={`block py-1 transition-colors duration-200 ${
                           isActive
                             ? `${styles.tocActive} font-medium`

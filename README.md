@@ -24,7 +24,7 @@ OCT-Analyser-Capstone/
 │   ├── requirements.txt
 │   ├── oct_analyzer/           # Core ingestion, pipeline, and API 
 │   └── tests/
-├── frontend/                   # React interface (clinical UI)
+├── frontend/                   # Next.js interface (clinical UI)
 │   ├── index.html
 │   ├── package.json
 │   └── src/
@@ -62,7 +62,7 @@ OCT-Analyser-Capstone/
 - `POST /api/segment_2d` runs a localized 2D segmentation script, invoking the trained 15-layer Hierarchical U-Net checkpoint.
 
 ### Frontend
-- Uses the clinical wireframe-style interface as the main app at `http://127.0.0.1:5173`.
+- Uses the clinical wireframe-style interface as the main app at `http://127.0.0.1:3000`.
 - Includes triage worklist, upload/QC, scan review, AI findings, human decision gate, and outcomes/audit screens.
 - Upload/QC screen allows dragging/dropping of 3D volumes or 2D image datasets.
 - Review screen displays generated scan previews and layer findings with dynamic SVG overlays for clinical evidence.
@@ -83,7 +83,7 @@ The application currently acts as a strong foundational MVP, but there are major
 - Python 3.11+
 - PyTorch, MONAI, NumPy, SciPy, SimpleITK, eyepy
 - FastAPI, Uvicorn, Pillow
-- React, esbuild
+- Next.js, React, Tailwind CSS v4
 - pytest and pytest-cov for tests
 
 Install dependencies:
@@ -101,7 +101,7 @@ Run the full local MVP from a fresh checkout with one command:
 ```bash
 make run
 ```
-That command creates or updates `.venv`, installs Python dependencies, Node dependencies, builds the React bundle, starts the FastAPI backend at `http://127.0.0.1:8000`, and serves the frontend at `http://127.0.0.1:5173`.
+That command creates or updates `.venv`, installs Python dependencies, Node dependencies, builds the Next.js bundle, starts the FastAPI backend at `http://127.0.0.1:8000`, and serves the frontend at `http://127.0.0.1:3000`.
 
 Useful Make targets:
 ```bash
@@ -114,7 +114,7 @@ make clean    # remove runtime/cache artifacts
 ## Live Deployments (Vercel & Hugging Face)
 
 ### 1. Frontend (Vercel)
-The repository includes a root `vercel.json` so Vercel builds the nested frontend app and serves `frontend/index.html` from the deployment root. The static UI is deployed and live at:
+The repository uses Vercel's native Next.js integration. The Next.js frontend builds natively and handles routing, served from the edge/serverless functions. The static UI is deployed and live at:
 [https://oct-analyser-capstone.vercel.app](https://oct-analyser-capstone.vercel.app)
 
 To connect the hosted UI to a locally running backend, append the local backend API base URL:
@@ -161,9 +161,9 @@ If you are a new developer or an AI agent analyzing this repository, read this s
         3. Feature extraction: Calculates **MGRF** (2nd-order reflectivity Gibbs energy) and extracts **CDF** (Cumulative Distribution Function) deciles.
         4. Classification and IPN-V2 adapter smoke inference.
     *   **API (`oct_analyzer/api.py`)**: Exposes `/api/scans` (upload), `/api/segment_2d` (2D UNet predictions), and preview endpoints.
-*   **`frontend/` (React / Vite)**:
+*   **`frontend/` (Next.js / React)**:
     *   Provides a clinical drag-and-drop workflow. 
-    *   **`src/App.jsx`**: Core UI routing (Worklist, QC, Review, Human Decision Gate, Outcomes). Implements SVG overlays for segmentation masks (e.g. IRF, SRF lesions).
+    *   **`src/app/`**: Core Next.js routing (Worklist, QC, Review, Human Decision Gate, Outcomes). Implements SVG overlays for segmentation masks (e.g. IRF, SRF lesions).
     *   **`src/api/octAnalyzerClient.js`**: Frontend API client.
 *   **`OCT-Segmentation-Model/`** & **`image-classification-model-training/`**: 
     *   Standalone ML repositories for training the models.

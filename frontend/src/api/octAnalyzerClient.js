@@ -17,7 +17,11 @@ export async function createScan(file) {
   const form = new FormData();
   form.append("file", file);
 
-  const localImageUrl = URL.createObjectURL(file);
+  const localImageUrl = await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
 
   const predictReq = fetch(apiUrl("/predict"), {
     method: "POST",

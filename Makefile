@@ -8,7 +8,7 @@ PYTEST := $(VENV_PYTHON) -m pytest
 UVICORN := $(VENV_PYTHON) -m uvicorn
 HOST ?= 127.0.0.1
 API_PORT ?= 8000
-WEB_PORT ?= 5173
+WEB_PORT ?= 3000
 
 .PHONY: help check-ports venv install build test run clean
 
@@ -18,7 +18,7 @@ help:
 	@echo "Targets:"
 	@echo "  make run      Create/update env, build frontend, and run API + web app"
 	@echo "  make install  Install Python and Node dependencies"
-	@echo "  make build    Build the React frontend bundle"
+	@echo "  make build    Build the Next.js frontend bundle"
 	@echo "  make test     Run the Python test suite"
 	@echo "  make clean    Remove local runtime/cache artifacts"
 	@echo ""
@@ -32,7 +32,7 @@ check-ports:
 		exit 1; \
 	fi
 	@if lsof -nP -iTCP:$(WEB_PORT) -sTCP:LISTEN >/dev/null 2>&1; then \
-		echo "Port $(WEB_PORT) is already in use. Try: WEB_PORT=5174 make run"; \
+		echo "Port $(WEB_PORT) is already in use. Try: WEB_PORT=3001 make run"; \
 		exit 1; \
 	fi
 
@@ -89,7 +89,7 @@ run: build
 		wait $$API_PID; \
 		exit $$?; \
 	fi; \
-	cd frontend && npx serve . -l $$RESOLVED_WEB_PORT & \
+	cd frontend && npm start -- -p $$RESOLVED_WEB_PORT & \
 	WEB_PID=$$!; \
 	sleep 1; \
 	if ! kill -0 $$WEB_PID 2>/dev/null; then \
@@ -100,4 +100,4 @@ run: build
 	wait $$API_PID $$WEB_PID
 
 clean:
-	@rm -rf .coverage __pycache__ backend/oct_analyzer/__pycache__ backend/tests/__pycache__ runtime_uploads frontend/dist
+	@rm -rf .coverage __pycache__ backend/oct_analyzer/__pycache__ backend/tests/__pycache__ runtime_uploads frontend/dist frontend/.next

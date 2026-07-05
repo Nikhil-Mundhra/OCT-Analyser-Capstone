@@ -1,5 +1,7 @@
+"use client";
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { ScanLine, ArrowRight, ShieldAlert, Activity, Route } from 'lucide-react';
 
 export function HomeNav() {
@@ -10,9 +12,9 @@ export function HomeNav() {
         <span className="text-lg font-bold tracking-wide">OCT Analyzer</span>
       </div>
       <div className="flex items-center gap-4 text-sm font-medium">
-        <Link to="/docs/readme" className="hover:text-sky-400 transition">Documentation</Link>
-        <Link to="/docs/implementation-info" className="hover:text-sky-400 transition">Architecture</Link>
-        <Link to="/QC" className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded font-bold transition">
+        <Link href="/docs/readme" className="hover:text-sky-400 transition">Documentation</Link>
+        <Link href="/docs/implementation-info" className="hover:text-sky-400 transition">Architecture</Link>
+        <Link href="/QC" className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded font-bold transition">
           Launch App
         </Link>
       </div>
@@ -54,7 +56,7 @@ export function HomePage() {
         </div>
 
         <Link 
-          to="/QC" 
+          href="/QC" 
           className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-slate-800 transition shadow-lg hover:shadow-xl"
         >
           Enter Clinical Workspace <ArrowRight className="h-5 w-5" />

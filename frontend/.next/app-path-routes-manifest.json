@@ -1,0 +1,12 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/docs/page": "/docs",
+  "/docs/[doc]/page": "/docs/[doc]",
+  "/page": "/",
+  "/(dashboard)/QC/page": "/QC",
+  "/(dashboard)/human-check/page": "/human-check",
+  "/(dashboard)/dashboard/page": "/dashboard",
+  "/(dashboard)/outcomes/page": "/outcomes",
+  "/(dashboard)/review/page": "/review",
+  "/(dashboard)/worklist/page": "/worklist"
+}

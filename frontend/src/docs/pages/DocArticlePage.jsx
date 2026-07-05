@@ -1,5 +1,7 @@
+"use client";
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'next/navigation';
+
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import DocLayout from '../components/DocLayout';
@@ -9,7 +11,8 @@ import { getDocArticle } from '../manifest';
 import { fetchDocContent, extractHeadingsFromMdx, getHeadingIdGenerator } from '../utils/content';
 
 export default function DocArticlePage() {
-  const { slug } = useParams();
+  const params = useParams();
+  const slug = params?.doc;
   const [content, setContent] = useState('');
   const [headings, setHeadings] = useState([]);
   const [loading, setLoading] = useState(true);

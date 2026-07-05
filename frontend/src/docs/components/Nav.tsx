@@ -1,8 +1,10 @@
 "use client";
 
 import DocsSearch from "./DocsSearch";
-import { Link } from "react-router-dom";
-import { useLocation, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
 /**
@@ -13,7 +15,7 @@ interface NavProps {
 }
 
 export default function Nav({ showDocsSearch = false }: NavProps) {
-  const pathname = useLocation().pathname;
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +60,7 @@ export default function Nav({ showDocsSearch = false }: NavProps) {
 
   return (
     <nav ref={navRef}>
-      <Link to="/" className="nav-logo" onClick={() => setIsOpen(false)}>
+      <Link href="/" className="nav-logo" onClick={() => setIsOpen(false)}>
         <span className="font-extrabold text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-blue-500 dark:from-rose-400 dark:via-purple-400 dark:to-blue-400">
           Karl
         </span>
@@ -69,22 +71,22 @@ export default function Nav({ showDocsSearch = false }: NavProps) {
 
       <ul className="nav-links">
         <li>
-          <Link to="/" className={pathname === "/" ? "active" : ""}>
+          <Link href="/" className={pathname === "/" ? "active" : ""}>
             Home
           </Link>
         </li>
         <li className="nav-dropdown-wrapper">
-          <Link to="/docs" className={`nav-dropdown-trigger ${pathname?.startsWith("/docs") ? "active" : ""}`}>
+          <Link href="/docs" className={`nav-dropdown-trigger ${pathname?.startsWith("/docs") ? "active" : ""}`}>
             Resources
           </Link>
           <div className="nav-dropdown-menu">
-            <Link to="/docs/whitepaper" className={pathname === "/docs/whitepaper" ? "active" : ""}>
+            <Link href="/docs/whitepaper" className={pathname === "/docs/whitepaper" ? "active" : ""}>
               About
             </Link>
-            <Link to="/docs/security-document" className={pathname === "/docs/security-document" ? "active" : ""}>
+            <Link href="/docs/security-document" className={pathname === "/docs/security-document" ? "active" : ""}>
               Security
             </Link>
-            <Link to="/docs" className={pathname === "/docs" ? "active" : ""}>
+            <Link href="/docs" className={pathname === "/docs" ? "active" : ""}>
               Documentation
             </Link>
           </div>
@@ -94,7 +96,7 @@ export default function Nav({ showDocsSearch = false }: NavProps) {
       <div className="nav-right">
         {showDocsSearch && <DocsSearch />}
 
-        <Link to="https://kanerika.com/contact-us/" 
+        <Link href="https://kanerika.com/contact-us/" 
           target="_blank" 
           rel="noopener noreferrer" 
           className="nav-cta-desktop flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-[#8C48FF] to-[#FF5F3D] rounded-md hover:opacity-90 transition-opacity"
@@ -119,7 +121,7 @@ export default function Nav({ showDocsSearch = false }: NavProps) {
       <div className={`mobile-menu ${isOpen ? "open" : ""}`}>
         <ul className="mobile-nav-links">
           <li>
-            <Link to="/" className={pathname === "/" ? "active" : ""} onClick={() => setIsOpen(false)}>
+            <Link href="/" className={pathname === "/" ? "active" : ""} onClick={() => setIsOpen(false)}>
               Home
             </Link>
           </li>
@@ -127,17 +129,17 @@ export default function Nav({ showDocsSearch = false }: NavProps) {
             <span className="mobile-dropdown-title">Resources</span>
             <ul className="mobile-submenu">
               <li>
-                <Link to="/docs/whitepaper" className={pathname === "/docs/whitepaper" ? "active" : ""} onClick={() => setIsOpen(false)}>
+                <Link href="/docs/whitepaper" className={pathname === "/docs/whitepaper" ? "active" : ""} onClick={() => setIsOpen(false)}>
                   About
                 </Link>
               </li>
               <li>
-                <Link to="/docs/security-document" className={pathname === "/docs/security-document" ? "active" : ""} onClick={() => setIsOpen(false)}>
+                <Link href="/docs/security-document" className={pathname === "/docs/security-document" ? "active" : ""} onClick={() => setIsOpen(false)}>
                   Security
                 </Link>
               </li>
               <li>
-                <Link to="/docs" className={pathname === "/docs" ? "active" : ""} onClick={() => setIsOpen(false)}>
+                <Link href="/docs" className={pathname === "/docs" ? "active" : ""} onClick={() => setIsOpen(false)}>
                   Documentation
                 </Link>
               </li>
@@ -146,7 +148,7 @@ export default function Nav({ showDocsSearch = false }: NavProps) {
         </ul>
 
         <div className="mobile-nav-cta">
-          <Link to="https://kanerika.com/contact-us/" 
+          <Link href="https://kanerika.com/contact-us/" 
             target="_blank" 
             rel="noopener noreferrer" 
             className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-[#8C48FF] to-[#FF5F3D] rounded-md hover:opacity-90 transition-opacity w-full text-center"

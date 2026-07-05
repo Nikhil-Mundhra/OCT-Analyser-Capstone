@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom";
+"use client";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import React from "react";
 import { HomeNav } from "../../HomePage";
 import Footer from "./Footer";
@@ -19,7 +21,7 @@ export default function DocLayout({ children, toc }: DocLayoutProps) {
 
         <main className="flex-1 min-w-0 px-6 py-12 md:px-12 lg:px-16">
           {/* Back to index link */}
-          <Link to="/docs"
+          <Link href="/docs"
             className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 transition-colors mb-10 group"
           >
             <svg

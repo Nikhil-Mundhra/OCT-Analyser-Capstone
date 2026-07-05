@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom";
+"use client";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import {
   categoryColorStyles,
   type DocCategory,

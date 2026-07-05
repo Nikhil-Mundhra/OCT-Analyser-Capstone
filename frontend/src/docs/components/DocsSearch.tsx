@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { useLocation, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { docCategories, DocCategoryColor } from "../manifest";
 
 interface SearchItem {
@@ -20,7 +22,7 @@ export default function DocsSearch() {
   
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const router = useNavigate();
+  const router = useRouter();
 
   // Flatten and filter doc categories based on query
   const searchResults = useMemo(() => {
@@ -235,7 +237,7 @@ export default function DocsSearch() {
                   <ul>
                     {searchResults.map((item, index) => (
                       <li key={item.slug}>
-                        <Link to={`/docs/${item.slug}`}
+                        <Link href={`/docs/${item.slug}`}
                           onClick={() => {
                             setIsOpen(false);
                             setTimeout(() => setQuery(""), 200);

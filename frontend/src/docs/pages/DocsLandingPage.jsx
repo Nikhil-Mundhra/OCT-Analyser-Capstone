@@ -1,5 +1,7 @@
+"use client";
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { HomeNav } from '../../HomePage.jsx';
 import Footer from '../components/Footer';
 import DocsSidebar from '../components/DocsSidebar';
@@ -13,8 +15,8 @@ const queryDocToSlugMap = {
 };
 
 export default function DocsLandingPage() {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const pathname = usePathname();
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState("getting-started");
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function DocsLandingPage() {
       );
 
       if (exists) {
-        navigate(`/docs/${targetSlug}`, { replace: true });
+        router.push(`/docs/${targetSlug}`, { replace: true });
         return;
       }
     }

@@ -1,6 +1,7 @@
 "use client";
 
-import { Link } from "react-router-dom";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function Footer() {
   return (
@@ -12,7 +13,7 @@ export default function Footer() {
         </div>
         
         <div className="flex items-center gap-6 text-sm font-medium">
-          <Link to="/docs/whitepaper" className="hover:text-sky-400 transition-colors">
+          <Link href="/docs/whitepaper" className="hover:text-sky-400 transition-colors">
             About Us
           </Link>
           <a href="https://kanerika.com/contact-us/" target="_blank" rel="noopener noreferrer" className="hover:text-sky-400 transition-colors">
