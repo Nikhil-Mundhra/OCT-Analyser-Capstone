@@ -7,14 +7,14 @@
 ## 🔴 High Priority
 
 - [x] **Review Level 2 Router** — audit architecture, training protocol, and test script against industry standards (same methodology as the Level 1 review)
-- [ ] **Review Level 3 Specialists** — audit all 5 specialist models (Macular, Diabetic, Vascular, Fluid, Structural) individually
+- [x] **Review Level 3 Specialists** — audit all 5 specialist models (Macular, Diabetic, Vascular, Fluid, Structural) individually
 - [x] **Build end-to-end inference pipeline** — connect L1 → L2 → L3 into a single callable function that takes a raw OCT scan and returns a final diagnosis with confidence scores
 
 ---
 
 ## 🟡 Medium Priority
 
-- [ ] **Apply Level 1 improvements to Level 2 & Level 3** — once the L1 improvements are validated on the new checkpoint, port the same changes (CLAHE, checkpoint selection, TTA, Grad-CAM, calibration) to the router and specialist models
+- [x] **Apply Level 1 improvements to Level 2 & Level 3** — once the L1 improvements are validated on the new checkpoint, port the same changes (CLAHE, checkpoint selection, TTA, Grad-CAM, calibration) to the router and specialist models
 - [ ] **Run calibrate_level1.py** — after Level 1 retraining completes, derive the ROC threshold and temperature scalar from the validation fold
 - [ ] **Review Grad-CAM outputs** — after running `test_level1_on_test_set.py --gradcam`, manually inspect `gradcam_false_neg.png` to confirm the model attends to retinal pathology and not scanner artifacts
 - [ ] **Update training results in `training.md`** — replace the current 5-fold CV metrics with the new EfficientNet-B3 results once retraining is complete
