@@ -10,6 +10,10 @@ from .pre_processing import get_preprocessing_pipeline
 from .scan_types import NormalizedScan
 from .segmentation import placeholder_segment_layers as _placeholder_segment_layers
 from .segmentation import segment_retinal_layers
+from .classifier_integration import get_classifier
+import tempfile
+import os
+import cv2
 
 
 LAYER_NAMES = [
@@ -42,6 +46,34 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
     segmentation = segmentation_result.labels
     layers = extract_layer_features(flattened_volume, segmentation)
     diagnosis, confidence = classify_layers(layers)
+    
+    # Run hierarchical classifier (L1/L2/L3) on the 2D flattened volume
+    pipeline_results = {}
+    try:
+        classifier = get_classifier()
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        # Normalize and save the flattened volume as an image
+        flattened_img = np.squeeze(flattened_volume)
+        norm_vol = cv2.normalize(flattened_img, None, 0, 255, cv2.NORM_MINMAX)
+        cv2.imwrite(tmp_path, norm_vol.astype(np.uint8))
+        
+        pipeline_results = classifier.predict(tmp_path, gradcam=True)
+        if "error" not in pipeline_results:
+            diagnosis = pipeline_results.get("Final_Diagnosis", diagnosis)
+            # Find the highest confidence from the levels
+            conf = 0.0
+            for lvl in ["Level3", "Level2", "Level1"]:
+                if pipeline_results.get(lvl, {}).get("confidence"):
+                    conf = pipeline_results[lvl]["confidence"]
+                    break
+            confidence = conf if conf > 0 else confidence
+    except Exception as e:
+        print(f"Failed to run hierarchical classifier: {e}")
+    finally:
+        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+            os.remove(tmp_path)
     ipnv2_result = None
     try:
         ipnv2_result = run_ipnv2_smoke_inference(flattened_volume)
@@ -92,6 +124,10 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
         "previews": previews,
         "ipnv2": ipnv2,
         "metadata": scan.metadata,
+        "level1": pipeline_results.get("Level1", {}),
+        "level2": pipeline_results.get("Level2", {}),
+        "level3": pipeline_results.get("Level3", {}),
+        "gradcams": pipeline_results.get("gradcams", {}),
     }
 
 

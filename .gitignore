@@ -19,3 +19,7 @@ logs_test/
 
 # Environment variables
 .env
+
+# agents
+.agents
+graphify-out/

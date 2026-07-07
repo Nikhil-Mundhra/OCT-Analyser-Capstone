@@ -39,7 +39,11 @@ class ScanResult(BaseModel):
     is_demo_model: bool = True
     qc: QualityControlReport | None = None
     layers: list[LayerFeature] = Field(default_factory=list)
-    previews: dict[str, str] = Field(default_factory=dict)
+    previews: dict[str, Any] = Field(default_factory=dict)
     ipnv2: IPNV2Metadata | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    level1: dict[str, Any] = Field(default_factory=dict)
+    level2: dict[str, Any] = Field(default_factory=dict)
+    level3: dict[str, Any] = Field(default_factory=dict)
+    gradcams: dict[str, Any] = Field(default_factory=dict)
     detail: str | None = None

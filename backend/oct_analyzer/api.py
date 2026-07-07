@@ -10,6 +10,7 @@ from .data_loader import load_normalized_scan
 from .interfaces import ScanResult
 from .mvp_pipeline import process_scan
 from .preview import preview_path
+from .classifier_integration import get_classifier
 
 
 import tempfile
@@ -134,6 +135,40 @@ def segment_2d(file: UploadFile) -> dict:
             img_path.unlink()
         if out_json.exists():
             out_json.unlink()
+
+@app.post("/predict")
+async def predict_image(file: UploadFile) -> dict:
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in SUPPORTED_SUFFIXES:
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+    
+    scan_id = uuid4().hex
+    temp_dir = Path(tempfile.gettempdir()) / "oct_classification"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    
+    img_path = temp_dir / f"{scan_id}{suffix}"
+    with img_path.open("wb") as handle:
+        copyfileobj(file.file, handle)
+        
+    try:
+        classifier = get_classifier()
+        results = classifier.predict(str(img_path), gradcam=True)
+        if "error" in results:
+            raise HTTPException(status_code=400, detail=results["error"])
+            
+        return {
+            "level1_prediction": results.get("Level1", {}).get("prediction"),
+            "level1_confidence": results.get("Level1", {}).get("confidence"),
+            "level2_prediction": results.get("Level2", {}).get("prediction"),
+            "level2_confidence": results.get("Level2", {}).get("confidence"),
+            "level3_prediction": results.get("Level3", {}).get("prediction"),
+            "level3_confidence": results.get("Level3", {}).get("confidence"),
+            "final_diagnosis": results.get("Final_Diagnosis"),
+            "gradcams": results.get("gradcams", {})
+        }
+    finally:
+        if img_path.exists():
+            img_path.unlink()
 
 
 @app.get("/api/scans/{scan_id}", response_model=ScanResult)
