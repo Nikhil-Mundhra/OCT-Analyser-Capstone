@@ -73,6 +73,8 @@ def test_get_preprocessing_pipeline_uses_fallback_when_monai_missing(monkeypatch
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
 
+    fake_import("os")
+
     assert pre_processing.get_preprocessing_pipeline() is pre_processing._fallback_preprocessing
 
 
@@ -793,14 +795,6 @@ def test_api_upload_get_and_preview(tmp_path, monkeypatch):
     assert preview_response.headers["content-type"] == "image/png"
 
 
-def test_api_accepts_tiff_uploads(tmp_path, monkeypatch):
-    from fastapi.testclient import TestClient
-    import backend.oct_analyzer.api as api
-    from backend.oct_analyzer.scan_types import NormalizedScan
-
-    monkeypatch.setattr(api, "UPLOAD_DIR", tmp_path / "uploads")
-    monkeypatch.setattr(api, "PREVIEW_DIR", tmp_path / "previews")
-
 def test_api_segment_2d(tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
     import backend.oct_analyzer.api as api
@@ -819,8 +813,7 @@ def test_api_segment_2d(tmp_path, monkeypatch):
             self.stderr = b""
             # Create the output json
             out_json = kwargs.get("output")
-            if out_json:
-                pass
+
             args_list = args[0] if args else kwargs.get("args", [])
             for i, arg in enumerate(args_list):
                 if arg == "--output":
