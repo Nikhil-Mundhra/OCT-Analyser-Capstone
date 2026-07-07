@@ -73,7 +73,6 @@ The application currently acts as a strong foundational MVP, but there are major
 - **Clinical Validation:** The app must undergo formal clinical trials and robust accuracy evaluations; it cannot currently be used for real patient diagnosis.
 - **Trained 15-Layer Anatomical Segmentation:** The MVP currently uses a 12-layer deterministic placeholder. We will fully integrate our newly developed **15-layer Hierarchical U-Net model** (located in `OCT-Segmentation-Model/`) for robust anatomical structure extraction in the 3D pipeline.
 - **Live Classification Inference:** Diagnosis and layer votes currently utilize demo placeholders. These will be replaced by the heavily trained ResNet/EfficientNet ANNs being developed in the `image-classification-model-training/` module.
-- **Advanced IPN-V2 Checkpoints:** IPN-V2 en face logic operates in an untrained smoke-test state unless a valid checkpoint is supplied via `IPNV2_CHECKPOINT`.
 - **Background Jobs & Database Persistence:** Very large scans will soon require a background job queue (e.g., Celery/Redis). Currently, scan state only lives in the local filesystem/process memory.
 - **Enterprise Capabilities:** Future releases will introduce PDF report generation, HIPAA-compliant access controls, user authentication, and audit-grade clinical logging.
 - **Proprietary Archive Support:** Expanding beyond standard `.dcm` and `.vol`, future ingestion targets may include reverse-engineering proprietary Solix archives (e.g. `.fds`).
@@ -159,7 +158,7 @@ If you are a new developer or an AI agent analyzing this repository, read this s
         1. Fovea detection and auto-cropping (standardizing scan dimensions).
         2. RPE-based anatomical flattening.
         3. Feature extraction: Calculates **MGRF** (2nd-order reflectivity Gibbs energy) and extracts **CDF** (Cumulative Distribution Function) deciles.
-        4. Classification and IPN-V2 adapter smoke inference.
+        4. Classification.
     *   **API (`oct_analyzer/api.py`)**: Exposes `/api/scans` (upload), `/api/segment_2d` (2D UNet predictions), and preview endpoints.
 *   **`frontend/` (Next.js / React)**:
     *   Provides a clinical drag-and-drop workflow. 

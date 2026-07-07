@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 
-PREVIEW_KINDS = {"raw", "cropped", "overlay", "features", "ipnv2_probability", "ipnv2_overlay"}
+PREVIEW_KINDS = {"raw", "cropped", "overlay", "features"}
 
 
 def write_previews(
@@ -14,7 +14,6 @@ def write_previews(
     cropped_volume: np.ndarray,
     segmentation: np.ndarray,
     layers: list[dict[str, Any]],
-    ipnv2_result: Any | None = None,
 ) -> dict[str, Union[str, list[str]]]:
     preview_dir.mkdir(parents=True, exist_ok=True)
 
@@ -33,18 +32,6 @@ def write_previews(
     cropped.save(files["cropped"])
     overlay.save(files["overlay"])
     features.save(files["features"])
-
-    if ipnv2_result is not None:
-        probability = _probability_image(ipnv2_result.probability_map)
-        ipnv2_overlay = _ipnv2_overlay_image(
-            ipnv2_result.reference_image,
-            ipnv2_result.probability_map,
-            ipnv2_result.mask,
-        )
-        files["ipnv2_probability"] = preview_dir / "ipnv2_probability.png"
-        files["ipnv2_overlay"] = preview_dir / "ipnv2_overlay.png"
-        probability.save(files["ipnv2_probability"])
-        ipnv2_overlay.save(files["ipnv2_overlay"])
 
     results = {kind: f"preview/{kind}" for kind in files}
     
@@ -137,25 +124,3 @@ def _feature_chart(layers: list[dict[str, Any]]) -> Image.Image:
     draw.text((margin, 14), "Layer CDF-derived placeholder scores", fill=(23, 33, 43))
     return image
 
-
-def _probability_image(probability: np.ndarray) -> Image.Image:
-    array = np.clip(np.asarray(probability, dtype=np.float32), 0.0, 1.0)
-    red = (array * 255).astype(np.uint8)
-    green = np.zeros_like(red)
-    blue = ((1.0 - array) * 180).astype(np.uint8)
-    return Image.fromarray(np.stack([red, green, blue], axis=-1), mode="RGB")
-
-
-def _ipnv2_overlay_image(reference: np.ndarray, probability: np.ndarray, mask: np.ndarray) -> Image.Image:
-    base = _slice_image(reference).convert("RGBA")
-    prob = np.clip(np.asarray(probability, dtype=np.float32), 0.0, 1.0)
-    mask_array = np.asarray(mask, dtype=np.uint8)
-    overlay_array = np.zeros((prob.shape[0], prob.shape[1], 4), dtype=np.uint8)
-    overlay_array[..., 0] = 245
-    overlay_array[..., 1] = 88
-    overlay_array[..., 2] = 60
-    overlay_array[..., 3] = (mask_array * np.maximum(prob, 0.35) * 150).astype(np.uint8)
-    overlay = Image.fromarray(overlay_array, mode="RGBA")
-    if overlay.size != base.size:
-        overlay = overlay.resize(base.size)
-    return Image.alpha_composite(base, overlay).convert("RGB")

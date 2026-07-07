@@ -43,12 +43,6 @@ export const baseDocCategories: DocCategory[] = [
         sidebarTitle: "Implementation Specs",
         title: "Implementation Details & Specs",
         description: "Technical specifications detailing integration with local servers, dicom image viewing, and python API.",
-      },
-      {
-        slug: "ipnv2-readme",
-        sidebarTitle: "IPNV2 Architecture",
-        title: "IPNV2 System Architecture",
-        description: "Details regarding the Inference Pipeline Network version 2 and how images are processed.",
       }
     ],
   },

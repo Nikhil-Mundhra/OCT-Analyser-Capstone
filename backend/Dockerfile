@@ -16,7 +16,6 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Copy your codebase into the container
 COPY backend /app/backend
-COPY IPNV2_pytorch /app/IPNV2_pytorch
 
 # Run the web service on container startup.
 # The PORT environment variable is automatically injected by Cloud Run / Heroku / HF Spaces.

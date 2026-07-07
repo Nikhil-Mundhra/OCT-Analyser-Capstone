@@ -5,7 +5,6 @@ import numpy as np
 import torch
 
 from .anatomical_flattener import flatten_volume_to_rpe
-from .ipnv2_adapter import failed_ipnv2_metadata, ipnv2_metadata, run_ipnv2_smoke_inference
 from .pre_processing import get_preprocessing_pipeline
 from .scan_types import NormalizedScan
 from .segmentation import placeholder_segment_layers as _placeholder_segment_layers
@@ -74,12 +73,6 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
     finally:
         if 'tmp_path' in locals() and os.path.exists(tmp_path):
             os.remove(tmp_path)
-    ipnv2_result = None
-    try:
-        ipnv2_result = run_ipnv2_smoke_inference(flattened_volume)
-        ipnv2 = ipnv2_metadata(ipnv2_result)
-    except Exception as exc:
-        ipnv2 = failed_ipnv2_metadata(exc)
 
     previews = {}
     if preview_dir is not None:
@@ -91,19 +84,11 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
             cropped_volume=foveal_crop,
             segmentation=segmentation,
             layers=layers,
-            ipnv2_result=ipnv2_result,
         )
-        ipnv2["previews"] = {
-            key: previews[key]
-            for key in ("ipnv2_probability", "ipnv2_overlay")
-            if key in previews
-        }
 
     warnings = [*scan.warnings, *validation["warnings"], *crop_info["warnings"], *fovea_info["warnings"]]
     if segmentation_result.warning:
         warnings.append(segmentation_result.warning)
-    if ipnv2.get("warning"):
-        warnings.append(ipnv2["warning"])
 
     return {
         "status": "completed",
@@ -122,7 +107,6 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
         },
         "layers": layers,
         "previews": previews,
-        "ipnv2": ipnv2,
         "metadata": scan.metadata,
         "level1": pipeline_results.get("Level1", {}),
         "level2": pipeline_results.get("Level2", {}),

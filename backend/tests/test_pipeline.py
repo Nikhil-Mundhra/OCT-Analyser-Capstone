@@ -448,84 +448,7 @@ def test_train_step_with_mocked_components(monkeypatch):
     assert loss > 0
 
 
-class TinyIPNV2(torch.nn.Module):
-    def __init__(self, **kwargs):
-        super().__init__()
-        self.scale = torch.nn.Parameter(torch.tensor(1.0))
-        self.kwargs = kwargs
 
-    def forward(self, inputs):
-        projection = inputs.mean(dim=2, keepdim=True) * self.scale
-        logits = torch.cat([-projection, projection], dim=1)
-        features = projection[:, 0, 0].unsqueeze(1)
-        return logits, features
-
-
-def test_ipnv2_adapter_runs_untrained_smoke_and_checkpoint(tmp_path, monkeypatch):
-    import backend.oct_analyzer.ipnv2_adapter as adapter
-
-    monkeypatch.delenv(adapter.IPNV2_CHECKPOINT_ENV, raising=False)
-    volume = np.arange(24, dtype=np.float32).reshape(2, 3, 4)
-
-    smoke = adapter.run_ipnv2_smoke_inference(
-        volume,
-        model_factory=TinyIPNV2,
-        target_shape=(4, 5, 6),
-    )
-
-    assert smoke.available is True
-    assert smoke.mode == "untrained_smoke"
-    assert smoke.input_shape == (1, 1, 4, 5, 6)
-    assert smoke.output_shape == (1, 2, 1, 5, 6)
-    assert smoke.probability_map.shape == (5, 6)
-    assert smoke.mask.shape == (5, 6)
-    assert "random weights" in smoke.warning
-
-    checkpoint = tmp_path / "ipnv2.pth"
-    torch.save({"module.scale": torch.tensor(2.0)}, checkpoint)
-    loaded = adapter.run_ipnv2_smoke_inference(
-        volume,
-        checkpoint_path=checkpoint,
-        model_factory=TinyIPNV2,
-        target_shape=(4, 5, 6),
-    )
-
-    assert loaded.mode == "checkpoint"
-    assert loaded.warning == ""
-    assert adapter.ipnv2_metadata(loaded, {"ipnv2_overlay": "preview/ipnv2_overlay"})["previews"]
-    assert adapter.failed_ipnv2_metadata(RuntimeError("boom"))["available"] is False
-
-
-def test_ipnv2_adapter_uses_env_and_validates_model_loading(tmp_path, monkeypatch):
-    import backend.oct_analyzer.ipnv2_adapter as adapter
-
-    checkpoint = tmp_path / "ipnv2_env.pth"
-    torch.save({"state_dict": {"scale": torch.tensor(3.0)}}, checkpoint)
-    monkeypatch.setenv(adapter.IPNV2_CHECKPOINT_ENV, str(checkpoint))
-
-    result = adapter.run_ipnv2_smoke_inference(
-        np.ones((1, 2, 2), dtype=np.float32),
-        model_factory=TinyIPNV2,
-        target_shape=(2, 3, 4),
-    )
-
-    assert result.mode == "checkpoint"
-    assert adapter._resolve_checkpoint(tmp_path / "missing.pth") is None
-    assert isinstance(adapter._build_model(None, 1, 1, (160, 100, 100)), torch.nn.Module)
-
-    original_path = adapter.IPNV2_MODEL_PATH
-    monkeypatch.setattr(adapter, "IPNV2_MODEL_PATH", tmp_path / "missing.py")
-    with pytest.raises(FileNotFoundError):
-        adapter._load_ipnv2_model_module()
-    monkeypatch.setattr(adapter, "IPNV2_MODEL_PATH", original_path)
-    real_spec = adapter.importlib.util.spec_from_file_location
-    monkeypatch.setattr(adapter.importlib.util, "spec_from_file_location", lambda *args, **kwargs: None)
-    with pytest.raises(ImportError):
-        adapter._load_ipnv2_model_module()
-    monkeypatch.setattr(adapter.importlib.util, "spec_from_file_location", real_spec)
-
-    with pytest.raises(ValueError, match="3D volume"):
-        adapter.run_ipnv2_smoke_inference(np.ones((2, 2), dtype=np.float32), model_factory=TinyIPNV2)
 
 
 def test_mvp_pipeline_validates_crops_features_and_classifies():
@@ -627,7 +550,6 @@ def test_process_scan_uses_segmentation_boundary_for_demo_flag(tmp_path, monkeyp
 
     monkeypatch.setattr(pipeline, "get_preprocessing_pipeline", lambda: lambda volume: torch.from_numpy(volume).unsqueeze(0).float())
     monkeypatch.setattr(pipeline, "flatten_volume_to_rpe", lambda tensor: tensor)
-    monkeypatch.setattr(pipeline, "run_ipnv2_smoke_inference", lambda volume: (_ for _ in ()).throw(RuntimeError("skip ipnv2")))
     monkeypatch.setattr(
         pipeline,
         "segment_retinal_layers",
@@ -648,25 +570,10 @@ def test_process_scan_uses_segmentation_boundary_for_demo_flag(tmp_path, monkeyp
 
 def test_process_scan_returns_completed_payload_and_previews(tmp_path, monkeypatch):
     import backend.oct_analyzer.mvp_pipeline as pipeline
-    from backend.oct_analyzer.ipnv2_adapter import IPNV2Result
     from backend.oct_analyzer.scan_types import NormalizedScan
 
     monkeypatch.setattr(pipeline, "get_preprocessing_pipeline", lambda: lambda volume: torch.from_numpy(volume).unsqueeze(0).float())
     monkeypatch.setattr(pipeline, "flatten_volume_to_rpe", lambda tensor: tensor)
-    monkeypatch.setattr(
-        pipeline,
-        "run_ipnv2_smoke_inference",
-        lambda volume: IPNV2Result(
-            available=True,
-            mode="untrained_smoke",
-            input_shape=(1, 1, 4, 5, 5),
-            output_shape=(1, 2, 1, 5, 5),
-            warning="IPN-V2 is running with random weights; output validates plumbing only.",
-            probability_map=np.linspace(0, 1, 25, dtype=np.float32).reshape(5, 5),
-            mask=np.ones((5, 5), dtype=np.uint8),
-            reference_image=np.ones((5, 5), dtype=np.float32),
-        ),
-    )
 
     volume = np.zeros((6, 5, 5), dtype=np.float32)
     volume[1:5, 1:4, 1:4] = 5
@@ -676,50 +583,19 @@ def test_process_scan_returns_completed_payload_and_previews(tmp_path, monkeypat
 
     assert result["status"] == "completed"
     assert result["is_demo_model"] is True
-    assert set(result["previews"]) == {"raw", "cropped", "overlay", "features", "ipnv2_probability", "ipnv2_overlay", "frames"}
-    assert result["ipnv2"]["mode"] == "untrained_smoke"
-    assert result["ipnv2"]["previews"] == {
-        "ipnv2_probability": "preview/ipnv2_probability",
-        "ipnv2_overlay": "preview/ipnv2_overlay",
-    }
+    assert set(result["previews"]) == {"raw", "cropped", "overlay", "features", "frames"}
     assert (tmp_path / "overlay.png").exists()
-    assert (tmp_path / "ipnv2_overlay.png").exists()
     assert (tmp_path / "frames").exists()
 
 
-def test_process_scan_keeps_working_when_ipnv2_fails(tmp_path, monkeypatch):
-    import backend.oct_analyzer.mvp_pipeline as pipeline
-    from backend.oct_analyzer.scan_types import NormalizedScan
 
-    monkeypatch.setattr(pipeline, "get_preprocessing_pipeline", lambda: lambda volume: torch.from_numpy(volume).unsqueeze(0).float())
-    monkeypatch.setattr(pipeline, "flatten_volume_to_rpe", lambda tensor: tensor)
-
-    def broken_ipnv2(volume):
-        raise RuntimeError("no model")
-
-    monkeypatch.setattr(pipeline, "run_ipnv2_smoke_inference", broken_ipnv2)
-    scan = NormalizedScan(volume=np.ones((3, 3, 3), dtype=np.float32), spacing_mm=(1.0, 1.0, 1.0), source_format="test")
-
-    result = pipeline.process_scan(scan, preview_dir=tmp_path)
-
-    assert result["status"] == "completed"
-    assert result["ipnv2"]["available"] is False
-    assert "no model" in result["ipnv2"]["warning"]
-    assert "ipnv2_overlay" not in result["previews"]
 
 
 def test_preview_rejects_unknown_kind(tmp_path):
-    from backend.oct_analyzer.preview import _ipnv2_overlay_image, preview_path
+    from backend.oct_analyzer.preview import preview_path
 
-    assert preview_path(tmp_path, "ipnv2_overlay") == tmp_path / "ipnv2_overlay.png"
     assert preview_path(tmp_path, "raw") == tmp_path / "raw.png"
     assert preview_path(tmp_path, "frames/frame_0.png") == tmp_path / "frames/frame_0.png"
-    resized_overlay = _ipnv2_overlay_image(
-        reference=np.ones((3, 3), dtype=np.float32),
-        probability=np.ones((2, 2), dtype=np.float32),
-        mask=np.ones((2, 2), dtype=np.uint8),
-    )
-    assert resized_overlay.size == (3, 3)
     with pytest.raises(ValueError, match="Unsupported preview"):
         preview_path(tmp_path, "unknown")
 
@@ -765,14 +641,7 @@ def test_api_upload_get_and_preview(tmp_path, monkeypatch):
             "qc": {"warnings": []},
             "layers": [],
             "previews": {"raw": "preview/raw"},
-            "ipnv2": {
-                "available": True,
-                "mode": "untrained_smoke",
-                "input_shape": [1, 1, 160, 100, 100],
-                "output_shape": [1, 2, 1, 100, 100],
-                "warning": "smoke",
-                "previews": {"ipnv2_overlay": "preview/ipnv2_overlay"},
-            },
+
             "metadata": {},
         }
 
@@ -785,7 +654,6 @@ def test_api_upload_get_and_preview(tmp_path, monkeypatch):
     assert response.status_code == 200
     assert payload["status"] == "completed"
     assert payload["previews"]["raw"].startswith("/api/scans/")
-    assert payload["ipnv2"]["previews"]["ipnv2_overlay"].startswith("/api/scans/")
 
     scan_response = client.get(f"/api/scans/{payload['scan_id']}")
     preview_response = client.get(f"/api/scans/{payload['scan_id']}/preview/raw")
@@ -879,7 +747,6 @@ def test_api_accepts_tiff_uploads(tmp_path, monkeypatch):
             "qc": {"warnings": []},
             "layers": [],
             "previews": {},
-            "ipnv2": {"available": False, "warning": ""},
             "metadata": {},
         }
 

@@ -199,8 +199,3 @@ def _prefix_preview_urls(scan_id: str, result: dict) -> None:
         key: f"/api/scans/{scan_id}/{url}" if isinstance(url, str) else [f"/api/scans/{scan_id}/{u}" for u in url]
         for key, url in result.get("previews", {}).items()
     }
-    if result.get("ipnv2", {}).get("previews"):
-        result["ipnv2"]["previews"] = {
-            key: f"/api/scans/{scan_id}/{url}"
-            for key, url in result["ipnv2"]["previews"].items()
-        }

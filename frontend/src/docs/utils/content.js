@@ -6,7 +6,6 @@ import generatedDocs from '../modelDocsGenerated.json';
 export const slugToPath = {
   'readme': '/public/docs/README.md',
   'implementation-info': '/public/docs/implementation-info.txt',
-  'ipnv2-readme': '/public/docs/IPNV2_README.md',
   ...generatedDocs.slugPaths
 };
 
