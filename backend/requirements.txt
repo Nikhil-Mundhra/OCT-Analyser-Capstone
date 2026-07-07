@@ -13,3 +13,4 @@ pillow
 httpx
 pytest
 pytest-cov
+opencv-python-headless
