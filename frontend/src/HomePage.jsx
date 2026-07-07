@@ -13,7 +13,6 @@ export function HomeNav() {
       </div>
       <div className="flex items-center gap-4 text-sm font-medium">
         <Link href="/docs/readme" className="hover:text-sky-400 transition">Documentation</Link>
-        <Link href="/docs/implementation-info" className="hover:text-sky-400 transition">Architecture</Link>
         <Link href="/QC" className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded font-bold transition">
           Launch App
         </Link>
