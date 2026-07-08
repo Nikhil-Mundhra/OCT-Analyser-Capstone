@@ -2,21 +2,32 @@ from pathlib import Path
 from shutil import copyfileobj
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, UploadFile, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session
 
 from .data_loader import load_normalized_scan
 from .interfaces import ScanResult
 from .mvp_pipeline import process_scan
 from .preview import preview_path
 from .classifier_integration import get_classifier
-
+from .database import Base, engine, get_db
+from .models import ScanRecord
+from .tasks import process_scan_task
+from .auth import get_api_key
+from .audit_log import log_scan_accessed, log_scan_created
+from .report_generator import generate_pdf_report
+from fastapi.responses import Response
 
 import tempfile
 import subprocess
 import json
 import os
+
+# Initialize database tables
+Base.metadata.create_all(bind=engine)
+
 RUNTIME_DIR = Path(tempfile.gettempdir()) / "runtime_uploads"
 UPLOAD_DIR = RUNTIME_DIR / "uploads"
 PREVIEW_DIR = RUNTIME_DIR / "previews"
@@ -30,9 +41,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SCAN_STORE: dict[str, dict] = {}
-
-
 @app.get("/")
 def read_root() -> dict[str, str]:
     return {
@@ -43,8 +51,8 @@ def read_root() -> dict[str, str]:
     }
 
 
-@app.post("/api/scans", response_model=ScanResult)
-def create_scan(file: UploadFile) -> dict:
+@app.post("/api/scans")
+def create_scan(file: UploadFile, db: Session = Depends(get_db), api_key: str = Depends(get_api_key)) -> dict:
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in SUPPORTED_SUFFIXES:
         raise HTTPException(status_code=400, detail="Upload a .vol, .dcm, .zip OCT export, or a 2D image (.png, .jpg, .tif, .tiff)")
@@ -57,34 +65,30 @@ def create_scan(file: UploadFile) -> dict:
     with upload_path.open("wb") as handle:
         copyfileobj(file.file, handle)
 
-    SCAN_STORE[scan_id] = {
-        "scan_id": scan_id,
-        "status": "processing",
-        "filename": file.filename,
-        "is_demo_model": True,
+    scan_record = ScanRecord(
+        id=scan_id,
+        filename=file.filename,
+        status="pending",
+        is_demo_model=False
+    )
+    db.add(scan_record)
+    db.commit()
+    db.refresh(scan_record)
+    
+    log_scan_created(scan_id, user_id=api_key or "anonymous")
+
+    # Dispatch Celery task
+    task = process_scan_task.delay(scan_id, str(upload_path))
+    
+    scan_record.task_id = task.id
+    db.commit()
+
+    return {
+        "scan_id": scan_record.id,
+        "task_id": scan_record.task_id,
+        "status": scan_record.status,
+        "filename": scan_record.filename
     }
-
-    try:
-        scan = load_normalized_scan(upload_path)
-        result = process_scan(scan, preview_dir=PREVIEW_DIR / scan_id)
-        _prefix_preview_urls(scan_id, result)
-        SCAN_STORE[scan_id] = {
-            "scan_id": scan_id,
-            "filename": file.filename,
-            **result,
-        }
-    except Exception as exc:
-        SCAN_STORE[scan_id] = {
-            "scan_id": scan_id,
-            "filename": file.filename,
-            "status": "failed",
-            "detail": str(exc),
-            "is_demo_model": True,
-        }
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    return SCAN_STORE[scan_id]
-
 
 @app.post("/api/segment_2d")
 def segment_2d(file: UploadFile) -> dict:
@@ -93,7 +97,6 @@ def segment_2d(file: UploadFile) -> dict:
         raise HTTPException(status_code=400, detail="Unsupported file type")
         
     scan_id = uuid4().hex
-    # Save the file temporarily
     temp_dir = Path(tempfile.gettempdir()) / "oct_segmentation"
     temp_dir.mkdir(parents=True, exist_ok=True)
     
@@ -130,7 +133,6 @@ def segment_2d(file: UploadFile) -> dict:
     except subprocess.CalledProcessError as e:
         raise HTTPException(status_code=500, detail=f"Segmentation failed: {e.stderr}")
     finally:
-        # Cleanup
         if img_path.exists():
             img_path.unlink()
         if out_json.exists():
@@ -138,50 +140,71 @@ def segment_2d(file: UploadFile) -> dict:
 
 @app.post("/predict")
 async def predict_image(file: UploadFile) -> dict:
+    """
+    Classification endpoint that mirrors the Hugging Face Space /predict contract.
+
+    Returns the pipeline result dict directly (Level1, Level2, Level3,
+    Final_Diagnosis, Path, gradcams) so local and remote endpoints are
+    shape-identical from the frontend's perspective.
+    """
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in SUPPORTED_SUFFIXES:
         raise HTTPException(status_code=400, detail="Unsupported file type")
-    
+
     scan_id = uuid4().hex
     temp_dir = Path(tempfile.gettempdir()) / "oct_classification"
     temp_dir.mkdir(parents=True, exist_ok=True)
-    
+
     img_path = temp_dir / f"{scan_id}{suffix}"
     with img_path.open("wb") as handle:
         copyfileobj(file.file, handle)
-        
+
     try:
         classifier = get_classifier()
         results = classifier.predict(str(img_path), gradcam=True)
         if "error" in results:
             raise HTTPException(status_code=400, detail=results["error"])
-            
-        return {
-            "level1_prediction": results.get("Level1", {}).get("prediction"),
-            "level1_confidence": results.get("Level1", {}).get("confidence"),
-            "level2_prediction": results.get("Level2", {}).get("prediction"),
-            "level2_confidence": results.get("Level2", {}).get("confidence"),
-            "level3_prediction": results.get("Level3", {}).get("prediction"),
-            "level3_confidence": results.get("Level3", {}).get("confidence"),
-            "final_diagnosis": results.get("Final_Diagnosis"),
-            "gradcams": results.get("gradcams", {})
-        }
+
+        # Return the pipeline dict as-is so the response shape matches what the
+        # HF Space returns: {Level1, Level2, Level3, Final_Diagnosis, Path, gradcams}
+        return results
     finally:
         if img_path.exists():
             img_path.unlink()
 
 
-@app.get("/api/scans/{scan_id}", response_model=ScanResult)
-def get_scan(scan_id: str) -> dict:
-    scan = SCAN_STORE.get(scan_id)
+@app.get("/api/scans/{scan_id}")
+def get_scan(scan_id: str, db: Session = Depends(get_db), api_key: str = Depends(get_api_key)) -> dict:
+    scan = db.query(ScanRecord).filter(ScanRecord.id == scan_id).first()
     if scan is None:
         raise HTTPException(status_code=404, detail="Scan not found")
-    return scan
+        
+    log_scan_accessed(scan_id, user_id=api_key or "anonymous")
+        
+    response = {
+        "scan_id": scan.id,
+        "status": scan.status,
+        "filename": scan.filename,
+        "is_demo_model": scan.is_demo_model
+    }
+    
+    if scan.task_id:
+        response["task_id"] = scan.task_id
+        
+    if scan.detail:
+        response["detail"] = scan.detail
+        
+    if scan.result:
+        # Merge result fields if completed
+        response.update(scan.result)
+        
+    return response
 
 
 @app.get("/api/scans/{scan_id}/preview/{kind:path}")
-def get_preview(scan_id: str, kind: str) -> FileResponse:
-    if scan_id not in SCAN_STORE:
+def get_preview(scan_id: str, kind: str, db: Session = Depends(get_db)) -> FileResponse:
+    scan = db.query(ScanRecord).filter(ScanRecord.id == scan_id).first()
+    if scan is None:
         raise HTTPException(status_code=404, detail="Scan not found")
 
     try:
@@ -193,9 +216,17 @@ def get_preview(scan_id: str, kind: str) -> FileResponse:
         raise HTTPException(status_code=404, detail="Preview not found")
     return FileResponse(path, media_type="image/png")
 
-
-def _prefix_preview_urls(scan_id: str, result: dict) -> None:
-    result["previews"] = {
-        key: f"/api/scans/{scan_id}/{url}" if isinstance(url, str) else [f"/api/scans/{scan_id}/{u}" for u in url]
-        for key, url in result.get("previews", {}).items()
-    }
+@app.get("/api/scans/{scan_id}/report")
+def get_scan_report(scan_id: str, db: Session = Depends(get_db), api_key: str = Depends(get_api_key)) -> Response:
+    scan = db.query(ScanRecord).filter(ScanRecord.id == scan_id).first()
+    if scan is None or not scan.result:
+        raise HTTPException(status_code=404, detail="Scan report not available")
+        
+    log_scan_accessed(scan_id, user_id=api_key or "anonymous")
+    pdf_bytes = generate_pdf_report(scan_id, scan.result)
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=OCT_Report_{scan_id}.pdf"}
+    )

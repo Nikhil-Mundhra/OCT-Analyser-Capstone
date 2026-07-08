@@ -72,17 +72,12 @@ l3_specialists:
 # INPUT RESOLUTION PIPELINE
 # ──────────────────────────────────────────────────────────────────────────────
 resolution:
-  level1:    224    # Gatekeeper — maximum throughput
-  level2:    224    # Router — consistent feature space with L1
-  level3:    384    # Specialists — fine-grained structural detail
+  multi_head: 384    # ConvNeXt V2 unified input resolution
 
-# Recommended batch sizes for M2 Pro 24GB Apple Silicon unified memory
-# Memory budget: 24GB total − ~5GB OS/system = ~19GB available for PyTorch
+# Recommended batch sizes for 16GB VRAM (e.g. T4 / Colab Free Tier)
 # float16 AMP halves activation memory vs float32 baseline
 batch_sizes:
-  level1:    48     # EfficientNet-B3, 224×224, float16 → ~2.8GB activations (was ResNet-50 ~3.2GB)
-  level2:    32     # EfficientNet-B2, 224×224, float16 → ~2.8GB activations
-  level3:    8      # EfficientNet-B0, 384×384, float16 → ~3.5GB activations (memory-bound)
+  multi_head: 16     # ConvNeXt V2 Base, 384×384, float16
 
 # ──────────────────────────────────────────────────────────────────────────────
 # DIRECTORY → LABEL MAPPING

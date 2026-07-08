@@ -10,6 +10,7 @@ import csv
 import xml.etree.ElementTree as ET
 
 from .scan_types import NormalizedScan
+from .proprietary_ingest import load_proprietary_volume
 
 def load_oct_volume(file_path: str) -> tuple[np.ndarray, tuple[float, float, float]]:
     """
@@ -72,8 +73,11 @@ def load_normalized_scan(file_path: str | Path) -> NormalizedScan:
 
     if suffix in {".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".bmp"}:
         return _load_single_image(path)
+        
+    if suffix in {".fds", ".boct", ".e2e", ".opt"}:
+        return load_proprietary_volume(path)
 
-    raise ValueError("Unsupported file format. Please provide .vol, .dcm, .zip, or a 2D image")
+    raise ValueError(f"Unsupported file format {suffix}. Please provide .vol, .dcm, .zip, a proprietary format, or a 2D image")
 
 
 def _load_dicom_scan(path: Path) -> NormalizedScan:

@@ -19,6 +19,12 @@ logs_test/
 
 # Environment variables
 .env
+# .env.local is developer-specific and must NOT be committed.
+# .env.production IS committed so CI/CD uses the correct HF Space URL.
+frontend/.env.local
+
+# Docker local overrides (optional per-developer customisations)
+docker-compose.override.yml
 
 # agents
 .agents

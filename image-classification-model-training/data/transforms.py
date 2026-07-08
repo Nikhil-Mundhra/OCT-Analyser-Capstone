@@ -1,288 +1,109 @@
 """
 data/transforms.py
 
-Augmentation pipelines for the OCT hierarchical classification pipeline.
-
-Resolution Strategy (from architectural directives):
-  Level 1 (Gatekeeper):   224×224 — maximum throughput for binary screening.
-  Level 2 (Router):       224×224 — consistent feature space with L1.
-  Level 3 (Specialists):  384×384 — fine-grained structural detail for
-                           CNV vs DRUSEN, RAO vs RVO, etc.
-
-Pipeline Variants:
-  - Standard Train:  Random crop/flip/rotation + ColorJitter + GaussianBlur +
-                     RandomErasing. Used for L1, L2, L3_Macular, L3_Diabetic.
-  - Heavy Train:     Adds RandomAffine + stronger erasing. Used for
-                     extreme minority L3 specialists (Vascular, Fluid, Structural)
-                     where RAO has only 22 samples and CSR has 102.
-  - Val/Test:        Deterministic resize + CenterCrop + normalize only.
-
-All pipelines use ImageNet mean/std for pretrained backbone compatibility.
+Augmentation pipelines for the OCT Multi-Head classification pipeline using MONAI.
 """
 
 import numpy as np
-from torchvision import transforms
 import cv2
+import torch
+from monai.transforms import (
+    Compose,
+    LoadImage,
+    EnsureChannelFirst,
+    ScaleIntensity,
+    Resize,
+    RandRotate,
+    RandFlip,
+    RandGaussianNoise,
+    RandCoarseDropout,
+    NormalizeIntensity,
+    Transform
+)
 
-# ── ImageNet statistics ───────────────────────────────────────────────────────
+# ImageNet statistics for ConvNeXt
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD  = [0.229, 0.224, 0.225]
 
-# ── Resolution constants ──────────────────────────────────────────────────────
-RES_L1_L2: int = 224   # Level 1 & 2 input resolution
-RES_L3:    int = 384   # Level 3 specialist input resolution
+RES_H_W = (384, 384)
 
-# Intermediate crop sizes (resize target before random/center crop)
-_CROP_L1_L2: int = 256
-_CROP_L3:    int = 416
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# CLAHE Preprocessing
-# ──────────────────────────────────────────────────────────────────────────────
-
-class CLAHETransform:
+class CLAHETransform(Transform):
     """
     Contrast Limited Adaptive Histogram Equalization for OCT images.
-
-    Applied per-image BEFORE resize/crop to normalise brightness and local
-    contrast variation across different OCT scanner manufacturers
-    (Zeiss, Heidelberg, Topcon, etc.).
-
-    Without this step, the model may learn scanner-specific intensity
-    distributions rather than pathology — a form of shortcut learning that
-    degrades performance on unseen devices.
-
-    Applied identically at train, val, and test time — this is NOT an
-    augmentation, it is a deterministic preprocessing step.
-
-    Args:
-        clip_limit:  Contrast clip threshold. 2.0 is standard for OCT.
-                     Higher values = more contrast, more noise amplification.
-        tile_grid:   Size of the adaptive tile grid. (8, 8) is standard.
+    Wrapped as a MONAI Transform.
     """
-
-    def __init__(
-        self,
-        clip_limit: float = 2.0,
-        tile_grid: tuple = (8, 8),
-    ) -> None:
+    def __init__(self, clip_limit=2.0, tile_grid=(8, 8)):
         self.clip_limit = clip_limit
         self.tile_grid = tile_grid
         self._clahe = None
 
-    def __call__(self, img) -> "PIL.Image.Image":
-        from PIL import Image as PILImage
+    def __call__(self, img):
         if self._clahe is None:
-            self._clahe = cv2.createCLAHE(
-                clipLimit=self.clip_limit,
-                tileGridSize=self.tile_grid,
-            )
-        # Convert to numpy grayscale — OCT images carry most diagnostic
-        # information in luminance; colour channels are usually redundant
-        img_np = np.array(img.convert("L"), dtype=np.uint8)
-        equalized = self._clahe.apply(img_np)
-        # Stack to 3-channel RGB — required for ImageNet-pretrained backbones
-        rgb = np.stack([equalized, equalized, equalized], axis=-1)
-        return PILImage.fromarray(rgb, mode="RGB")
+            self._clahe = cv2.createCLAHE(clipLimit=self.clip_limit, tileGridSize=self.tile_grid)
+        
+        img_np = img.numpy() if hasattr(img, 'numpy') else img
+        
+        # Convert first channel to uint8
+        ch = np.clip(img_np[0], 0, 255).astype(np.uint8)
+        equalized = self._clahe.apply(ch)
+        
+        # Replace all channels with the equalized luminance (since OCT is structurally grayscale)
+        for i in range(img_np.shape[0]):
+            img_np[i] = equalized
+            
+        return img_np.astype(np.float32)
 
+class Ensure3Channels(Transform):
+    def __call__(self, img):
+        img_np = img.numpy() if hasattr(img, 'numpy') else img
+        if img_np.shape[0] == 1:
+            img_np = np.repeat(img_np, 3, axis=0)
+        elif img_np.shape[0] > 3:
+            img_np = img_np[:3]
+        return img_np
 
-# Shared instance used in all transform pipelines
-_CLAHE = CLAHETransform(clip_limit=2.0, tile_grid=(8, 8))
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Transform factory functions
-# ──────────────────────────────────────────────────────────────────────────────
-
-def get_train_transforms(resolution: int = RES_L1_L2) -> transforms.Compose:
+def get_train_transforms():
     """
-    Standard training augmentation pipeline.
-
-    Designed to:
-      - Increase geometric diversity (flip, rotate, crop).
-      - Simulate OCT scan artefacts (GaussianBlur, ColorJitter).
-      - Force the network to ignore local texture via RandomErasing.
-
-    Args:
-        resolution: Target output resolution (224 or 384).
-
-    Returns:
-        Composed torchvision transform.
+    Standard training augmentation pipeline using MONAI.
     """
-    crop_size = _CROP_L3 if resolution == RES_L3 else _CROP_L1_L2
-    return transforms.Compose([
-        _CLAHE,                          # Scanner normalisation (deterministic)
-        transforms.Resize(
-            crop_size,
-            interpolation=transforms.InterpolationMode.BICUBIC,
-        ),
-        transforms.RandomCrop(resolution),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomVerticalFlip(p=0.2),
-        transforms.RandomRotation(degrees=15),
-        transforms.ColorJitter(
-            brightness=0.3,
-            contrast=0.3,
-            saturation=0.1,
-            hue=0.05,
-        ),
-        transforms.RandomApply(
-            [transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))],
-            p=0.3,
-        ),
-        transforms.ToTensor(),
-        # RandomErasing after ToTensor (operates on tensor, not PIL image)
-        transforms.RandomErasing(
-            p=0.2,
-            scale=(0.02, 0.10),
-            ratio=(0.3, 3.3),
-            value="random",
-        ),
-        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+    return Compose([
+        LoadImage(image_only=True),
+        EnsureChannelFirst(),
+        CLAHETransform(),
+        Ensure3Channels(),
+        ScaleIntensity(), # Scale [0, 255] -> [0, 1]
+        Resize(RES_H_W),
+        RandFlip(prob=0.5, spatial_axis=0), # Vertical
+        RandFlip(prob=0.5, spatial_axis=1), # Horizontal
+        RandRotate(range_x=0.26, prob=0.5, keep_size=True), # ~15 degrees
+        RandGaussianNoise(prob=0.3, std=0.05),
+        NormalizeIntensity(subtrahend=IMAGENET_MEAN, divisor=IMAGENET_STD, channel_wise=True),
+        RandCoarseDropout(holes=1, spatial_size=(32, 32), dropout_holes=True, fill_value=0, prob=0.2)
     ])
 
-
-def get_heavy_train_transforms(resolution: int = RES_L3) -> transforms.Compose:
+def get_val_transforms():
     """
-    Heavy augmentation pipeline for extreme minority classes.
-
-    Applied to L3_Vascular (RAO=22, RVO=101, MH=102), L3_Fluid (CSR=102),
-    and L3_Structural (ERM=155, VID=76) to maximise synthetic variation.
-
-    Adds on top of the standard pipeline:
-      - RandomAffine (translate, scale, shear)
-      - Stronger rotation (±30°)
-      - Stronger RandomErasing scale
-
-    Args:
-        resolution: Target output resolution (typically 384 for L3).
+    Deterministic validation/test pipeline using MONAI.
     """
-    crop_size = _CROP_L3 if resolution == RES_L3 else _CROP_L1_L2
-    return transforms.Compose([
-        _CLAHE,                          # Scanner normalisation (deterministic)
-        transforms.Resize(
-            crop_size,
-            interpolation=transforms.InterpolationMode.BICUBIC,
-        ),
-        transforms.RandomCrop(resolution),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomVerticalFlip(p=0.5),
-        transforms.RandomRotation(degrees=30),
-        transforms.RandomAffine(
-            degrees=20,
-            translate=(0.10, 0.10),
-            scale=(0.85, 1.15),
-            shear=10,
-            interpolation=transforms.InterpolationMode.BICUBIC,
-        ),
-        transforms.ColorJitter(
-            brightness=0.4,
-            contrast=0.4,
-            saturation=0.2,
-            hue=0.10,
-        ),
-        transforms.RandomApply(
-            [transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 3.0))],
-            p=0.4,
-        ),
-        transforms.ToTensor(),
-        transforms.RandomErasing(
-            p=0.35,
-            scale=(0.02, 0.15),
-            ratio=(0.3, 3.3),
-            value="random",
-        ),
-        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+    return Compose([
+        LoadImage(image_only=True),
+        EnsureChannelFirst(),
+        CLAHETransform(),
+        Ensure3Channels(),
+        ScaleIntensity(),
+        Resize(RES_H_W),
+        NormalizeIntensity(subtrahend=IMAGENET_MEAN, divisor=IMAGENET_STD, channel_wise=True)
     ])
 
-
-def get_val_transforms(resolution: int = RES_L1_L2) -> transforms.Compose:
+def get_transforms(mode_or_split: str = "train", split: str = None) -> Compose:
     """
-    Deterministic validation/test pipeline (no augmentation).
-
-    Args:
-        resolution: Target output resolution (224 or 384).
-
-    Returns:
-        Composed torchvision transform.
+    Returns the MONAI transforms pipeline.
+    Supports legacy two-arg call (mode, split) and new single-arg call (split).
     """
-    crop_size = _CROP_L3 if resolution == RES_L3 else _CROP_L1_L2
-    return transforms.Compose([
-        _CLAHE,                          # Scanner normalisation — must match train pipeline
-        transforms.Resize(
-            crop_size,
-            interpolation=transforms.InterpolationMode.BICUBIC,
-        ),
-        transforms.CenterCrop(resolution),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
-    ])
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Registry — keyed by (mode, split)
-# ──────────────────────────────────────────────────────────────────────────────
-
-#: Complete transform registry. Access via :func:`get_transforms`.
-TRANSFORM_REGISTRY: dict = {
-    # Level 1 — 224px, standard augmentation
-    "level1": {
-        "train": get_train_transforms(RES_L1_L2),
-        "val":   get_val_transforms(RES_L1_L2),
-    },
-    # Level 2 — 224px, HEAVY augmentation (minority class collapse prevention)
-    "level2": {
-        "train": get_heavy_train_transforms(RES_L1_L2),
-        "val":   get_val_transforms(RES_L1_L2),
-    },
-    # Level 3 Macular — 384px, standard (large enough dataset)
-    "level3_macular": {
-        "train": get_train_transforms(RES_L3),
-        "val":   get_val_transforms(RES_L3),
-    },
-    # Level 3 Diabetic — 384px, standard (DME=11,495 samples)
-    "level3_diabetic": {
-        "train": get_train_transforms(RES_L3),
-        "val":   get_val_transforms(RES_L3),
-    },
-    # Level 3 Vascular — 384px, HEAVY (MH=102, RVO=101, RAO=22)
-    "level3_vascular": {
-        "train": get_heavy_train_transforms(RES_L3),
-        "val":   get_val_transforms(RES_L3),
-    },
-    # Level 3 Fluid — 384px, HEAVY (CSR=102 only)
-    "level3_fluid": {
-        "train": get_heavy_train_transforms(RES_L3),
-        "val":   get_val_transforms(RES_L3),
-    },
-    # Level 3 Structural — 384px, HEAVY (ERM=155, VID=76)
-    "level3_structural": {
-        "train": get_heavy_train_transforms(RES_L3),
-        "val":   get_val_transforms(RES_L3),
-    },
-}
-
-
-def get_transforms(mode: str, split: str = "train") -> transforms.Compose:
-    """
-    Convenience accessor for the transform registry.
-
-    Args:
-        mode:  Dataset mode (e.g., ``'level1'``, ``'level3_vascular'``).
-        split: ``'train'`` or ``'val'``.
-
-    Returns:
-        A ``torchvision.transforms.Compose`` instance.
-
-    Raises:
-        ValueError: If mode or split is invalid.
-    """
-    if mode not in TRANSFORM_REGISTRY:
-        raise ValueError(
-            f"Unknown mode: '{mode}'. "
-            f"Choose from: {sorted(TRANSFORM_REGISTRY.keys())}"
-        )
-    if split not in ("train", "val"):
-        raise ValueError(f"Unknown split: '{split}'. Use 'train' or 'val'.")
-    return TRANSFORM_REGISTRY[mode][split]
+    actual_split = split if split is not None else mode_or_split
+    if actual_split not in ["train", "val"]:
+        raise ValueError(f"Unknown split: '{actual_split}'. Use 'train' or 'val'.")
+    
+    if actual_split == "train":
+        return get_train_transforms()
+    return get_val_transforms()

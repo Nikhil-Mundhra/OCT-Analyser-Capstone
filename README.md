@@ -72,7 +72,7 @@ OCT-Analyser-Capstone/
 The application currently acts as a strong foundational MVP, but there are major components scheduled for future deployment:
 - **Clinical Validation:** The app must undergo formal clinical trials and robust accuracy evaluations; it cannot currently be used for real patient diagnosis.
 - **Trained 15-Layer Anatomical Segmentation:** The MVP currently uses a 12-layer deterministic placeholder. We will fully integrate our newly developed **15-layer Hierarchical U-Net model** (located in `OCT-Segmentation-Model/`) for robust anatomical structure extraction in the 3D pipeline.
-- **Live Classification Inference:** Diagnosis and layer votes currently utilize demo placeholders. These will be replaced by the heavily trained ResNet/EfficientNet ANNs being developed in the `image-classification-model-training/` module.
+- **Live Classification Inference:** Diagnosis and layer votes currently utilize demo placeholders. These will be replaced by the heavily trained Multi-Head ConvNeXt V2 model being developed in the `image-classification-model-training/` module.
 - **Background Jobs & Database Persistence:** Very large scans will soon require a background job queue (e.g., Celery/Redis). Currently, scan state only lives in the local filesystem/process memory.
 - **Enterprise Capabilities:** Future releases will introduce PDF report generation, HIPAA-compliant access controls, user authentication, and audit-grade clinical logging.
 - **Proprietary Archive Support:** Expanding beyond standard `.dcm` and `.vol`, future ingestion targets may include reverse-engineering proprietary Solix archives (e.g. `.fds`).
@@ -166,7 +166,7 @@ If you are a new developer or an AI agent analyzing this repository, read this s
     *   **`src/api/octAnalyzerClient.js`**: Frontend API client.
 *   **`OCT-Segmentation-Model/`** & **`image-classification-model-training/`**: 
     *   Standalone ML repositories for training the models.
-    *   Classification uses a 2-level router: **Level 1 (ResNet-50)** Gatekeeper to triage Abnormal vs. Normal, and **Level 2 (EfficientNet-B2)** Disease Router to classify specific pathologies.
+    *   Classification utilizes a **Unified Multi-Head ConvNeXt V2** model. A shared feature backbone extracts global representations, which then feed into three specialized heads: **Head 1** (Normal vs. Abnormal), **Head 2** (5 Broad Pathology Families), and **Head 3** (11 Granular Biomarkers/Severities).
     *   **Segmentation utilizes a custom 15-layer Hierarchical U-Net model** (`n_granular_classes=15`, `n_coarse_classes=3`) trained in PyTorch. The inference API for this model is located in `OCT-Segmentation-Model/main.py`.
 
 ### 3. Detailed ML Documentation

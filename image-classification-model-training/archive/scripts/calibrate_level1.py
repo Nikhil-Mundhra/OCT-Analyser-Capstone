@@ -422,8 +422,8 @@ def main():
         n_splits=5,
         batch_size=args.batch_size,
         num_workers=0,         # CPU calibration — keep simple
-        train_transform=get_transforms("level1", "train"),
-        val_transform=get_transforms("level1", "val"),
+        train_transform=get_transforms("train"),
+        val_transform=get_transforms("val"),
         use_weighted_sampler=True,
         seed=42,
     )

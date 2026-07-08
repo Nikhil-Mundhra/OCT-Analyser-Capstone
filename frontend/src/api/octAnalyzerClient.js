@@ -1,14 +1,24 @@
 const queryApiBase = globalThis.location
   ? new URLSearchParams(globalThis.location.search).get("apiBase")
   : "";
-const DEFAULT_API_BASE = "https://nmundhra-oct-image-classifier-model.hf.space";
+const DEFAULT_API_BASE = "http://127.0.0.1:8000";
 
 export const OCT_ANALYZER_API_BASE = (
   globalThis.OCT_ANALYZER_API_BASE || queryApiBase || DEFAULT_API_BASE
 ).replace(/\/$/, "");
 
+// Segmentation endpoint:
+//   - Local dev:  set NEXT_PUBLIC_SEGMENTATION_API_URL=http://127.0.0.1:8000 in frontend/.env.local
+//   - Production: set NEXT_PUBLIC_SEGMENTATION_API_URL=https://nmundhra-oct-segmentation-model.hf.space in frontend/.env.production
+//   - Fallback:   same host as the backend API (local /predict endpoint)
+export const SEGMENTATION_API_BASE = (
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_SEGMENTATION_API_URL) ||
+  globalThis.SEGMENTATION_API_BASE ||
+  OCT_ANALYZER_API_BASE
+).replace(/\/$/, "");
+
 /**
- * Uploads an OCT/OCTA scan through the backend API contract.
+ * Uploads an OCT/OCTA scan and polls for completion using the background job queue.
  *
  * @param {File} file
  * @returns {Promise<object>}
@@ -23,62 +33,60 @@ export async function createScan(file) {
     reader.readAsDataURL(file);
   });
 
-  const predictReq = fetch(apiUrl("/predict"), {
+  // Step 1: Submit scan to background queue
+  let scanRecord = await fetch(apiUrl("/api/scans"), {
     method: "POST",
     body: form,
-  }).then(res => res.json());
+  }).then(res => {
+    if (!res.ok) throw new Error("Failed to upload scan");
+    return res.json();
+  });
 
-  // Remote HF Space for segmentation
-  const segmentReq = fetch("https://nmundhra-oct-segmentation-model.hf.space/predict", {
+  // Step 2: Poll for completion
+  const scanId = scanRecord.scan_id;
+  while (scanRecord.status === "pending" || scanRecord.status === "processing") {
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+    scanRecord = await fetch(apiUrl(`/api/scans/${scanId}`)).then(res => res.json());
+  }
+
+  if (scanRecord.status === "failed") {
+    throw new Error(scanRecord.detail || "Scan processing failed");
+  }
+
+  // Segment via API for visualization
+  const segmentReq = fetch(`${SEGMENTATION_API_BASE}/predict`, {
     method: "POST",
     body: form,
   }).then(res => res.ok ? res.json() : null).catch(() => null);
 
-  const [predictPayload, segmentPayload] = await Promise.all([predictReq, segmentReq]);
+  const segmentPayload = await segmentReq;
 
-  if (predictPayload.detail) {
-    throw new Error(predictPayload.detail || "Upload failed");
-  }
-
-  const normalized = normalizeScanResult(predictPayload);
-  normalized.segmentation = segmentPayload;
+  // The local MVP pipeline already formats mostly to the expected structure
+  const normalized = normalizeScanResult(scanRecord, segmentPayload);
   normalized.localImageUrl = localImageUrl;
   return normalized;
 }
 
-export function normalizeScanResult(scan) {
+export function normalizeScanResult(scan, segmentation = null) {
   if (!scan || typeof scan !== "object") {
     return scan;
   }
 
-  // Map Hugging Face Pipeline output to the legacy React frontend schema
-  const isAbnormal = scan.level1_prediction === "ABNORMAL";
+  // Local /api/scans returns the full MVP payload which might be a bit different from HF
+  // But we adapt it gracefully:
+  const classification = scan.classification || {};
+  const diagnosis = classification.diagnosis || scan.diagnosis || "NORMAL";
   
-  let diagnosis = "NORMAL";
-  if (isAbnormal && scan.level2_prediction) {
-    if (scan.level2_prediction === "Macular_Degeneration") diagnosis = "AMD";
-    else if (scan.level2_prediction === "Diabetic_Complications") diagnosis = "DR";
-    else diagnosis = scan.level2_prediction;
-  }
-
   return {
-    status: "completed",
-    diagnosis: scan.final_diagnosis || diagnosis,
-    confidence: isAbnormal ? (scan.level3_confidence || scan.level2_confidence) : scan.level1_confidence,
-    level1: {
-      prediction: scan.level1_prediction,
-      confidence: scan.level1_confidence
-    },
-    level2: {
-      prediction: scan.level2_prediction,
-      confidence: scan.level2_confidence
-    },
-    level3: {
-      prediction: scan.level3_prediction,
-      confidence: scan.level3_confidence
-    },
+    status: scan.status || "completed",
+    diagnosis: diagnosis,
+    confidence: scan.confidence || classification.confidence || 0.0,
+    level1: classification.level1 || scan.level1 || {},
+    level2: classification.level2 || scan.level2 || {},
+    level3: classification.level3 || scan.level3 || {},
     gradcams: scan.gradcams || {},
-    previews: {},
+    previews: normalizePreviewMap(scan.previews),
+    segmentation: segmentation || null,
     ipnv2: null
   };
 }

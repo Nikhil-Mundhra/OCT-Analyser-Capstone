@@ -59,9 +59,9 @@ class OCTInferencePipeline:
         logger.info(f"Initialising OCT Inference Pipeline on device: {self.device}")
         
         # 1. Load Transforms (we use 'val' split for deterministic preprocessing)
-        self.transform_l1_l2 = get_transforms("level1", "val")
-        # For L3, we can just use level3_macular's val transform as all L3 val transforms are identical (384px)
-        self.transform_l3 = get_transforms("level3_macular", "val")
+        self.transform_l1_l2 = get_transforms("val")
+        # For L3, we can just use the same val transform as all L3 val transforms are identical (384px)
+        self.transform_l3 = get_transforms("val")
         
         # 2. Build Models
         logger.info("Building Level 1 Gatekeeper...")

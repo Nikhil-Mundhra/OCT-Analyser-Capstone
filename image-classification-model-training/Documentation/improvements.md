@@ -1,6 +1,10 @@
 # Level 1 Gatekeeper — Model Improvements (1st July, 2026)
 
-This document is the authoritative record of all improvements made to the Level 1 Gatekeeper model. Each improvement includes the **rationale**, **files changed**, **expected impact**, and **how to verify** the change is working correctly.
+> [!WARNING]  
+> **DEPRECATION NOTICE (Sprint 1 - July 2026)**
+> The Level 1 Gatekeeper, Level 2 Router, and Level 3 Specialist models have been completely superseded by the unified `MultiHeadConvNeXtV2` architecture. This document serves purely as a historical record of the improvements made to the *legacy* Level 1 Gatekeeper model before it was deprecated.
+
+This document is the authoritative record of all improvements made to the legacy Level 1 Gatekeeper model. Each improvement includes the **rationale**, **files changed**, **expected impact**, and **how to verify** the change is working correctly.
 
 > [!NOTE]
 > Improvements 1–4 are **pre-training changes** and require a new training run to take effect.

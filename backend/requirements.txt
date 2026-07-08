@@ -14,3 +14,7 @@ httpx
 pytest
 pytest-cov
 opencv-python-headless
+celery
+redis
+sqlalchemy
+pydantic-settings

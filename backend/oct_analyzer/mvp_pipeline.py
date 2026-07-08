@@ -53,9 +53,19 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             tmp_path = tmp.name
         
-        # Normalize and save the flattened volume as an image
-        flattened_img = np.squeeze(flattened_volume)
-        norm_vol = cv2.normalize(flattened_img, None, 0, 255, cv2.NORM_MINMAX)
+        # Create a 3-channel pseudo-3D image from 25%, 50%, and 75% slices along Y
+        z_dim, y_dim, x_dim = flattened_volume.shape
+        if y_dim >= 3:
+            slice_1 = flattened_volume[:, int(y_dim * 0.25), :]
+            slice_2 = flattened_volume[:, int(y_dim * 0.50), :]
+            slice_3 = flattened_volume[:, int(y_dim * 0.75), :]
+        else:
+            slice_1 = flattened_volume[:, 0, :]
+            slice_2 = flattened_volume[:, min(1, y_dim - 1), :]
+            slice_3 = flattened_volume[:, min(2, y_dim - 1), :]
+            
+        stacked_vol = np.stack((slice_1, slice_2, slice_3), axis=-1)
+        norm_vol = cv2.normalize(stacked_vol, None, 0, 255, cv2.NORM_MINMAX)
         cv2.imwrite(tmp_path, norm_vol.astype(np.uint8))
         
         pipeline_results = classifier.predict(tmp_path, gradcam=True)
