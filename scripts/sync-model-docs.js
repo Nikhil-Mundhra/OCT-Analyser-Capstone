@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.join(__dirname, '..');
-const FRONTEND_PUBLIC_DOCS = path.join(ROOT_DIR, 'frontend', 'public', 'docs', 'models');
+const FRONTEND_PUBLIC_DOCS = path.join(ROOT_DIR, 'frontend', 'public', 'docs_content', 'models');
 const FRONTEND_SRC_DOCS = path.join(ROOT_DIR, 'frontend', 'src', 'docs');
 
 const SOURCES = [
@@ -112,7 +112,7 @@ function processSources() {
       const slug = `${source.id}-${file.replace('.md', '').toLowerCase()}`;
 
       // Map slug to public path for content.js
-      slugToPathMap[slug] = `/public/docs/models/${source.id}/${file}`;
+      slugToPathMap[slug] = `/docs_content/models/${source.id}/${file}`;
 
       articles.push({
         slug,

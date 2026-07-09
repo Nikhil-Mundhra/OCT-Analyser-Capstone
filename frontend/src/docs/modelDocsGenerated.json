@@ -13,16 +13,10 @@
           "description": "This folder contains the comprehensive documentation for the design, architecture, and engineering decisions behind the PyTorch OCT Image Classificati..."
         },
         {
-          "slug": "classification-todo",
-          "title": "Project To-Do List",
-          "sidebarTitle": "Project To-Do List",
-          "description": "*Last updated: 1st July, 2026*"
-        },
-        {
           "slug": "classification-architecture",
-          "title": "Hierarchical OCT/OCTA Image Classification Architecture",
-          "sidebarTitle": "Hierarchical OCT/OCTA Image Classification Architecture",
-          "description": "**What exactly did we build?** We built a **Hierarchical Convolutional Neural Network (CNN) Ensemble**. It is **NOT** a Recurrent Neural Network (RNN)..."
+          "title": "Multi-Head OCT/OCTA Image Classification Architecture",
+          "sidebarTitle": "Multi-Head OCT/OCTA Image Classification Architecture",
+          "description": "**What exactly did we build?** We built a **Unified Multi-Head Convolutional Neural Network (CNN)**. It utilizes **Transfer Learning**, taking state-o..."
         },
         {
           "slug": "classification-data_pipeline",
@@ -40,19 +34,13 @@
           "slug": "classification-improvements",
           "title": "Level 1 Gatekeeper — Model Improvements (1st July, 2026)",
           "sidebarTitle": "Level 1 Gatekeeper — Model Improvements (1st July, 2026)",
-          "description": "This document is the authoritative record of all improvements made to the Level 1 Gatekeeper model. Each improvement includes the **rationale**, **fil..."
-        },
-        {
-          "slug": "classification-test_level1_sotoudeh",
-          "title": "Level 1 Model Evaluation: Sotoudeh-Paima OCT Dataset",
-          "sidebarTitle": "Level 1 Model Evaluation: Sotoudeh-Paima OCT Dataset",
-          "description": "This document outlines the evaluation of the **Level 1 Gatekeeper Model** (Normal vs. Abnormal) on the labeled retinal Optical Coherence Tomography (O..."
+          "description": "**DEPRECATION NOTICE (Sprint 1 - July 2026)** The Level 1 Gatekeeper, Level 2 Router, and Level 3 Specialist models have been completely superseded by..."
         },
         {
           "slug": "classification-training",
           "title": "OCT Pipeline — Training Engine & Optimisations",
           "sidebarTitle": "OCT Pipeline — Training Engine & Optimisations",
-          "description": "All levels of the pipeline (Gatekeeper, Router, and Specialists) share a unified training engine (`training/trainer.py`). This engine orchestrates the..."
+          "description": "Since migrating to the `MultiHeadConvNeXtV2` architecture, the training loop no longer trains separate models for different hierarchy levels. Instead,..."
         }
       ]
     },
@@ -84,16 +72,14 @@
     }
   ],
   "slugPaths": {
-    "classification-readme": "/public/docs/models/classification/README.md",
-    "classification-todo": "/public/docs/models/classification/TODO.md",
-    "classification-architecture": "/public/docs/models/classification/architecture.md",
-    "classification-data_pipeline": "/public/docs/models/classification/data_pipeline.md",
-    "classification-dataset": "/public/docs/models/classification/dataset.md",
-    "classification-improvements": "/public/docs/models/classification/improvements.md",
-    "classification-test_level1_sotoudeh": "/public/docs/models/classification/test_level1_sotoudeh.md",
-    "classification-training": "/public/docs/models/classification/training.md",
-    "segmentation-api_reference": "/public/docs/models/segmentation/api_reference.md",
-    "segmentation-architecture": "/public/docs/models/segmentation/architecture.md",
-    "segmentation-training_guide": "/public/docs/models/segmentation/training_guide.md"
+    "classification-readme": "/docs_content/models/classification/README.md",
+    "classification-architecture": "/docs_content/models/classification/architecture.md",
+    "classification-data_pipeline": "/docs_content/models/classification/data_pipeline.md",
+    "classification-dataset": "/docs_content/models/classification/dataset.md",
+    "classification-improvements": "/docs_content/models/classification/improvements.md",
+    "classification-training": "/docs_content/models/classification/training.md",
+    "segmentation-api_reference": "/docs_content/models/segmentation/api_reference.md",
+    "segmentation-architecture": "/docs_content/models/segmentation/architecture.md",
+    "segmentation-training_guide": "/docs_content/models/segmentation/training_guide.md"
   }
 }

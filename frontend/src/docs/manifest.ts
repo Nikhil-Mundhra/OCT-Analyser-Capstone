@@ -57,7 +57,7 @@ export const baseDocCategories: DocCategory[] = [
         sidebarTitle: "Biomarker Mapping",
         title: "3D OCT/OCTA Biomarker Mapping",
         description: "Layer-specific structural and vascular biomarkers with OCT/OCTA reference images and disease-feature mappings.",
-        externalHref: "/public/docs/biomarker_mapping_docs/oct_biomarker_mapping.html",
+        externalHref: "/docs_content/biomarker_mapping_docs/oct_biomarker_mapping.html",
       },
       {
         slug: "wireframe-demo",

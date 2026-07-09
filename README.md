@@ -72,7 +72,8 @@ OCT-Analyser-Capstone/
 The application currently acts as a strong foundational MVP, but there are major components scheduled for future deployment:
 - **Clinical Validation:** The app must undergo formal clinical trials and robust accuracy evaluations; it cannot currently be used for real patient diagnosis.
 - **Trained 15-Layer Anatomical Segmentation:** The MVP currently uses a 12-layer deterministic placeholder. We will fully integrate our newly developed **15-layer Hierarchical U-Net model** (located in `OCT-Segmentation-Model/`) for robust anatomical structure extraction in the 3D pipeline.
-- **Live Classification Inference:** Diagnosis and layer votes currently utilize demo placeholders. These will be replaced by the heavily trained Multi-Head ConvNeXt V2 model being developed in the `image-classification-model-training/` module.
+- **Live Classification Inference:** 
+  > **[WARNING] The live classification pipeline is currently running with a RANDOMLY INITIALIZED ConvNeXt V2 model because the trained weights (`multi_head.pth`) are missing from the `hf_space/weights/` directory.** The legacy models were only partially trained (last layers only). A full training run on real OCT data is required before classification outputs can be trusted.
 - **Background Jobs & Database Persistence:** Very large scans will soon require a background job queue (e.g., Celery/Redis). Currently, scan state only lives in the local filesystem/process memory.
 - **Enterprise Capabilities:** Future releases will introduce PDF report generation, HIPAA-compliant access controls, user authentication, and audit-grade clinical logging.
 - **Proprietary Archive Support:** Expanding beyond standard `.dcm` and `.vol`, future ingestion targets may include reverse-engineering proprietary Solix archives (e.g. `.fds`).
