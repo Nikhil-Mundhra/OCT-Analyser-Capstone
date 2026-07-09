@@ -24,8 +24,12 @@ logs_test/
 frontend/.env.local
 
 # Docker local overrides (optional per-developer customisations)
+# docker
 docker-compose.override.yml
 
 # agents
 .agents
 graphify-out/
+
+# Next.js build output
+frontend/.next/
