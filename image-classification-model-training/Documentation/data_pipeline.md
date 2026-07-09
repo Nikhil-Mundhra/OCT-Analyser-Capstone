@@ -81,18 +81,21 @@ graph TD
 ### 2. Multi-Head Loss + Alpha Weighting (Loss Layer)
 Even with balanced sampling, "easy" examples (like classic NORMAL scans) can overwhelm the gradient flow compared to "hard" border-case examples.
 
-> [!TIP]
-> **Why Focal Loss for highly imbalanced heads?** 
-> The `(1 - p_t)^gamma` modulating factor heavily penalizes confident, correct predictions (driving their loss near zero), while preserving the loss for uncertain or incorrect predictions. This forces the optimizer to spend its energy on the hardest examples.
+- **Dynamic `pos_weight` Scaling:** We pass the calculated ratio of negative-to-positive samples as a `pos_weight` variable directly into PyTorch's `BCEWithLogitsLoss`. This ensures the mathematical penalty (the gradient) for missing a rare disease is artificially magnified to match the volume of the dominant diseases.
+- **Label Smoothing (ε=0.1):** Applied to the categorical Head 2. Because our dataset is essentially a "mashup" of three different clinical datasets annotated by different doctors, there is inherent "label noise" (e.g. one doctor might label a scan "AMD" while another calls the exact same scan "DRUSEN"). Label smoothing mathematically prevents the model from becoming 100% confident in its predictions, making it more robust to these human inconsistencies.
 
-- **Alpha Weighting:** We pass the normalized class weights as the `alpha` parameter to the loss functions to give a structural baseline boost to minority classes.
-- **Label Smoothing (ε=0.1):** Applied to the categorical heads (Head 2, Head 3). Because the datasets come from three different annotator pools, there is inherent label noise (e.g. one dataset's "AMD" might overlap with another's "DRUSEN"). Label smoothing prevents the model from becoming overconfident on noisy annotations.
+### 3. Targeted Augmentation (Defending Against Machine Variance)
+Because we aggregate data from multiple hardware vendors (Zeiss Cirrus, Heidelberg Spectralis, Topcon), our dataset suffers from **Machine-Specific Variance**. Different machines use different laser wavelengths, resulting in distinctly different noise profiles, resolutions, and contrast levels. 
 
-### 3. Heavy Augmentation (Augmentation Layer)
-Since we are oversampling classes with very few images, the model runs a high risk of memorizing them (overfitting). CLAHE is applied first, then spatial augmentations follow.
+If we don't protect against this, a Deep Learning model will "cheat." Instead of learning what a disease looks like, it will memorize the noise profile of the specific machine that captured the disease. To force the model to learn true clinical biology, we apply a heavily constrained visual distortion pipeline (`train_transform`):
 
-The unified ConvNeXt V2 architecture uses a large input resolution (`384x384`) and employs aggressive augmentation:
-- Stronger affine transformations (rotations, translations, scaling)
-- `RandomErasing(p=0.35)`: Cuts out small rectangular patches of the image. This forces the network to look at the *entire* structural context of the retina rather than memorizing a single localized artifact in the scarce RAO/CSR images.
+- **Center-Biased Cropping (`RandomResizedCrop(scale=(0.85, 1.0)`)**: We heavily restrict how much of the image can be cropped out. Why? A Macular Hole (MH) is a physical gap at the very center of the retina (the fovea). If an aggressive crop cuts off the center and only shows the healthy tissue on the side, the model receives an image of healthy tissue paired with an "MH" disease label. This destroys the model's understanding of the disease. By keeping the scale between 0.85 and 1.0, we guarantee the center of the retina is always visible.
+- **`RandomAffine(degrees=10, translate=(0.05, 0.05))`**: Simulates minor patient head-tilt and natural saccadic eye movement during the scan, forcing the network to recognize the retina regardless of its angle.
+- **`ColorJitter(brightness=0.15, contrast=0.15)`**: Intentionally alters the brightness and contrast of the scan. This directly combats machine variance by preventing the model from memorizing the specific contrast signature of a Zeiss or Heidelberg scanner. We keep the jitter mild so we don't accidentally wash out low-contrast structural anomalies (like Drusen or Epiretinal Membranes).
+- **`GaussianBlur(kernel_size=3)`**: Occurs ~20% of the time. This mathematically blurs the image just enough to smooth out the high-frequency scanner noise (the grainy "speckle" artifacts), forcing the model to rely on the actual physical geometry of the retina.
 
-By combining scanner normalisation, sampling probabilities, multi-head loss modulation, and heavy synthetic variation, we maximise the predictive signal extracted from the long-tail minority classes.
+> [!CAUTION]
+> **Random Erasing, Mixup & CutMix: Proceed with extreme caution (Disabled).** 
+> While these are standard tools for normal images (like classifying dogs vs. cats), they are highly destructive in medical imaging. `RandomErasing` (blacking out random boxes) can literally delete a single small fluid pocket, erasing the disease entirely. `CutMix` might paste a Macular Hole into a scan of Diabetic Macular Edema, creating an anatomically impossible "frankenstein" retina that severely confuses the model's spatial understanding of human biology.
+
+By combining deterministic CLAHE normalisation, dynamic `pos_weight` loss functions, balanced dataloader sampling, and constrained, artifact-breaking augmentations, we maximise the predictive signal extracted from the rare diseases while remaining completely blind to the specific brand of machine that captured them.

@@ -49,36 +49,52 @@ $$ \text{Total Loss} = \lambda_1 \text{Loss}_{H1} + \lambda_2 \text{Loss}_{H2} +
 - **Early Stopping:** Monitored on the validation loss. If validation loss does not improve for consecutive epochs, training halts.
 - **Gradient Clipping:** `max_norm=1.0` is applied before every optimizer step. Focal Loss or combined multi-head losses on heavily imbalanced micro-batches can produce exploding gradients; clipping guarantees stability.
 
----
+## Hardware Optimizations (Apple Silicon / MPS)
 
-## Hardware Optimizations
+The training pipeline is aggressively tuned for local Apple Silicon (M2/M3) environments using the Metal Performance Shaders (MPS) backend. Because PyTorch on Apple Silicon is relatively new, we have to implement several advanced protections:
 
-The training pipeline is aggressively tuned for environments like Google Colab's Free Tier (T4 GPU - 16GB VRAM) and local Apple Silicon (M2 Pro).
+### 1. MPS Memory & Bug Patching
+- **`PYTORCH_ENABLE_MPS_FALLBACK=1`**: PyTorch on Mac doesn't yet support every single mathematical tensor operation natively on the GPU. If a model tries to run an unsupported operation, it will silently crash. This environment variable forces PyTorch to safely "fall back" and route those specific unsupported operations to the CPU instead of crashing the entire pipeline.
+- **`timm` Segfault Patch**: `timm` (PyTorch Image Models) uses a C-level operation called `trunc_normal_` to mathematically initialize the weights of the newly created classification heads. Unfortunately, on M2 chips, this specific operation triggers a Fatal Python error called a Segmentation Fault (Killed: 9), instantly terminating the program. To fix this, we intercept and "monkeypatch" (replace on-the-fly) this function with standard `torch.nn.init.normal_` at the very top of our script.
+- **Garbage Collection (`torch.mps.empty_cache()`)**: Mac chips use Unified Memory (sharing RAM between the CPU and GPU). During the transition between training epochs and validation loops, PyTorch can sometimes fail to release memory fast enough, causing unified memory fragmentation and eventually an Out-Of-Memory (OOM) crash. We explicitly force PyTorch to clear the GPU cache after every validation loop to keep memory usage stable.
 
-### 1. Mixed Precision (AMP `float16`)
-- The trainer employs `torch.autocast`.
-- **Memory impact:** Halves the activation footprint. This allows us to push the batch size to 16 or 32 within the 16GB memory limit of a T4.
-- **Speed impact:** Doubles memory bandwidth efficiency.
+### 2. Mixed Precision (AMP `float16`)
+- Deep Learning models normally calculate numbers to 32 decimal places (`float32`). The trainer employs `torch.autocast(device_type="mps", dtype=torch.float16)` to reduce this to 16 decimal places (`float16`) during the forward pass.
+- **Memory impact**: This cuts the memory footprint of our activations exactly in half, which is the reason we are able to push the batch size (the number of images processed at once) up to 64 without exceeding the Mac's memory limits.
 
-### 2. DataLoader Worker Tuning
-- `num_workers=4` is set as the default to optimally leverage CPU cores for data loading and heavy Data Augmentation (RandomAffine, Erasing) without stalling the main python process feeding the GPU queue.
+### 3. DataLoader Threading
+- `num_workers=0` is strictly enforced. Normally, you want multiple CPU threads (workers) fetching images from the hard drive while the GPU trains. However, on macOS, utilizing multiple background threads to load data into an MPS-bound model often triggers threading deadlocks (`pthread_mutex` lockups) or `libomp` crashes. Forcing `0` means the main process handles the loading, ensuring absolute stability at a minor cost to speed.
 
 ---
 
 ## The Imbalance Mitigation Engine
 
-Medical datasets are notoriously imbalanced. We implement a **defense mechanism** to force the network to care about rare diseases:
+Medical datasets are notoriously imbalanced. In this dataset, there are roughly 37,205 images of CNV (a common disease) versus only 22 images of RAO (a very rare disease). If we train a model naively on this data, it will suffer from "network collapse": the model will realize it can achieve 99% accuracy simply by guessing "CNV" every single time, completely ignoring the rare diseases. 
 
-### A. Focal Loss ($\gamma = 2.0$)
-Standard Cross-Entropy loss overwhelms the model with easy examples. We replaced it with **Focal Loss**, governed by the mathematical formula:
+To force the network to care about the rare diseases, we implement a mathematical **defense mechanism** directly in the loss functions:
 
-$$ FL(p_t) = -\alpha_t (1 - p_t)^\gamma \log(p_t) $$
+### A. Dynamic Positive Weighting (`pos_weight`)
+Instead of using generic loss functions, our pipeline intercepts the `dataset_manifest.csv` via the Pandas library and mathematically calculates the exact ratio of negative to positive samples for every single clinical label.
 
-### B. Aggressive Augmentation Pipeline
-Because we oversample rare images, the model would normally memorize them and overfit. To prevent this, we apply severe visual distortions dynamically on the fly:
-- **RandomAffine:** Shifts, scales, and shears.
-- **RandomErasing:** Literally blacks out random rectangles of the image, forcing the CNN to find multiple distinct features for a disease rather than relying on a single artifact.
+- **Head 3 (Multi-Label Diagnostics)**: This head predicts the presence of 11 distinct biomarkers. It uses a dictionary of five independent `BCEWithLogitsLoss` (Binary Cross Entropy) functions. This specific loss function allows the model to predict multiple co-occurring diseases (e.g., a patient having both AMD and Diabetic Edema) rather than forcing it to pick just one. The script dynamically calculates `pos_weight = (Total Negatives) / (Total Positives)` for each sub-disease. For a rare disease like RAO, this value is huge (~4,000), scaling the gradient proportionally.
 
-> [!CAUTION]
-> **Mixup & CutMix: Proceed with extreme caution (Disabled).** 
-> While state-of-the-art for natural images, they can be highly destructive in medical imaging. CutMix might paste a Macular Hole into a scan of Diabetic Macular Edema, creating an anatomically impossible synthetic anomaly that confuses the model's spatial understanding of retinal layers.
+### B. The "0 False Negatives" Triage Net (Head 1)
+In clinical deployment, a false negative (sending a diseased patient home) is infinitely worse than a false positive (flagging a healthy patient for review). To mathematically enforce a **0 False Negatives** policy, we transformed Head 1 (Binary Normal vs. Abnormal) into a highly sensitive Triage Net.
+- **The False Negative Multiplier**: We inject a hardcoded `2.0x` multiplier directly into Head 1's `pos_weight` calculation. If the network misses an abnormal scan (a false negative), it is penalized mathematically twice as hard as it normally would be. 
+- **The Trade-Off**: The model will learn that it is far safer to throw a False Positive (guessing a disease might be there when it's just noise) than to ever risk a False Negative. This sacrifices some precision to guarantee maximum sensitivity (Recall), acting as a perfect safety net before human review.
+
+### C. Head Gradient Balancing
+Because Head 3 calculates 5 independent BCE losses at the same time, simply adding them together results in a total gradient (the mathematical signal telling the model how to adjust its weights) that is 5x larger than Head 1. 
+
+If we don't fix this, Head 3 will completely overpower the shared ConvNeXt backbone, ignoring the other heads. To prevent this, we scale its `loss_weight` down to `0.2`.
+
+```python
+loss_weights = {
+    'h1': 1.0,
+    'h2': 2.0,  # Up-weighted to focus the network on the difficult primary routing task
+    'h3': 0.2   # Scaled down (1.0 / 5) to balance the 5 accumulated BCE sub-losses
+}
+```
+
+### C. Optimizer Profile
+ConvNeXt architectures are highly sensitive and require heavy regularization to prevent overfitting. We use the `AdamW` optimizer with a high `weight_decay=0.05` (which mathematically penalizes weights from growing too large). We pair this with a `CosineAnnealingWarmRestarts` learning rate scheduler, which smoothly drops the learning rate following a cosine curve, allowing the model to gently settle into the most optimal solution.
