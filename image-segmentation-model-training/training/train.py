@@ -187,6 +187,8 @@ def train():
     parser.add_argument('--amp', action='store_true', help='Enable mixed-precision training')
     parser.add_argument('--log-dir', type=str, default='./logs', help='TensorBoard log directory')
     parser.add_argument('--resume', type=str, default=None, help='Path to checkpoint to resume training from')
+    parser.add_argument('--checkpoint-dir', type=str, default=None, help='Directory to save checkpoints (defaults to local checkpoints/)')
+    
     args = parser.parse_args()
 
     # Set random seeds for reproducibility
@@ -314,8 +316,12 @@ def train():
     # -------------------------------------------------------------------------
     # Checkpointing
     # -------------------------------------------------------------------------
-    checkpoints_dir = Path(__file__).resolve().parent.parent / "checkpoints"
-    checkpoints_dir.mkdir(exist_ok=True)
+    # Setup checkpoint directory
+    if args.checkpoint_dir:
+        checkpoints_dir = Path(args.checkpoint_dir)
+    else:
+        checkpoints_dir = Path(__file__).resolve().parent.parent / "checkpoints"
+    checkpoints_dir.mkdir(parents=True, exist_ok=True)
     best_cls_acc = 0.0
     best_oct5k_granular_dice = 0.0
 
