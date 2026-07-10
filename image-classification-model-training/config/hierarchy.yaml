@@ -161,7 +161,7 @@ class_map:
   # ── VASCULAR OCCLUSIONS (BLOCKAGES) ────────────────────────────────────────
   # L2: All three map to Vascular_Occlusions (RAO+RVO aggregated)
   # L3: Each gets its own specialist class (RAO/RVO re-separated)
-  - path: "Vascular Occlusions (Blockages)/Macular-Hole-Retinal-OCT-images/OCTID_MH"
+  - path: "Vascular Occlusions (Blockages)/Macular-Hole-Retinal-OCT-images/OCTID_MacularHole"
     fine_class:   MH
     l1:           ABNORMAL
     l2:           Vascular_Occlusions
