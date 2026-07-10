@@ -278,6 +278,15 @@ class HierarchicalUNet(nn.Module):
         self.up3 = Up(256, 128)
         self.up4 = Up(128, 64)
 
+        # Classification Head  →  L2 Router predictions (5 classes)
+        # Connects to the bottleneck feature map (1024 channels)
+        self.classification_head = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Dropout(p=0.3),
+            nn.Linear(1024, 5)
+        )
+
         # Coarse Head  →  3-channel output
         self.coarse_conv = nn.Sequential(
             DoubleConv(64, 64),
@@ -291,7 +300,12 @@ class HierarchicalUNet(nn.Module):
             nn.Conv2d(64, n_granular_classes, kernel_size=1),
         )
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, task: str = "segmentation"):
+        """
+        Args:
+            x: Input tensor (B, 1, H, W)
+            task: "segmentation" (default), "classification", or "both"
+        """
         # ---- Encoder ----
         x1 = self.inc(x)
         x2 = self.down1(x1)
@@ -299,22 +313,27 @@ class HierarchicalUNet(nn.Module):
         x4 = self.down3(x3)
         x5 = self.down4(x4)
 
+        if task == "classification":
+            cls_logits = self.classification_head(x5)
+            return cls_logits
+
         # ---- Decoder (attention-gated skip connections) ----
-        x = self.up1(x5, x4)
-        x = self.up2(x,  x3)
-        x = self.up3(x,  x2)
-        shared_features = self.up4(x, x1)
+        d = self.up1(x5, x4)
+        d = self.up2(d,  x3)
+        d = self.up3(d,  x2)
+        shared_features = self.up4(d, x1)
 
         # ---- Coarse Head ----
         coarse_logits = self.coarse_conv(shared_features)
 
         # ---- Granular Head ----
         # FIX (Issue #2): pass softmax PROBABILITIES, not raw logits.
-        # Raw logits have arbitrary, growing scale during training — the granular
-        # DoubleConv cannot reliably interpret them as a coarse prior.
-        # Softmax maps them to a stable [0, 1] probability distribution.
         coarse_probs = torch.softmax(coarse_logits, dim=1)
         granular_input = torch.cat([shared_features, coarse_probs], dim=1)
         granular_logits = self.granular_conv(granular_input)
+
+        if task == "both":
+            cls_logits = self.classification_head(x5)
+            return coarse_logits, granular_logits, cls_logits
 
         return coarse_logits, granular_logits

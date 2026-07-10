@@ -5,7 +5,7 @@ This repository contains the data extraction, model architecture, training loop,
 ## Directory Structure
 
 - **`data/`**: PyTorch Dataset definitions (e.g., `segmentation_dataset.py`) for loading and augmenting OCT scans and their hierarchical masks.
-- **`Documentation/`**: Contains architectural details and frontend API integration guides.
+- **`Documentation/`**: Contains architectural details, frontend API integration guides, and the [Advanced Fine-Tuning Strategy](Documentation/fine_tuning_strategy.md).
 - **`models/`**: Neural network architectures (e.g., `unet.py` containing the `HierarchicalUNet`).
 - **`scripts/`**: Utility scripts for data extraction (`extract_oct5k_segmentation.py`) and verification testing.
 - **`src/inference/`**: Object-Oriented post-processing module that converts dense pixel masks into vector polygons and clinical metrics.

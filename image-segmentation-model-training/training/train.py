@@ -2,15 +2,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, random_split, ConcatDataset, WeightedRandomSampler
 from pathlib import Path
 
 import sys
 import argparse
 import numpy as np
 import random
+import itertools
 from torch.utils.tensorboard import SummaryWriter
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+from pathlib import Path
+import importlib.util
+
+# Add local path first for segmentation imports
+local_path = str(Path(__file__).resolve().parent.parent)
+sys.path.insert(0, local_path)
 
 from data.segmentation_dataset import (
     OCT5kSegmentationDataset,
@@ -18,6 +24,17 @@ from data.segmentation_dataset import (
     get_training_transforms,
     get_val_transforms,
 )
+
+# Use importlib to bypass sys.modules namespace collision for 'data'
+cls_path = Path(__file__).resolve().parent.parent.parent / 'image-classification-model-training' / 'data' / 'dataset.py'
+spec = importlib.util.spec_from_file_location("cls_dataset_module", str(cls_path))
+cls_module = importlib.util.module_from_spec(spec)
+sys.modules["cls_dataset_module"] = cls_module
+spec.loader.exec_module(cls_module)
+MultiHeadOCTDataset = cls_module.MultiHeadOCTDataset
+
+import torchvision.transforms as transforms
+from PIL import Image
 from models.unet import HierarchicalUNet
 
 
@@ -45,9 +62,19 @@ class DiceLoss(nn.Module):
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         num_classes = logits.shape[1]
         probs = F.softmax(logits, dim=1)                                       # (B, C, H, W)
+        
+        # Mask out ignore_index (255)
+        valid_mask = (targets != 255).unsqueeze(1).float()
+        safe_targets = targets.clone()
+        safe_targets[targets == 255] = 0
+        
         targets_one_hot = (
-            F.one_hot(targets, num_classes).permute(0, 3, 1, 2).float()       # (B, C, H, W)
+            F.one_hot(safe_targets, num_classes).permute(0, 3, 1, 2).float()       # (B, C, H, W)
         )
+        
+        probs = probs * valid_mask
+        targets_one_hot = targets_one_hot * valid_mask
+        
         # Sum over batch + spatial dims; keep class axis for per-class Dice
         intersection = (probs * targets_one_hot).sum(dim=(0, 2, 3))
         cardinality  = probs.sum(dim=(0, 2, 3)) + targets_one_hot.sum(dim=(0, 2, 3))
@@ -55,31 +82,54 @@ class DiceLoss(nn.Module):
         return 1.0 - dice_per_class.mean()
 
 
+class FocalLoss(nn.Module):
+    """
+    Focal Loss for Dense Semantic Segmentation.
+    Automatically suppresses gradients from easy, highly confident majority classes
+    (e.g., massive background regions) and focuses heavily on hard, ambiguous boundaries.
+    """
+    def __init__(self, weight=None, ignore_index=255, gamma=2.0):
+        super().__init__()
+        self.gamma = gamma
+        self.weight = weight
+        self.ignore_index = ignore_index
+        self.ce = nn.CrossEntropyLoss(ignore_index=ignore_index, reduction='none')
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        ce_loss = self.ce(logits, targets)
+        pt = torch.exp(-ce_loss)
+        focal_loss = ((1 - pt) ** self.gamma) * ce_loss
+        
+        if self.weight is not None:
+            safe_targets = targets.clone()
+            safe_targets[targets == self.ignore_index] = 0
+            pixel_weights = self.weight[safe_targets]
+            focal_loss = focal_loss * pixel_weights
+            
+        valid_mask = (targets != self.ignore_index).float()
+        valid_pixels = valid_mask.sum()
+        if valid_pixels > 0:
+            return (focal_loss * valid_mask).sum() / valid_pixels
+        return focal_loss.sum()
+
+
 class CombinedLoss(nn.Module):
     """
-    Dice + CrossEntropy hybrid loss — the industry standard for imbalanced
-    medical image segmentation (confirmed by RETOUCH, MICCAI 2024 benchmarks).
+    Dice + Focal Loss hybrid — the industry standard for imbalanced
+    medical image segmentation.
 
-    - CrossEntropyLoss (with class weights): sharp, per-pixel gradient signal.
-      Class weights further penalise misclassifying rare lesion/fluid pixels.
-    - DiceLoss: overlap-based, class-imbalance-resistant objective.
-
-    The 50/50 split (alpha=0.5) is a well-validated starting point.
-    Increase alpha toward 1.0 if the Dice loss destabilises early training.
-
-    Args:
-        ce_weight : 1-D tensor of per-class weights for CrossEntropyLoss.
-        alpha     : Weight of the CE term; (1-alpha) goes to Dice.
+    - Focal Loss: sharp, per-pixel gradient signal focused on hard boundaries.
+    - Dice Loss: overlap-based, class-imbalance-resistant objective.
     """
 
     def __init__(self, ce_weight: torch.Tensor = None, alpha: float = 0.5):
         super().__init__()
-        self.ce    = nn.CrossEntropyLoss(weight=ce_weight)
+        self.focal = FocalLoss(weight=ce_weight, ignore_index=255, gamma=2.0)
         self.dice  = DiceLoss()
         self.alpha = alpha
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        return self.alpha * self.ce(logits, targets) + (1.0 - self.alpha) * self.dice(logits, targets)
+        return self.alpha * self.focal(logits, targets) + (1.0 - self.alpha) * self.dice(logits, targets)
 
 
 # ---------------------------------------------------------------------------
@@ -90,17 +140,14 @@ def compute_dice_score(logits: torch.Tensor, targets: torch.Tensor, num_classes:
     """
     Computes mean Dice score across foreground classes (background class 0 excluded),
     averaged over the batch.  Returns 0.0 if no foreground class is present.
-
-    This is the primary measure of segmentation quality — not loss.
-    High-performing models on OCT datasets typically achieve:
-        Dice > 0.80 (retinal layers), Dice > 0.70 (fluid/lesion classes).
     """
     with torch.no_grad():
         preds = torch.argmax(logits, dim=1)
+        valid_mask = (targets != 255)
         scores = []
         for cls in range(1, num_classes):      # skip class 0 (background)
-            pred_mask   = (preds == cls).float()
-            target_mask = (targets == cls).float()
+            pred_mask   = ((preds == cls) & valid_mask).float()
+            target_mask = ((targets == cls) & valid_mask).float()
             intersection = (pred_mask * target_mask).sum()
             union = pred_mask.sum() + target_mask.sum()
             if union == 0:
@@ -108,6 +155,9 @@ def compute_dice_score(logits: torch.Tensor, targets: torch.Tensor, num_classes:
             scores.append((2.0 * intersection / union).item())
         return sum(scores) / len(scores) if scores else 0.0
 
+
+def load_image_gray(p):
+    return Image.open(p).convert('L') if isinstance(p, str) else p
 
 # ---------------------------------------------------------------------------
 # Training Entry Point
@@ -124,10 +174,14 @@ def train():
     # -------------------------------------------------------------------------
     # Hyperparameters & CLI arguments
     # -------------------------------------------------------------------------
-    parser = argparse.ArgumentParser(description="Train Hierarchical UNet on OCT5k dataset")
-    parser.add_argument('--data', type=str, required=True, help='Path to OCT5k dataset')
+    parser = argparse.ArgumentParser(description="Multi-Task Train Hierarchical UNet")
+    parser.add_argument('--oct5k-data', type=str, required=True, help='Path to OCT5k dataset')
+    parser.add_argument('--cls-data', type=str, required=True, help='Path to base classification dataset')
+    parser.add_argument('--cls-config', type=str, required=True, help='Path to hierarchy.yaml for classification')
     parser.add_argument('--epochs', type=int, default=50, help='Number of training epochs')
     parser.add_argument('--batch-size', type=int, default=4, help='Batch size')
+    parser.add_argument('--accum-steps', type=int, default=4, help='Gradient accumulation steps')
+    parser.add_argument('--warmup-epochs', type=int, default=15, help='Epochs to warmup segmentation loss')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
     parser.add_argument('--amp', action='store_true', help='Enable mixed-precision training')
@@ -143,41 +197,31 @@ def train():
     torch.backends.cudnn.benchmark = False
 
     # Validate dataset path
-    dataset_path = args.data
-    if not Path(dataset_path).exists():
-        raise FileNotFoundError(f"Dataset path does not exist: {dataset_path}")
+    oct5k_path = args.oct5k_data
+    cls_path = args.cls_data
+    cls_config = args.cls_config
+    if not Path(oct5k_path).exists():
+        raise FileNotFoundError(f"OCT5K Dataset path does not exist: {oct5k_path}")
+    if not Path(cls_path).exists():
+        raise FileNotFoundError(f"Classification Dataset path does not exist: {cls_path}")
 
     # Assign hyperparameters from args
     batch_size = args.batch_size
+    accum_steps = args.accum_steps
+    warmup_epochs = args.warmup_epochs
     epochs = args.epochs
     learning_rate = args.lr
 
-    # Device selection
+    # Device selection - explicitly mapped
     device = torch.device(
         'cuda'  if torch.cuda.is_available() else
         'mps'   if torch.backends.mps.is_available() else
         'cpu'
     )
-    print(f"Using device: {device}")
+    print(f"Explicitly mapped to device: {device}")
 
     # -------------------------------------------------------------------------
-    # Class Weights  (addresses extreme class imbalance — Issue #1)
-    #
-    # Rationale:
-    #   - Class 0 (Background): hugely dominant → down-weighted to 0.3
-    #   - Classes 1–8 (Retinal Layers): moderate frequency → neutral 1.0
-    #   - Classes 9–14 (Fluid / Lesions): rare, clinically critical → 4.0
-    #
-    # These are intentionally hand-tuned starting points based on typical OCT5k
-    # class frequency distributions. For a more principled approach, compute from
-    # the actual dataset before your first full training run:
-    #
-    #   from data.segmentation_dataset import OCT5kSegmentationDataset
-    #   ds = OCT5kSegmentationDataset(root_dir=dataset_path)
-    #   counts = torch.zeros(15)
-    #   for _, _, mask_g in ds:
-    #       for c in range(15): counts[c] += (mask_g == c).sum()
-    #   weights = 1.0 / (counts + 1); weights /= weights.sum()
+    # Class Weights
     # -------------------------------------------------------------------------
     coarse_class_weights = torch.tensor(
         [0.3,  1.0,  4.0],                                          # bg, retina, lesion
@@ -194,37 +238,54 @@ def train():
     ).to(device)
 
     # -------------------------------------------------------------------------
-    # Dataset  +  Augmentation
-    #
-    # Augmentation is applied to the TRAINING split only via TransformSubset.
-    # The validation split always sees clean, unmodified images so that metrics
-    # are stable and comparable across epochs.
+    # Datasets (Multi-Task Learning)
     # -------------------------------------------------------------------------
-    print("Loading dataset...")
-    full_dataset = OCT5kSegmentationDataset(root_dir=dataset_path)
-    print(f"Total samples: {len(full_dataset)}")
-
-    val_size   = int(0.1 * len(full_dataset))
-    train_size = len(full_dataset) - val_size
-    train_sub, val_sub = random_split(
-        full_dataset, [train_size, val_size],
-        generator=torch.Generator().manual_seed(42),  # reproducible split
+    print("Loading datasets...")
+    # 1. Classification Dataset
+    
+    cls_transform = transforms.Compose([
+        transforms.Lambda(load_image_gray),
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+    ])
+    cls_dataset = MultiHeadOCTDataset(config_path=cls_config, data_root=cls_path, transform=cls_transform)
+    cls_train_size = int(0.9 * len(cls_dataset))
+    cls_train_sub, cls_val_sub = random_split(
+        cls_dataset, [cls_train_size, len(cls_dataset) - cls_train_size],
+        generator=torch.Generator().manual_seed(42)
+    )
+    
+    cls_train_loader = DataLoader(
+        cls_train_sub, batch_size=batch_size, shuffle=True,
+        num_workers=4, pin_memory=True, drop_last=True
+    )
+    cls_val_loader = DataLoader(
+        cls_val_sub, batch_size=batch_size, shuffle=False,
+        num_workers=4, pin_memory=True
     )
 
-    # Wrap each split with its own transform pipeline
-    train_dataset = TransformSubset(train_sub, transform=get_training_transforms())
-    val_dataset   = TransformSubset(val_sub,   transform=get_val_transforms())
-    print(f"  Train samples: {len(train_dataset)}  (augmented)")
-    print(f"  Val   samples: {len(val_dataset)}   (no augmentation)")
+    # 2. Segmentation Dataset
+    oct5k_dataset = OCT5kSegmentationDataset(root_dir=oct5k_path)
+    oct5k_train_size = int(0.9 * len(oct5k_dataset))
+    oct5k_train_sub, oct5k_val_sub = random_split(
+        oct5k_dataset, [oct5k_train_size, len(oct5k_dataset) - oct5k_train_size],
+        generator=torch.Generator().manual_seed(42)
+    )
+    
+    seg_train_sub = TransformSubset(oct5k_train_sub, transform=get_training_transforms())
+    seg_val_sub = TransformSubset(oct5k_val_sub, transform=get_val_transforms())
 
-    train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True,
-        num_workers=4, pin_memory=True, drop_last=True,
+    seg_train_loader = DataLoader(
+        seg_train_sub, batch_size=batch_size, shuffle=True,
+        num_workers=4, pin_memory=True, drop_last=True
     )
-    val_loader = DataLoader(
-        val_dataset, batch_size=batch_size, shuffle=False,
-        num_workers=4, pin_memory=True,
+    seg_val_loader = DataLoader(
+        seg_val_sub, batch_size=batch_size, shuffle=False,
+        num_workers=4, pin_memory=True
     )
+
+    print(f"  Classification Train: {len(cls_train_sub)}, Val: {len(cls_val_sub)}")
+    print(f"  Segmentation   Train: {len(seg_train_sub)}, Val: {len(seg_val_sub)}")
 
     # -------------------------------------------------------------------------
     # Model
@@ -236,10 +297,14 @@ def train():
     # -------------------------------------------------------------------------
     # Loss & Optimizer
     # -------------------------------------------------------------------------
-    criterion_coarse   = CombinedLoss(ce_weight=coarse_class_weights,   alpha=0.5)
-    criterion_granular = CombinedLoss(ce_weight=granular_class_weights, alpha=0.5)
+    criterion_coarse   = CombinedLoss(ce_weight=coarse_class_weights,   alpha=0.5).to(device)
+    criterion_granular = CombinedLoss(ce_weight=granular_class_weights, alpha=0.5).to(device)
+    criterion_cls      = nn.CrossEntropyLoss(ignore_index=-1).to(device)
 
+    # All parameters learn at the same rate in simultaneous MTL, since encoder 
+    # receives gradients from both tasks and must adapt to both.
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+
     # Cosine annealing gradually reduces LR, helping escape local minima late in training
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
     # Mixed precision scaler (if enabled) and TensorBoard writer
@@ -251,7 +316,8 @@ def train():
     # -------------------------------------------------------------------------
     checkpoints_dir = Path(__file__).resolve().parent.parent / "checkpoints"
     checkpoints_dir.mkdir(exist_ok=True)
-    best_val_granular_dice = 0.0
+    best_cls_acc = 0.0
+    best_oct5k_granular_dice = 0.0
 
     start_epoch = 0
     if args.resume:
@@ -261,8 +327,10 @@ def train():
             model.load_state_dict(checkpoint["model_state_dict"])
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
             start_epoch = checkpoint["epoch"] + 1
-            if "val_granular_dice" in checkpoint:
-                best_val_granular_dice = checkpoint["val_granular_dice"]
+            if "best_cls_acc" in checkpoint:
+                best_cls_acc = checkpoint["best_cls_acc"]
+            if "best_oct5k_granular_dice" in checkpoint:
+                best_oct5k_granular_dice = checkpoint["best_oct5k_granular_dice"]
             # Fast-forward scheduler
             for _ in range(start_epoch):
                 scheduler.step()
@@ -272,119 +340,231 @@ def train():
     # -------------------------------------------------------------------------
     # Training Loop
     # -------------------------------------------------------------------------
-    print("Starting training...\n")
+    print("Starting Multi-Task training...\n")
     for epoch in range(start_epoch, epochs):
+
+        # Dynamic Loss Weighting for segmentation
+        lambda_seg = min(1.0, 0.01 + (epoch / max(1, warmup_epochs)) * 0.99)
+        if epoch % 5 == 0 or epoch == 0:
+            print(f"Epoch {epoch+1}/{epochs} - Segmentation Loss Multiplier (lambda_seg): {lambda_seg:.4f}")
 
         # ---- Training ----
         model.train()
-        train_loss = 0.0
+        train_loss_cls = 0.0
+        train_loss_seg = 0.0
+        
+        # Interleave batches
+        cls_iter = iter(cls_train_loader)
+        seg_iter = iter(seg_train_loader)
+        
+        num_batches = max(len(cls_train_loader), len(seg_train_loader))
+        optimizer.zero_grad()
 
-        for batch_idx, (images, mask_coarse, mask_granular) in enumerate(train_loader):
-            images       = images.to(device)
-            mask_coarse  = mask_coarse.to(device)
-            mask_granular = mask_granular.to(device)
-
-            optimizer.zero_grad()
+        for batch_idx in range(num_batches):
+            loss_accum_c = 0.0
+            loss_accum_s = 0.0
+            
+            # --- Classification Batch ---
+            try:
+                images_c, targets_c = next(cls_iter)
+            except StopIteration:
+                cls_iter = iter(cls_train_loader)
+                images_c, targets_c = next(cls_iter)
+                
+            images_c = images_c.to(device)
+            # targets_c contains "pathology" (L2 Router classes)
+            labels_c = targets_c["pathology"].to(device)
 
             if args.amp:
                 with torch.cuda.amp.autocast():
-                    coarse_logits, granular_logits = model(images)
-                    loss_coarse = criterion_coarse(coarse_logits, mask_coarse)
-                    loss_granular = criterion_granular(granular_logits, mask_granular)
-                    loss = loss_coarse + loss_granular
-                scaler.scale(loss).backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-                scaler.step(optimizer)
-                scaler.update()
+                    cls_logits = model(images_c, task="classification")
+                    loss_c = criterion_cls(cls_logits, labels_c)
+                    loss_c = loss_c / accum_steps
+                scaler.scale(loss_c).backward()
+                loss_accum_c += loss_c.item() * accum_steps
             else:
-                coarse_logits, granular_logits = model(images)
-                loss_coarse = criterion_coarse(coarse_logits, mask_coarse)
-                loss_granular = criterion_granular(granular_logits, mask_granular)
-                loss = loss_coarse + loss_granular
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-                optimizer.step()
+                cls_logits = model(images_c, task="classification")
+                loss_c = criterion_cls(cls_logits, labels_c)
+                loss_c = loss_c / accum_steps
+                loss_c.backward()
+                loss_accum_c += loss_c.item() * accum_steps
 
-            train_loss += loss.item()
+            train_loss_cls += loss_accum_c
+            
+            # --- Segmentation Batch ---
+            try:
+                images_s, mask_c, mask_g = next(seg_iter)
+            except StopIteration:
+                seg_iter = iter(seg_train_loader)
+                images_s, mask_c, mask_g = next(seg_iter)
+                
+            images_s = images_s.to(device)
+            mask_c = mask_c.to(device)
+            mask_g = mask_g.to(device)
+
+            if args.amp:
+                with torch.cuda.amp.autocast():
+                    coarse_logits, granular_logits = model(images_s, task="segmentation")
+                    loss_coarse = criterion_coarse(coarse_logits, mask_c)
+                    loss_granular = criterion_granular(granular_logits, mask_g)
+                    loss_s = (loss_coarse + loss_granular) * lambda_seg
+                    loss_s = loss_s / accum_steps
+                scaler.scale(loss_s).backward()
+                loss_accum_s += loss_s.item() * accum_steps / lambda_seg  # track unscaled loss
+            else:
+                coarse_logits, granular_logits = model(images_s, task="segmentation")
+                loss_coarse = criterion_coarse(coarse_logits, mask_c)
+                loss_granular = criterion_granular(granular_logits, mask_g)
+                loss_s = (loss_coarse + loss_granular) * lambda_seg
+                loss_s = loss_s / accum_steps
+                loss_s.backward()
+                loss_accum_s += loss_s.item() * accum_steps / lambda_seg
+
+            train_loss_seg += loss_accum_s
+
+            # --- Gradient Accumulation Step ---
+            if (batch_idx + 1) % accum_steps == 0 or (batch_idx + 1) == num_batches:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                if args.amp:
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    optimizer.step()
+                optimizer.zero_grad()
 
             if batch_idx % 10 == 0:
                 print(
-                    f"  Epoch {epoch+1}/{epochs} | Batch {batch_idx}/{len(train_loader)} | "
-                    f"Loss: {loss.item():.4f}  "
-                    f"(Coarse: {loss_coarse.item():.4f}, Granular: {loss_granular.item():.4f})"
+                    f"  Epoch {epoch+1} | Batch {batch_idx}/{num_batches} | "
+                    f"Cls Loss: {loss_accum_c:.4f}  Seg Loss (unscaled): {loss_accum_s:.4f}"
                 )
 
-        avg_train_loss = train_loss / len(train_loader)
+        avg_train_loss_cls = train_loss_cls / num_batches
+        avg_train_loss_seg = train_loss_seg / num_batches
         scheduler.step()
 
         # ---- Validation ----
         model.eval()
-        val_loss             = 0.0
-        val_coarse_dice_sum  = 0.0
-        val_granular_dice_sum = 0.0
-
-        with torch.no_grad():
-            for images, mask_coarse, mask_granular in val_loader:
-                images        = images.to(device)
-                mask_coarse   = mask_coarse.to(device)
-                mask_granular = mask_granular.to(device)
-
-                c_logits, g_logits = model(images)
-
-                v_loss = (
-                    criterion_coarse(c_logits, mask_coarse)
-                    + criterion_granular(g_logits, mask_granular)
-                )
-                val_loss += v_loss.item()
-
-                # Track Dice scores — the real measure of segmentation quality
-                val_coarse_dice_sum  += compute_dice_score(c_logits, mask_coarse,   num_classes=3)
-                val_granular_dice_sum += compute_dice_score(g_logits, mask_granular, num_classes=15)
-
-        avg_val_loss          = val_loss             / len(val_loader)
-        avg_coarse_dice       = val_coarse_dice_sum  / len(val_loader)
-        avg_granular_dice     = val_granular_dice_sum / len(val_loader)
-        current_lr            = scheduler.get_last_lr()[0]
-        # Log metrics to TensorBoard
-        writer.add_scalar('Loss/Train', avg_train_loss, epoch)
-        writer.add_scalar('Loss/Val', avg_val_loss, epoch)
-        writer.add_scalar('Dice/Coarse', avg_coarse_dice, epoch)
-        writer.add_scalar('Dice/Granular', avg_granular_dice, epoch)
-        writer.add_scalar('LR', current_lr, epoch)
         
+        # ---------------------------------------------------------------------
+        # Validation for Classification
+        # ---------------------------------------------------------------------
+        val_cls_loss = 0.0
+        val_cls_correct = 0
+        val_cls_total = 0
+        with torch.no_grad():
+            for images_c, targets_c in cls_val_loader:
+                images_c = images_c.to(device)
+                labels_c = targets_c["pathology"].to(device)
+                if args.amp:
+                    with torch.cuda.amp.autocast():
+                        cls_logits = model(images_c, task="classification")
+                        loss_c = criterion_cls(cls_logits, labels_c)
+                else:
+                    cls_logits = model(images_c, task="classification")
+                    loss_c = criterion_cls(cls_logits, labels_c)
+                
+                val_cls_loss += loss_c.item()
+                preds = torch.argmax(cls_logits, dim=1)
+                valid_mask = (labels_c != -1)
+                val_cls_correct += (preds[valid_mask] == labels_c[valid_mask]).sum().item()
+                val_cls_total += valid_mask.sum().item()
+                
+        avg_val_cls_loss = val_cls_loss / len(cls_val_loader) if len(cls_val_loader) > 0 else 0
+        val_cls_acc = val_cls_correct / val_cls_total if val_cls_total > 0 else 0
 
+        # ---------------------------------------------------------------------
+        # Validation for Segmentation
+        # ---------------------------------------------------------------------
+        def evaluate_loader(loader, loader_name):
+            val_loss = 0.0
+            val_coarse_dice_sum = 0.0
+            val_granular_dice_sum = 0.0
+
+            with torch.no_grad():
+                for images, mask_coarse, mask_granular in loader:
+                    images        = images.to(device)
+                    mask_coarse   = mask_coarse.to(device)
+                    mask_granular = mask_granular.to(device)
+
+                    if args.amp:
+                        with torch.cuda.amp.autocast():
+                            c_logits, g_logits = model(images, task="segmentation")
+                            v_loss = criterion_coarse(c_logits, mask_coarse) + criterion_granular(g_logits, mask_granular)
+                    else:
+                        c_logits, g_logits = model(images, task="segmentation")
+                        v_loss = criterion_coarse(c_logits, mask_coarse) + criterion_granular(g_logits, mask_granular)
+                        
+                    val_loss += v_loss.item()
+
+                    # Track Dice scores
+                    val_coarse_dice_sum  += compute_dice_score(c_logits, mask_coarse,   num_classes=3)
+                    val_granular_dice_sum += compute_dice_score(g_logits, mask_granular, num_classes=15)
+
+            avg_loss          = val_loss / len(loader) if len(loader) > 0 else 0
+            avg_coarse_dice   = val_coarse_dice_sum / len(loader) if len(loader) > 0 else 0
+            avg_granular_dice = val_granular_dice_sum / len(loader) if len(loader) > 0 else 0
+            
+            writer.add_scalar(f'Loss/Val_{loader_name}', avg_loss, epoch)
+            writer.add_scalar(f'Dice/Coarse_{loader_name}', avg_coarse_dice, epoch)
+            writer.add_scalar(f'Dice/Granular_{loader_name}', avg_granular_dice, epoch)
+            
+            return avg_loss, avg_coarse_dice, avg_granular_dice
+
+        oct5k_val_loss, oct5k_coarse_dice, oct5k_granular_dice = evaluate_loader(seg_val_loader, "OCT5K")
+
+        current_lr = scheduler.get_last_lr()[0]
+        writer.add_scalar('Loss/Train_Cls', avg_train_loss_cls, epoch)
+        writer.add_scalar('Loss/Train_Seg', avg_train_loss_seg, epoch)
+        writer.add_scalar('Loss/Val_Cls', avg_val_cls_loss, epoch)
+        writer.add_scalar('Accuracy/Val_Cls', val_cls_acc, epoch)
+        writer.add_scalar('LR', current_lr, epoch)
+        writer.add_scalar('Hyperparameters/Lambda_Seg', lambda_seg, epoch)
+        
         print(
             f"\n--- Epoch {epoch+1}/{epochs} Summary ---\n"
-            f"  Train Loss      : {avg_train_loss:.4f}\n"
-            f"  Val Loss        : {avg_val_loss:.4f}\n"
-            f"  Val Coarse Dice : {avg_coarse_dice:.4f}  (bg excluded; target > 0.80)\n"
-            f"  Val Granul Dice : {avg_granular_dice:.4f}  (bg excluded; target > 0.70)\n"
-            f"  LR              : {current_lr:.6f}\n"
+            f"  Train Loss Cls      : {avg_train_loss_cls:.4f}  | Train Loss Seg: {avg_train_loss_seg:.4f}\n"
+            f"  LR                  : {current_lr:.6f}\n"
+            f"  [CLS]   Val Loss    : {avg_val_cls_loss:.4f} | Val Acc: {val_cls_acc:.4f}\n"
+            f"  [OCT5K] Val Loss    : {oct5k_val_loss:.4f} | Coarse Dice: {oct5k_coarse_dice:.4f} | Granular Dice: {oct5k_granular_dice:.4f}\n"
         )
 
-        # Save best model by granular Dice — the harder, more clinically important task
-        if avg_granular_dice > best_val_granular_dice:
-            best_val_granular_dice = avg_granular_dice
+        # Save best Classification model
+        if val_cls_acc > best_cls_acc:
+            best_cls_acc = val_cls_acc
             torch.save(
                 {
                     "epoch":               epoch,
                     "model_state_dict":    model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
-                    "val_loss":            avg_val_loss,
-                    "val_granular_dice":   avg_granular_dice,
+                    "best_cls_acc": best_cls_acc,
+                    "best_oct5k_granular_dice": best_oct5k_granular_dice,
                 },
-                checkpoints_dir / "unet_hierarchical_best.pth",
+                checkpoints_dir / "unet_hierarchical_best_cls.pth",
             )
-            print(f"  ✓ New best model saved  (Granular Dice: {best_val_granular_dice:.4f})\n")
+            print(f"  ✓ New best Classification model saved (Val Acc: {best_cls_acc:.4f})")
 
-        # Periodic checkpoint every 10 epochs (for recovery / resume)
+        # Save best OCT5K model
+        if oct5k_granular_dice > best_oct5k_granular_dice:
+            best_oct5k_granular_dice = oct5k_granular_dice
+            torch.save(
+                {
+                    "epoch":               epoch,
+                    "model_state_dict":    model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "best_cls_acc": best_cls_acc,
+                    "best_oct5k_granular_dice": best_oct5k_granular_dice,
+                },
+                checkpoints_dir / "unet_hierarchical_best_oct5k.pth",
+            )
+            print(f"  ✓ New best OCT5K model saved (Granular Dice: {best_oct5k_granular_dice:.4f})\n")
+
+        # Periodic checkpoint every 10 epochs
         if (epoch + 1) % 10 == 0:
             torch.save(
                 {
                     "epoch":               epoch,
                     "model_state_dict":    model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
-                    "val_loss":            avg_val_loss,
                 },
                 checkpoints_dir / f"unet_hierarchical_epoch_{epoch+1}.pth",
             )

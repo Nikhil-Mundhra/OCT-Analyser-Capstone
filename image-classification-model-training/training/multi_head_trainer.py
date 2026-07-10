@@ -6,6 +6,7 @@ Handles dictionary outputs and multi-task loss weighting.
 """
 
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -79,7 +80,7 @@ class MultiHeadTrainer:
                       
         return total_loss, loss_h1, loss_h2, loss_h3
 
-    def _train_epoch(self, loader, optimizer, max_norm: float = 1.0, smoke_test: bool = False):
+    def _train_epoch(self, loader, optimizer, max_norm: float = 5.0, smoke_test: bool = False):
         self.model.train()
         total_loss = 0.0
         n_batches = len(loader)

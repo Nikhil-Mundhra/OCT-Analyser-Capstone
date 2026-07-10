@@ -54,18 +54,35 @@ class OCT5kSegmentationDataset(Dataset):
         if image is None:
             raise FileNotFoundError(f"Failed to load image: {img_path}")
 
-        # Load mask — pixel values ARE the class IDs (0–14)
-        mask_granular = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
-        if mask_granular is None:
+        # Load mask — pixel values ARE the class IDs (0–5 in OCT5K)
+        # These are FILLED REGIONS, not thin boundaries!
+        # 0: Vitreous, 1: ILM->OPL, 2: OPL->IS/OS, 3: IS/OS->IBRPE, 4: IBRPE->OBRPE, 5: Choroid
+        mask_raw = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+        if mask_raw is None:
             raise FileNotFoundError(f"Failed to load mask: {mask_path}")
+
+        # Map the native filled regions from OCT5K directly to the model classes where appropriate.
+        # OCT5K Region 4 represents the entire Morphological volume of the RPE layer (including Drusen).
+        # We map Region 4 directly to Model Class 8.
+        # The inner retinal regions (1, 2, 3) are too grouped (they lump multiple model classes together),
+        # so we mask them with 255 to prevent catastrophic forgetting of the fine inner boundaries.
+        mask_granular = np.full_like(mask_raw, 255, dtype=np.uint8)
+        
+        mask_granular[mask_raw == 0] = 0   # Vitreous (Background)
+        mask_granular[mask_raw == 4] = 8   # RPE Volume (IBRPE to OBRPE)
+        mask_granular[mask_raw == 5] = 0   # Choroid (mapped to background to anchor tissue)
+        
+        # Now, the granular mask contains 0 (Background), 8 (RPE Volume), and 255 (Ignored inner retina).
 
         # Dynamically generate the coarse (3-class) mask from the granular mask
         #   Class 0: Background
-        #   Class 1: Retinal tissue layers (granular classes 1–8)
-        #   Class 2: Lesions / Fluid       (granular classes 9–14)
+        #   Class 1: Retinal tissue layers (granular classes 1-8)
+        #   Class 2: Lesions / Fluid       (granular classes 9-14)
+        # Ignore index 255 should map to 255 in coarse mask as well
         mask_coarse = np.zeros_like(mask_granular, dtype=np.uint8)
-        mask_coarse[mask_granular > 0] = 1   # any retinal structure
-        mask_coarse[mask_granular > 8] = 2   # pathology / fluid
+        mask_coarse[(mask_granular > 0) & (mask_granular <= 8)] = 1   # any retinal structure
+        mask_coarse[(mask_granular >= 9) & (mask_granular <= 14)] = 2 # pathology / fluid
+        mask_coarse[mask_granular == 255] = 255                       # ignore_index
 
         # Apply albumentations transforms (if provided)
         if self.transform is not None:
@@ -126,10 +143,15 @@ def get_training_transforms() -> A.Compose:
             contrast_limit=0.2,
             p=0.5,
         ),
-        A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8), p=0.3),
-        # std_range is albumentations 2.0 API (proportional to pixel value range)
-        # (3/255, 7/255) ≈ equivalent to std 3–7 on uint8 images
-        A.GaussNoise(std_range=(3/255, 7/255), p=0.3),
+        A.ElasticTransform(
+            alpha=120,
+            sigma=120 * 0.05,
+            alpha_affine=120 * 0.03,
+            p=0.5
+        ),
+        A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5),
+        A.MultiplicativeNoise(multiplier=(0.9, 1.1), elementwise=True, p=0.5),
+        A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
         A.Normalize(mean=0.5, std=0.5, max_pixel_value=255),
     ])
 

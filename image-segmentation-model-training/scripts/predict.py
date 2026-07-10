@@ -64,6 +64,34 @@ def predict(image_path: str, checkpoint_path: str, output_json: str):
     # 5. Export
     print(f"Exporting results to {output_json}...")
     InferenceExporter.to_json_file(analysis, output_json)
+    
+    # 6. Visualization
+    if hasattr(args, 'output_image') and args.output_image:
+        print(f"Drawing segmentation mask and saving to {args.output_image}...")
+        # Convert resized grayscale to BGR for drawing colors
+        img_color = cv2.cvtColor(img_resized, cv2.COLOR_GRAY2BGR)
+        
+        # Color palette for different classes
+        colors = [
+            (0, 255, 0), (0, 0, 255), (255, 0, 0), 
+            (255, 255, 0), (255, 0, 255), (0, 255, 255),
+            (128, 0, 0), (0, 128, 0), (0, 0, 128),
+            (128, 128, 0), (128, 0, 128), (0, 128, 128),
+            (255, 128, 0), (255, 0, 128), (0, 255, 128)
+        ]
+        
+        # analysis is an OCTAnalysisResult, containing layers
+        for layer in analysis.layers:
+            pts = np.array([[pt.x, pt.y] for pt in layer.boundary_points], np.int32)
+            pts = pts.reshape((-1, 1, 2))
+            
+            # Select color based on class_id
+            color = colors[layer.class_id % len(colors)]
+            
+            cv2.polylines(img_color, [pts], isClosed=False, color=color, thickness=2)
+            
+        cv2.imwrite(args.output_image, img_color)
+        
     print("Done!")
 
 if __name__ == "__main__":
@@ -71,6 +99,7 @@ if __name__ == "__main__":
     parser.add_argument("--image", type=str, required=True, help="Path to input OCT scan (PNG/TIF)")
     parser.add_argument("--checkpoint", type=str, default="../checkpoints/unet_hierarchical_epoch_10.pth", help="Path to model checkpoint")
     parser.add_argument("--output", type=str, default="output_analysis.json", help="Path to save the JSON output")
+    parser.add_argument("--output-image", type=str, default=None, help="Path to save the visually annotated image (PNG)")
     
     args = parser.parse_args()
     predict(args.image, args.checkpoint, args.output)

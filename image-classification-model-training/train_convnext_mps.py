@@ -275,8 +275,11 @@ def main():
         val_loader=val_loader,
         smoke_test=args.smoke_test,
         resume_path=resume_path,
-        warmup_epochs=3, 
+        warmup_epochs=3,
+        warmup_lr=1e-4, 
         finetune_epochs=20,
+        backbone_lr=1e-5,
+        head_lr=1e-4,
         weight_decay=0.05,
         patience=5
     )

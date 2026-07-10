@@ -20,7 +20,7 @@ export default function DocsLandingPage() {
   const [activeSection, setActiveSection] = useState("getting-started");
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
+    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
     const queryDoc = params.get('doc')?.trim().toLowerCase();
 
     if (queryDoc) {
@@ -30,7 +30,7 @@ export default function DocsLandingPage() {
       );
 
       if (exists) {
-        router.push(`/docs/${targetSlug}`, { replace: true });
+        router.push(`/docs/${targetSlug}`);
         return;
       }
     }
@@ -52,7 +52,7 @@ export default function DocsLandingPage() {
     });
 
     return () => observer.disconnect();
-  }, [location.search, navigate]);
+  }, [router]);
 
   return (
     <div className="docs-theme flex flex-col min-h-screen bg-docs-bg-page text-docs-text-primary selection:bg-blue-500/30 font-sans transition-colors duration-200">
