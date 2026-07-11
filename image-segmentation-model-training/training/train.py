@@ -311,7 +311,7 @@ def train():
     # Cosine annealing gradually reduces LR, helping escape local minima late in training
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
     # Mixed precision scaler (if enabled) and TensorBoard writer
-    scaler = torch.cuda.amp.GradScaler() if args.amp else None
+    scaler = torch.amp.GradScaler('cuda') if args.amp else None
     writer = SummaryWriter(log_dir=args.log_dir)
 
     # -------------------------------------------------------------------------
@@ -417,7 +417,7 @@ def train():
             labels_c = targets_c["pathology"].to(device)
 
             if args.amp:
-                with torch.cuda.amp.autocast():
+                with torch.amp.autocast('cuda'):
                     cls_logits = model(images_c, task="classification")
                     loss_c = criterion_cls(cls_logits, labels_c)
                     loss_c = loss_c / accum_steps
@@ -444,7 +444,7 @@ def train():
             mask_g = mask_g.to(device)
 
             if args.amp:
-                with torch.cuda.amp.autocast():
+                with torch.amp.autocast('cuda'):
                     coarse_logits, granular_logits = model(images_s, task="segmentation")
                     loss_coarse = criterion_coarse(coarse_logits, mask_c)
                     loss_granular = criterion_granular(granular_logits, mask_g)
@@ -510,7 +510,7 @@ def train():
                 images_c = images_c.to(device)
                 labels_c = targets_c["pathology"].to(device)
                 if args.amp:
-                    with torch.cuda.amp.autocast():
+                    with torch.amp.autocast('cuda'):
                         cls_logits = model(images_c, task="classification")
                         loss_c = criterion_cls(cls_logits, labels_c)
                 else:
@@ -541,7 +541,7 @@ def train():
                     mask_granular = mask_granular.to(device)
 
                     if args.amp:
-                        with torch.cuda.amp.autocast():
+                        with torch.amp.autocast('cuda'):
                             c_logits, g_logits = model(images, task="segmentation")
                             v_loss = criterion_coarse(c_logits, mask_coarse) + criterion_granular(g_logits, mask_granular)
                     else:
