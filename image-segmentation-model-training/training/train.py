@@ -176,6 +176,8 @@ class CLAHE_Transform_PIL:
 # Training Entry Point
 # ---------------------------------------------------------------------------
 
+WORKERS = 0 if sys.platform == "darwin" else 4
+
 def train():
     device = torch.device(
         'cuda'  if torch.cuda.is_available()          else
@@ -274,11 +276,11 @@ def train():
     
     cls_train_loader = DataLoader(
         cls_train_sub, batch_size=batch_size, shuffle=True,
-        num_workers=0, pin_memory=True, drop_last=True
+        num_workers=WORKERS, pin_memory=True, drop_last=True
     )
     cls_val_loader = DataLoader(
         cls_val_sub, batch_size=batch_size, shuffle=False,
-        num_workers=0, pin_memory=True, drop_last=True
+        num_workers=WORKERS, pin_memory=True, drop_last=True
     )
 
     h2_alpha = cls_dataset.compute_class_weights("l2").to(device)
@@ -297,11 +299,11 @@ def train():
 
     seg_train_loader = DataLoader(
         seg_train_sub, batch_size=batch_size, shuffle=True,
-        num_workers=0, pin_memory=True, drop_last=True
+        num_workers=WORKERS, pin_memory=True, drop_last=True
     )
     seg_val_loader = DataLoader(
         seg_val_sub, batch_size=batch_size, shuffle=False,
-        num_workers=0, pin_memory=True, drop_last=True
+        num_workers=WORKERS, pin_memory=True, drop_last=True
     )
 
     print(f"  Classification Train: {len(cls_train_sub)}, Val: {len(cls_val_sub)}")
