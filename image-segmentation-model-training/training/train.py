@@ -490,6 +490,18 @@ def train():
         val_cls_loss = 0.0
         val_cls_correct = 0
         val_cls_total = 0
+        
+        # FIX: BatchNorm Covariate Shift
+        # Because the encoder sees an equal mix of OCTID (Cls) and OCT5K (Seg) images,
+        # the BN running stats are a corrupted 50/50 blend. We force BN to use batch 
+        # statistics for validation without updating the running stats.
+        bn_momentums = {}
+        for name, m in model.named_modules():
+            if isinstance(m, torch.nn.modules.batchnorm._BatchNorm):
+                bn_momentums[name] = m.momentum
+                m.momentum = 0.0  # Prevent updating running stats
+                m.train()         # Force use of batch statistics
+                
         with torch.no_grad():
             for images_c, targets_c in cls_val_loader:
                 images_c = images_c.to(device)
@@ -510,6 +522,12 @@ def train():
                 
         avg_val_cls_loss = val_cls_loss / len(cls_val_loader) if len(cls_val_loader) > 0 else 0
         val_cls_acc = val_cls_correct / val_cls_total if val_cls_total > 0 else 0
+
+        # RESTORE: BatchNorm states
+        for name, m in model.named_modules():
+            if isinstance(m, torch.nn.modules.batchnorm._BatchNorm):
+                m.momentum = bn_momentums[name]
+                m.eval()
 
         # ---------------------------------------------------------------------
         # Validation for Segmentation
