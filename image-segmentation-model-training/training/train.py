@@ -188,6 +188,7 @@ def train():
     parser.add_argument('--log-dir', type=str, default='./logs', help='TensorBoard log directory')
     parser.add_argument('--resume', type=str, default=None, help='Path to checkpoint to resume training from')
     parser.add_argument('--checkpoint-dir', type=str, default=None, help='Directory to save checkpoints (defaults to local checkpoints/)')
+    parser.add_argument('--save-batches', type=int, default=0, help='Save a checkpoint every N batches (e.g. 2000)')
     
     args = parser.parse_args()
 
@@ -326,13 +327,21 @@ def train():
     best_oct5k_granular_dice = 0.0
 
     start_epoch = 0
+    resume_batch_idx = 0
     if args.resume:
         if Path(args.resume).exists():
             print(f"Resuming training from checkpoint: {args.resume}")
             checkpoint = torch.load(args.resume, map_location=device)
             model.load_state_dict(checkpoint["model_state_dict"])
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-            start_epoch = checkpoint["epoch"] + 1
+            
+            start_epoch = checkpoint.get("epoch", 0)
+            resume_batch_idx = checkpoint.get("batch_idx", 0)
+            
+            # If batch_idx is 0 or not present, it means it's an end-of-epoch checkpoint
+            if resume_batch_idx == 0:
+                start_epoch += 1
+            
             if "best_cls_acc" in checkpoint:
                 best_cls_acc = checkpoint["best_cls_acc"]
             if "best_oct5k_granular_dice" in checkpoint:
@@ -367,6 +376,24 @@ def train():
         optimizer.zero_grad()
 
         for batch_idx in range(num_batches):
+            
+            # --- Fast-Forward for Mid-Epoch Resume ---
+            if epoch == start_epoch and resume_batch_idx > 0 and batch_idx < resume_batch_idx:
+                try:
+                    next(cls_iter)
+                except StopIteration:
+                    cls_iter = iter(cls_train_loader)
+                    next(cls_iter)
+                try:
+                    next(seg_iter)
+                except StopIteration:
+                    seg_iter = iter(seg_train_loader)
+                    next(seg_iter)
+                
+                if (batch_idx + 1) % 1000 == 0 or (batch_idx + 1) == resume_batch_idx:
+                    print(f"Fast-forwarding iterators: {batch_idx + 1}/{resume_batch_idx} batches...")
+                continue
+                
             loss_accum_c = 0.0
             loss_accum_s = 0.0
             
@@ -437,6 +464,19 @@ def train():
                 else:
                     optimizer.step()
                 optimizer.zero_grad()
+                
+            # --- Mid-Epoch Save ---
+            if args.save_batches > 0 and (batch_idx + 1) % args.save_batches == 0:
+                print(f"\n[Mid-Epoch Checkpoint] Saving at Epoch {epoch+1}, Batch {batch_idx+1}/{num_batches}...")
+                mid_path = checkpoints_dir / f"unet_hierarchical_epoch_{epoch+1}_batch_{batch_idx+1}.pth"
+                torch.save({
+                    'epoch': epoch,
+                    'batch_idx': batch_idx + 1,  # save the NEXT batch index to resume from
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'best_cls_acc': best_cls_acc,
+                    'best_oct5k_granular_dice': best_oct5k_granular_dice
+                }, mid_path)
 
             if batch_idx % 10 == 0:
                 print(
