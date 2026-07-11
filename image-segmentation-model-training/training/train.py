@@ -264,7 +264,7 @@ def train():
     )
     cls_val_loader = DataLoader(
         cls_val_sub, batch_size=batch_size, shuffle=False,
-        num_workers=4, pin_memory=True
+        num_workers=4, pin_memory=True, drop_last=True
     )
 
     # 2. Segmentation Dataset
@@ -284,7 +284,7 @@ def train():
     )
     seg_val_loader = DataLoader(
         seg_val_sub, batch_size=batch_size, shuffle=False,
-        num_workers=4, pin_memory=True
+        num_workers=4, pin_memory=True, drop_last=True
     )
 
     print(f"  Classification Train: {len(cls_train_sub)}, Val: {len(cls_val_sub)}")
