@@ -352,6 +352,14 @@ def train():
         else:
             print(f"Warning: Checkpoint path not found: {args.resume}. Training from scratch.")
 
+    # Wrap in DataParallel AFTER loading weights if multiple GPUs are available
+    if torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUs via nn.DataParallel!")
+        model = nn.DataParallel(model)
+
+    # Helper function to save clean state dicts regardless of DataParallel
+    get_model_state = lambda m: m.module.state_dict() if hasattr(m, 'module') else m.state_dict()
+
     # -------------------------------------------------------------------------
     # Training Loop
     # -------------------------------------------------------------------------
@@ -472,7 +480,7 @@ def train():
                 torch.save({
                     'epoch': epoch,
                     'batch_idx': batch_idx + 1,  # save the NEXT batch index to resume from
-                    'model_state_dict': model.state_dict(),
+                    'model_state_dict': get_model_state(model),
                     'optimizer_state_dict': optimizer.state_dict(),
                     'best_cls_acc': best_cls_acc,
                     'best_oct5k_granular_dice': best_oct5k_granular_dice
@@ -580,7 +588,7 @@ def train():
             torch.save(
                 {
                     "epoch":               epoch,
-                    "model_state_dict":    model.state_dict(),
+                    "model_state_dict":    get_model_state(model),
                     "optimizer_state_dict": optimizer.state_dict(),
                     "best_cls_acc": best_cls_acc,
                     "best_oct5k_granular_dice": best_oct5k_granular_dice,
@@ -595,7 +603,7 @@ def train():
             torch.save(
                 {
                     "epoch":               epoch,
-                    "model_state_dict":    model.state_dict(),
+                    "model_state_dict":    get_model_state(model),
                     "optimizer_state_dict": optimizer.state_dict(),
                     "best_cls_acc": best_cls_acc,
                     "best_oct5k_granular_dice": best_oct5k_granular_dice,
@@ -609,7 +617,7 @@ def train():
             torch.save(
                 {
                     "epoch":               epoch,
-                    "model_state_dict":    model.state_dict(),
+                    "model_state_dict":    get_model_state(model),
                     "optimizer_state_dict": optimizer.state_dict(),
                 },
                 checkpoints_dir / f"unet_hierarchical_epoch_{epoch+1}.pth",
