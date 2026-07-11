@@ -383,25 +383,10 @@ def train():
         num_batches = max(len(cls_train_loader), len(seg_train_loader))
         optimizer.zero_grad()
 
-        for batch_idx in range(num_batches):
+        start_batch_idx = resume_batch_idx if epoch == start_epoch else 0
+        
+        for batch_idx in range(start_batch_idx, num_batches):
             
-            # --- Fast-Forward for Mid-Epoch Resume ---
-            if epoch == start_epoch and resume_batch_idx > 0 and batch_idx < resume_batch_idx:
-                try:
-                    next(cls_iter)
-                except StopIteration:
-                    cls_iter = iter(cls_train_loader)
-                    next(cls_iter)
-                try:
-                    next(seg_iter)
-                except StopIteration:
-                    seg_iter = iter(seg_train_loader)
-                    next(seg_iter)
-                
-                if (batch_idx + 1) % 1000 == 0 or (batch_idx + 1) == resume_batch_idx:
-                    print(f"Fast-forwarding iterators: {batch_idx + 1}/{resume_batch_idx} batches...")
-                continue
-                
             loss_accum_c = 0.0
             loss_accum_s = 0.0
             
