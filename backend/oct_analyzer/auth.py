@@ -3,7 +3,7 @@ from fastapi.security.api_key import APIKeyHeader
 from pydantic_settings import BaseSettings
 
 class AuthSettings(BaseSettings):
-    api_key: str = "sk_oct_analyzer_demo_key"
+    api_key: str = ""
     
     class Config:
         env_file = ".env"

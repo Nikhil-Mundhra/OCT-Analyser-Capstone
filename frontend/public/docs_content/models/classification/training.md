@@ -98,3 +98,23 @@ loss_weights = {
 
 ### C. Optimizer Profile
 ConvNeXt architectures are highly sensitive and require heavy regularization to prevent overfitting. We use the `AdamW` optimizer with a high `weight_decay=0.05` (which mathematically penalizes weights from growing too large). We pair this with a `CosineAnnealingWarmRestarts` learning rate scheduler, which smoothly drops the learning rate following a cosine curve, allowing the model to gently settle into the most optimal solution.
+
+---
+
+## Training Incidents & Learnings
+
+### Incident 1: Systemic Mode Collapse on Highly Imbalanced Data
+During the initial multi-head training run, the model suffered from **Systemic Mode Collapse** across every single head:
+- **Head 1 (Triage Net)** predicted `Abnormal` 100% of the time.
+- **Head 2 (Pathology Router)** predicted `CNV` (the majority class) 100% of the time, completely ignoring the dynamic loss weights.
+- **Head 3 (Biomarkers)** flatlined into outputting `Negative` for every prediction.
+
+#### Root Cause Analysis
+The collapse was triggered by a fatal combination of hyperparameter defaults interacting with our dynamic class weighting:
+1. **Aggressive Warm-up Learning Rate (`1e-3`)**: When combined with extreme loss weights (e.g. 2.0x for Head 1 False Negatives), a massive learning rate caused the randomly initialized heads to instantly panic during the very first few optimization steps. The optimizer took the path of least mathematical resistance: slamming all predictions to the heavily-weighted majority classes so it would never get penalized for a False Negative again.
+2. **Strict Gradient Clipping (`max_norm=1.0`)**: We used dynamic class weights to scale up the gradients of ultra-rare diseases (like RAO) by over 600x. However, the strict `max_norm=1.0` gradient clipper was brutally neutralizing these massive corrective spikes before they could update the weights. Our loss weights were effectively being deleted by the clipper.
+
+#### The Patch
+To break the model out of the local minimum and allow it to learn the nuances of the rare diseases, the following hyperparameter patches were implemented:
+- **Reduced Warm-up Learning Rate** down to `1e-4` and **Fine-tuning** down to `1e-5` to enforce slow, deliberate feature extraction over panic-guessing.
+- **Increased Gradient Clipping** threshold up to `max_norm=5.0` to allow the extreme `600x` loss weights from the rarest diseases to actually penetrate the backbone and update the network.

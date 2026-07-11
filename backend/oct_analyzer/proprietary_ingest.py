@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 
 try:
-    from oct_converter.readers import FDS, BOCT, E2E, OPT
+    from oct_converter.readers import FDS, BOCT, E2E
 except ImportError:
     logging.warning("oct_converter not installed. Proprietary formats won't be supported.")
 
@@ -28,8 +28,6 @@ def load_proprietary_volume(path: Path) -> NormalizedScan:
         volumes = E2E(str(path)).read_oct_volume()
         if volumes and len(volumes) > 0:
             oct_volume = volumes[0]
-    elif ext == '.opt':
-        oct_volume = OPT(str(path)).read_oct_volume()
         
     if not oct_volume:
         raise ValueError(f"Could not read OCT volume from {path.name}")

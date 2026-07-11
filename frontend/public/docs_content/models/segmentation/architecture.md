@@ -1,14 +1,14 @@
-# Model Architecture: Hierarchical Multi-Head U-Net
+# Model Architecture: Hierarchical Multi-Task U-Net (MTL)
 
-This document outlines the architecture for the core segmentation model used in this pipeline. The model is built using PyTorch and follows a modified U-Net design to accommodate the hierarchical nature of retinal anatomy and pathology.
+This document outlines the architecture for the core Multi-Task Learning (MTL) model used in this pipeline. The model is built using PyTorch and follows a modified U-Net design to accommodate both the hierarchical nature of retinal anatomy (segmentation) and hierarchical disease diagnosis (classification).
 
 ## 1. Overview
 
-The `HierarchicalUNet` addresses the challenge of segmenting both broad, structural anatomical regions (like the overall retina vs. background) and highly granular, specific pathologies (like subretinal fluid or specific cellular layers).
+The `HierarchicalUNet` acts as a "Best of Both Worlds" network. It addresses two distinct but complementary challenges:
+1. **Segmentation**: Extracting both broad structural anatomical regions (like the overall retina vs. background) and highly granular, specific pathologies (like subretinal fluid or specific cellular layers) using dual segmentation heads.
+2. **Classification**: Providing a comprehensive 15-class diagnostic tree using a strict 3-layer hierarchical multi-label classification system.
 
-Standard U-Nets with a single 15-class output head often struggle with class imbalance, as microscopic pathologies are overwhelmed by massive background classes. To solve this, the model employs a **Dual-Head Architecture**:
-1. **Coarse Head**: Predicts 3 broad categories (Background, Retina, Fluid/Lesions).
-2. **Granular Head**: Predicts 15 distinct classes (ILM, RPE, Drusen, etc.).
+By training on both tasks jointly, the shared encoder learns a universal feature representation that benefits both precise boundary localization and broad diagnostic pattern recognition.
 
 ---
 
@@ -85,20 +85,75 @@ This 67-channel tensor passes through a `DoubleConv(67→64)` block and a `1×1 
 
 ---
 
-## 4. Forward Pass Summary
+## 4. The Hierarchical Classification Heads
+
+Branching off directly from the **1024-channel Encoder Bottleneck** (via global average pooling and dropout), the model features three independent classification heads. To prevent contradictory predictions (e.g., L1 predicting "Normal" but L2 predicting "Diabetic Complications"), the network enforces **Strict Hierarchical Classification Conditioning** via cascaded features.
+
+### L1: Binary Triage (Normal vs Abnormal)
+- **Role**: Safely screens out healthy patients.
+- **Input**: 1024-channel bottleneck.
+- **Output**: 1 Logit (Binary) → Sigmoid.
+
+### L2: Disease Router (Pathology Families)
+- **Role**: Categorizes abnormal scans into one of five broad disease families.
+- **Input**: 1025-channel tensor (1024 bottleneck + **L1 probability**).
+- **Output**: 5 Logits → Softmax.
+
+### L3: Granular Biomarkers (Multi-Label Specialists)
+- **Role**: Detects highly specific biomarkers for multi-morbidity. Consists of 5 independent multi-label specialist MLPs.
+- **Input**: 1030-channel tensor (1024 bottleneck + L1 probability + **5 L2 probabilities**).
+- **Output**: 11 total granular logits → Sigmoid.
+
+**Hierarchical Cascaded Flow:**
+
+```mermaid
+flowchart TD
+    B["1024-d Encoder Bottleneck"] --> L1["L1: Normal / Abnormal"]
+    B --> L2["L2: Pathology Family"]
+    B --> L3["L3: Granular Specialists"]
+    
+    L1 -.->|1 Prob| L2
+    L1 -.->|1 Prob| L3
+    L2 -.->|5 Probs| L3
+    
+    L2_cat[/"Concat (1024 + 1)"/]
+    L3_cat[/"Concat (1024 + 1 + 5)"/]
+    
+    L1 -.-> L2_cat
+    L1 -.-> L3_cat
+    L2 -.-> L3_cat
+```
+
+---
+
+## 5. Forward Pass Summary
 
 ```mermaid
 flowchart TD
     Input["Input OCT Scan\n1 × 512 × 512"]
 
-    subgraph ENC ["Encoder  —  Downsampling Path"]
+    subgraph ENC ["Encoder  —  Shared Backbone"]
         direction TB
         inc["inc  DoubleConv\n64 ch  ·  512×512"]
         d1["down1  MaxPool + DoubleConv\n128 ch  ·  256×256"]
         d2["down2  MaxPool + DoubleConv\n256 ch  ·  128×128"]
         d3["down3  MaxPool + DoubleConv\n512 ch  ·  64×64"]
-        d4["down4  MaxPool + DoubleConv\n1024 ch  ·  32×32  BOTTLENECK"]
+        d4["down4  MaxPool + ASPP\n1024 ch  ·  32×32  BOTTLENECK"]
         inc --> d1 --> d2 --> d3 --> d4
+    end
+
+    subgraph CLS ["Classification Branches (Hierarchical Cascade)"]
+        pool["Global Avg Pool + Dropout"]
+        L1["L1 (Normal/Abnormal)"]
+        L2["L2 (Pathology Routing)"]
+        L3["L3 (Granular Specialists)"]
+        
+        pool --> L1
+        pool --> L2
+        L1 -.->|L1 Probs| L2
+        pool --> L3
+        L1 -.->|L1 Probs| L3
+        L2 -.->|L2 Probs| L3
     end
 
     subgraph DEC ["Decoder  —  Upsampling Path with Attention Gates"]
@@ -126,39 +181,54 @@ flowchart TD
     end
 
     Input --> inc
+    
+    d4 --> pool
+    
     d4 --> u1
     d3 -.->|"attended skip"| u1
     d2 -.->|"attended skip"| u2
     d1 -.->|"attended skip"| u3
     inc -.->|"attended skip"| u4
+    
     u4 -->|"Shared Features  64 ch"| cconv
     u4 -->|"Shared Features  64 ch"| cat
     cprobs --> cat
 ```
 
-**Trainable parameters:** ~31.5 million
+**Trainable parameters:** ~32.0 million
 
 ---
 
-## 5. Training Paradigm
+## 6. Training Paradigm
 
-See [`training_guide.md`](/docs/segmentation-training_guide) for the full training setup. At a high level:
+See [`training_guide.md`](./training_guide.md) for the full training setup. At a high level, both tasks are trained simultaneously in an interleaved multi-task setup.
 
-The model receives both the Coarse Mask and Granular Mask as ground truth. Both heads are trained jointly using a **Combined Dice + CrossEntropy loss** with per-class weights:
+The unified loss function is:
+`Total_Loss = Classification_Loss + (lambda_seg * Segmentation_Loss)`
 
+Where `Segmentation_Loss` is a **Combined Dice + CrossEntropy loss** on both segmentation heads:
+
+```text
+Segmentation_Loss = 0.5 × CrossEntropy(weight=class_weights)
+                  + 0.5 × DiceLoss()
 ```
-Total_Loss = CombinedLoss(Coarse Logits, Coarse Mask)
-           + CombinedLoss(Granular Logits, Granular Mask)
 
-CombinedLoss = 0.5 × CrossEntropy(weight=class_weights)
-             + 0.5 × DiceLoss()
+To prevent the high-gradient segmentation task from destabilizing the classification feature space early on, `lambda_seg` begins at 0.01 (Warm-Up) and dynamically ramps up to 1.0 over the first 15 epochs. This joint supervision acts as a powerful regulariser, ensuring the model never loses the forest for the trees.
+
+**Dynamic Segmentation Loss Warm-Up (`lambda_seg`):**
+
+```mermaid
+xychart-beta
+    title "Dynamic Segmentation Loss Weighting (Warm-Up)"
+    x-axis "Epoch" [1, 3, 5, 7, 9, 11, 13, 15, 17, 20]
+    y-axis "lambda_seg (Weight)" 0.0 --> 1.0
+    line [0.01, 0.14, 0.28, 0.42, 0.57, 0.71, 0.85, 1.0, 1.0, 1.0]
+    bar [0.01, 0.14, 0.28, 0.42, 0.57, 0.71, 0.85, 1.0, 1.0, 1.0]
 ```
-
-This joint supervision acts as a powerful regulariser, ensuring the model never loses the forest for the trees while explicitly handling the extreme class imbalance between background pixels and rare lesion regions.
 
 ---
 
-## 6. Industry Context
+## 7. Industry Context
 
 The following table places this architecture in the context of 2024–2025 OCT segmentation benchmarks:
 

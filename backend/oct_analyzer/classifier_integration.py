@@ -9,18 +9,15 @@ logger = logging.getLogger(__name__)
 # Path setup — locate the HF Space directory (shared between local & remote)
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-HF_SPACE_DIR = PROJECT_ROOT / "image-classification-model-training" / "hf_space"
-
-if str(HF_SPACE_DIR) not in sys.path:
-    sys.path.insert(0, str(HF_SPACE_DIR))
+CORE_ML_CLASS_DIR = PROJECT_ROOT / "backend" / "core_ml" / "classification"
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 try:
-    from scripts.inference_pipeline import OCTInferencePipeline
+    from backend.core_ml.classification.scripts.inference_pipeline import OCTInferencePipeline
 except ImportError as e:
-    logger.error(f"Could not import OCTInferencePipeline from {HF_SPACE_DIR}. Error: {e}")
+    logger.error(f"Could not import OCTInferencePipeline from {CORE_ML_CLASS_DIR}. Error: {e}")
     OCTInferencePipeline = None
 
 # ---------------------------------------------------------------------------
@@ -44,7 +41,7 @@ class ClassifierWrapper:
         if OCTInferencePipeline is None:
             raise RuntimeError("OCTInferencePipeline is not available.")
 
-        weights_dir = HF_SPACE_DIR / "weights"
+        weights_dir = CORE_ML_CLASS_DIR / "weights"
         l3_ckpts = {
             "Macular": str(weights_dir / "level3_macular.pth"),
             "Diabetic": str(weights_dir / "level3_diabetic.pth"),

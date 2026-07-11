@@ -62,13 +62,13 @@ class MultiHeadConvNeXt(nn.Module):
             nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 2) # DME, DR
         )
         self.vascular_head = nn.Sequential(
-            nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 2) # RVO, RAO
+            nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 3) # MH, RVO, RAO
         )
         self.fluid_head = nn.Sequential(
             nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 1) # CSR
         )
         self.structural_head = nn.Sequential(
-            nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 3) # ERM, VID, MH
+            nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 2) # ERM, VID
         )
 
     def forward(self, x: torch.Tensor):

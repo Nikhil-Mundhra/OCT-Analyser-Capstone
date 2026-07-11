@@ -18,3 +18,4 @@ celery
 redis
 sqlalchemy
 pydantic-settings
+oct-converter

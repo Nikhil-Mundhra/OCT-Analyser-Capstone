@@ -28,17 +28,25 @@ import {
   Stethoscope,
   Upload,
   UserRound,
+  LayoutDashboard,
+  ListTodo,
+  UploadCloud,
+  Search,
+  Plus,
+  ChevronUp,
+  ChevronDown,
+  UserCheck, UserSquare2, Trash2,
 } from "lucide-react";
 
 import { createScan } from "./api/octAnalyzerClient.js";
 
-const screens = [
-  { id: "dashboard", path: "/dashboard", label: "Dashboard" },
-  { id: "worklist", path: "/worklist", label: "1. Triage Worklist" },
-  { id: "upload", path: "/QC", label: "2. Upload and QC" },
-  { id: "review", path: "/review", label: "3. Scan Review" },
-  { id: "decision", path: "/human-check", label: "4. Human Decision Gate" },
-  { id: "outcomes", path: "/outcomes", label: "5. Outcomes and Safety" },
+export const screens = [
+  { id: "dashboard", path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "worklist", path: "/worklist", label: "Triage Worklist", icon: ListTodo },
+  { id: "upload", path: "/QC", label: "Upload and QC", icon: UploadCloud },
+  { id: "review", path: "/review", label: "Scan Review", icon: Eye },
+  { id: "decision", path: "/human-check", label: "Human Decision Gate", icon: UserCheck },
+  { id: "outcomes", path: "/outcomes", label: "Outcomes and Safety", icon: Activity },
 ];
 
 const demoRows = [
@@ -141,44 +149,139 @@ export function Header({ scan }) {
   );
 }
 
-export function StickyNav() {
-  const { scan } = useAppContext();
-  const pathname = usePathname();
-  const activePath = pathname;
-
+export function HomeNav() {
   return (
-    <nav className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-3 lg:flex-row lg:items-center lg:justify-between">
-        <Link
-          href="/"
-          className="flex min-h-0 items-center gap-3 rounded-xl border-0 bg-transparent p-0 text-left"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
-            <ScanLine className="h-5 w-5" />
-          </span>
-          <span>
-            <span className="block text-sm font-black text-slate-950">OCT Analyzer</span>
-            <span className="block text-xs font-semibold text-slate-500">{scan ? "Active case loaded" : "Documentation and workflow"}</span>
-          </span>
+    <nav className="bg-[#232f3e] text-white py-4 px-6 flex justify-between items-center shadow-md">
+      <Link href="/" className="flex items-center gap-3">
+        <ScanLine className="h-6 w-6 text-sky-400" />
+        <span className="text-lg font-bold tracking-wide">OCT Analyzer</span>
+      </Link>
+      <div className="flex items-center gap-4 text-sm font-medium">
+        <Link href="/docs/readme" className="hover:text-sky-400 transition">Documentation</Link>
+        <Link href="/QC" className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded font-bold transition">
+          Launch App
         </Link>
-
-        <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:justify-end lg:pb-0">
-          {screens.map((screen) => (
-            <Link
-              key={screen.id}
-              href={screen.path}
-              className={`shrink-0 rounded-xl px-4 py-2 text-sm font-bold transition ${
-                activePath === screen.path
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {screen.label}
-            </Link>
-          ))}
-        </div>
       </div>
     </nav>
+  );
+}
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [expanded, setExpanded] = useState({ clinical: true, system: false });
+
+  const toggleSection = (section) => {
+    setExpanded((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  return (
+    <aside className="group w-[72px] hover:w-[260px] transition-all duration-300 ease-in-out border-r border-slate-200 bg-white flex flex-col h-full shrink-0 shadow-sm z-40 overflow-hidden absolute md:relative">
+      <div className="p-4">
+        <button
+          onClick={() => router.push("/QC")}
+          className="flex items-center justify-center gap-0 group-hover:gap-3 mx-auto h-11 w-11 group-hover:w-full group-hover:h-auto bg-sky-500 hover:bg-sky-600 text-white rounded-full group-hover:py-3 group-hover:px-4 font-bold transition-all shadow-sm overflow-hidden"
+        >
+          <Plus className="h-5 w-5 shrink-0" />
+          <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-0 group-hover:w-auto">New Upload</span>
+        </button>
+      </div>
+
+      <div className="px-4 pb-4">
+        <div className="relative flex items-center justify-center group-hover:justify-start">
+          <Search className="absolute left-3 h-5 w-5 text-slate-400 shrink-0" />
+          <input
+            type="text"
+            placeholder="Search"
+            className="w-full rounded-full border border-slate-300 py-2 pl-10 pr-4 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition opacity-0 group-hover:opacity-100 cursor-default group-hover:cursor-text"
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-2 space-y-1">
+        <Link
+          href="/dashboard"
+          className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors overflow-hidden whitespace-nowrap ${
+            pathname === "/dashboard" ? "bg-slate-100 text-slate-900 font-bold" : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <LayoutDashboard className={`h-5 w-5 shrink-0 ${pathname === "/dashboard" ? "text-sky-500" : "text-slate-400"}`} />
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">Home</span>
+        </Link>
+
+        <div>
+          <button
+            onClick={() => toggleSection("clinical")}
+            className="flex items-center justify-between w-full rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors overflow-hidden whitespace-nowrap"
+          >
+            <div className="flex items-center gap-3">
+              <UploadCloud className="h-5 w-5 text-slate-400 shrink-0" />
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">Clinical Flow</span>
+            </div>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {expanded.clinical ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </div>
+          </button>
+          
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expanded.clinical ? "max-h-0 opacity-0 group-hover:max-h-96 group-hover:opacity-100" : "max-h-0 opacity-0"}`}>
+            <ul className="mt-1 space-y-1 pl-[3.25rem]">
+              {[screens[1], screens[2], screens[3], screens[4]].map((screen) => (
+                <li key={screen.id}>
+                  <Link
+                    href={screen.path}
+                    className={`block rounded-lg px-3 py-2 text-sm transition-colors whitespace-nowrap opacity-0 group-hover:opacity-100 duration-300 ${
+                      pathname === screen.path ? "bg-slate-100 text-slate-900 font-bold" : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {screen.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div>
+          <button
+            onClick={() => toggleSection("system")}
+            className="flex items-center justify-between w-full rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors overflow-hidden whitespace-nowrap"
+          >
+            <div className="flex items-center gap-3">
+              <Activity className="h-5 w-5 text-slate-400 shrink-0" />
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">System & Admin</span>
+            </div>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {expanded.system ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </div>
+          </button>
+          
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expanded.system ? "max-h-0 opacity-0 group-hover:max-h-96 group-hover:opacity-100" : "max-h-0 opacity-0"}`}>
+            <ul className="mt-1 space-y-1 pl-[3.25rem]">
+              <li>
+                <Link
+                  href="/outcomes"
+                  className={`block rounded-lg px-3 py-2 text-sm transition-colors whitespace-nowrap opacity-0 group-hover:opacity-100 duration-300 ${
+                    pathname === "/outcomes" ? "bg-slate-100 text-slate-900 font-bold" : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  Clinical Outcomes
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/docs"
+                  className={`block rounded-lg px-3 py-2 text-sm transition-colors whitespace-nowrap opacity-0 group-hover:opacity-100 duration-300 ${
+                    pathname === "/docs" ? "bg-slate-100 text-slate-900 font-bold" : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  System Documentation
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }
 
@@ -329,12 +432,15 @@ function HomeScanPreview({ scan }) {
 }
 
 export function WorklistScreen() {
-  const { scan } = useAppContext();
+  const { scan, scanHistory, setScan, deleteScan, setUploadState, setDecision } = useAppContext();
   const router = useRouter();
-  const liveRisk = riskFromScan(scan);
-  const rows = scan?.status === "completed"
-    ? [["LOCAL-001", scan.source_format, liveRisk.label, liveRisk.confidence, liveRisk.action, liveRisk.tone], ...demoRows]
-    : demoRows;
+
+  const handleView = (selectedScan) => {
+    setScan(selectedScan);
+    setUploadState({ status: "Completed", progress: 100, fileName: selectedScan.filename || "", error: "" });
+    setDecision({ choice: "", rationale: "", submittedAt: "" });
+    router.push("/review");
+  };
 
   return (
     <div className="grid gap-5 lg:grid-cols-12">
@@ -347,22 +453,37 @@ export function WorklistScreen() {
             <span>Confidence</span>
             <span>Action</span>
           </div>
-          {rows.map((row) => (
-            <div key={row[0]} className="grid grid-cols-5 items-center border-t border-slate-100 px-4 py-4 text-sm text-slate-700">
-              <span className="font-bold text-slate-900">{row[0]}</span>
-              <span>{row[1]}</span>
-              <span><StatusBadge tone={row[5]}>{row[2]}</StatusBadge></span>
-              <span className="font-bold">{row[3]}</span>
-              <span>{row[4]}</span>
-            </div>
-          ))}
+          
+          {scanHistory.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">No scans in triage queue. Upload a new scan to get started.</div>
+          ) : (
+            scanHistory.map((s) => {
+              const liveRisk = riskFromScan(s);
+              return (
+                <div key={s.id} className="grid grid-cols-5 items-center border-t border-slate-100 px-4 py-4 text-sm text-slate-700">
+                  <span className="font-bold text-slate-900">{s.patient_id || "Unknown"}</span>
+                  <span>{s.scan_type || s.source_format}</span>
+                  <span><StatusBadge tone={liveRisk.tone}>{liveRisk.label}</StatusBadge></span>
+                  <span className="font-bold">{liveRisk.confidence}</span>
+                  <span className="flex gap-2">
+                    <button onClick={() => handleView(s)} className="rounded bg-sky-50 px-2 py-1 text-xs font-bold text-sky-700 hover:bg-sky-100 transition-colors">
+                      View
+                    </button>
+                    <button onClick={() => deleteScan(s.id)} className="rounded bg-rose-50 p-1 text-rose-700 hover:bg-rose-100 transition-colors" title="Delete">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </span>
+                </div>
+              );
+            })
+          )}
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button onClick={() => router.push("/QC")} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white">
+          <button onClick={() => router.push("/QC")} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-sm">
             Upload new scan
           </button>
           {scan?.status === "completed" ? (
-            <button onClick={() => router.push("/review")} className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700">
+            <button onClick={() => router.push("/review")} className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm">
               Review active case
             </button>
           ) : null}
@@ -382,16 +503,28 @@ export function WorklistScreen() {
 }
 
 export function UploadScreen() {
-  const { scan, uploadState, setUploadState, setDecision, setScan } = useAppContext();
+  const { scan, uploadState, setUploadState, setDecision, setScan, addScanToHistory } = useAppContext();
   const router = useRouter();
+  const [patientId, setPatientId] = useState("");
+  const [modality, setModality] = useState("Structural OCT");
+  const [target, setTarget] = useState("Macula");
+  const [pattern, setPattern] = useState("Cube / Volume (3D)");
+  const inputRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+
   async function onUpload(file) {
+    const finalPatientId = patientId.trim() || `ANON-${Math.floor(Math.random() * 10000)}`;
     setUploadState({ status: "Uploading", progress: 20, fileName: file.name, error: "" });
     setDecision({ choice: "", rationale: "", submittedAt: "" });
 
     try {
       setUploadState({ status: "Processing", progress: 55, fileName: file.name, error: "" });
       const payload = await createScan(file);
-      setScan(payload);
+      const combinedScanType = `${modality} - ${target} - ${pattern}`;
+      const aiSupported = modality === "Structural OCT" && target === "Macula";
+      const enrichedPayload = { ...payload, patient_id: finalPatientId, scan_type: combinedScanType, modality, target, pattern, ai_supported: aiSupported };
+      setScan(enrichedPayload);
+      addScanToHistory(enrichedPayload);
       setUploadState({ status: "Completed", progress: 100, fileName: file.name, error: "" });
       router.push("/review");
     } catch (error) {
@@ -404,8 +537,6 @@ export function UploadScreen() {
       });
     }
   }
-  const inputRef = useRef(null);
-  const [dragging, setDragging] = useState(false);
 
   function handleFiles(files) {
     const file = files?.[0];
@@ -418,72 +549,175 @@ export function UploadScreen() {
   const signalRange = scan?.qc?.signal_range || [];
   const completed = scan?.status === "completed";
 
+  const handleReset = () => {
+    setScan(null);
+    setUploadState({ status: "Waiting", progress: 0, fileName: "", error: "" });
+    setDecision({ choice: "", rationale: "", submittedAt: "" });
+    setPatientId("");
+  };
+
   return (
-    <div className="grid gap-5 lg:grid-cols-12">
-      <Card title="Scan Intake" subtitle=".vol, .dcm, zipped TIFF, or 2D Image (.png, .jpg, .tif, .tiff)" icon={Upload} className="lg:col-span-4">
-        <div
-          onDragOver={(event) => {
-            event.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(event) => {
-            event.preventDefault();
-            setDragging(false);
-            handleFiles(event.dataTransfer.files);
-          }}
-          className={`flex h-52 flex-col items-center justify-center rounded-2xl border-2 border-dashed p-4 text-center ${
-            dragging ? "border-sky-400 bg-sky-50 text-sky-800" : "border-slate-300 bg-slate-50 text-slate-500"
-          }`}
-        >
-          <input ref={inputRef} type="file" accept=".vol,.dcm,.zip,.tif,.tiff,image/png,image/jpeg,image/webp,image/tiff" className="hidden" onChange={(event) => handleFiles(event.target.files)} />
-          <Upload className="mb-3 h-9 w-9" />
-          <p className="font-bold text-slate-800">Drag OCT/OCTA volume here</p>
-          <p className="mt-1 text-sm">or select scan from local system</p>
-          <button onClick={() => inputRef.current?.click()} className="mt-4 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-bold text-white">
-            Select scan
+    <div className="flex flex-col gap-5">
+      {uploadState.status !== "Waiting" && (
+        <div className="flex justify-end">
+          <button onClick={handleReset} className="rounded-2xl bg-rose-100 px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-200 transition-colors">
+            Cancel & Start New Upload
           </button>
         </div>
-        <div className="mt-4 grid gap-3 text-sm">
-          <div className="rounded-2xl bg-slate-50 p-4"><b>File:</b> {scan?.filename || uploadState.fileName || "No scan uploaded"}</div>
-          <div className="rounded-2xl bg-slate-50 p-4"><b>Format:</b> {scan?.source_format || "Awaiting upload"}</div>
-          <div className="rounded-2xl bg-slate-50 p-4"><b>Shape:</b> {scan?.volume_shape?.join(" x ") || "N/A"}</div>
-        </div>
-      </Card>
-
-      <Card title="Quality Control Gate" subtitle="The model can be blocked before inference if scan quality is unsafe." icon={CheckCircle2} className="lg:col-span-4">
-        <div className="space-y-3">
-          <Metric label="Signal range" value={signalRange.length ? `${signalRange[0].toFixed(1)}-${signalRange[1].toFixed(1)}` : "N/A"} tone={completed ? "safe" : "neutral"} />
-          <Metric label="Crop applied" value={scan?.qc?.crop_applied ? "Yes" : completed ? "No" : "N/A"} tone={scan?.qc?.crop_applied ? "info" : completed ? "safe" : "neutral"} />
-          <Metric label="Warnings" value={qcWarnings.length} tone={qcWarnings.length ? "warning" : completed ? "safe" : "neutral"} />
-          <Metric label="QC decision" value={uploadState.error ? "Blocked" : completed ? "Proceed" : uploadState.status} tone={uploadState.error ? "danger" : completed ? "info" : "neutral"} />
-        </div>
-        {uploadState.error ? <div className="mt-4 rounded-2xl bg-rose-50 p-4 text-sm text-rose-800">{uploadState.error}</div> : null}
-        {qcWarnings.length ? <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">{qcWarnings.join(" ")}</div> : null}
-      </Card>
-
-      <Card title="Pipeline Status" subtitle="Clinician sees where the case is in the system." icon={Activity} className="lg:col-span-4">
-        <div className="space-y-4">
-          {["Upload received", "Preprocessing complete", "QC passed", "Inference complete", "Report ready"].map((step, index) => {
-            const done = completed || uploadState.progress > index * 20;
-            return (
-              <div key={step} className={`flex items-center gap-3 rounded-2xl p-4 ${done ? "bg-emerald-50" : "bg-slate-50"}`}>
-                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-black ${done ? "bg-emerald-600 text-white" : "bg-white text-slate-700"}`}>
-                  {index + 1}
-                </div>
-                <span className="font-semibold text-slate-700">{step}</span>
+      )}
+      <div className="grid gap-5 lg:grid-cols-12">
+        <Card title="Patient & Scan Intake" subtitle="Complete details before upload" icon={Upload} className="lg:col-span-4">
+          <div className="mb-4 space-y-3">
+            <div>
+              <label className="mb-1 block text-sm font-bold text-slate-700">Patient ID</label>
+              <input
+                type="text"
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                disabled={uploadState.status !== "Waiting"}
+                placeholder="Optional (e.g. PT-10294)"
+                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-bold text-slate-700">Imaging Modality</label>
+              <select
+                value={modality}
+                onChange={(e) => {
+                  const newModality = e.target.value;
+                  setModality(newModality);
+                  if (newModality === "OCTA") {
+                    setPattern("Cube / Volume (3D)");
+                  }
+                }}
+                disabled={uploadState.status !== "Waiting"}
+                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-100"
+              >
+                <option value="Structural OCT">Structural OCT</option>
+                <option value="OCTA">OCTA</option>
+                <option value="EDI-OCT">EDI-OCT</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-bold text-slate-700">Anatomical Target</label>
+              <select
+                value={target}
+                onChange={(e) => {
+                  const newTarget = e.target.value;
+                  setTarget(newTarget);
+                  if (newTarget === "Optic Disc / ONH") {
+                    setPattern("Circle / Ring");
+                  } else if (newTarget === "Anterior Segment") {
+                    setPattern("Line / Single B-Scan");
+                  }
+                }}
+                disabled={uploadState.status !== "Waiting"}
+                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-100"
+              >
+                <option value="Macula">Macula</option>
+                <option value="Optic Disc / ONH">Optic Disc / ONH</option>
+                <option value="Anterior Segment">Anterior Segment</option>
+                <option value="Widefield">Widefield</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-bold text-slate-700">Scan Pattern</label>
+              <select
+                value={pattern}
+                onChange={(e) => setPattern(e.target.value)}
+                disabled={uploadState.status !== "Waiting"}
+                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-100"
+              >
+                <option value="Cube / Volume (3D)">Cube / Volume (3D)</option>
+                <option value="Raster">Raster</option>
+                <option value="Line / Single B-Scan">Line / Single B-Scan</option>
+                <option value="Radial / Star">Radial / Star</option>
+                <option value="Circle / Ring">Circle / Ring</option>
+                <option value="Mesh / Grid">Mesh / Grid</option>
+              </select>
+            </div>
+          </div>
+          
+          {!(modality === "Structural OCT" && target === "Macula") && (
+            <div className="mt-4 rounded-2xl bg-amber-50 p-4 border border-amber-200 text-sm text-amber-900 shadow-sm">
+              <div className="font-bold flex items-center gap-2 mb-1 text-amber-950">
+                <AlertTriangle className="h-4 w-4" /> AI Inference Disabled
               </div>
-            );
-          })}
-        </div>
-      </Card>
+              The AI models are only validated for <b>Structural OCT</b> of the <b>Macula</b>. This scan can be uploaded for manual review, but no AI insights will be generated.
+            </div>
+          )}
+
+          <div
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragging(false);
+              handleFiles(event.dataTransfer.files);
+            }}
+            className={`flex h-40 flex-col items-center justify-center rounded-2xl border-2 border-dashed p-4 text-center transition-colors ${
+              dragging ? "border-sky-400 bg-sky-50 text-sky-800" : "border-slate-300 bg-slate-50 hover:border-slate-400 text-slate-500"
+            }`}
+          >
+            <input ref={inputRef} type="file" accept=".vol,.dcm,.zip,.tif,.tiff,image/png,image/jpeg,image/webp,image/tiff" className="hidden" onChange={(event) => handleFiles(event.target.files)} />
+            <Upload className="mb-2 h-7 w-7" />
+            <p className="text-sm font-bold text-slate-800">Drag OCT/OCTA volume here</p>
+            <button onClick={() => inputRef.current?.click()} className="mt-2 rounded-xl bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-800">
+              Browse Files
+            </button>
+          </div>
+          <div className="mt-4 grid gap-3 text-sm">
+            <div className="rounded-2xl bg-slate-50 p-4"><b>File:</b> {scan?.filename || uploadState.fileName || "No scan uploaded"}</div>
+            <div className="rounded-2xl bg-slate-50 p-4"><b>Format:</b> {scan?.source_format || "Awaiting upload"}</div>
+            <div className="rounded-2xl bg-slate-50 p-4"><b>Shape:</b> {scan?.volume_shape?.join(" x ") || "N/A"}</div>
+          </div>
+        </Card>
+
+        <Card title="Quality Control Gate" subtitle="The model can be blocked before inference if scan quality is unsafe." icon={CheckCircle2} className="lg:col-span-4">
+          <div className="space-y-3">
+            <Metric label="Signal range" value={signalRange.length ? `${signalRange[0].toFixed(1)}-${signalRange[1].toFixed(1)}` : "N/A"} tone={completed ? "safe" : "neutral"} />
+            <Metric label="Crop applied" value={scan?.qc?.crop_applied ? "Yes" : completed ? "No" : "N/A"} tone={scan?.qc?.crop_applied ? "info" : completed ? "safe" : "neutral"} />
+            <Metric label="Warnings" value={qcWarnings.length} tone={qcWarnings.length ? "warning" : completed ? "safe" : "neutral"} />
+            <Metric label="QC decision" value={uploadState.error ? "Blocked" : completed ? "Proceed" : uploadState.status} tone={uploadState.error ? "danger" : completed ? "info" : "neutral"} />
+          </div>
+          {uploadState.error ? <div className="mt-4 rounded-2xl bg-rose-50 p-4 text-sm text-rose-800">{uploadState.error}</div> : null}
+          {qcWarnings.length ? <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">{qcWarnings.join(" ")}</div> : null}
+        </Card>
+
+        <Card title="Pipeline Status" subtitle="Clinician sees where the case is in the system." icon={Activity} className="lg:col-span-4">
+          <div className="space-y-4">
+            {["Upload received", "Preprocessing complete", "QC passed", "Inference complete", "Report ready"].map((step, index) => {
+              const done = completed || uploadState.progress > index * 20;
+              return (
+                <div key={step} className={`flex items-center gap-3 rounded-2xl p-4 transition-colors ${done ? "bg-emerald-50" : "bg-slate-50"}`}>
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-black ${done ? "bg-emerald-600 text-white" : "bg-white text-slate-700"}`}>
+                    {index + 1}
+                  </div>
+                  <span className="font-semibold text-slate-700">{step}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
 
 export function ReviewScreen() {
-  const { scan } = useAppContext();
+  const { scan, setScan, setUploadState, setDecision } = useAppContext();
+  const router = useRouter();
   const [viewMode, setViewMode] = useState("segmented");
+  
+  const handleReset = () => {
+    setScan(null);
+    setUploadState({ status: "Waiting", progress: 0, fileName: "", error: "" });
+    setDecision({ choice: "", rationale: "", submittedAt: "" });
+    router.push("/QC");
+  };
   
   const completed = scan?.status === "completed";
   const risk = riskFromScan(scan);
@@ -501,9 +735,15 @@ export function ReviewScreen() {
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-12">
-      <Card title="OCT Image Classification" subtitle="Hugging Face & Local Segmentation" icon={ScanLine} className="lg:col-span-7">
-        <div className="grid gap-4">
+    <div className="flex flex-col gap-5">
+      <div className="flex justify-end">
+        <button onClick={handleReset} className="rounded-2xl bg-rose-100 px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-200 transition-colors">
+          Delete Scan & Start New
+        </button>
+      </div>
+      <div className="grid gap-5 lg:grid-cols-12">
+        <Card title="OCT Image Classification" subtitle="Hugging Face & Local Segmentation" icon={ScanLine} className="lg:col-span-7">
+          <div className="grid gap-4">
           <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 flex flex-col justify-between" style={{ minHeight: "24rem" }}>
             {completed && scan.localImageUrl ? (
               <>
@@ -559,7 +799,22 @@ export function ReviewScreen() {
       </Card>
 
       <div className="lg:col-span-5 space-y-5">
-        <Card title="Level 1: Gatekeeper (ResNet-50)" subtitle="Binary triage screening." icon={Brain}>
+        {scan?.ai_supported === false ? (
+          <Card title="AI Inference Disabled" subtitle="Incompatible scan parameters" icon={AlertTriangle}>
+            <div className="rounded-2xl bg-amber-50 p-5 text-sm text-amber-900 border border-amber-200 shadow-sm">
+              <div className="font-bold flex items-center gap-2 mb-2 text-amber-950 text-base">
+                <AlertTriangle className="h-5 w-5" /> Unsupported Modality
+              </div>
+              The current AI model suite is only validated for <b>Structural OCT</b> scans of the <b>Macula</b>. 
+              <br/><br/>
+              The scan you uploaded ({scan?.modality} - {scan?.target}) cannot be processed because the anatomical structures or imaging physics do not match the training distribution.
+              <br/><br/>
+              You can still use this interface to view the scan, store it in the patient's timeline, or write manual clinical notes.
+            </div>
+          </Card>
+        ) : (
+          <>
+            <Card title="Level 1: Gatekeeper (ResNet-50)" subtitle="Binary triage screening." icon={Brain}>
           <div className="space-y-3">
             <Metric label="Gatekeeper Prediction" value={l1?.prediction || "N/A"} tone={l1Abnormal ? "danger" : "safe"} />
             {l1?.confidence && (
@@ -591,22 +846,74 @@ export function ReviewScreen() {
            </div>
         </Card>
 
-        {l1Abnormal && l3?.prediction && (
-          <Card title="Level 3: Specialist (EfficientNet-B0)" subtitle="Fine-grained subclass verification." icon={Activity}>
-            <div className="space-y-3">
-              <Metric label="Specialist Diagnosis" value={l3.prediction.replace(/_/g, " ")} tone="danger" />
-              {l3.confidence && (
-                <Metric label="Model Confidence" value={`${Math.round(l3.confidence * 100)}%`} tone="neutral" />
-              )}
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-                <b>Deep analysis:</b> Specialist model activated to verify the exact subclass of the pathology.
+        {l1Abnormal && l3?.probs && (
+          <Card title="Level 3: Multi-Morbidity Biomarkers" subtitle="Independent probabilities for co-occurring granular features." icon={Activity}>
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2 text-sm font-bold text-slate-500 uppercase tracking-wide px-2">
+                <span>Biomarker</span>
+                <span className="text-right">Confidence</span>
+              </div>
+              <div className="max-h-60 overflow-y-auto pr-1 space-y-1">
+                {Object.entries(l3.probs)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([biomarker, prob]) => {
+                    const isHigh = prob > 0.5;
+                    return (
+                      <div key={biomarker} className={`flex items-center justify-between rounded-xl px-3 py-2 border ${isHigh ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-100'}`}>
+                        <span className={`font-bold ${isHigh ? 'text-rose-900' : 'text-slate-700'}`}>{biomarker.replace(/_/g, " ")}</span>
+                        <span className={`font-semibold ${isHigh ? 'text-rose-700' : 'text-slate-500'}`}>{Math.round(prob * 100)}%</span>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           </Card>
         )}
+
+        {completed && scan.segmentation && (
+          <Card title="Quantitative Clinical Metrics" subtitle="Objective, geometric measurements extracted from segmentation." icon={BarChart3}>
+            <div className="space-y-3">
+              <Metric 
+                label="Avg Retinal Thickness" 
+                value={`${Math.round(scan.segmentation.clinical_metrics.average_retinal_thickness)} px`} 
+                tone="neutral" 
+              />
+              <Metric 
+                label="Total Fluid Area" 
+                value={`${Math.round(scan.segmentation.clinical_metrics.total_fluid_area)} px²`} 
+                tone={scan.segmentation.clinical_metrics.total_fluid_area > 0 ? "warning" : "safe"} 
+              />
+              <Metric 
+                label="Max Fluid Height" 
+                value={`${Math.round(scan.segmentation.clinical_metrics.max_fluid_height)} px`} 
+                tone={scan.segmentation.clinical_metrics.max_fluid_height > 0 ? "danger" : "safe"} 
+              />
+            </div>
+          </Card>
+        )}
+        
+        {completed && l2?.prediction && scan.segmentation && (
+          <Card title="Dynamic Clinical Interpretation" subtitle="Correlating structural findings with disease predictions." icon={BookOpen}>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-800 leading-relaxed">
+              <b>Interpretation:</b> The classifier predicts <b>{l2.prediction.replace(/_/g, " ")}</b>. 
+              {scan.segmentation.clinical_metrics.total_fluid_area > 0 ? (
+                <span> This is clinically supported by the detection of <b>Intraretinal/Subretinal Fluid</b> (Area: {Math.round(scan.segmentation.clinical_metrics.total_fluid_area)} px²) in the segmented volume.</span>
+              ) : (
+                <span> No significant fluid volumes were detected in the segmented slice.</span>
+              )}
+              {scan.segmentation.clinical_metrics.average_retinal_thickness < 50 ? (
+                <span> <b>Retinal thinning</b> is observed, which may correlate with atrophic changes.</span>
+              ) : scan.segmentation.clinical_metrics.average_retinal_thickness > 150 ? (
+                <span> <b>Retinal thickening</b> is observed, consistent with edema.</span>
+              ) : null}
+            </div>
+          </Card>
+        )}
+          </>
+        )}
       </div>
 
-      {completed && gradcams && Object.keys(gradcams).length > 0 && (
+      {completed && scan?.ai_supported !== false && gradcams && Object.keys(gradcams).length > 0 && (
         <Card title="Explainability: Grad-CAM Heatmaps" subtitle="Visualizing network attention mapping across the pipeline." icon={Activity} className="lg:col-span-12 mt-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {gradcams.L1 && (
@@ -630,6 +937,7 @@ export function ReviewScreen() {
           </div>
         </Card>
       )}
+    </div>
     </div>
   );
 }
@@ -788,3 +1096,58 @@ export function OutcomesScreen() {
   );
 }
 
+
+export function CaseSwitcher() {
+  const { scan, scanHistory, setScan, setUploadState, setDecision } = useAppContext();
+  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Only show on these specific clinical tabs
+  const validPaths = ["/QC", "/review", "/human-check"];
+  if (!validPaths.includes(pathname)) return null;
+
+  const handleSelect = (selectedScan) => {
+    setScan(selectedScan);
+    setUploadState({ status: "Completed", progress: 100, fileName: selectedScan.filename || "", error: "" });
+    setDecision({ choice: "", rationale: "", submittedAt: "" });
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative z-20">
+      <button 
+        onClick={() => setIsOpen(!isOpen)} 
+        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+      >
+        <UserSquare2 className="h-4 w-4 text-sky-500" />
+        {scan?.patient_id ? `Active: ${scan.patient_id}` : "Select Patient"}
+        {isOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg">
+          {scanHistory.length === 0 ? (
+            <div className="p-3 text-sm text-slate-500 text-center">No previous scans found.</div>
+          ) : (
+            <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
+              {scanHistory.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => handleSelect(s)}
+                  className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors text-left ${
+                    scan?.id === s.id ? "bg-sky-50 text-sky-700 font-bold" : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <div>
+                    <div className="font-bold">{s.patient_id || "Unknown"}</div>
+                    <div className="text-xs opacity-70">{s.scan_type || s.source_format}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

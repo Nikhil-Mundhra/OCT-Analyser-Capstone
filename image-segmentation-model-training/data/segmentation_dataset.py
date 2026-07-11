@@ -149,7 +149,7 @@ def get_training_transforms() -> A.Compose:
             alpha_affine=120 * 0.03,
             p=0.5
         ),
-        A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5),
+        A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8), p=1.0),
         A.MultiplicativeNoise(multiplier=(0.9, 1.1), elementwise=True, p=0.5),
         A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
         A.Normalize(mean=0.5, std=0.5, max_pixel_value=255),
@@ -164,6 +164,7 @@ def get_val_transforms():
     without touching the training pipeline.
     """
     return A.Compose([
+        A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8), p=1.0),
         A.Normalize(mean=0.5, std=0.5, max_pixel_value=255),
     ])
 

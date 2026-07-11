@@ -49,3 +49,8 @@
   - Add audit-grade clinical logging.
 - [x] **Clinical Validation**
   - Conduct formal clinical trials and robust accuracy evaluations (the app cannot be used for real patient diagnosis until this is complete).
+
+- [ ] **Future Deep Learning Architecture Enhancements**
+  - **Graph-Search Correction (Anatomical Constraints):** Implement topological constraints (Viterbi/Dijkstra) to prevent impossible layer crossings, but MUST design soft-constraints to handle broken topology (Macular Holes), obliterated boundaries (CNV scars), extreme elevations (PEDs), shadow artifacts, and massive 3D volume latency.
+  - **Uncertainty Head (Monte Carlo Dropout):** Add pixel-level confidence maps to prevent automation bias, but MUST engineer solutions for the N-pass latency penalty (30x slower inference), alert fatigue from aleatoric noise (subretinal fluid debris), calibration drift across different OCT scanners, and false confidence in OOD scans.
+  - **Regression Head (Functional Outputs):** Add continuous metric predictions (retinal thickness, contrast sensitivity), but MUST resolve the structure-function biological disconnect, noisy subjective clinical ground truth labels, non-linear disease inflection points (thinning -> thickening -> thinning), and MSE loss function dominance destroying the shared classification encoder.

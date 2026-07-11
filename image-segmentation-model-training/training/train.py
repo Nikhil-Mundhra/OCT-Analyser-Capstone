@@ -12,6 +12,9 @@ import random
 import itertools
 from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
+from sklearn.metrics import roc_auc_score, f1_score
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="sklearn.metrics")
 import importlib.util
 
 # Add local path first for segmentation imports
@@ -159,6 +162,16 @@ def compute_dice_score(logits: torch.Tensor, targets: torch.Tensor, num_classes:
 def load_image_gray(p):
     return Image.open(p).convert('L') if isinstance(p, str) else p
 
+import cv2
+class CLAHE_Transform_PIL:
+    def __init__(self, clip_limit=2.0, tile_grid=(8, 8)):
+        self.clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid)
+        
+    def __call__(self, img):
+        img_np = np.array(img, dtype=np.uint8)
+        equalized = self.clahe.apply(img_np)
+        return Image.fromarray(equalized, mode='L')
+
 # ---------------------------------------------------------------------------
 # Training Entry Point
 # ---------------------------------------------------------------------------
@@ -248,7 +261,8 @@ def train():
     
     cls_transform = transforms.Compose([
         transforms.Lambda(load_image_gray),
-        transforms.Resize((256, 256)),
+        CLAHE_Transform_PIL(clip_limit=2.0, tile_grid=(8, 8)),
+        transforms.Resize((512, 512)),
         transforms.ToTensor(),
     ])
     cls_dataset = MultiHeadOCTDataset(config_path=cls_config, data_root=cls_path, transform=cls_transform)
@@ -260,12 +274,15 @@ def train():
     
     cls_train_loader = DataLoader(
         cls_train_sub, batch_size=batch_size, shuffle=True,
-        num_workers=4, pin_memory=True, drop_last=True
+        num_workers=0, pin_memory=True, drop_last=True
     )
     cls_val_loader = DataLoader(
         cls_val_sub, batch_size=batch_size, shuffle=False,
-        num_workers=4, pin_memory=True, drop_last=True
+        num_workers=0, pin_memory=True, drop_last=True
     )
+
+    h2_alpha = cls_dataset.compute_class_weights("l2").to(device)
+
 
     # 2. Segmentation Dataset
     oct5k_dataset = OCT5kSegmentationDataset(root_dir=oct5k_path)
@@ -280,11 +297,11 @@ def train():
 
     seg_train_loader = DataLoader(
         seg_train_sub, batch_size=batch_size, shuffle=True,
-        num_workers=4, pin_memory=True, drop_last=True
+        num_workers=0, pin_memory=True, drop_last=True
     )
     seg_val_loader = DataLoader(
         seg_val_sub, batch_size=batch_size, shuffle=False,
-        num_workers=4, pin_memory=True, drop_last=True
+        num_workers=0, pin_memory=True, drop_last=True
     )
 
     print(f"  Classification Train: {len(cls_train_sub)}, Val: {len(cls_val_sub)}")
@@ -302,7 +319,12 @@ def train():
     # -------------------------------------------------------------------------
     criterion_coarse   = CombinedLoss(ce_weight=coarse_class_weights,   alpha=0.5).to(device)
     criterion_granular = CombinedLoss(ce_weight=granular_class_weights, alpha=0.5).to(device)
-    criterion_cls      = nn.CrossEntropyLoss(ignore_index=-1).to(device)
+    
+    # Classification Hierarchical Losses
+    criterion_h1 = nn.BCEWithLogitsLoss().to(device)
+    criterion_h2 = FocalLoss(weight=h2_alpha, ignore_index=-1, gamma=2.0).to(device)
+    criterion_h3 = nn.BCEWithLogitsLoss().to(device)
+
 
     # All parameters learn at the same rate in simultaneous MTL, since encoder 
     # receives gradients from both tasks and must adapt to both.
@@ -346,9 +368,13 @@ def train():
                 best_cls_acc = checkpoint["best_cls_acc"]
             if "best_oct5k_granular_dice" in checkpoint:
                 best_oct5k_granular_dice = checkpoint["best_oct5k_granular_dice"]
-            # Fast-forward scheduler
-            for _ in range(start_epoch):
-                scheduler.step()
+            
+            if "scheduler_state_dict" in checkpoint:
+                scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+            else:
+                # Fast-forward scheduler for older checkpoints
+                for _ in range(start_epoch):
+                    scheduler.step()
         else:
             print(f"Warning: Checkpoint path not found: {args.resume}. Training from scratch.")
 
@@ -376,6 +402,12 @@ def train():
         train_loss_cls = 0.0
         train_loss_seg = 0.0
         
+        train_loss_h1 = 0.0
+        train_loss_h2 = 0.0
+        train_loss_h3 = 0.0
+        train_loss_coarse = 0.0
+        train_loss_granular = 0.0
+        
         # Interleave batches
         cls_iter = iter(cls_train_loader)
         seg_iter = iter(seg_train_loader)
@@ -385,10 +417,18 @@ def train():
 
         start_batch_idx = resume_batch_idx if epoch == start_epoch else 0
         
+        import time
+        epoch_start_time = time.time()
+        
         for batch_idx in range(start_batch_idx, num_batches):
             
             loss_accum_c = 0.0
             loss_accum_s = 0.0
+            loss_accum_h1 = 0.0
+            loss_accum_h2 = 0.0
+            loss_accum_h3 = 0.0
+            loss_accum_coarse = 0.0
+            loss_accum_granular = 0.0
             
             # --- Classification Batch ---
             try:
@@ -398,24 +438,70 @@ def train():
                 images_c, targets_c = next(cls_iter)
                 
             images_c = images_c.to(device)
-            # targets_c contains "pathology" (L2 Router classes)
-            labels_c = targets_c["pathology"].to(device)
+            labels_c = {
+                "normal_abnormal": targets_c["normal_abnormal"].to(device),
+                "pathology": targets_c["pathology"].to(device),
+                "severity": {k: v.to(device) for k, v in targets_c["severity"].items()}
+            }
 
             if args.amp:
                 with torch.amp.autocast('cuda'):
                     cls_logits = model(images_c, task="classification")
-                    loss_c = criterion_cls(cls_logits, labels_c)
+                    
+                    # H1 Loss
+                    loss_h1 = criterion_h1(cls_logits["normal_abnormal"], labels_c["normal_abnormal"].float())
+                    
+                    # H2 Loss (only for abnormal)
+                    valid_h2 = labels_c["pathology"] != -1
+                    if valid_h2.sum() > 0:
+                        loss_h2 = criterion_h2(cls_logits["pathology"][valid_h2], labels_c["pathology"][valid_h2])
+                    else:
+                        loss_h2 = torch.tensor(0.0, device=device, requires_grad=True)
+                    
+                    # H3 Loss (sum across all specialists)
+                    loss_h3 = 0.0
+                    for key in ["macular", "diabetic", "vascular", "fluid", "structural"]:
+                        loss_h3 += criterion_h3(cls_logits["severity"][key], labels_c["severity"][key].float())
+                        
+                    # Combined Classification Loss
+                    loss_c = (1.0 * loss_h1) + (2.0 * loss_h2) + (0.5 * loss_h3)
                     loss_c = loss_c / accum_steps
                 scaler.scale(loss_c).backward()
                 loss_accum_c += loss_c.item() * accum_steps
+                loss_accum_h1 += loss_h1.item()
+                loss_accum_h2 += loss_h2.item()
+                loss_accum_h3 += loss_h3.item()
             else:
                 cls_logits = model(images_c, task="classification")
-                loss_c = criterion_cls(cls_logits, labels_c)
+                
+                # H1 Loss
+                loss_h1 = criterion_h1(cls_logits["normal_abnormal"], labels_c["normal_abnormal"].float())
+                
+                # H2 Loss (only for abnormal)
+                valid_h2 = labels_c["pathology"] != -1
+                if valid_h2.sum() > 0:
+                    loss_h2 = criterion_h2(cls_logits["pathology"][valid_h2], labels_c["pathology"][valid_h2])
+                else:
+                    loss_h2 = torch.tensor(0.0, device=device, requires_grad=True)
+                
+                # H3 Loss (sum across all specialists)
+                loss_h3 = 0.0
+                for key in ["macular", "diabetic", "vascular", "fluid", "structural"]:
+                    loss_h3 += criterion_h3(cls_logits["severity"][key], labels_c["severity"][key].float())
+                    
+                # Combined Classification Loss
+                loss_c = (1.0 * loss_h1) + (2.0 * loss_h2) + (0.5 * loss_h3)
                 loss_c = loss_c / accum_steps
                 loss_c.backward()
                 loss_accum_c += loss_c.item() * accum_steps
+                loss_accum_h1 += loss_h1.item()
+                loss_accum_h2 += loss_h2.item()
+                loss_accum_h3 += loss_h3.item()
 
             train_loss_cls += loss_accum_c
+            train_loss_h1 += loss_accum_h1
+            train_loss_h2 += loss_accum_h2
+            train_loss_h3 += loss_accum_h3
             
             # --- Segmentation Batch ---
             try:
@@ -437,6 +523,8 @@ def train():
                     loss_s = loss_s / accum_steps
                 scaler.scale(loss_s).backward()
                 loss_accum_s += loss_s.item() * accum_steps / lambda_seg  # track unscaled loss
+                loss_accum_coarse += loss_coarse.item()
+                loss_accum_granular += loss_granular.item()
             else:
                 coarse_logits, granular_logits = model(images_s, task="segmentation")
                 loss_coarse = criterion_coarse(coarse_logits, mask_c)
@@ -445,8 +533,12 @@ def train():
                 loss_s = loss_s / accum_steps
                 loss_s.backward()
                 loss_accum_s += loss_s.item() * accum_steps / lambda_seg
+                loss_accum_coarse += loss_coarse.item()
+                loss_accum_granular += loss_granular.item()
 
             train_loss_seg += loss_accum_s
+            train_loss_coarse += loss_accum_coarse
+            train_loss_granular += loss_accum_granular
 
             # --- Gradient Accumulation Step ---
             if (batch_idx + 1) % accum_steps == 0 or (batch_idx + 1) == num_batches:
@@ -467,6 +559,7 @@ def train():
                     'batch_idx': batch_idx + 1,  # save the NEXT batch index to resume from
                     'model_state_dict': get_model_state(model),
                     'optimizer_state_dict': optimizer.state_dict(),
+                    'scheduler_state_dict': scheduler.state_dict(),
                     'best_cls_acc': best_cls_acc,
                     'best_oct5k_granular_dice': best_oct5k_granular_dice
                 }, mid_path)
@@ -480,6 +573,9 @@ def train():
         avg_train_loss_cls = train_loss_cls / num_batches
         avg_train_loss_seg = train_loss_seg / num_batches
         scheduler.step()
+        
+        train_time = time.time() - epoch_start_time
+        val_start_time = time.time()
 
         # ---- Validation ----
         model.eval()
@@ -490,6 +586,13 @@ def train():
         val_cls_loss = 0.0
         val_cls_correct = 0
         val_cls_total = 0
+        
+        all_h1_probs = []
+        all_h1_targets = []
+        all_h2_probs = []
+        all_h2_targets = []
+        all_h3_probs = {k: [] for k in ["macular", "diabetic", "vascular", "fluid", "structural"]}
+        all_h3_targets = {k: [] for k in ["macular", "diabetic", "vascular", "fluid", "structural"]}
         
         # FIX: BatchNorm Covariate Shift
         # Because the encoder sees an equal mix of OCTID (Cls) and OCT5K (Seg) images,
@@ -505,23 +608,83 @@ def train():
         with torch.no_grad():
             for images_c, targets_c in cls_val_loader:
                 images_c = images_c.to(device)
-                labels_c = targets_c["pathology"].to(device)
+                labels_c = {
+                    "normal_abnormal": targets_c["normal_abnormal"].to(device),
+                    "pathology": targets_c["pathology"].to(device),
+                    "severity": {k: v.to(device) for k, v in targets_c["severity"].items()}
+                }
+                
                 if args.amp:
                     with torch.amp.autocast('cuda'):
                         cls_logits = model(images_c, task="classification")
-                        loss_c = criterion_cls(cls_logits, labels_c)
+                        loss_h1 = criterion_h1(cls_logits["normal_abnormal"], labels_c["normal_abnormal"].float())
+                        valid_h2 = labels_c["pathology"] != -1
+                        loss_h2 = criterion_h2(cls_logits["pathology"][valid_h2], labels_c["pathology"][valid_h2]) if valid_h2.sum() > 0 else 0.0
+                        loss_h3 = sum(criterion_h3(cls_logits["severity"][k], labels_c["severity"][k].float()) for k in ["macular", "diabetic", "vascular", "fluid", "structural"])
+                        loss_c = (1.0 * loss_h1) + (2.0 * loss_h2) + (0.5 * loss_h3)
                 else:
                     cls_logits = model(images_c, task="classification")
-                    loss_c = criterion_cls(cls_logits, labels_c)
+                    loss_h1 = criterion_h1(cls_logits["normal_abnormal"], labels_c["normal_abnormal"].float())
+                    valid_h2 = labels_c["pathology"] != -1
+                    loss_h2 = criterion_h2(cls_logits["pathology"][valid_h2], labels_c["pathology"][valid_h2]) if valid_h2.sum() > 0 else 0.0
+                    loss_h3 = sum(criterion_h3(cls_logits["severity"][k], labels_c["severity"][k].float()) for k in ["macular", "diabetic", "vascular", "fluid", "structural"])
+                    loss_c = (1.0 * loss_h1) + (2.0 * loss_h2) + (0.5 * loss_h3)
                 
                 val_cls_loss += loss_c.item()
-                preds = torch.argmax(cls_logits, dim=1)
-                valid_mask = (labels_c != -1)
-                val_cls_correct += (preds[valid_mask] == labels_c[valid_mask]).sum().item()
-                val_cls_total += valid_mask.sum().item()
+                
+                # Metrics tracking
+                all_h1_probs.extend(torch.sigmoid(cls_logits["normal_abnormal"]).detach().cpu().numpy())
+                all_h1_targets.extend(labels_c["normal_abnormal"].cpu().numpy())
+                
+                for k in ["macular", "diabetic", "vascular", "fluid", "structural"]:
+                    all_h3_probs[k].extend(torch.sigmoid(cls_logits["severity"][k]).detach().cpu().numpy())
+                    all_h3_targets[k].extend(labels_c["severity"][k].cpu().numpy())
+                
+                # We use H2 accuracy as the primary validation metric
+                valid_mask = (labels_c["pathology"] != -1)
+                if valid_mask.sum() > 0:
+                    preds = torch.argmax(cls_logits["pathology"], dim=1)
+                    val_cls_correct += (preds[valid_mask] == labels_c["pathology"][valid_mask]).sum().item()
+                    val_cls_total += valid_mask.sum().item()
+                    
+                    all_h2_probs.extend(torch.softmax(cls_logits["pathology"][valid_mask], dim=1).detach().cpu().numpy())
+                    all_h2_targets.extend(labels_c["pathology"][valid_mask].cpu().numpy())
                 
         avg_val_cls_loss = val_cls_loss / len(cls_val_loader) if len(cls_val_loader) > 0 else 0
         val_cls_acc = val_cls_correct / val_cls_total if val_cls_total > 0 else 0
+        
+        # Compute AUC and F1 safely
+        def safe_metrics_binary(y_true, y_prob):
+            if len(np.unique(y_true)) > 1:
+                auc = roc_auc_score(y_true, y_prob)
+                f1 = f1_score(y_true, (np.array(y_prob) > 0.5).astype(int))
+                return auc, f1
+            return 0.0, 0.0
+            
+        def safe_metrics_multi(y_true, y_prob):
+            if len(np.unique(y_true)) > 1:
+                try:
+                    auc = roc_auc_score(y_true, y_prob, multi_class='ovr', average='macro')
+                except ValueError:
+                    auc = 0.0
+                f1 = f1_score(y_true, np.argmax(y_prob, axis=1), average='macro')
+                return auc, f1
+            return 0.0, 0.0
+
+        val_h1_auc, val_h1_f1 = safe_metrics_binary(all_h1_targets, all_h1_probs)
+        val_h2_auc, val_h2_f1 = safe_metrics_multi(all_h2_targets, all_h2_probs)
+        
+        val_h3_metrics = {}
+        for k in ["macular", "diabetic", "vascular", "fluid", "structural"]:
+            if len(np.unique(all_h3_targets[k])) > 1:
+                try:
+                    auc = roc_auc_score(all_h3_targets[k], all_h3_probs[k], average='macro')
+                except ValueError:
+                    auc = 0.0
+                f1 = f1_score(all_h3_targets[k], (np.array(all_h3_probs[k]) > 0.5).astype(int), average='macro')
+                val_h3_metrics[k] = (auc, f1)
+            else:
+                val_h3_metrics[k] = (0.0, 0.0)
 
         # RESTORE: BatchNorm states
         for name, m in model.named_modules():
@@ -570,20 +733,55 @@ def train():
         oct5k_val_loss, oct5k_coarse_dice, oct5k_granular_dice = evaluate_loader(seg_val_loader, "OCT5K")
 
         current_lr = scheduler.get_last_lr()[0]
+        
+        avg_train_h1 = train_loss_h1 / num_batches
+        avg_train_h2 = train_loss_h2 / num_batches
+        avg_train_h3 = train_loss_h3 / num_batches
+        avg_train_coarse = train_loss_coarse / num_batches
+        avg_train_granular = train_loss_granular / num_batches
+        
         writer.add_scalar('Loss/Train_Cls', avg_train_loss_cls, epoch)
         writer.add_scalar('Loss/Train_Seg', avg_train_loss_seg, epoch)
+        writer.add_scalar('Loss/Train_H1', avg_train_h1, epoch)
+        writer.add_scalar('Loss/Train_H2', avg_train_h2, epoch)
+        writer.add_scalar('Loss/Train_H3', avg_train_h3, epoch)
+        writer.add_scalar('Loss/Train_Coarse', avg_train_coarse, epoch)
+        writer.add_scalar('Loss/Train_Granular', avg_train_granular, epoch)
+        
         writer.add_scalar('Loss/Val_Cls', avg_val_cls_loss, epoch)
         writer.add_scalar('Accuracy/Val_Cls', val_cls_acc, epoch)
+        writer.add_scalar('Metrics_Val/H1_AUC', val_h1_auc, epoch)
+        writer.add_scalar('Metrics_Val/H1_F1', val_h1_f1, epoch)
+        writer.add_scalar('Metrics_Val/H2_AUC', val_h2_auc, epoch)
+        writer.add_scalar('Metrics_Val/H2_F1', val_h2_f1, epoch)
+        for k, (auc, f1) in val_h3_metrics.items():
+            writer.add_scalar(f'Metrics_Val/H3_AUC_{k}', auc, epoch)
+            writer.add_scalar(f'Metrics_Val/H3_F1_{k}', f1, epoch)
+            
         writer.add_scalar('LR', current_lr, epoch)
         writer.add_scalar('Hyperparameters/Lambda_Seg', lambda_seg, epoch)
         
-        print(
-            f"\n--- Epoch {epoch+1}/{epochs} Summary ---\n"
-            f"  Train Loss Cls      : {avg_train_loss_cls:.4f}  | Train Loss Seg: {avg_train_loss_seg:.4f}\n"
-            f"  LR                  : {current_lr:.6f}\n"
-            f"  [CLS]   Val Loss    : {avg_val_cls_loss:.4f} | Val Acc: {val_cls_acc:.4f}\n"
-            f"  [OCT5K] Val Loss    : {oct5k_val_loss:.4f} | Coarse Dice: {oct5k_coarse_dice:.4f} | Granular Dice: {oct5k_granular_dice:.4f}\n"
+        val_time = time.time() - val_start_time
+        epoch_duration = time.time() - epoch_start_time
+        
+        summary_str = (
+            f"\n--- Epoch {epoch+1}/{epochs} Summary (Total Time: {epoch_duration:.2f}s | Train: {train_time:.2f}s | Val: {val_time:.2f}s) ---\n"
+            f"  [TRAIN] Cls Loss: {avg_train_loss_cls:.4f} (H1:{avg_train_h1:.3f}, H2:{avg_train_h2:.3f}, H3:{avg_train_h3:.3f})\n"
+            f"  [TRAIN] Seg Loss: {avg_train_loss_seg:.4f} (Crs:{avg_train_coarse:.3f}, Grn:{avg_train_granular:.3f})\n"
+            f"  [VAL-CLS] Loss: {avg_val_cls_loss:.4f} | Acc(H2): {val_cls_acc:.4f} | H1_AUC: {val_h1_auc:.4f} | H2_AUC: {val_h2_auc:.4f}\n"
+            f"  [VAL-SEG] Loss: {oct5k_val_loss:.4f} | Crs_Dice: {oct5k_coarse_dice:.4f} | Grn_Dice: {oct5k_granular_dice:.4f}\n"
         )
+        print(summary_str)
+        
+        # Write detailed breakdown to log file
+        log_file_path = Path(args.log_dir) / "training_history.log"
+        with open(log_file_path, "a") as f:
+            f.write(summary_str)
+            f.write("  [VAL-H3 Detailed] ")
+            h3_details = []
+            for k, (auc, f1) in val_h3_metrics.items():
+                h3_details.append(f"{k.capitalize()} AUC: {auc:.4f}")
+            f.write(" | ".join(h3_details) + "\n\n")
 
         # Save best Classification model
         if val_cls_acc > best_cls_acc:
@@ -593,6 +791,7 @@ def train():
                     "epoch":               epoch,
                     "model_state_dict":    get_model_state(model),
                     "optimizer_state_dict": optimizer.state_dict(),
+                    "scheduler_state_dict": scheduler.state_dict(),
                     "best_cls_acc": best_cls_acc,
                     "best_oct5k_granular_dice": best_oct5k_granular_dice,
                 },
@@ -608,6 +807,7 @@ def train():
                     "epoch":               epoch,
                     "model_state_dict":    get_model_state(model),
                     "optimizer_state_dict": optimizer.state_dict(),
+                    "scheduler_state_dict": scheduler.state_dict(),
                     "best_cls_acc": best_cls_acc,
                     "best_oct5k_granular_dice": best_oct5k_granular_dice,
                 },
@@ -622,6 +822,7 @@ def train():
                     "epoch":               epoch,
                     "model_state_dict":    get_model_state(model),
                     "optimizer_state_dict": optimizer.state_dict(),
+                    "scheduler_state_dict": scheduler.state_dict(),
                 },
                 checkpoints_dir / f"unet_hierarchical_epoch_{epoch+1}.pth",
             )

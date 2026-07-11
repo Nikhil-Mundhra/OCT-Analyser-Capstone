@@ -278,14 +278,42 @@ class HierarchicalUNet(nn.Module):
         self.up3 = Up(256, 128)
         self.up4 = Up(128, 64)
 
-        # Classification Head  →  L2 Router predictions (5 classes)
-        # Connects to the bottleneck feature map (1024 channels)
-        self.classification_head = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Flatten(),
-            nn.Dropout(p=0.3),
-            nn.Linear(1024, 5)
+        # Multi-Scale Classification Pool
+        # We pool from x3 (256), x4 (512), and x5 (1024) to retain spatial textures
+        self.pool_x3 = nn.AdaptiveAvgPool2d(1)
+        self.pool_x4 = nn.AdaptiveAvgPool2d(1)
+        self.pool_x5 = nn.AdaptiveAvgPool2d(1)
+        
+        self.cls_project = nn.Sequential(
+            nn.Linear(256 + 512 + 1024, 1024),
+            nn.GELU(),
+            nn.Dropout(p=0.3)
         )
+
+        # L1: Normal vs Abnormal (Binary)
+        self.normal_abnormal_head = nn.Sequential(
+            nn.Linear(1024, 512),
+            nn.GELU(),
+            nn.Dropout(p=0.2),
+            nn.Linear(512, 1)
+        )
+
+        # L2: Broad Pathology Routing (5 Classes)
+        # Input: 1024 (pooled) + 1 (L1 prob) = 1025
+        self.pathology_type_head = nn.Sequential(
+            nn.Linear(1025, 512),
+            nn.GELU(),
+            nn.Dropout(p=0.2),
+            nn.Linear(512, 5)
+        )
+
+        # L3: Granular Biomarkers (Multi-Label Specialists)
+        # Input: 1024 (pooled) + 1 (L1 prob) + 5 (L2 probs) = 1030
+        self.macular_head = nn.Sequential(nn.Linear(1030, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 3))
+        self.diabetic_head = nn.Sequential(nn.Linear(1030, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 2))
+        self.vascular_head = nn.Sequential(nn.Linear(1030, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 3))
+        self.fluid_head = nn.Sequential(nn.Linear(1030, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 1))
+        self.structural_head = nn.Sequential(nn.Linear(1030, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 2))
 
         # Coarse Head  →  3-channel output
         self.coarse_conv = nn.Sequential(
@@ -313,8 +341,37 @@ class HierarchicalUNet(nn.Module):
         x4 = self.down3(x3)
         x5 = self.down4(x4)
 
+        if task == "classification" or task == "both":
+            # 1. Multi-Scale Aggregation
+            p3 = torch.flatten(self.pool_x3(x3), 1)
+            p4 = torch.flatten(self.pool_x4(x4), 1)
+            p5 = torch.flatten(self.pool_x5(x5), 1)
+            multi_scale_features = torch.cat([p3, p4, p5], dim=1)
+            pooled = self.cls_project(multi_scale_features)
+            
+            # 2. Strict Hierarchical Classification Pass
+            l1_logits = self.normal_abnormal_head(pooled)
+            l1_probs = torch.sigmoid(l1_logits)
+            
+            l2_input = torch.cat([pooled, l1_probs], dim=1)
+            l2_logits = self.pathology_type_head(l2_input)
+            l2_probs = torch.softmax(l2_logits, dim=1)
+            
+            l3_input = torch.cat([pooled, l1_probs, l2_probs], dim=1)
+            
+            cls_logits = {
+                "normal_abnormal": l1_logits,
+                "pathology": l2_logits,
+                "severity": {
+                    "macular": self.macular_head(l3_input),
+                    "diabetic": self.diabetic_head(l3_input),
+                    "vascular": self.vascular_head(l3_input),
+                    "fluid": self.fluid_head(l3_input),
+                    "structural": self.structural_head(l3_input)
+                }
+            }
+
         if task == "classification":
-            cls_logits = self.classification_head(x5)
             return cls_logits
 
         # ---- Decoder (attention-gated skip connections) ----
@@ -333,7 +390,6 @@ class HierarchicalUNet(nn.Module):
         granular_logits = self.granular_conv(granular_input)
 
         if task == "both":
-            cls_logits = self.classification_head(x5)
             return coarse_logits, granular_logits, cls_logits
 
         return coarse_logits, granular_logits

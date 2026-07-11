@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { HomeNav } from '../../HomePage.jsx';
+import { HomeNav } from '../../components';
 import Footer from '../components/Footer';
 import DocsSidebar from '../components/DocsSidebar';
 import DocsCardGrid from '../components/DocsCardGrid';

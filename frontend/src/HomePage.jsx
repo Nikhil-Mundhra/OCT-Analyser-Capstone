@@ -4,22 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { ScanLine, ArrowRight, ShieldAlert, Activity, Route } from 'lucide-react';
 
-export function HomeNav() {
-  return (
-    <nav className="bg-[#232f3e] text-white py-4 px-6 flex justify-between items-center shadow-md">
-      <div className="flex items-center gap-3">
-        <ScanLine className="h-6 w-6 text-sky-400" />
-        <span className="text-lg font-bold tracking-wide">OCT Analyzer</span>
-      </div>
-      <div className="flex items-center gap-4 text-sm font-medium">
-        <Link href="/docs/readme" className="hover:text-sky-400 transition">Documentation</Link>
-        <Link href="/QC" className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded font-bold transition">
-          Launch App
-        </Link>
-      </div>
-    </nav>
-  );
-}
+import { HomeNav } from './components';
 
 export function HomePage() {
   return (

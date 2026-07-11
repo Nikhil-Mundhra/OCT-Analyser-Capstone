@@ -12,12 +12,10 @@ SEGMENTATION_ATLAS_ENV = "OCT_LAYER_ATLAS"
 DEFAULT_LAYER_COUNT = 15 # Changed from 12 to 15
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-SEG_MODEL_DIR = PROJECT_ROOT / "OCT-Segmentation-Model"
-if str(SEG_MODEL_DIR) not in sys.path:
-    sys.path.insert(0, str(SEG_MODEL_DIR))
+CORE_ML_SEG_DIR = PROJECT_ROOT / "backend" / "core_ml" / "segmentation"
 
 try:
-    from models.unet import HierarchicalUNet
+    from backend.core_ml.segmentation.models.unet import HierarchicalUNet
 except ImportError:
     HierarchicalUNet = None
 
@@ -27,9 +25,7 @@ class UNetSegmenter:
     def __init__(self):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = None
-        checkpoint_path = SEG_MODEL_DIR / "checkpoints" / "unet_hierarchical_best.pth"
-        if not checkpoint_path.exists():
-            checkpoint_path = SEG_MODEL_DIR / "unet_hierarchical_best.pth"
+        checkpoint_path = CORE_ML_SEG_DIR / "weights" / "unet_hierarchical_best.pth"
             
         if HierarchicalUNet is not None and checkpoint_path.exists():
             try:

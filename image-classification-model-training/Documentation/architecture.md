@@ -1,35 +1,41 @@
-# Multi-Head OCT/OCTA Image Classification Architecture
+# Multi-Task OCT/OCTA Classification Architecture (Supersedes ConvNeXt V2)
 
-> [!NOTE]
-> **What exactly did we build?**
-> We built a **Unified Multi-Head Convolutional Neural Network (CNN)**. 
-> It utilizes **Transfer Learning**, taking state-of-the-art image recognition models (ConvNeXt V2) pre-trained on millions of real-world images, and specializing them specifically for medical OCT scan analysis.
+> [!IMPORTANT]
+> **Architecture Migration Notice (July 2026)**
+> The standalone classification model (ConvNeXt V2 Base) has been officially superseded. The classification pipeline is now fully integrated into the **Multi-Task Learning (MTL) Hierarchical U-Net**. This "Best of Both Worlds" network shares a single convolutional encoder for both pixel-perfect semantic segmentation and holistic disease classification.
+> *Note: The legacy standalone ConvNeXt model did NOT implement strict hierarchical conditioning (its heads operated independently). The strict hierarchical conditioning cascade described below was introduced exclusively in the unified U-Net.*
 
-Instead of maintaining a complex, multi-model cascade (the old "Gatekeeper -> Router -> Specialist" setup), we unified the entire pipeline into a **single, powerful backbone** that extracts a shared global feature vector, which then feeds into three independent, specialized prediction heads.
+Instead of maintaining a complex, standalone classification model, we unified the entire pipeline into a **single, powerful backbone** that extracts a shared global feature vector. This bottleneck feeds into three independent, specialized classification prediction heads, tightly coupled with strict hierarchical conditioning to prevent contradictory predictions.
 
 ---
 
 ## 1. The Global Data Flow
 
-Here is the visual representation of how a single input scan flows through our unified pipeline during inference:
+Here is the visual representation of how a single input scan flows through our unified MTL classification pipeline during inference:
 
 ```mermaid
 graph TD
     Input(Input Image Scan) --> Backbone
 
-    subgraph Backbone ["Feature Extractor"]
-        Conv[ConvNeXt V2 Base<br/>Outputs 1024-d Feature Vector]
+    subgraph Backbone ["Shared Encoder (U-Net)"]
+        Encoder[Encoder Stages x3, x4, x5<br/>256ch, 512ch, 1024ch]
     end
 
-    Backbone --> H1
-    Backbone --> H2
-    Backbone --> H3
+    Backbone --> Pool[Multi-Scale Aggregation<br/>Concat + Linear Proj -> 1024-d]
+    
+    Pool --> H1
+    Pool --> H2
+    Pool --> H3
 
-    subgraph Heads ["Independent Prediction Heads"]
-        H1{Head 1: Normal/Abnormal<br/>Binary Logit}
-        H2{Head 2: Pathology Routing<br/>5 Broad Categories}
-        H3{Head 3: Severity/Biomarkers<br/>11 Multi-Label Classes}
+    subgraph Heads ["Hierarchical Cascaded Prediction Heads"]
+        H1{L1: Normal vs Abnormal<br/>Binary Logit}
+        H2{L2: Pathology Routing<br/>5 Broad Categories}
+        H3{L3: Severity/Biomarkers<br/>5 Multi-Label Specialists<br/>(11 Total Classes)}
     end
+
+    H1 -.->|L1 Probabilities| H2
+    H1 -.->|L1 Probabilities| H3
+    H2 -.->|L2 Probabilities| H3
 
     H1 -->|Sigmoid > 0.5| OutNormal([Abnormal])
     H2 -->|Softmax| OutPath([Macular / Diabetic / Vascular / Fluid / Structural])
@@ -40,27 +46,27 @@ graph TD
 
 ## 2. Layer-by-Layer Breakdown
 
-### The Backbone (Feature Extractor)
-- **Model:** `ConvNeXt V2 Base`
-- **Role:** Extracts a rich, highly expressive 1024-dimensional feature vector from the input image. We leverage the power of ConvNeXt V2's Fully Convolutional Masked Autoencoder (FCMAE) pre-training, which significantly improves the model's ability to capture structural representations compared to older architectures like ResNet or EfficientNet.
-- **Input Resolution:** `384 x 384` pixels.
-  > [!TIP]
-  > **Why the higher resolution?** We use 384px because the network needs to look for minute, fine-grained structural details (like micro-aneurysms or small fluid pockets) that might be blurred out at 224px.
-- **Grad-CAM Target:** `model.backbone.stages[-1].blocks[-1]` — the final stage block before the global pooling.
+### The Backbone (Shared Feature Extractor)
+- **Model:** `HierarchicalUNet` Encoder.
+- **Role:** The model extracts multi-scale features from the x3 (256-channel), x4 (512-channel), and x5 (1024-channel) encoder stages. These stages are independently average-pooled, concatenated (1792 channels total), and projected via a learned linear layer and GELU activation into a rich 1024-dimensional global feature vector.
+- **Input Resolution:** `512 x 512` pixels (standardized across the MTL pipeline).
 
-### Head 1: Binary Triage (Normal vs Abnormal)
+### L1: Binary Triage (Normal vs Abnormal)
 - **Role:** Safely screens out healthy patients. 
+- **Input:** 1024-channel aggregated feature vector.
 - **Output:** 1 Logit (Binary).
 - **Activation/Loss:** `Sigmoid` / `BCEWithLogitsLoss`.
 
-### Head 2: Disease Router (Pathology Families)
+### L2: Disease Router (Pathology Families)
 - **Role:** Categorizes abnormal scans into one of five broad disease families.
+- **Strict Conditioning:** To prevent contradictory predictions, this head receives the 1024-channel aggregated features **concatenated with the L1 output probability** (1025 channels).
 - **Output:** 5 Logits.
 - **Classes:** `Macular_Degeneration`, `Diabetic_Complications`, `Vascular_Occlusions`, `Structural_Issues`, `Fluid_Accumulation`.
-- **Activation/Loss:** `Softmax` / `CrossEntropyLoss`.
+- **Activation/Loss:** `Softmax` / `FocalLoss`.
 
-### Head 3: Granular Biomarkers (Multi-Label Specialists)
-- **Role:** Replaces the old "Specialist" models. It simultaneously predicts the presence of 11 different granular biomarkers/diseases, allowing for multi-morbidity detection (e.g., a patient having both DRUSEN and CNV).
+### L3: Granular Biomarkers (Multi-Label Specialists)
+- **Role:** Detects highly specific biomarkers for multi-morbidity detection.
+- **Strict Conditioning:** To enforce the global hierarchy, this head receives the 1024-channel aggregated features **concatenated with both the L1 and L2 output probabilities** (1030 channels).
 - **Output:** 11 Logits.
 - **Classes:** `CNV`, `DRUSEN`, `Generic_AMD`, `DME`, `DR`, `MH`, `RVO`, `RAO`, `CSR`, `ERM`, `VID`.
 - **Activation/Loss:** `Sigmoid` / `BCEWithLogitsLoss`.
@@ -78,13 +84,25 @@ Before any augmentation or model inference, every image passes through **CLAHE (
 - Apply CLAHE with `clip_limit=2.0` and `tile_grid=(8, 8)` to equalize local contrast adaptively.
 - Stack back to 3-channel RGB (required for pre-trained backbone compatibility).
 
+**Preprocessing Pipeline Flow:**
+
+```mermaid
+flowchart LR
+    RGB["Input RGB Scan\n(Varying Illumination)"] --> Gray["Grayscale Conversion\n(Luminance Only)"]
+    Gray --> CLAHE["CLAHE\nclip_limit=2.0\ntile_grid=8x8"]
+    CLAHE --> Stack["Stack to 3 Channels\n(Standardized Tensor)"]
+    Stack --> Model["U-Net Encoder"]
+    
+    style CLAHE fill:#f9f,stroke:#333,stroke-width:2px
+```
+
 ---
 
-## 4. Training Strategy: Two-Phase Fine-Tuning
+## 4. Training Strategy: Interleaved Multi-Task Learning
 
-Transfer learning can be volatile if done incorrectly. We use a **Phase-based** training loop for the unified Multi-Head model:
+The classification and segmentation tasks are trained jointly in a single 35-hour pass. To ensure the encoder isn't torn apart by massive segmentation gradients early in training (which would destroy the classification feature space):
 
-1. **Phase 1: Warm-up (Frozen Backbone).** We freeze the stem and the first three stages (Stages 0-2) of the ConvNeXt V2 backbone. We only allow gradients to update Stage 4 and our newly attached multi-head classification MLPs. We do this for the initial epochs.
-2. **Phase 2: Fine-tuning (Unfrozen Backbone).** We unfreeze the entire network and drop the learning rate drastically. We allow the CNN to gently adapt its edge-and-texture filters specifically to OCT scans, without destroying the powerful generalized features.
+1. **Dynamic Loss Weighting (Warm-Up)**: The combined objective is $L_{total} = L_{class} + (\lambda \cdot L_{seg})$. We initialize $\lambda = 0.01$ and use a linear scheduler to ramp it to $1.0$ over the first 15 epochs.
+2. **Classification Focus**: This allows the encoder to establish a stable, generalized diagnostic foundation before hyper-precise segmentation boundaries demand heavy parameter updates.
 
-*This documentation reflects the pipeline configuration as of July 2026. The legacy multi-model hierarchy was superseded by the unified Multi-Head ConvNeXt V2 architecture.*
+*This documentation reflects the pipeline configuration as of July 2026. The legacy multi-model hierarchy and standalone ConvNeXt V2 were superseded by the unified Multi-Task Hierarchical U-Net architecture.*

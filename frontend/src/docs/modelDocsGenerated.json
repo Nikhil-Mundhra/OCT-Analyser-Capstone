@@ -63,6 +63,12 @@
           "description": "This document outlines the architecture for the core segmentation model used in this pipeline. The model is built using PyTorch and follows a modified..."
         },
         {
+          "slug": "segmentation-fine_tuning_strategy",
+          "title": "Advanced Fine-Tuning Strategy",
+          "sidebarTitle": "Advanced Fine-Tuning Strategy",
+          "description": "This document details the architectural mechanisms, loss masking protocols, and sampling strategies implemented to safely fine-tune the Hierarchical U..."
+        },
+        {
           "slug": "segmentation-training_guide",
           "title": "Training Guide: Loss Functions, Class Weights & Metrics",
           "sidebarTitle": "Training Guide: Loss Functions, Class Weights & Metrics",
@@ -80,6 +86,7 @@
     "classification-training": "/docs_content/models/classification/training.md",
     "segmentation-api_reference": "/docs_content/models/segmentation/api_reference.md",
     "segmentation-architecture": "/docs_content/models/segmentation/architecture.md",
+    "segmentation-fine_tuning_strategy": "/docs_content/models/segmentation/fine_tuning_strategy.md",
     "segmentation-training_guide": "/docs_content/models/segmentation/training_guide.md"
   }
 }

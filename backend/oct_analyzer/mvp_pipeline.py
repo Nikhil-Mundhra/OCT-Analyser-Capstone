@@ -13,6 +13,16 @@ from .classifier_integration import get_classifier
 import tempfile
 import os
 import cv2
+import sys
+from dataclasses import asdict
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+CORE_ML_SEG_DIR = PROJECT_ROOT / "backend" / "core_ml" / "segmentation"
+
+try:
+    from backend.core_ml.segmentation.inference.analyzer import SegmentationAnalyzer
+except ImportError:
+    SegmentationAnalyzer = None
 
 
 LAYER_NAMES = [
@@ -46,6 +56,18 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
     layers = extract_layer_features(flattened_volume, segmentation)
     diagnosis, confidence = classify_layers(layers)
     
+    # Run Segmentation Analyzer on center slice
+    segmentation_analysis = None
+    if SegmentationAnalyzer is not None:
+        try:
+            z_dim, y_dim, x_dim = segmentation.shape
+            center_mask = segmentation[:, int(y_dim * 0.5), :]
+            analyzer = SegmentationAnalyzer()
+            seg_obj = analyzer.analyze(center_mask)
+            segmentation_analysis = asdict(seg_obj)
+        except Exception as e:
+            print(f"Failed to run SegmentationAnalyzer: {e}")
+
     # Run hierarchical classifier (L1/L2/L3) on the 2D flattened volume
     pipeline_results = {}
     try:
@@ -122,6 +144,7 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
         "level2": pipeline_results.get("Level2", {}),
         "level3": pipeline_results.get("Level3", {}),
         "gradcams": pipeline_results.get("gradcams", {}),
+        "segmentation": segmentation_analysis,
     }
 
 

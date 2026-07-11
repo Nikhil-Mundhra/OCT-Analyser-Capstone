@@ -40,9 +40,9 @@ H2_CLASS_TO_IDX = {
 H3_MAPPINGS = {
     'Macular_Degeneration': {'CNV': 0, 'DRUSEN': 1, 'Generic_AMD': 2},
     'Diabetic_Complications': {'DME': 0, 'DR': 1},
-    'Vascular_Occlusions': {'RVO': 0, 'RAO': 1},
+    'Vascular_Occlusions': {'MH': 0, 'RVO': 1, 'RAO': 2},
     'Fluid_Accumulation': {'CSR': 0},
-    'Structural_Issues': {'ERM': 0, 'VID': 1, 'MH': 2}
+    'Structural_Issues': {'ERM': 0, 'VID': 1}
 }
 
 class MultiHeadOCTDataset(Dataset):
@@ -72,9 +72,9 @@ class MultiHeadOCTDataset(Dataset):
         # Initialize h3 vectors (multi-label binary vectors)
         h3_m = torch.zeros(3)
         h3_d = torch.zeros(2)
-        h3_v = torch.zeros(2)
+        h3_v = torch.zeros(3)
         h3_f = torch.zeros(1)
-        h3_s = torch.zeros(3)
+        h3_s = torch.zeros(2)
         
         if pd.notna(row['head3_labels']) and row['head3_labels'] != "":
             labels = [l.strip() for l in str(row['head3_labels']).split(',')]

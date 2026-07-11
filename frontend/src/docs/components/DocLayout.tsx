@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React from "react";
-import { HomeNav } from "../../HomePage";
+import { HomeNav } from "../../components";
 import Footer from "./Footer";
 import DocsSidebar from "./DocsSidebar";
 
