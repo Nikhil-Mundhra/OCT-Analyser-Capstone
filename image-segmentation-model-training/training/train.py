@@ -170,7 +170,7 @@ class CLAHE_Transform_PIL:
     def __call__(self, img):
         img_np = np.array(img, dtype=np.uint8)
         equalized = self.clahe.apply(img_np)
-        return Image.fromarray(equalized, mode='L')
+        return Image.fromarray(equalized)
 
 # ---------------------------------------------------------------------------
 # Training Entry Point
