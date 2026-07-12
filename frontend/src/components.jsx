@@ -460,7 +460,7 @@ export function WorklistScreen() {
             scanHistory.map((s) => {
               const liveRisk = riskFromScan(s);
               return (
-                <div key={s.id} className="grid grid-cols-5 items-center border-t border-slate-100 px-4 py-4 text-sm text-slate-700">
+                <div key={s.scan_id} className="grid grid-cols-5 items-center border-t border-slate-100 px-4 py-4 text-sm text-slate-700">
                   <span className="font-bold text-slate-900">{s.patient_id || "Unknown"}</span>
                   <span>{s.scan_type || s.source_format}</span>
                   <span><StatusBadge tone={liveRisk.tone}>{liveRisk.label}</StatusBadge></span>
@@ -518,14 +518,23 @@ export function UploadScreen() {
     setDecision({ choice: "", rationale: "", submittedAt: "" });
 
     try {
-      setUploadState({ status: "Processing", progress: 55, fileName: file.name, error: "" });
-      const payload = await createScan(file);
+      setUploadState({ status: "Processing", progress: 55, detail: "Initializing...", fileName: file.name, error: "" });
+      const payload = await createScan(file, (detail) => {
+          let progress = 55;
+          if (detail.includes("Preprocessing")) progress = 60;
+          else if (detail.includes("Flattening")) progress = 65;
+          else if (detail.includes("inference")) progress = 75;
+          else if (detail.includes("Extracting")) progress = 85;
+          else if (detail.includes("GradCAM")) progress = 95;
+          
+          setUploadState(prev => ({ ...prev, detail, progress: Math.max(prev.progress, progress) }));
+      });
       const combinedScanType = `${modality} - ${target} - ${pattern}`;
       const aiSupported = modality === "Structural OCT" && target === "Macula";
       const enrichedPayload = { ...payload, patient_id: finalPatientId, scan_type: combinedScanType, modality, target, pattern, ai_supported: aiSupported };
       setScan(enrichedPayload);
       addScanToHistory(enrichedPayload);
-      setUploadState({ status: "Completed", progress: 100, fileName: file.name, error: "" });
+      setUploadState({ status: "Completed", progress: 100, detail: "", fileName: file.name, error: "" });
       router.push("/review");
     } catch (error) {
       setScan(null);
@@ -701,6 +710,12 @@ export function UploadScreen() {
               );
             })}
           </div>
+          {!completed && uploadState.detail && (
+            <div className="mt-4 rounded-2xl bg-sky-50 p-4 text-sm text-sky-800 flex items-center gap-2">
+              <svg className="animate-spin h-4 w-4 text-sky-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <b>Current step:</b> {uploadState.detail}
+            </div>
+          )}
         </Card>
       </div>
     </div>
@@ -725,7 +740,7 @@ export function ReviewScreen() {
   const l1 = scan?.level1;
   const l2 = scan?.level2;
   const l3 = scan?.level3;
-  const l1Abnormal = l1?.prediction === "ABNORMAL";
+  const l1Abnormal = l1?.prediction?.toUpperCase() === "ABNORMAL";
   const gradcams = scan?.gradcams;
 
   const getClassColor = (className) => {
@@ -814,19 +829,19 @@ export function ReviewScreen() {
           </Card>
         ) : (
           <>
-            <Card title="Level 1: Gatekeeper (ResNet-50)" subtitle="Binary triage screening." icon={Brain}>
+            <Card title="Level 1: Triage (Hierarchical U-Net)" subtitle="Binary triage screening." icon={Brain}>
           <div className="space-y-3">
             <Metric label="Gatekeeper Prediction" value={l1?.prediction || "N/A"} tone={l1Abnormal ? "danger" : "safe"} />
             {l1?.confidence && (
               <Metric label="Model Confidence" value={`${Math.round(l1.confidence * 100)}%`} tone="neutral" />
             )}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-              <b>Explainability:</b> Diagnosis is based on a ResNet-50 model analyzing spatial features to triage ABNORMAL vs NORMAL scans.
+              <b>Explainability:</b> Diagnosis is based on a Unified Hierarchical U-Net model extracting deep structural features to triage ABNORMAL vs NORMAL scans.
             </div>
           </div>
         </Card>
         
-        <Card title="Level 2: Disease Router (EfficientNet-B2)" subtitle="Specific disease classification." icon={Activity}>
+        <Card title="Level 2: Disease Router (Hierarchical U-Net)" subtitle="Specific disease classification." icon={Activity}>
            <div className="space-y-3">
              {l1Abnormal ? (
                <>
@@ -918,19 +933,19 @@ export function ReviewScreen() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {gradcams.L1 && (
               <div className="space-y-2">
-                <p className="text-sm font-bold text-slate-700 text-center">Level 1 (Gatekeeper)</p>
+                <p className="text-sm font-bold text-slate-700 text-center">Level 1 (Triage)</p>
                 <img src={gradcams.L1} alt="L1 Grad-CAM" className="w-full rounded-2xl border border-slate-200 object-contain" />
               </div>
             )}
             {gradcams.L2 && (
               <div className="space-y-2">
-                <p className="text-sm font-bold text-slate-700 text-center">Level 2 (Router)</p>
+                <p className="text-sm font-bold text-slate-700 text-center">Level 2 (Disease Router)</p>
                 <img src={gradcams.L2} alt="L2 Grad-CAM" className="w-full rounded-2xl border border-slate-200 object-contain" />
               </div>
             )}
             {gradcams.L3 && (
               <div className="space-y-2">
-                <p className="text-sm font-bold text-slate-700 text-center">Level 3 (Specialist)</p>
+                <p className="text-sm font-bold text-slate-700 text-center">Level 3 (Biomarkers)</p>
                 <img src={gradcams.L3} alt="L3 Grad-CAM" className="w-full rounded-2xl border border-slate-200 object-contain" />
               </div>
             )}
@@ -1132,10 +1147,10 @@ export function CaseSwitcher() {
             <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
               {scanHistory.map((s) => (
                 <button
-                  key={s.id}
+                  key={s.scan_id}
                   onClick={() => handleSelect(s)}
                   className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors text-left ${
-                    scan?.id === s.id ? "bg-sky-50 text-sky-700 font-bold" : "text-slate-700 hover:bg-slate-50"
+                    scan?.scan_id === s.scan_id ? "bg-sky-50 text-sky-700 font-bold" : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   <div>

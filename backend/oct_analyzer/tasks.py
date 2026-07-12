@@ -28,13 +28,19 @@ def process_scan_task(self, scan_id: str, upload_path_str: str):
         db.commit()
 
         upload_path = Path(upload_path_str)
+        
+        def update_progress(msg: str):
+            scan_record.detail = msg
+            db.commit()
+
+        update_progress("Loading scan from disk...")
         scan = load_normalized_scan(upload_path)
         
         # Make sure preview directory exists
         preview_dir = PREVIEW_DIR / scan_id
         preview_dir.mkdir(parents=True, exist_ok=True)
         
-        result = process_scan(scan, preview_dir=preview_dir)
+        result = process_scan(scan, preview_dir=preview_dir, progress_cb=update_progress)
 
         # Prefix preview URLs exactly as API did
         _prefix_preview_urls(scan_id, result)

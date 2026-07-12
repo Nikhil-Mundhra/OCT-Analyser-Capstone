@@ -509,8 +509,10 @@ def test_segmentation_structure_validates_placeholder_and_injected_segmenter(mon
     )
 
     monkeypatch.delenv(SEGMENTATION_ATLAS_ENV, raising=False)
+    monkeypatch.setattr("backend.oct_analyzer.segmentation.HierarchicalUNet", None)
+    
     volume = np.ones((4, 3, 2), dtype=np.float32)
-    placeholder = segment_retinal_layers(volume, (1.0, 1.0, 1.0))
+    placeholder, _ = segment_retinal_layers(volume, (1.0, 1.0, 1.0))
 
     assert placeholder.mode == "placeholder"
     assert placeholder.labels.shape == volume.shape
@@ -518,7 +520,7 @@ def test_segmentation_structure_validates_placeholder_and_injected_segmenter(mon
     assert atlas_path_from_env({}) is None
     assert atlas_path_from_env({SEGMENTATION_ATLAS_ENV: " ~/atlas.npz "}).name == "atlas.npz"
     monkeypatch.setenv(SEGMENTATION_ATLAS_ENV, "atlas.npz")
-    configured_placeholder = segment_retinal_layers(volume, (1.0, 1.0, 1.0))
+    configured_placeholder, _ = segment_retinal_layers(volume, (1.0, 1.0, 1.0))
     assert "Atlas asset configured" in configured_placeholder.warning
 
     def fake_segmenter(input_volume, spacing_mm):
@@ -527,9 +529,9 @@ def test_segmentation_structure_validates_placeholder_and_injected_segmenter(mon
         return SegmentationResult(
             labels=np.full(input_volume.shape, 2, dtype=np.int16),
             mode="atlas_registration",
-        )
+        ), {}
 
-    result = segment_retinal_layers(volume, (0.5, 0.1, 0.1), segmenter=fake_segmenter)
+    result, _ = segment_retinal_layers(volume, (0.5, 0.1, 0.1), segmenter=fake_segmenter)
 
     assert result.mode == "atlas_registration"
     assert result.labels.dtype == np.uint8
@@ -539,8 +541,8 @@ def test_segmentation_structure_validates_placeholder_and_injected_segmenter(mon
         validate_segmentation_labels(np.ones((2, 2, 2), dtype=np.uint8), volume.shape)
     with pytest.raises(ValueError, match="integer"):
         validate_segmentation_labels(np.ones(volume.shape, dtype=np.float32), volume.shape)
-    with pytest.raises(ValueError, match="between 0 and 12"):
-        validate_segmentation_labels(np.full(volume.shape, 13, dtype=np.int16), volume.shape)
+    with pytest.raises(ValueError, match="between 0 and 15"):
+        validate_segmentation_labels(np.full(volume.shape, 16, dtype=np.uint8), volume.shape)
 
 
 def test_process_scan_uses_segmentation_boundary_for_demo_flag(tmp_path, monkeypatch):
@@ -553,10 +555,13 @@ def test_process_scan_uses_segmentation_boundary_for_demo_flag(tmp_path, monkeyp
     monkeypatch.setattr(
         pipeline,
         "segment_retinal_layers",
-        lambda volume, spacing: SegmentationResult(
-            labels=np.ones(volume.shape, dtype=np.uint8),
-            mode="atlas_registration",
-            warning="atlas registration active",
+        lambda volume, spacing: (
+            SegmentationResult(
+                labels=np.ones(volume.shape, dtype=np.uint8),
+                mode="atlas_registration",
+                warning="atlas registration active",
+            ),
+            {}
         ),
     )
 
@@ -574,6 +579,7 @@ def test_process_scan_returns_completed_payload_and_previews(tmp_path, monkeypat
 
     monkeypatch.setattr(pipeline, "get_preprocessing_pipeline", lambda: lambda volume: torch.from_numpy(volume).unsqueeze(0).float())
     monkeypatch.setattr(pipeline, "flatten_volume_to_rpe", lambda tensor: tensor)
+    monkeypatch.setattr("backend.oct_analyzer.segmentation.HierarchicalUNet", None)
 
     volume = np.zeros((6, 5, 5), dtype=np.float32)
     volume[1:5, 1:4, 1:4] = 5
@@ -627,40 +633,28 @@ def test_api_upload_get_and_preview(tmp_path, monkeypatch):
 
     monkeypatch.setattr(api, "load_normalized_scan", fake_load)
 
-    def fake_process(scan, preview_dir):
-        preview_dir.mkdir(parents=True, exist_ok=True)
-        (preview_dir / "raw.png").write_bytes(b"png")
-        return {
-            "status": "completed",
-            "diagnosis": "Healthy",
-            "confidence": 1.0,
-            "source_format": scan.source_format,
-            "volume_shape": [3, 3, 3],
-            "spacing_mm": [1.0, 1.0, 1.0],
-            "is_demo_model": True,
-            "qc": {"warnings": []},
-            "layers": [],
-            "previews": {"raw": "preview/raw"},
+    class MockTask:
+        @staticmethod
+        def delay(*args, **kwargs):
+            class MockTaskResult:
+                id = "fake_task_id"
+            return MockTaskResult()
 
-            "metadata": {},
-        }
-
-    monkeypatch.setattr(api, "process_scan", fake_process)
+    monkeypatch.setattr(api, "process_scan_task", MockTask)
     client = TestClient(api.app)
 
     response = client.post("/api/scans", files={"file": ("scan.dcm", b"fake", "application/dicom")})
     payload = response.json()
 
     assert response.status_code == 200
-    assert payload["status"] == "completed"
-    assert payload["previews"]["raw"].startswith("/api/scans/")
+    assert payload["status"] == "pending"
+    assert "scan_id" in payload
 
     scan_response = client.get(f"/api/scans/{payload['scan_id']}")
     preview_response = client.get(f"/api/scans/{payload['scan_id']}/preview/raw")
 
     assert scan_response.status_code == 200
-    assert preview_response.status_code == 200
-    assert preview_response.headers["content-type"] == "image/png"
+    assert preview_response.status_code == 404
 
 
 def test_api_segment_2d(tmp_path, monkeypatch):
@@ -734,29 +728,20 @@ def test_api_accepts_tiff_uploads(tmp_path, monkeypatch):
 
     monkeypatch.setattr(api, "load_normalized_scan", fake_load)
 
-    def fake_process(scan, preview_dir):
-        preview_dir.mkdir(parents=True, exist_ok=True)
-        return {
-            "status": "completed",
-            "diagnosis": "Healthy",
-            "confidence": 1.0,
-            "source_format": scan.source_format,
-            "volume_shape": [3, 3, 3],
-            "spacing_mm": [1.0, 1.0, 1.0],
-            "is_demo_model": True,
-            "qc": {"warnings": []},
-            "layers": [],
-            "previews": {},
-            "metadata": {},
-        }
+    class MockTask:
+        @staticmethod
+        def delay(*args, **kwargs):
+            class MockTaskResult:
+                id = "fake_task_id"
+            return MockTaskResult()
 
-    monkeypatch.setattr(api, "process_scan", fake_process)
+    monkeypatch.setattr(api, "process_scan_task", MockTask)
     client = TestClient(api.app)
 
     response = client.post("/api/scans", files={"file": ("scan.tiff", b"fake", "image/tiff")})
 
     assert response.status_code == 200
-    assert response.json()["source_format"] == "single-image"
+    assert response.json()["status"] == "pending"
 
 
 def test_api_rejects_bad_uploads_and_missing_resources(tmp_path, monkeypatch):
@@ -775,21 +760,19 @@ def test_api_rejects_bad_uploads_and_missing_resources(tmp_path, monkeypatch):
     assert missing_scan.status_code == 404
     assert missing_preview.status_code == 404
 
-    def broken_load(path):
-        raise ValueError("broken scan")
+    class MockTask:
+        @staticmethod
+        def delay(*args, **kwargs):
+            class MockTaskResult:
+                id = "fake_task_id"
+            return MockTaskResult()
 
-    monkeypatch.setattr(api, "load_normalized_scan", broken_load)
+    monkeypatch.setattr(api, "process_scan_task", MockTask)
+
     broken = client.post("/api/scans", files={"file": ("scan.dcm", b"fake", "application/dicom")})
 
-    assert broken.status_code == 422
-    assert broken.json()["detail"] == "broken scan"
-
-    api.SCAN_STORE["known"] = {"scan_id": "known", "status": "completed"}
-    unknown_preview = client.get("/api/scans/known/preview/unknown")
-    absent_preview = client.get("/api/scans/known/preview/raw")
-
-    assert unknown_preview.status_code == 404
-    assert absent_preview.status_code == 404
+    assert broken.status_code == 200
+    assert broken.json()["status"] == "pending"
 
 
 def test_api_root_reports_service_status():

@@ -23,7 +23,7 @@ export const SEGMENTATION_API_BASE = (
  * @param {File} file
  * @returns {Promise<object>}
  */
-export async function createScan(file) {
+export async function createScan(file, onProgress = null) {
   const form = new FormData();
   form.append("file", file);
 
@@ -42,27 +42,25 @@ export async function createScan(file) {
     return res.json();
   });
 
-  // Step 2: Poll for completion
+  // Step 2: Poll for completion with exponential backoff
   const scanId = scanRecord.scan_id;
+  let delay = 1000;
   while (scanRecord.status === "pending" || scanRecord.status === "processing") {
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+    if (onProgress && scanRecord.detail) {
+      onProgress(scanRecord.detail);
+    }
+    await new Promise(resolve => setTimeout(resolve, delay));
     scanRecord = await fetch(apiUrl(`/api/scans/${scanId}`)).then(res => res.json());
+    delay = Math.min(delay * 1.5, 5000); // Max delay of 5 seconds
   }
 
   if (scanRecord.status === "failed") {
     throw new Error(scanRecord.detail || "Scan processing failed");
   }
 
-  // Segment via API for visualization
-  const segmentReq = fetch(`${SEGMENTATION_API_BASE}/predict`, {
-    method: "POST",
-    body: form,
-  }).then(res => res.ok ? res.json() : null).catch(() => null);
-
-  const segmentPayload = await segmentReq;
-
   // The local MVP pipeline already formats mostly to the expected structure
-  const normalized = normalizeScanResult(scanRecord, segmentPayload);
+  // We no longer need a separate segmentReq since analyze_volume does it all!
+  const normalized = normalizeScanResult(scanRecord, scanRecord.segmentation);
   normalized.localImageUrl = localImageUrl;
   return normalized;
 }
@@ -78,6 +76,7 @@ export function normalizeScanResult(scan, segmentation = null) {
   const diagnosis = classification.diagnosis || scan.diagnosis || "NORMAL";
   
   return {
+    scan_id: scan.scan_id || scan.id || Math.random().toString(36).substring(7),
     status: scan.status || "completed",
     diagnosis: diagnosis,
     confidence: scan.confidence || classification.confidence || 0.0,
