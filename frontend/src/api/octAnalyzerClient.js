@@ -17,11 +17,16 @@ export const SEGMENTATION_API_BASE = (
   OCT_ANALYZER_API_BASE
 ).replace(/\/$/, "");
 
+/** Maximum time to wait for a scan to move from pending/processing to a terminal state. */
+const MAX_POLL_DURATION_MS = 120_000; // 2 minutes
+
 /**
  * Uploads an OCT/OCTA scan and polls for completion using the background job queue.
  *
  * @param {File} file
+ * @param {function|null} onProgress - callback receiving a detail string each poll tick
  * @returns {Promise<object>}
+ * @throws {Error} if upload fails, processing fails, or polling exceeds MAX_POLL_DURATION_MS
  */
 export async function createScan(file, onProgress = null) {
   const form = new FormData();
@@ -38,20 +43,34 @@ export async function createScan(file, onProgress = null) {
     method: "POST",
     body: form,
   }).then(res => {
-    if (!res.ok) throw new Error("Failed to upload scan");
+    if (!res.ok) throw new Error(`Failed to upload scan (HTTP ${res.status})`);
     return res.json();
   });
 
-  // Step 2: Poll for completion with exponential backoff
+  // Step 2: Poll for completion with exponential backoff and a hard timeout
   const scanId = scanRecord.scan_id;
   let delay = 1000;
+  const pollDeadline = Date.now() + MAX_POLL_DURATION_MS;
+  const controller = new AbortController();
+
   while (scanRecord.status === "pending" || scanRecord.status === "processing") {
+    if (Date.now() >= pollDeadline) {
+      controller.abort();
+      throw new Error(`Scan processing timed out after ${MAX_POLL_DURATION_MS / 1000}s. Please try again.`);
+    }
+
     if (onProgress && scanRecord.detail) {
       onProgress(scanRecord.detail);
     }
+
     await new Promise(resolve => setTimeout(resolve, delay));
-    scanRecord = await fetch(apiUrl(`/api/scans/${scanId}`)).then(res => res.json());
-    delay = Math.min(delay * 1.5, 5000); // Max delay of 5 seconds
+
+    const pollRes = await fetch(apiUrl(`/api/scans/${scanId}`), { signal: controller.signal });
+    if (!pollRes.ok) {
+      throw new Error(`Failed to poll scan status (HTTP ${pollRes.status})`);
+    }
+    scanRecord = await pollRes.json();
+    delay = Math.min(delay * 1.5, 5000); // max delay of 5 seconds between polls
   }
 
   if (scanRecord.status === "failed") {
@@ -74,9 +93,14 @@ export function normalizeScanResult(scan, segmentation = null) {
   // But we adapt it gracefully:
   const classification = scan.classification || {};
   const diagnosis = classification.diagnosis || scan.diagnosis || "NORMAL";
-  
+
+  // Use crypto.randomUUID() for a reliable fallback — never Math.random()
+  const fallbackId = typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
   return {
-    scan_id: scan.scan_id || scan.id || Math.random().toString(36).substring(7),
+    scan_id: scan.scan_id || scan.id || fallbackId,
     status: scan.status || "completed",
     diagnosis: diagnosis,
     confidence: scan.confidence || classification.confidence || 0.0,
@@ -93,7 +117,7 @@ export function normalizeScanResult(scan, segmentation = null) {
 function normalizePreviewMap(previews = {}) {
   return Object.fromEntries(
     Object.entries(previews).map(([key, value]) => [
-      key, 
+      key,
       Array.isArray(value) ? value.map(apiUrl) : apiUrl(value)
     ])
   );

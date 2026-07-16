@@ -209,9 +209,10 @@ class MultiHeadTrainer:
                 traceback.print_exc()
 
         # ── PHASE 1: WARM-UP ──
-        if phase == 'warmup' and start_epoch_warmup < warmup_epochs:
+        if phase == 'warmup' and warmup_epochs > 0:
             logger.info(f"PHASE 1 — Warm-up | {warmup_epochs} epochs | backbone FROZEN")
-            self.model.freeze_backbone()
+            model_to_freeze = self.model.module if hasattr(self.model, 'module') else self.model
+            model_to_freeze.freeze_backbone()
             optimizer_warmup = torch.optim.AdamW(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
                 lr=warmup_lr,
@@ -235,9 +236,10 @@ class MultiHeadTrainer:
             phase = 'finetune'
 
         # ── PHASE 2: FINE-TUNING ──
-        if phase == 'finetune' and start_epoch_ft < finetune_epochs:
+        if phase == 'finetune' and finetune_epochs > 0:
             logger.info(f"PHASE 2 — Fine-tuning | max {finetune_epochs} epochs | backbone UNFROZEN")
-            self.model.unfreeze_backbone()
+            model_to_unfreeze = self.model.module if hasattr(self.model, 'module') else self.model
+            model_to_unfreeze.unfreeze_backbone()
             optimizer_ft = torch.optim.AdamW(
                 self.model.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr),
                 weight_decay=weight_decay,

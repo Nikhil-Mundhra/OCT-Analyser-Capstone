@@ -1,25 +1,11 @@
 "use client";
 import React, { useMemo } from 'react';
-import { HomeNav, Sidebar, Header, screens, CaseSwitcher } from '../../components';
+import { HomeNav, Sidebar, Header, screens, CaseSwitcher, StatusBadge } from '../../components';
 import { useAppContext } from '../../AppContext';
 import { usePathname } from 'next/navigation';
 import { Clock, AlertTriangle, UserRound, Eye } from 'lucide-react';
 
-function StatusBadge({ children, tone = "neutral" }) {
-  const tones = {
-    neutral: "bg-slate-100 text-slate-700 border-slate-200",
-    safe: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    warning: "bg-amber-50 text-amber-800 border-amber-200",
-    danger: "bg-rose-50 text-rose-700 border-rose-200",
-    info: "bg-sky-50 text-sky-700 border-sky-200",
-    purple: "bg-violet-50 text-violet-700 border-violet-200",
-  };
-  return (
-    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${tones[tone]}`}>
-      {children}
-    </span>
-  );
-}
+
 
 export default function DashboardLayout({ children }) {
   const { scan } = useAppContext();
@@ -31,6 +17,7 @@ export default function DashboardLayout({ children }) {
       <HomeNav />
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar />
+        {/* pl-[72px] matches the collapsed sidebar width SIDEBAR_WIDTH_COLLAPSED_PX=72 in components.jsx */}
         <main className="flex-1 overflow-y-auto pl-[72px]">
           <div className="mx-auto max-w-7xl space-y-6 px-6 py-6">
             {pathname === '/dashboard' && <Header scan={scan} />}

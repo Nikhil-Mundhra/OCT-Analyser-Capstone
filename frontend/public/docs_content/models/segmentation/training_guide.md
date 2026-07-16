@@ -25,7 +25,7 @@ The 3% sliver for fluid/lesions is exactly what the clinical diagnosis depends o
 
 ---
 
-## 2. The Combined Dice + CrossEntropy Loss
+## 2. The Combined Dice + Focal Loss
 
 Both the coarse and granular heads are trained with `CombinedLoss`, defined in `training/train.py`.
 
@@ -39,12 +39,12 @@ Loss_Dice = 1 - mean_over_classes(
 
 Dice measures **overlap**, not per-pixel accuracy. It is inherently class-balanced: each class contributes equally to the mean regardless of its spatial frequency. A model cannot minimise Dice by predicting all-background.
 
-### 2.2 CrossEntropyLoss with Class Weights
+### 2.2 Focal Loss with Class Weights
 
-Standard CrossEntropy modified with per-class weights:
+Standard CrossEntropy modified with per-class weights and a focusing parameter (γ=2.0) to heavily penalise hard, misclassified examples (like rare lesions):
 
 ```python
-CE_weighted(p, t) = -Σ  weight[c] × log(p[c]) × 𝟙(t == c)
+FocalLoss(p, t) = -Σ  weight[c] × (1 - p[c])^γ × log(p[c]) × 𝟙(t == c)
 ```
 
 The weight for each class scales how much a misclassification is penalised. Rare classes get a high weight, the dominant background class gets a low weight.
@@ -52,7 +52,7 @@ The weight for each class scales how much a misclassification is penalised. Rare
 ### 2.3 Combined Formula
 
 ```
-CombinedLoss(logits, targets) = 0.5 × CE_weighted + 0.5 × DiceLoss
+CombinedLoss(logits, targets) = 0.5 × FocalLoss + 0.5 × DiceLoss
 ```
 
 The 50/50 split (`alpha=0.5`) is the standard starting point across the medical imaging literature (confirmed by RETOUCH and MICCAI 2024 benchmarks). Adjust `alpha` toward `1.0` if Dice loss causes instability in early training.
@@ -64,9 +64,9 @@ flowchart TD
     logits["Model Logits\nB × C × H × W"]
     targets["Ground Truth Mask\nB × H × W"]
 
-    subgraph CE ["CrossEntropyLoss  (α = 0.5)"]
+    subgraph CE ["FocalLoss  (γ = 2.0, α = 0.5)"]
         weights["Per-Class Weights\n0.3 · 1.0 ··· 4.0"]
-        ce_loss["Weighted CE Loss"]
+        ce_loss["Weighted Focal Loss"]
         weights --> ce_loss
     end
 
@@ -79,7 +79,7 @@ flowchart TD
         oh --> overlap --> mean_dice
     end
 
-    combined["Combined Loss\n= 0.5 × CE + 0.5 × Dice"]
+    combined["Combined Loss\n= 0.5 × Focal + 0.5 × Dice"]
     backward["loss.backward\noptimizer.step"]
 
     logits --> ce_loss

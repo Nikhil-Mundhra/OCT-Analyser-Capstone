@@ -107,7 +107,7 @@ def compute_loss_weights(df, device):
     logger.info("Calculating dynamic loss weights to handle class imbalance...")
     
     # Mathematical Multiplier to force the network toward 0 False Negatives
-    FALSE_NEGATIVE_PENALTY_MULTIPLIER = 2.0
+    FALSE_NEGATIVE_PENALTY_MULTIPLIER = 1.5
     logger.info(f"Applying False Negative Penalty Multiplier: {FALSE_NEGATIVE_PENALTY_MULTIPLIER}x")
 
     # Head 1
@@ -208,17 +208,20 @@ def main():
     logger.info("Setting validation transform (NOTE: doing this on Subset modifies original, we will fix this later)...")
     val_dataset.dataset.transform = val_transform
 
-    batch_size = 32
+    batch_size = 16
     if args.smoke_test:
         batch_size = 8
         logger.info("SMOKE TEST MODE ENABLED - Small batches")
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
     # 3. Model & Loss Setup
     logger.info("Building model...")
     model = build_multi_head_model(pretrained=not args.smoke_test, warmup=True)
+    if torch.cuda.device_count() > 1:
+        logger.info(f"Using {torch.cuda.device_count()} GPUs with DataParallel!")
+        model = nn.DataParallel(model)
     logger.info("Model built.")
     
     criterions = {
@@ -267,22 +270,21 @@ def main():
         )
     else:
         logger.info("Starting Full Training...")
-    
-    resume_path = "hf_space/weights/multi_head_mps/fold0_last_model.pth" if args.resume else None
-    
-    metrics = trainer.train(
-        train_loader=train_loader,
-        val_loader=val_loader,
-        smoke_test=args.smoke_test,
-        resume_path=resume_path,
-        warmup_epochs=3,
-        warmup_lr=1e-4, 
-        finetune_epochs=20,
-        backbone_lr=1e-5,
-        head_lr=1e-4,
-        weight_decay=0.05,
-        patience=5
-    )
+        resume_path = "hf_space/weights/multi_head_mps/fold0_last_model.pth" if args.resume else None
+        
+        metrics = trainer.train(
+            train_loader=train_loader,
+            val_loader=val_loader,
+            smoke_test=False,
+            resume_path=resume_path,
+            warmup_epochs=3,
+            warmup_lr=5e-5, 
+            finetune_epochs=20,
+            backbone_lr=5e-6,
+            head_lr=5e-5,
+            weight_decay=0.05,
+            patience=5
+        )
 
 if __name__ == "__main__":
     main()

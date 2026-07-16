@@ -1,5 +1,8 @@
 # OCT Pipeline — Training Engine & Optimisations
 
+> [!IMPORTANT]
+> **Architecture Migration Notice (July 2026)**
+> The standalone classification model (ConvNeXt V2 Base) and its training pipeline documented here have been officially superseded. The classification pipeline is now fully integrated into the **Multi-Task Learning (MTL) Hierarchical U-Net**. This legacy documentation is retained for historical context on the imbalance mitigation strategies.
 ## Unified Multi-Head Training
 
 Since migrating to the `MultiHeadConvNeXtV2` architecture, the training loop no longer trains separate models for different hierarchy levels. Instead, it trains a single model with three distinct classification heads using a combined loss function.
@@ -86,13 +89,13 @@ In clinical deployment, a false negative (sending a diseased patient home) is in
 ### C. Head Gradient Balancing
 Because Head 3 calculates 5 independent BCE losses at the same time, simply adding them together results in a total gradient (the mathematical signal telling the model how to adjust its weights) that is 5x larger than Head 1. 
 
-If we don't fix this, Head 3 will completely overpower the shared ConvNeXt backbone, ignoring the other heads. To prevent this, we scale its `loss_weight` down to `0.2`.
+If we don't fix this, Head 3 will completely overpower the shared backbone, ignoring the other heads. To prevent this, we scale its `loss_weight` down to `0.5` (adjusted up from `0.2` to provide stronger granular supervision while maintaining balance).
 
 ```python
 loss_weights = {
     'h1': 1.0,
     'h2': 2.0,  # Up-weighted to focus the network on the difficult primary routing task
-    'h3': 0.2   # Scaled down (1.0 / 5) to balance the 5 accumulated BCE sub-losses
+    'h3': 0.5   # Scaled to balance the 5 accumulated BCE sub-losses
 }
 ```
 

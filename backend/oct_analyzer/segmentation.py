@@ -26,6 +26,81 @@ def atlas_path_from_env(env: dict[str, str] = os.environ) -> Path | None:
         return Path(path.strip()).expanduser()
     return None
 
+class UNetSegmenter:
+    _instance = None
+
+    def __init__(self):
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            self.device = torch.device('mps')
+        else:
+            self.device = torch.device('cpu')
+        self.model = None
+        checkpoint_path = CORE_ML_SEG_DIR / "weights" / "unet_hierarchical_best_cls.pth"
+            
+        if HierarchicalUNet is not None and checkpoint_path.exists():
+            try:
+                self.model = HierarchicalUNet(n_channels=1, n_coarse_classes=3, n_granular_classes=15)
+                checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
+                self.model.load_state_dict(checkpoint['model_state_dict'])
+                self.model.to(self.device)
+                self.model.eval()
+                print("Successfully loaded legacy UNetSegmenter.")
+            except Exception as e:
+                print(f"Failed to load legacy UNet model: {e}")
+                self.model = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def segment(self, volume: np.ndarray) -> np.ndarray:
+        if self.model is None:
+            raise RuntimeError("UNet model not loaded")
+        
+        z_dim, y_dim, x_dim = volume.shape
+        labels_3d = np.zeros((z_dim, y_dim, x_dim), dtype=np.uint8)
+        batch_array = np.zeros((y_dim, 1, 512, 512), dtype=np.float32)
+        
+        for y in range(y_dim):
+            slice_2d = volume[:, y, :]
+            slice_min = slice_2d.min()
+            slice_max = slice_2d.max()
+            if slice_max > slice_min:
+                slice_norm = (slice_2d - slice_min) / (slice_max - slice_min)
+            else:
+                slice_norm = np.zeros_like(slice_2d, dtype=np.float32)
+                
+            resized = cv2.resize(slice_norm, (512, 512), interpolation=cv2.INTER_LINEAR)
+            batch_array[y, 0, :, :] = resized
+            
+        tensor_batch = torch.from_numpy(batch_array).to(self.device)
+        tensor_batch = (tensor_batch * 2.0) - 1.0
+        
+        granular_preds_list = []
+        batch_size = 8
+        with torch.no_grad():
+            for i in range(0, y_dim, batch_size):
+                end_i = min(i + batch_size, y_dim)
+                sub_batch = tensor_batch[i:end_i]
+                
+                # task="segmentation" only returns coarse, granular
+                coarse, granular = self.model(sub_batch, task="segmentation")
+                granular_preds_list.append(torch.argmax(granular, dim=1).cpu().numpy().astype(np.uint8))
+                
+            granular_preds = np.concatenate(granular_preds_list, axis=0)
+
+        for y in range(y_dim):
+            pred_2d = granular_preds[y]
+            resized_back = cv2.resize(pred_2d, (x_dim, z_dim), interpolation=cv2.INTER_NEAREST)
+            labels_3d[:, y, :] = resized_back
+            
+        return labels_3d
+
+
 class UnifiedOCTAnalyzer:
     _instance = None
 
@@ -215,17 +290,33 @@ def segment_retinal_layers(
         result, cls_results = segmenter(volume, spacing_mm)
         return _validated_result(result, volume.shape), cls_results
 
-    analyzer = UnifiedOCTAnalyzer.get_instance()
-    if analyzer.model is not None:
-        try:
-            labels, cls_results = analyzer.analyze_volume(volume)
-            result = SegmentationResult(labels=labels, mode="ai")
-            return _validated_result(result, volume.shape), cls_results
-        except Exception as e:
-            print(f"AI Analysis Failed: {e}")
-            warning = f"UNet segmentation failed: {e}. Falling back to placeholder."
+    model_type = os.environ.get("OCT_MODEL_TYPE", "legacy_convnext")
+
+    if model_type == "unified_unet":
+        analyzer = UnifiedOCTAnalyzer.get_instance()
+        if analyzer.model is not None:
+            try:
+                labels, cls_results = analyzer.analyze_volume(volume)
+                result = SegmentationResult(labels=labels, mode="ai")
+                return _validated_result(result, volume.shape), cls_results
+            except Exception as e:
+                print(f"AI Analysis Failed: {e}")
+                warning = f"UNet segmentation failed: {e}. Falling back to placeholder."
+        else:
+            warning = "UNet model not loaded. Falling back to deterministic placeholder layer segmentation"
     else:
-        warning = "UNet model not loaded. Falling back to deterministic placeholder layer segmentation"
+        # legacy_convnext mode (only segmentation)
+        unet = UNetSegmenter.get_instance()
+        if unet.model is not None:
+            try:
+                labels = unet.segment(volume)
+                result = SegmentationResult(labels=labels, mode="unet_15_layer")
+                return _validated_result(result, volume.shape), {}
+            except Exception as e:
+                print(f"Legacy AI Analysis Failed: {e}")
+                warning = f"Legacy UNet segmentation failed: {e}. Falling back to placeholder."
+        else:
+            warning = "Legacy UNet model not loaded. Falling back to deterministic placeholder layer segmentation"
 
     labels = placeholder_segment_layers(volume.shape, num_layers=DEFAULT_LAYER_COUNT)
     result = SegmentationResult(labels=labels, mode="placeholder", warning=warning)

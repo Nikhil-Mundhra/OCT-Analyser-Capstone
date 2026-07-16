@@ -14,9 +14,9 @@
         },
         {
           "slug": "classification-architecture",
-          "title": "Multi-Head OCT/OCTA Image Classification Architecture",
-          "sidebarTitle": "Multi-Head OCT/OCTA Image Classification Architecture",
-          "description": "**What exactly did we build?** We built a **Unified Multi-Head Convolutional Neural Network (CNN)**. It utilizes **Transfer Learning**, taking state-o..."
+          "title": "Multi-Task OCT/OCTA Classification Architecture (Supersedes ConvNeXt V2)",
+          "sidebarTitle": "Multi-Task OCT/OCTA Classification Architecture (Supersedes ConvNeXt V2)",
+          "description": "**Architecture Migration Notice (July 2026)** The standalone classification model (ConvNeXt V2 Base) has been officially superseded. The classificatio..."
         },
         {
           "slug": "classification-data_pipeline",
@@ -40,7 +40,7 @@
           "slug": "classification-training",
           "title": "OCT Pipeline — Training Engine & Optimisations",
           "sidebarTitle": "OCT Pipeline — Training Engine & Optimisations",
-          "description": "Since migrating to the `MultiHeadConvNeXtV2` architecture, the training loop no longer trains separate models for different hierarchy levels. Instead,..."
+          "description": "**Architecture Migration Notice (July 2026)** The standalone classification model (ConvNeXt V2 Base) and its training pipeline documented here have be..."
         }
       ]
     },
@@ -58,9 +58,9 @@
         },
         {
           "slug": "segmentation-architecture",
-          "title": "Model Architecture: Hierarchical Multi-Head U-Net",
-          "sidebarTitle": "Model Architecture: Hierarchical Multi-Head U-Net",
-          "description": "This document outlines the architecture for the core segmentation model used in this pipeline. The model is built using PyTorch and follows a modified..."
+          "title": "Model Architecture: Hierarchical Multi-Task U-Net (MTL)",
+          "sidebarTitle": "Model Architecture: Hierarchical Multi-Task U-Net (MTL)",
+          "description": "This document outlines the architecture for the core Multi-Task Learning (MTL) model used in this pipeline. The model is built using PyTorch and follo..."
         },
         {
           "slug": "segmentation-fine_tuning_strategy",

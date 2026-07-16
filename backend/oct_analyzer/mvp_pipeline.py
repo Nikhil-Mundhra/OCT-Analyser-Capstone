@@ -71,20 +71,51 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None, progress
     if progress_cb: progress_cb("Extracting biomarker features")
     layers = extract_layer_features(flattened_volume, segmentation)
     
-    # Run Segmentation Analyzer on the best pathological slice
+    # Run Segmentation Analyzer on the appropriate slice
     segmentation_analysis = None
     if SegmentationAnalyzer is not None:
         try:
-            best_slice_idx = pipeline_results.get("best_slice_idx", 0)
-            best_mask = segmentation[best_slice_idx, :, :]
+            model_type = os.environ.get("OCT_MODEL_TYPE", "legacy_convnext")
+            if model_type == "unified_unet":
+                best_slice_idx = pipeline_results.get("best_slice_idx", 0)
+                best_mask = segmentation[best_slice_idx, :, :]
+            else:
+                z_dim, y_dim, x_dim = segmentation.shape
+                best_mask = segmentation[:, int(y_dim * 0.5), :]
+                
             analyzer = SegmentationAnalyzer()
             seg_obj = analyzer.analyze(best_mask)
             segmentation_analysis = asdict(seg_obj)
         except Exception as e:
             print(f"Failed to run SegmentationAnalyzer: {e}")
 
-    diagnosis = pipeline_results.get("Final_Diagnosis", "Unknown")
-    confidence = pipeline_results.get("confidence", 0.0)
+    model_type = os.environ.get("OCT_MODEL_TYPE", "legacy_convnext")
+    if model_type == "unified_unet":
+        diagnosis = pipeline_results.get("Final_Diagnosis", "Unknown")
+        confidence = pipeline_results.get("confidence", 0.0)
+    else:
+        # Legacy route: calculate deterministic diagnosis from layers
+        diagnosis, confidence = classify_layers(layers)
+
+        # Run hierarchical classifier (L1/L2/L3) on the 2D flattened volume
+        try:
+            from .classifier_integration import get_classifier
+            import tempfile
+            from uuid import uuid4
+            classifier = get_classifier()
+            # Save flattened volume to temporary file for classifier
+            temp_img = Path(tempfile.gettempdir()) / f"flattened_{uuid4().hex}.png"
+            cv2.imwrite(str(temp_img), flattened_volume[0] * 255)
+            legacy_pipeline_results = classifier.predict(str(temp_img), gradcam=True)
+            temp_img.unlink(missing_ok=True)
+            
+            # Merge results for frontend display
+            pipeline_results["Level1"] = legacy_pipeline_results.get("Level1", {})
+            pipeline_results["Level2"] = legacy_pipeline_results.get("Level2", {})
+            pipeline_results["Level3"] = legacy_pipeline_results.get("Level3", {})
+            pipeline_results["gradcams"] = legacy_pipeline_results.get("gradcams", {})
+        except Exception as e:
+            print(f"Failed to run ClassifierWrapper: {e}")
 
     previews = {}
     if preview_dir is not None:

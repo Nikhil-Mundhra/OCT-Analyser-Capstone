@@ -4,7 +4,9 @@
     "build:docs": "npx @tailwindcss/cli -i docs-input.css -o dist/docs.css --minify",
     "dev": "next dev",
     "build": "npm run build:docs && next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run",
+    "lint": "eslint ."
   },
   "dependencies": {
     "dompurify": "^3.4.11",
@@ -16,7 +18,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.2",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.10",
+    "jsdom": "^29.1.1",
     "postcss": "^8.5.16",
-    "tailwindcss": "^4.3.2"
+    "tailwindcss": "^4.3.2",
+    "vitest": "^4.1.10"
   }
 }

@@ -87,7 +87,7 @@ This 67-channel tensor passes through a `DoubleConv(67→64)` block and a `1×1 
 
 ## 4. The Hierarchical Classification Heads
 
-Branching off directly from the **1024-channel Encoder Bottleneck** (via global average pooling and dropout), the model features three independent classification heads. To prevent contradictory predictions (e.g., L1 predicting "Normal" but L2 predicting "Diabetic Complications"), the network enforces **Strict Hierarchical Classification Conditioning** via cascaded features.
+Branching off via **Multi-Scale Aggregation** from the x3 (256-channel), x4 (512-channel), and x5 (1024-channel) encoder stages (via global average pooling, concatenation, and a learned linear projection to 1024-d), the model features three independent classification heads. To prevent contradictory predictions (e.g., L1 predicting "Normal" but L2 predicting "Diabetic Complications"), the network enforces **Strict Hierarchical Classification Conditioning** via cascaded features.
 
 ### L1: Binary Triage (Normal vs Abnormal)
 - **Role**: Safely screens out healthy patients.
@@ -108,9 +108,13 @@ Branching off directly from the **1024-channel Encoder Bottleneck** (via global 
 
 ```mermaid
 flowchart TD
-    B["1024-d Encoder Bottleneck"] --> L1["L1: Normal / Abnormal"]
-    B --> L2["L2: Pathology Family"]
-    B --> L3["L3: Granular Specialists"]
+    d3["x3 Encoder (256ch)"] --> agg["Multi-Scale Aggregation\n(Concat + Linear)"]
+    d4["x4 Encoder (512ch)"] --> agg
+    d5["x5 Encoder (1024ch)"] --> agg
+    
+    agg --> L1["L1: Normal / Abnormal"]
+    agg --> L2["L2: Pathology Family"]
+    agg --> L3["L3: Granular Specialists"]
     
     L1 -.->|1 Prob| L2
     L1 -.->|1 Prob| L3
@@ -143,7 +147,7 @@ flowchart TD
     end
 
     subgraph CLS ["Classification Branches (Hierarchical Cascade)"]
-        pool["Global Avg Pool + Dropout"]
+        pool["Multi-Scale Aggregation\n(x3, x4, x5)"]
         L1["L1 (Normal/Abnormal)"]
         L2["L2 (Pathology Routing)"]
         L3["L3 (Granular Specialists)"]
@@ -182,7 +186,9 @@ flowchart TD
 
     Input --> inc
     
+    d3 --> pool
     d4 --> pool
+    d5 --> pool
     
     d4 --> u1
     d3 -.->|"attended skip"| u1
@@ -201,15 +207,15 @@ flowchart TD
 
 ## 6. Training Paradigm
 
-See [`training_guide.md`](./training_guide.md) for the full training setup. At a high level, both tasks are trained simultaneously in an interleaved multi-task setup.
+See [`training_guide.md`](/docs/segmentation-training_guide) for the full training setup. At a high level, both tasks are trained simultaneously in an interleaved multi-task setup.
 
 The unified loss function is:
 `Total_Loss = Classification_Loss + (lambda_seg * Segmentation_Loss)`
 
-Where `Segmentation_Loss` is a **Combined Dice + CrossEntropy loss** on both segmentation heads:
+Where `Segmentation_Loss` is a **Combined Dice + Focal Loss** on both segmentation heads:
 
 ```text
-Segmentation_Loss = 0.5 × CrossEntropy(weight=class_weights)
+Segmentation_Loss = 0.5 × FocalLoss(weight=class_weights, gamma=2.0)
                   + 0.5 × DiceLoss()
 ```
 

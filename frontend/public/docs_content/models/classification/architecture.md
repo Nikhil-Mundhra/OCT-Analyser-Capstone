@@ -3,6 +3,7 @@
 > [!IMPORTANT]
 > **Architecture Migration Notice (July 2026)**
 > The standalone classification model (ConvNeXt V2 Base) has been officially superseded. The classification pipeline is now fully integrated into the **Multi-Task Learning (MTL) Hierarchical U-Net**. This "Best of Both Worlds" network shares a single convolutional encoder for both pixel-perfect semantic segmentation and holistic disease classification.
+> *Note: The legacy standalone ConvNeXt model did NOT implement strict hierarchical conditioning (its heads operated independently). The strict hierarchical conditioning cascade described below was introduced exclusively in the unified U-Net.*
 
 Instead of maintaining a complex, standalone classification model, we unified the entire pipeline into a **single, powerful backbone** that extracts a shared global feature vector. This bottleneck feeds into three independent, specialized classification prediction heads, tightly coupled with strict hierarchical conditioning to prevent contradictory predictions.
 
@@ -17,10 +18,10 @@ graph TD
     Input(Input Image Scan) --> Backbone
 
     subgraph Backbone ["Shared Encoder (U-Net)"]
-        Encoder[4 Downsampling Blocks<br/>ASPP Bottleneck<br/>Outputs 1024-d Feature Vector]
+        Encoder[Encoder Stages x3, x4, x5<br/>256ch, 512ch, 1024ch]
     end
 
-    Backbone --> Pool[Global Avg Pool + Dropout]
+    Backbone --> Pool[Multi-Scale Aggregation<br/>Concat + Linear Proj -> 1024-d]
     
     Pool --> H1
     Pool --> H2
@@ -46,26 +47,26 @@ graph TD
 ## 2. Layer-by-Layer Breakdown
 
 ### The Backbone (Shared Feature Extractor)
-- **Model:** `HierarchicalUNet` Encoder (Standard Convolutions + ASPP).
-- **Role:** Extracts a rich, highly expressive 1024-dimensional feature vector from the input image. The bottleneck uses Atrous Spatial Pyramid Pooling (ASPP) to capture multi-scale context before being passed to the global average pooling layer.
+- **Model:** `HierarchicalUNet` Encoder.
+- **Role:** The model extracts multi-scale features from the x3 (256-channel), x4 (512-channel), and x5 (1024-channel) encoder stages. These stages are independently average-pooled, concatenated (1792 channels total), and projected via a learned linear layer and GELU activation into a rich 1024-dimensional global feature vector.
 - **Input Resolution:** `512 x 512` pixels (standardized across the MTL pipeline).
 
 ### L1: Binary Triage (Normal vs Abnormal)
 - **Role:** Safely screens out healthy patients. 
-- **Input:** 1024-channel bottleneck.
+- **Input:** 1024-channel aggregated feature vector.
 - **Output:** 1 Logit (Binary).
 - **Activation/Loss:** `Sigmoid` / `BCEWithLogitsLoss`.
 
 ### L2: Disease Router (Pathology Families)
 - **Role:** Categorizes abnormal scans into one of five broad disease families.
-- **Strict Conditioning:** To prevent contradictory predictions, this head receives the 1024-channel bottleneck features **concatenated with the L1 output probability** (1025 channels).
+- **Strict Conditioning:** To prevent contradictory predictions, this head receives the 1024-channel aggregated features **concatenated with the L1 output probability** (1025 channels).
 - **Output:** 5 Logits.
 - **Classes:** `Macular_Degeneration`, `Diabetic_Complications`, `Vascular_Occlusions`, `Structural_Issues`, `Fluid_Accumulation`.
 - **Activation/Loss:** `Softmax` / `FocalLoss`.
 
 ### L3: Granular Biomarkers (Multi-Label Specialists)
 - **Role:** Detects highly specific biomarkers for multi-morbidity detection.
-- **Strict Conditioning:** To enforce the global hierarchy, this head receives the 1024-channel bottleneck features **concatenated with both the L1 and L2 output probabilities** (1030 channels).
+- **Strict Conditioning:** To enforce the global hierarchy, this head receives the 1024-channel aggregated features **concatenated with both the L1 and L2 output probabilities** (1030 channels).
 - **Output:** 11 Logits.
 - **Classes:** `CNV`, `DRUSEN`, `Generic_AMD`, `DME`, `DR`, `MH`, `RVO`, `RAO`, `CSR`, `ERM`, `VID`.
 - **Activation/Loss:** `Sigmoid` / `BCEWithLogitsLoss`.

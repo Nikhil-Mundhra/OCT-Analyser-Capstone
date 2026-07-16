@@ -8,10 +8,10 @@
 
 - [ ] **Finalize Multi-Head ConvNeXt V2 Model**
   - [x] Complete the dataset mapping, loss functions (BCE + CrossEntropy), and training loop in `ConvNeXtV2.ipynb`.
-  - [ ] Generate dataset manifest (`dataset_manifest.csv`) from local Classified dataset.
-  - [ ] Execute Apple Silicon (MPS) optimized Python training script (`train_convnext_mps.py`).
-  - [ ] Validate performance across all heads (Normal/Abnormal, Pathology Category, Specific Sub-Type).
-  - [ ] Export the final trained checkpoint (`multi_head.pth`) for inference.
+  - [x] Generate dataset manifest (`dataset_manifest.csv`) from local Classified dataset.
+  - [x] Execute Apple Silicon (MPS) optimized Python training script (`train_convnext_mps.py`) [Smoke tests passed locally, full training offloaded to Kaggle].
+  - [ ] Validate performance across all heads (Normal/Abnormal, Pathology Category, Specific Sub-Type) [Pending Kaggle execution].
+  - [ ] Export the final trained checkpoint (`multi_head.pth`) for inference [Pending Kaggle execution].
 
 - [x] **Integrate 15-Layer U-Net Segmentation**
   - Replace the deterministic 12-layer placeholder in the FastAPI backend (`backend/oct_analyzer/mvp_pipeline.py`).
