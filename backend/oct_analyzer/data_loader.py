@@ -211,8 +211,8 @@ def _ensure_zyx_volume(volume: np.ndarray) -> np.ndarray:
     array = np.asarray(volume)
     if array.ndim == 2:
         # A 2D image is a single B-scan (H, W).
-        # We map H -> Z, W -> X, and set Y (slice dimension) to 1.
-        array = array[:, np.newaxis, :]
+        # We map the missing slice dimension to the first axis: (1, H, W).
+        array = array[np.newaxis, :, :]
     if array.ndim != 3:
         raise ValueError(f"Expected 2D or 3D OCT volume, got shape {array.shape}")
     return array.astype(np.float32, copy=False)
