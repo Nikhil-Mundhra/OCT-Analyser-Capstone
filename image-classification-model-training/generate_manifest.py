@@ -27,6 +27,8 @@ H3_DIR_MAP = {
 def generate_manifest(root_dir, output_csv):
     valid_exts = {'.jpg', '.jpeg', '.png', '.tif', '.tiff', '.bmp'}
     root_path = Path(root_dir)
+    if not root_path.exists():
+        raise FileNotFoundError(f"CRITICAL: Dataset root '{root_dir}' does not exist! Please check your Kaggle input paths.")
     
     rows = []
     
