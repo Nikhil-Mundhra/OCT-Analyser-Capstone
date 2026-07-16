@@ -75,6 +75,9 @@ def generate_manifest(root_dir, output_csv):
                     "head3_labels": head3_labels
                 })
                 
+    if len(rows) == 0:
+        raise ValueError(f"CRITICAL: Found 0 images in {root_dir}! Please check that this path contains your .jpg/.png images.")
+                
     with open(output_csv, 'w', newline='') as csvfile:
         fieldnames = ['image_path', 'head1_label', 'head2_label', 'head3_labels']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
