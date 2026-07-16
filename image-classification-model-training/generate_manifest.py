@@ -84,6 +84,10 @@ def generate_manifest(root_dir, output_csv):
     print(f"Manifest generated at {output_csv} with {len(rows)} images.")
 
 if __name__ == "__main__":
-    dataset_root = "/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified"
-    output_path = "/Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone/image-classification-model-training/dataset_manifest.csv"
-    generate_manifest(dataset_root, output_path)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset_root', type=str, default="/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified")
+    parser.add_argument('--output_path', type=str, default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset_manifest.csv"))
+    args = parser.parse_args()
+    
+    generate_manifest(args.dataset_root, args.output_path)
