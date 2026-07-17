@@ -244,7 +244,7 @@ class MultiHeadTrainer:
             model_to_unfreeze = self.model.module if hasattr(self.model, 'module') else self.model
             model_to_unfreeze.unfreeze_backbone()
             optimizer_ft = torch.optim.AdamW(
-                self.model.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr),
+                model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr),
                 weight_decay=weight_decay,
             )
             scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
