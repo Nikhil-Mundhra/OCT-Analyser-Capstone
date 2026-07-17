@@ -147,11 +147,48 @@ def compute_loss_weights(df, device):
 
     return h1_pos_weight, h2_weights, h3_pos_weights
 
+class BlackoutCorners(object):
+    """Blacks out bottom corners to hide scanner UI compasses/logos."""
+    def __init__(self, fraction=0.12, x_offset_frac=0.03, y_offset_frac=0.03):
+        self.fraction = fraction
+        self.x_offset_frac = x_offset_frac
+        self.y_offset_frac = y_offset_frac
+
+    def __call__(self, img):
+        from PIL import ImageDraw
+        w, h = img.size
+        base_dim = max(w, h)
+        box_size = int(base_dim * self.fraction)
+        x_off = int(base_dim * self.x_offset_frac)
+        y_off = int(base_dim * self.y_offset_frac)
+        
+        draw = ImageDraw.Draw(img)
+        # Bottom Left
+        x1 = x_off
+        y1 = h - box_size - y_off
+        x2 = x_off + box_size
+        y2 = h - y_off
+        draw.rectangle([x1, y1, x2, y2], fill="black")
+        return img
+
+class LetterboxPad(object):
+    """Pads an image to a square aspect ratio using black pixels."""
+    def __call__(self, img):
+        from torchvision.transforms.functional import pad
+        w, h = img.size
+        max_dim = max(w, h)
+        pad_left = (max_dim - w) // 2
+        pad_right = max_dim - w - pad_left
+        pad_top = (max_dim - h) // 2
+        pad_bottom = max_dim - h - pad_top
+        return pad(img, (pad_left, pad_top, pad_right, pad_bottom), fill=0)
+
 def main():
     parser = argparse.ArgumentParser(description="Train Multi-Head ConvNeXt on MPS")
     parser.add_argument('--manifest', type=str, default='dataset_manifest.csv')
     parser.add_argument('--smoke-test', action='store_true', help='Run a quick smoke test on 2 batches')
     parser.add_argument('--resume', action='store_true', help='Resume from latest fold0_last_model.pth checkpoint')
+    parser.add_argument('--checkpoint-dir', type=str, default='hf_space/weights', help='Directory to save checkpoints')
     args = parser.parse_args()
 
     # 1. Device Setup
@@ -168,10 +205,10 @@ def main():
         amp_dtype = torch.bfloat16
         logger.info("CPU backend enabled (WARNING: Training will be extremely slow).")
 
-    # 2. Data Preparation
     train_transform = transforms.Compose([
-        # Center-Biased Safe Cropping (The UI / Border Defense)
-        transforms.RandomResizedCrop(size=(224, 224), scale=(0.85, 1.0), ratio=(0.95, 1.05)),
+        BlackoutCorners(),
+        LetterboxPad(),
+        transforms.Resize((224, 224)),
         transforms.RandomHorizontalFlip(),
         # Constrained Affine Transformations (The Structural Defense)
         transforms.RandomAffine(degrees=5, translate=(0.05, 0.05), scale=(0.95, 1.05)),
@@ -184,6 +221,8 @@ def main():
     ])
     
     val_transform = transforms.Compose([
+        BlackoutCorners(),
+        LetterboxPad(),
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -250,7 +289,7 @@ def main():
         criterions=criterions,
         loss_weights=loss_weights,
         mode="multi_head_mps",
-        checkpoint_dir="hf_space/weights",
+        checkpoint_dir=args.checkpoint_dir,
         log_dir="logs",
         device=device,
         amp_dtype=amp_dtype

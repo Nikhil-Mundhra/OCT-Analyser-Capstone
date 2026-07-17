@@ -1,5 +1,5 @@
 # Model Health Diagnostics Report
-**Target Checkpoint:** `unet_hierarchical_best_oct5k.pth`
+**Target Checkpoint:** `backend/core_ml/classification/weights/multi_head_mps/fold0_best_model.pth`
 
 ## Weight Health Check - ❌ FAILED
 ```text

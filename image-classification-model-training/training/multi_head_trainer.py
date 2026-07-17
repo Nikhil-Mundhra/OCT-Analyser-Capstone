@@ -69,11 +69,24 @@ class MultiHeadTrainer:
 
         # Head 3 (Severity - Multi-Label BCEWithLogitsLoss)
         loss_h3 = 0.0
+        family_idx_map = {
+            'macular': 0, 'diabetic': 1, 'vascular': 2, 'fluid': 3, 'structural': 4
+        }
+        
         for key in ['macular', 'diabetic', 'vascular', 'fluid', 'structural']:
-            if isinstance(self.criterions['h3'], dict):
-                loss_h3 += self.criterions['h3'][key](logits_dict['severity'][key], labels_dict['severity'][key].float())
-            else:
-                loss_h3 += self.criterions['h3'](logits_dict['severity'][key], labels_dict['severity'][key].float())
+            family_idx = family_idx_map[key]
+            
+            # Mask to isolate only images belonging to this specific family
+            mask = (labels_dict['pathology'] == family_idx)
+            
+            if mask.sum() > 0:
+                target_logits = logits_dict['severity'][key][mask]
+                target_labels = labels_dict['severity'][key].float()[mask]
+                
+                if isinstance(self.criterions['h3'], dict):
+                    loss_h3 += self.criterions['h3'][key](target_logits, target_labels)
+                else:
+                    loss_h3 += self.criterions['h3'](target_logits, target_labels)
             
         total_loss = (self.loss_weights['h1'] * loss_h1 + 
                       self.loss_weights['h2'] * loss_h2 + 

@@ -34,6 +34,7 @@ export function ReviewScreen() {
   const l3 = scan?.level3;
   const l1Abnormal = l1?.prediction?.toUpperCase() === "ABNORMAL";
   const gradcams = scan?.gradcams;
+  const modelName = scan?.model_type === "unified_unet" ? "Hierarchical U-Net" : "Multi-Head ConvNeXt";
 
   return (
     <div className="flex flex-col gap-5">
@@ -119,19 +120,19 @@ export function ReviewScreen() {
             </Card>
           ) : (
             <>
-              <Card title="Level 1: Triage (Hierarchical U-Net)" subtitle="Binary triage screening." icon={Brain}>
+              <Card title={`Level 1: Triage (${modelName})`} subtitle="Binary triage screening." icon={Brain}>
                 <div className="space-y-3">
                   <Metric label="Gatekeeper Prediction" value={l1?.prediction || "N/A"} tone={l1Abnormal ? "danger" : "safe"} />
                   {l1?.confidence && (
                     <Metric label="Model Confidence" value={`${Math.round(l1.confidence * 100)}%`} tone="neutral" />
                   )}
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-                    <b>Explainability:</b> Diagnosis is based on a Unified Hierarchical U-Net model extracting deep structural features to triage ABNORMAL vs NORMAL scans.
+                    <b>Explainability:</b> Diagnosis is based on a {modelName} model extracting deep structural features to triage ABNORMAL vs NORMAL scans.
                   </div>
                 </div>
               </Card>
 
-              <Card title="Level 2: Disease Router (Hierarchical U-Net)" subtitle="Specific disease classification." icon={Activity}>
+              <Card title={`Level 2: Disease Router (${modelName})`} subtitle="Specific disease classification." icon={Activity}>
                 <div className="space-y-3">
                   {l1Abnormal ? (
                     <>

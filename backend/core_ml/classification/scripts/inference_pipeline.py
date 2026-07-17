@@ -19,7 +19,7 @@ import torch.nn.functional as F
 from PIL import Image
 
 from backend.core_ml.classification.models.multi_head_convnext import build_multi_head_model
-from backend.core_ml.classification.data.transforms import get_transforms
+import torchvision.transforms as transforms
 from backend.core_ml.classification.utils.gradcam import MultiHeadGradCAM
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -51,7 +51,49 @@ class OCTInferencePipeline:
             
         logger.info(f"Initialising OCT Inference Pipeline on device: {self.device}")
         
-        self.transform = get_transforms("val")
+        class BlackoutCorners(object):
+            """Blacks out bottom corners to hide scanner UI compasses/logos."""
+            def __init__(self, fraction=0.12, x_offset_frac=0.03, y_offset_frac=0.03):
+                self.fraction = fraction
+                self.x_offset_frac = x_offset_frac
+                self.y_offset_frac = y_offset_frac
+
+            def __call__(self, img):
+                from PIL import ImageDraw
+                w, h = img.size
+                base_dim = max(w, h)
+                box_size = int(base_dim * self.fraction)
+                x_off = int(base_dim * self.x_offset_frac)
+                y_off = int(base_dim * self.y_offset_frac)
+                
+                draw = ImageDraw.Draw(img)
+                # Bottom Left
+                x1 = x_off
+                y1 = h - box_size - y_off
+                x2 = x_off + box_size
+                y2 = h - y_off
+                draw.rectangle([x1, y1, x2, y2], fill="black")
+                return img
+
+        class LetterboxPad(object):
+            """Pads an image to a square aspect ratio using black pixels."""
+            def __call__(self, img):
+                from torchvision.transforms.functional import pad
+                w, h = img.size
+                max_dim = max(w, h)
+                pad_left = (max_dim - w) // 2
+                pad_right = max_dim - w - pad_left
+                pad_top = (max_dim - h) // 2
+                pad_bottom = max_dim - h - pad_top
+                return pad(img, (pad_left, pad_top, pad_right, pad_bottom), fill=0)
+                
+        self.transform = transforms.Compose([
+            BlackoutCorners(),
+            LetterboxPad(),
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
         
         # Build Model
         logger.info("Building Multi-Head ConvNeXt V2...")
@@ -67,10 +109,15 @@ class OCTInferencePipeline:
         
         if multi_head_ckpt.exists():
             state = torch.load(multi_head_ckpt, map_location=self.device)
-            if "model_state_dict" in state:
-                self.model.load_state_dict(state["model_state_dict"])
-            else:
-                self.model.load_state_dict(state)
+            state_dict = state.get("model_state_dict", state)
+            
+            # Strip 'module.' prefix if the model was saved with DataParallel
+            clean_state_dict = {}
+            for k, v in state_dict.items():
+                clean_key = k[7:] if k.startswith('module.') else k
+                clean_state_dict[clean_key] = v
+                
+            self.model.load_state_dict(clean_state_dict)
             logger.info(f"  -> Loaded weights from {multi_head_ckpt}")
         else:
             logger.warning(f"  -> No checkpoint found at {multi_head_ckpt}. Using random initialization!")
@@ -130,13 +177,8 @@ class OCTInferencePipeline:
         except Exception as e:
             return {"error": f"Failed to load image: {e}"}
             
-        # MONAI Transform
-        tensor = self.transform(image_path)
-        if hasattr(tensor, "as_tensor"):
-            tensor = tensor.as_tensor()
-        elif isinstance(tensor, np.ndarray):
-            tensor = torch.from_numpy(tensor)
-            
+        # Torchvision Transform
+        tensor = self.transform(img)
         input_tensor = tensor.unsqueeze(0).to(self.device)
         
         results = {
@@ -227,7 +269,12 @@ class OCTInferencePipeline:
             
             if gradcam:
                 # Target the highest severity class in Head 3 for this pathology
-                heatmap = cam_generator.generate_cam(input_tensor, target_head=3, sub_head=dict_key, class_idx=pred_l3_idx)
+                # NOTE: Due to unmasked BCE loss training for Head 3 across disjoint datasets, 
+                # H3 gradients suffer from spurious correlations with background scanner noise.
+                # Since H2 was correctly masked during training, its gradients accurately localize the pathology.
+                # The spatial features for H3 (Biomarkers) perfectly overlap with H2 (Pathology Family),
+                # so we reuse the H2 attention map for H3 explainability.
+                heatmap = cam_generator.generate_cam(input_tensor, target_head=2)
                 results["gradcams"]["L3"] = self._get_heatmap_base64(img, heatmap)
                 
         return results

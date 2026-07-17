@@ -97,11 +97,11 @@ npm --prefix frontend install
 
 ### Local MVP App
 
-Run the full local MVP from a fresh checkout with one command:
+Run the full local MVP (Frontend, Backend, and Celery worker) from a fresh checkout with one command:
 ```bash
-make run
+./start.sh
 ```
-That command creates or updates `.venv`, installs Python dependencies, Node dependencies, builds the Next.js bundle, starts the FastAPI backend at `http://127.0.0.1:8000`, and serves the frontend at `http://127.0.0.1:3000`.
+That script installs dependencies, boots up the Next.js frontend, the FastAPI backend, and the Redis-backed Celery worker concurrently, while tailing their outputs from the `logs/` directory.
 
 Useful Make targets:
 ```bash

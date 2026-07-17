@@ -65,7 +65,13 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None, progress
         if progress_cb: progress_cb("Skipping anatomical flattening for 2D image")
         flattened_volume = tensor.detach().cpu().numpy()[0]
 
-    if progress_cb: progress_cb("Running hierarchical UNet inference (segmentation & classification)")
+    model_type = os.environ.get("OCT_MODEL_TYPE", "legacy_convnext")
+    if progress_cb:
+        if model_type == "unified_unet":
+            progress_cb("Running hierarchical UNet inference (segmentation & classification)")
+        else:
+            progress_cb("Running segmentation model")
+    
     segmentation_result, pipeline_results = segment_retinal_layers(flattened_volume, scan.spacing_mm)
     segmentation = segmentation_result.labels
     if progress_cb: progress_cb("Extracting biomarker features")
@@ -94,11 +100,9 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None, progress
         diagnosis = pipeline_results.get("Final_Diagnosis", "Unknown")
         confidence = pipeline_results.get("confidence", 0.0)
     else:
-        # Legacy route: calculate deterministic diagnosis from layers
-        diagnosis, confidence = classify_layers(layers)
-
         # Run hierarchical classifier (L1/L2/L3) on the 2D flattened volume
         try:
+            if progress_cb: progress_cb("Running Multi-Head classification model")
             from .classifier_integration import get_classifier
             import tempfile
             from uuid import uuid4
@@ -114,8 +118,22 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None, progress
             pipeline_results["Level2"] = legacy_pipeline_results.get("Level2", {})
             pipeline_results["Level3"] = legacy_pipeline_results.get("Level3", {})
             pipeline_results["gradcams"] = legacy_pipeline_results.get("gradcams", {})
+            
+            # Set the top-level diagnosis to the deepest available prediction
+            if "Level3" in legacy_pipeline_results and legacy_pipeline_results["Level3"].get("prediction"):
+                diagnosis = legacy_pipeline_results["Level3"]["prediction"]
+                confidence = legacy_pipeline_results["Level3"]["confidence"]
+            elif "Level2" in legacy_pipeline_results and legacy_pipeline_results["Level2"].get("prediction"):
+                diagnosis = legacy_pipeline_results["Level2"]["prediction"]
+                confidence = legacy_pipeline_results["Level2"]["confidence"]
+            else:
+                diagnosis = legacy_pipeline_results.get("Level1", {}).get("prediction", "Unknown")
+                confidence = legacy_pipeline_results.get("Level1", {}).get("confidence", 0.0)
+                
         except Exception as e:
             print(f"Failed to run ClassifierWrapper: {e}")
+            # Fallback
+            diagnosis, confidence = classify_layers(layers)
 
     previews = {}
     if preview_dir is not None:
@@ -141,6 +159,7 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None, progress
         "volume_shape": list(scan.volume_shape),
         "spacing_mm": list(scan.spacing_mm),
         "is_demo_model": segmentation_result.mode == "placeholder",
+        "model_type": model_type,
         "qc": {
             "signal_range": validation["signal_range"],
             "crop_applied": crop_info["crop_applied"],
