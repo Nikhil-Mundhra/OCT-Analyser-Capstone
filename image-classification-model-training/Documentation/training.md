@@ -99,6 +99,14 @@ loss_weights = {
 }
 ```
 
+### D. Conditional Masked Loss (The Biomarker Collapse Fix)
+In our dataset aggregation, detailed biomarker labels (Head 3) were only provided for specific subsets of the data. For instance, `Fluid_Accumulation` pathologies might be labeled with sub-biomarkers like `CSR`, but scans labeled as `Structural_Issues` lack these granular labels entirely (they effectively act as false negatives for CSR).
+
+If we allow the network to calculate Head 3 loss on *all* images across all families, the gradients aggressively penalize the network for failing to predict biomarkers on images that simply lack those labels. This causes the gradients for Head 3 to collapse, driving all biomarker confidences permanently to 0%.
+
+To solve this, we implemented **Boolean Loss Masking**:
+During the forward pass in `MultiHeadTrainer._compute_loss`, we use the *ground-truth* Head 2 label (the Pathology Family) to generate a boolean mask. We explicitly zero out the Head 3 loss for any biomarker that does *not* belong to the current image's Head 2 family. This guarantees that Head 3 only receives gradient updates from images that actually contain valid, high-resolution biomarker labels, perfectly preserving the gradient flow.
+
 ### C. Optimizer Profile
 ConvNeXt architectures are highly sensitive and require heavy regularization to prevent overfitting. We use the `AdamW` optimizer with a high `weight_decay=0.05` (which mathematically penalizes weights from growing too large). We pair this with a `CosineAnnealingWarmRestarts` learning rate scheduler, which smoothly drops the learning rate following a cosine curve, allowing the model to gently settle into the most optimal solution.
 
