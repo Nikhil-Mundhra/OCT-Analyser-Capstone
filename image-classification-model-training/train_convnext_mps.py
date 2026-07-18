@@ -149,7 +149,7 @@ def compute_loss_weights(df, device):
 
 class BlackoutCorners(object):
     """Blacks out bottom corners to hide scanner UI compasses/logos."""
-    def __init__(self, fraction=0.12, x_offset_frac=0.03, y_offset_frac=0.03):
+    def __init__(self, fraction=0.18, x_offset_frac=0.0, y_offset_frac=0.0):
         self.fraction = fraction
         self.x_offset_frac = x_offset_frac
         self.y_offset_frac = y_offset_frac
