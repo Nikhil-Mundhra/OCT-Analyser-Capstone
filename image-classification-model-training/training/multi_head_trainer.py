@@ -48,6 +48,9 @@ class MultiHeadTrainer:
         self.model.to(self.device)
         self._amp_enabled = (self.device.type in ("mps", "cuda"))
         self._amp_dtype = amp_dtype
+        
+        # Initialize GradScaler for mixed precision to prevent FP16 gradient overflow
+        self.scaler = torch.cuda.amp.GradScaler(enabled=self._amp_enabled and self.device.type == "cuda")
 
         logger.info(
             "MultiHeadTrainer ready | device=%s | amp=%s | checkpoints=%s",
@@ -96,9 +99,13 @@ class MultiHeadTrainer:
                 logits = self.model(images)
                 loss, _, _, _ = self._compute_loss(logits, labels)
 
-            loss.backward()
+            # Use scaler for backward pass to safely handle FP16 gradients
+            self.scaler.scale(loss).backward()
+            self.scaler.unscale_(optimizer)
             nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=max_norm)
-            optimizer.step()
+            self.scaler.step(optimizer)
+            self.scaler.update()
+            
             total_loss += loss.item()
             
             if smoke_test and batch_idx >= 2:
@@ -132,11 +139,11 @@ class MultiHeadTrainer:
 
             total_loss += loss.item()
             
-            # Extract H2 metrics for selection (Multi-Label)
+            # Extract H2 metrics for selection (Multi-Class)
             valid_h2_mask = (labels['normal_abnormal'] == 1).squeeze()
             if valid_h2_mask.sum() > 0:
                 h2_targets.extend(labels['pathology'][valid_h2_mask].cpu().numpy())
-                h2_preds.extend((torch.sigmoid(logits['pathology'][valid_h2_mask]) > 0.5).int().cpu().numpy())
+                h2_preds.extend(torch.argmax(logits['pathology'][valid_h2_mask], dim=1).cpu().numpy())
                 
             if smoke_test and batch_idx >= 2:
                 break
@@ -237,6 +244,12 @@ class MultiHeadTrainer:
                 model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr),
                 weight_decay=weight_decay,
             )
+            
+            # Port the state from optimizer_warmup to prevent Adam momentum shock on the head
+            if 'optimizer_warmup' in locals():
+                for p, state in optimizer_warmup.state.items():
+                    optimizer_ft.state[p] = state
+                    
             scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
                 optimizer_ft, T_0=10, T_mult=2, eta_min=1e-6,
             )
