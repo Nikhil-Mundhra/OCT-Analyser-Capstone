@@ -28,6 +28,55 @@ from training.multi_head_trainer import MultiHeadTrainer
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+import torch.nn.functional as F
+
+class BinaryFocalLossWithLogits(nn.Module):
+    def __init__(self, alpha=None, gamma=2.0, reduction='mean'):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, inputs, targets):
+        bce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
+        pt = torch.exp(-bce_loss)
+        focal_loss = ((1 - pt) ** self.gamma) * bce_loss
+        
+        if self.alpha is not None:
+            # alpha is used like pos_weight: multiplier for positive targets
+            alpha_t = self.alpha * targets + (1 - targets)
+            focal_loss = alpha_t * focal_loss
+            
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        return focal_loss
+
+class MultiClassFocalLoss(nn.Module):
+    def __init__(self, weight=None, gamma=2.0, ignore_index=-100, reduction='mean'):
+        super().__init__()
+        self.weight = weight
+        self.gamma = gamma
+        self.ignore_index = ignore_index
+        self.reduction = reduction
+
+    def forward(self, inputs, targets):
+        ce_loss = F.cross_entropy(inputs, targets, weight=self.weight, ignore_index=self.ignore_index, reduction='none')
+        pt = torch.exp(-ce_loss)
+        focal_loss = ((1 - pt) ** self.gamma) * ce_loss
+        
+        if self.reduction == 'mean':
+            # PyTorch's cross_entropy already ignores ignore_index in the reduction
+            # but focal loss reduction 'none' returns a masked tensor with 0s. 
+            # Mean is over valid elements.
+            valid_mask = (targets != self.ignore_index)
+            return focal_loss[valid_mask].mean() if valid_mask.sum() > 0 else torch.tensor(0.0, device=inputs.device)
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        return focal_loss
+
+
 # Mappings
 H2_CLASS_TO_IDX = {
     'Macular_Degeneration': 0,
@@ -107,7 +156,9 @@ def compute_loss_weights(df, device):
     logger.info("Calculating dynamic loss weights to handle class imbalance...")
     
     # Mathematical Multiplier to force the network toward 0 False Negatives
-    FALSE_NEGATIVE_PENALTY_MULTIPLIER = 1.5
+    # Abnormal (1) is the majority class (12k vs 5k Normals). The natural balanced weight is < 1.0.
+    # We must use a massive multiplier to override the balance and aggressively force high recall.
+    FALSE_NEGATIVE_PENALTY_MULTIPLIER = 5.0
     logger.info(f"Applying False Negative Penalty Multiplier: {FALSE_NEGATIVE_PENALTY_MULTIPLIER}x")
 
     # Head 1
@@ -134,7 +185,7 @@ def compute_loss_weights(df, device):
         for label, idx in mapping.items():
             count = family_df['head3_labels'].apply(lambda x: label in str(x).split(',')).sum()
             neg_count = family_total - count
-            weights[idx] = (neg_count / max(1, count))
+            weights[idx] = max(1.0, (neg_count / max(1, count)))
         
         key_map = {
             'Macular_Degeneration': 'macular',
@@ -264,14 +315,14 @@ def main():
     logger.info("Model built.")
     
     criterions = {
-        'h1': nn.BCEWithLogitsLoss(pos_weight=h1_w),
-        'h2': nn.CrossEntropyLoss(weight=h2_w, ignore_index=-1),
+        'h1': BinaryFocalLossWithLogits(alpha=h1_w, gamma=2.0),
+        'h2': MultiClassFocalLoss(weight=h2_w, ignore_index=-1, gamma=2.0),
         'h3': {
-            'macular': nn.BCEWithLogitsLoss(pos_weight=h3_w['macular']),
-            'diabetic': nn.BCEWithLogitsLoss(pos_weight=h3_w['diabetic']),
-            'vascular': nn.BCEWithLogitsLoss(pos_weight=h3_w['vascular']),
-            'fluid': nn.BCEWithLogitsLoss(pos_weight=h3_w['fluid']),
-            'structural': nn.BCEWithLogitsLoss(pos_weight=h3_w['structural'])
+            'macular': BinaryFocalLossWithLogits(alpha=h3_w['macular'], gamma=2.0),
+            'diabetic': BinaryFocalLossWithLogits(alpha=h3_w['diabetic'], gamma=2.0),
+            'vascular': BinaryFocalLossWithLogits(alpha=h3_w['vascular'], gamma=2.0),
+            'fluid': BinaryFocalLossWithLogits(alpha=h3_w['fluid'], gamma=2.0),
+            'structural': BinaryFocalLossWithLogits(alpha=h3_w['structural'], gamma=2.0)
         }
     }
     logger.info("Criterions initialized.")

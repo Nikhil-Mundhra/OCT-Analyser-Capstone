@@ -3,81 +3,228 @@ import sys
 import torch
 import numpy as np
 import pandas as pd
-from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+import seaborn as sns
+from torch.utils.data import DataLoader, Subset
 from torchvision import transforms
-from sklearn.metrics import f1_score, accuracy_score, classification_report
+from sklearn.metrics import f1_score, accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import precision_recall_curve, average_precision_score
+from matplotlib.backends.backend_pdf import PdfPages
+import torch.nn.functional as F
+
+import torch.nn.init
+import timm.layers.weight_init
+timm.layers.weight_init.trunc_normal_ = lambda tensor, mean=0., std=1., a=-2., b=2.: torch.nn.init.normal_(tensor, mean=mean, std=std)
 
 from models.multi_head_convnext import build_multi_head_model
 from train_convnext_mps import MultiHeadOCTDataset, H2_CLASS_TO_IDX, H3_MAPPINGS
 
-def main():
-    device = torch.device('cpu')
+H3_KEY_MAP = {
+    'Macular_Degeneration': 'macular',
+    'Diabetic_Complications': 'diabetic',
+    'Vascular_Occlusions': 'vascular',
+    'Fluid_Accumulation': 'fluid',
+    'Structural_Issues': 'structural'
+}
+
+class GradCAM:
+    def __init__(self, model, target_layer):
+        self.model = model
+        self.target_layer = target_layer
+        self.gradients = None
+        self.activations = None
+        
+        self.target_layer.register_forward_hook(self.save_activation)
+        self.target_layer.register_full_backward_hook(self.save_gradient)
+        
+    def save_activation(self, module, input, output):
+        self.activations = output
+        
+    def save_gradient(self, module, grad_input, grad_output):
+        self.gradients = grad_output[0]
+        
+    def __call__(self, x, class_idx, head='pathology', branch_key=None):
+        self.model.zero_grad()
+        logits = self.model(x)
+        
+        if head == 'pathology':
+            score = logits[head][0, class_idx]
+        elif head == 'normal_abnormal':
+            score = logits[head][0, 0]
+        elif head == 'severity':
+            score = logits[head][branch_key][0, class_idx]
+            
+        score.backward(retain_graph=True)
+        
+        gradients = self.gradients.cpu().data.numpy()[0]
+        activations = self.activations.cpu().data.numpy()[0]
+        
+        weights = np.mean(gradients, axis=(1, 2))
+        cam = np.zeros(activations.shape[1:], dtype=np.float32)
+        
+        for i, w in enumerate(weights):
+            cam += w * activations[i]
+            
+        cam = np.maximum(cam, 0)
+        if np.max(cam) > 0:
+            cam = cam / np.max(cam)
+            
+        cam_tensor = torch.from_numpy(cam).unsqueeze(0).unsqueeze(0)
+        cam_resized = F.interpolate(cam_tensor, size=(224, 224), mode='bilinear', align_corners=False)
+        return cam_resized.squeeze().numpy()
+
+def setup_environment():
+    if torch.backends.mps.is_available(): device = torch.device('mps')
+    elif torch.cuda.is_available(): device = torch.device('cuda')
+    else: device = torch.device('cpu')
     print(f"Using device: {device}")
     
+    os.makedirs('telemetry_outputs', exist_ok=True)
+    pdf_path = 'telemetry_outputs/Full_Evaluation_Report.pdf'
+    return device, pdf_path
+
+def get_data_loader(manifest_path, batch_size=32):
     val_transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    
-    manifest_path = "dataset_manifest.csv"
-    print(f"Loading dataset from {manifest_path}...")
     full_dataset = MultiHeadOCTDataset(manifest_path, transform=val_transform)
-    
     train_size = int(0.8 * len(full_dataset))
-    
     np.random.seed(42)
     indices = np.random.permutation(len(full_dataset)).tolist()
-    val_dataset = torch.utils.data.Subset(full_dataset, indices[train_size:])
-    
-    print(f"Validation size: {len(val_dataset)}")
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=0)
-    
+    val_dataset = Subset(full_dataset, indices[train_size:])
+    return DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+
+def load_model(checkpoint_path, device):
     print("Building model...")
     model = build_multi_head_model(pretrained=False, warmup=False)
-    model.to(device)
     
-    checkpoint_path = "hf_space/weights/multi_head_mps/fold0_best_model.pth"
+    if not os.path.exists(checkpoint_path):
+        checkpoint_path = "hf_space/weights/multi_head_mps/fold0_best_model.pth"
+        
     print(f"Loading checkpoint from {checkpoint_path}...")
-    ckpt = torch.load(checkpoint_path, map_location=device)
-    model.load_state_dict(ckpt['model_state_dict'])
+    ckpt = torch.load(checkpoint_path, map_location='cpu')
+    state_dict = ckpt.get('model_state_dict', ckpt)
+    
+    unwrapped = {k[7:] if k.startswith("module.") else k: v for k, v in state_dict.items()}
+    model.load_state_dict(unwrapped)
+    model.to(device)
     model.eval()
     
-    h1_preds, h1_targets = [], []
-    h2_preds, h2_targets = [], []
+    target_layer = model.backbone.stages[-1]
+    grad_cam = GradCAM(model, target_layer)
+    return model, grad_cam
+
+def get_overlay(img_tensor, cam):
+    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+    img = img_tensor.cpu() * std + mean
+    img = img.clamp(0, 1).numpy().transpose(1, 2, 0)
     
-    h3_preds = {k: [] for k in H3_MAPPINGS.keys()}
-    h3_targets = {k: [] for k in H3_MAPPINGS.keys()}
+    heatmap = plt.cm.jet(cam)[:, :, :3]
+    overlay = 0.4 * heatmap + 0.6 * img
+    return np.clip(overlay, 0, 1), img
+
+def generate_patient_case_study(img_tensor, gt_h2, gt_h3_arr, class_name, model, grad_cam, pdf):
+    img = img_tensor.unsqueeze(0)
+    branch_key = H3_KEY_MAP[class_name]
     
-    h3_key_map = {
-        'Macular_Degeneration': 'macular',
-        'Diabetic_Complications': 'diabetic',
-        'Vascular_Occlusions': 'vascular',
-        'Fluid_Accumulation': 'fluid',
-        'Structural_Issues': 'structural'
-    }
+    cam_h1 = grad_cam(img, class_idx=0, head='normal_abnormal')
+    cam_h2 = grad_cam(img, class_idx=gt_h2, head='pathology')
     
-    print("Evaluating...")
-    _amp_dtype = torch.float16 if device.type in ('mps', 'cuda') else torch.bfloat16
+    h3_target_class = np.argmax(gt_h3_arr) if np.sum(gt_h3_arr) > 0 else 0
+    cam_h3 = grad_cam(img, class_idx=h3_target_class, head='severity', branch_key=branch_key)
+    
+    overlay_h1, orig_img = get_overlay(img[0], cam_h1)
+    overlay_h2, _ = get_overlay(img[0], cam_h2)
+    overlay_h3, _ = get_overlay(img[0], cam_h3)
+    
+    fig = plt.figure(figsize=(15, 10))
+    gs = fig.add_gridspec(2, 3)
+    
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1.imshow(orig_img)
+    ax1.set_title(f"Original Scan\nTrue: {class_name}")
+    ax1.axis('off')
+    
+    ax2 = fig.add_subplot(gs[0, 1:])
+    ax2.axis('off')
     
     with torch.no_grad():
-        for i, (images, labels) in enumerate(val_loader):
-            images = images.to(device)
-            
+        l = model(img)
+        p_h1 = torch.sigmoid(l['normal_abnormal'])[0, 0].item()
+        p_h2 = l['pathology'].argmax(dim=1)[0].item()
+        pred_class_name = [k for k, v in H2_CLASS_TO_IDX.items() if v == p_h2][0]
+        p_h3_probs = torch.sigmoid(l['severity'][branch_key])[0].cpu().numpy()
+    
+    h3_class_names = [k for k, v in sorted(H3_MAPPINGS[class_name].items(), key=lambda item: item[1])]
+    h3_str = "\n".join([f"  - {c}: {p*100:.1f}%" for c, p in zip(h3_class_names, p_h3_probs)])
+    
+    text_str = (
+        f"PATIENT CASE STUDY\n"
+        f"=================================\n\n"
+        f"[ H1 - Triage Prediction ]\n"
+        f"Abnormal Probability: {p_h1*100:.2f}%\n\n"
+        f"[ H2 - Pathology Routing Prediction ]\n"
+        f"Predicted: {pred_class_name} (True: {class_name})\n\n"
+        f"[ H3 - Severity & Biomarker Prediction ]\n"
+        f"{h3_str}"
+    )
+    ax2.text(0.1, 0.9, text_str, fontsize=12, family='monospace', va='top')
+    
+    ax3 = fig.add_subplot(gs[1, 0])
+    ax3.imshow(overlay_h1)
+    ax3.set_title("H1 Grad-CAM (Triage)")
+    ax3.axis('off')
+    
+    ax4 = fig.add_subplot(gs[1, 1])
+    ax4.imshow(overlay_h2)
+    ax4.set_title(f"H2 Grad-CAM ({pred_class_name})")
+    ax4.axis('off')
+    
+    ax5 = fig.add_subplot(gs[1, 2])
+    ax5.imshow(overlay_h3)
+    ax5.set_title(f"H3 Grad-CAM ({h3_class_names[h3_target_class]})")
+    ax5.axis('off')
+    
+    plt.tight_layout()
+    pdf.savefig(fig)
+    plt.close(fig)
+
+def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
+    h1_preds, h1_targets, h1_probs_arr = [], [], []
+    h2_preds, h2_targets = [], []
+    h3_preds = {k: [] for k in H3_MAPPINGS.keys()}
+    h3_targets = {k: [] for k in H3_MAPPINGS.keys()}
+    h3_probs = {k: [] for k in H3_MAPPINGS.keys()}
+    
+    gradcam_counts = {k: 0 for k in H2_CLASS_TO_IDX.keys()}
+    max_cases_per_disease = 2
+    
+    _amp_dtype = torch.float16 if device.type in ('mps', 'cuda') else torch.bfloat16
+    print("Evaluating Telemetry...")
+    
+    for i, (images, labels) in enumerate(val_loader):
+        images = images.to(device)
+        
+        with torch.no_grad():
             with torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=device.type in ('mps', 'cuda')):
                 logits = model(images)
-                
-            h1_prob = torch.sigmoid(logits['normal_abnormal']).cpu().numpy()
-            h1_pred = (h1_prob > 0.5).astype(int)
-            h1_preds.extend(h1_pred)
+            
+            h1_prob_batch = torch.sigmoid(logits['normal_abnormal']).cpu().numpy()
+            h1_pred_batch = (h1_prob_batch > 0.5).astype(int)
+            h1_preds.extend(h1_pred_batch)
             h1_targets.extend(labels['normal_abnormal'].numpy())
+            h1_probs_arr.extend(h1_prob_batch)
             
             valid_h2 = labels['pathology'] != -1
             if valid_h2.sum() > 0:
+                h2_preds_batch = logits['pathology'][valid_h2].argmax(dim=1).cpu().numpy()
                 h2_targets.extend(labels['pathology'][valid_h2].numpy())
-                h2_preds.extend(logits['pathology'][valid_h2].argmax(dim=1).cpu().numpy())
+                h2_preds.extend(h2_preds_batch)
                 
-            for family, branch_key in h3_key_map.items():
+            for family, branch_key in H3_KEY_MAP.items():
                 idx_for_family = (labels['pathology'] == H2_CLASS_TO_IDX[family])
                 if idx_for_family.sum() > 0:
                     probs = torch.sigmoid(logits['severity'][branch_key][idx_for_family]).cpu().numpy()
@@ -85,43 +232,83 @@ def main():
                     targets = labels['severity'][branch_key][idx_for_family].numpy()
                     h3_preds[family].extend(preds)
                     h3_targets[family].extend(targets)
+                    h3_probs[family].extend(probs)
                     
-            if i % 100 == 0:
-                print(f"Batch {i}/{len(val_loader)}")
-                
+        for b_idx in range(images.size(0)):
+            gt_h2 = labels['pathology'][b_idx].item()
+            if gt_h2 != -1:
+                class_name = [k for k, v in H2_CLASS_TO_IDX.items() if v == gt_h2][0]
+                if gradcam_counts[class_name] < max_cases_per_disease:
+                    gt_h3_arr = labels['severity'][H3_KEY_MAP[class_name]][b_idx].numpy()
+                    generate_patient_case_study(images[b_idx], gt_h2, gt_h3_arr, class_name, model, grad_cam, pdf)
+                    gradcam_counts[class_name] += 1
+                    
+        if i % 100 == 0:
+            print(f"Batch {i}/{len(val_loader)}")
+            
+    return h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h3_preds, h3_targets, h3_probs
+
+def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h3_preds, h3_targets, h3_probs, pdf):
     print("\n" + "="*50)
     print("H1 (Normal vs Abnormal) Metrics")
     print("="*50)
-    h1_f1 = f1_score(h1_targets, h1_preds, average='macro')
-    h1_acc = accuracy_score(h1_targets, h1_preds)
-    print(f"Accuracy: {h1_acc:.4f} | Macro F1: {h1_f1:.4f}")
+    print(f"Accuracy: {accuracy_score(h1_targets, h1_preds):.4f} | Macro F1: {f1_score(h1_targets, h1_preds, average='macro'):.4f}")
     print(classification_report(h1_targets, h1_preds, target_names=["Normal", "Abnormal"]))
     
     print("\n" + "="*50)
     print("H2 (Pathology Routing) Metrics")
     print("="*50)
-    h2_f1 = f1_score(h2_targets, h2_preds, average='macro')
-    h2_acc = accuracy_score(h2_targets, h2_preds)
-    print(f"Accuracy: {h2_acc:.4f} | Macro F1: {h2_f1:.4f}")
+    print(f"Accuracy: {accuracy_score(h2_targets, h2_preds):.4f} | Macro F1: {f1_score(h2_targets, h2_preds, average='macro'):.4f}")
     h2_target_names = [k for k, v in sorted(H2_CLASS_TO_IDX.items(), key=lambda item: item[1])]
     print(classification_report(h2_targets, h2_preds, target_names=h2_target_names))
+
+    print("\nSaving Telemetry Population Graphs to PDF...")
     
-    print("\n" + "="*50)
-    print("H3 (Severity & Subtype) Metrics")
-    print("="*50)
+    h1_targets_flat, h1_probs_flat = np.array(h1_targets).flatten(), np.array(h1_probs_arr).flatten()
+    precision, recall, thresholds = precision_recall_curve(h1_targets_flat, h1_probs_flat)
+    fig1 = plt.figure(figsize=(8, 6))
+    plt.plot(recall, precision, color='blue', lw=2, label=f'H1 PR Curve (AP = {average_precision_score(h1_targets_flat, h1_probs_flat):.3f})')
+    for t_val in [0.2, 0.5, 0.8]:
+        idx = np.argmin(np.abs(thresholds - t_val)) if len(thresholds) > 0 else 0
+        if idx < len(recall):
+            plt.plot(recall[idx], precision[idx], 'ro')
+            plt.annotate(f'T={t_val:.1f}', (recall[idx], precision[idx]), textcoords="offset points", xytext=(-15,-15), ha='center')
+    plt.xlabel('Recall'); plt.ylabel('Precision'); plt.title('H1 Triage PR Curve'); plt.legend(); plt.grid(True)
+    pdf.savefig(fig1); plt.close()
+    
+    cm = confusion_matrix(h2_targets, h2_preds)
+    fig2 = plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=h2_target_names, yticklabels=h2_target_names)
+    plt.xlabel('Predicted'); plt.ylabel('Actual'); plt.title('H2 Disease Router Confusion Matrix'); plt.tight_layout()
+    pdf.savefig(fig2); plt.close()
     
     for family, mapping in H3_MAPPINGS.items():
-        print(f"--- {family} ---")
-        targets = np.array(h3_targets[family])
-        preds = np.array(h3_preds[family])
-        if len(targets) == 0:
-            print("No samples in validation set for this family.")
-            continue
-            
-        branch_f1 = f1_score(targets, preds, average='macro', zero_division=0)
-        print(f"Overall Macro F1 for {family}: {branch_f1:.4f}")
+        targets, probs = np.array(h3_targets[family]), np.array(h3_probs[family])
+        if len(targets) == 0: continue
+        
+        fig3 = plt.figure(figsize=(8, 6))
         class_names = [k for k, v in sorted(mapping.items(), key=lambda item: item[1])]
-        print(classification_report(targets, preds, target_names=class_names, zero_division=0))
+        
+        for class_idx, class_name in enumerate(class_names):
+            t, p = (targets, probs) if targets.ndim == 1 else (targets[:, class_idx], probs[:, class_idx])
+            if np.sum(t) > 0:
+                prec, rec, _ = precision_recall_curve(t, p)
+                plt.plot(rec, prec, lw=2, label=f'{class_name} (AP = {average_precision_score(t, p):.3f})')
+                
+        plt.xlabel('Recall'); plt.ylabel('Precision'); plt.title(f'H3 PR Curve: {family}'); plt.legend(); plt.grid(True)
+        pdf.savefig(fig3); plt.close()
+
+def main():
+    device, pdf_path = setup_environment()
+    pdf = PdfPages(pdf_path)
+    val_loader = get_data_loader("dataset_manifest.csv")
+    model, grad_cam = load_model("../archive/convnext_v2_poc_july_2026/fold0_best_model.pth", device)
+    
+    res = run_evaluation_loop(model, val_loader, grad_cam, pdf, device)
+    compile_population_metrics(*res, pdf)
+    
+    pdf.close()
+    print("Telemetry generation complete! Check the telemetry_outputs/ directory.")
 
 if __name__ == "__main__":
     main()

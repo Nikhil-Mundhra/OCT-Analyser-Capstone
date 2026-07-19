@@ -99,10 +99,16 @@ loss_weights = {
 }
 ```
 
-### D. Conditional Masked Loss (The Biomarker Collapse Fix)
+### D. Conditional Masked Loss & Focal Scaling
 In our dataset aggregation, detailed biomarker labels (Head 3) were only provided for specific subsets of the data. For instance, `Fluid_Accumulation` pathologies might be labeled with sub-biomarkers like `CSR`, but scans labeled as `Structural_Issues` lack these granular labels entirely (they effectively act as false negatives for CSR).
 
 If we allow the network to calculate Head 3 loss on *all* images across all families, the gradients aggressively penalize the network for failing to predict biomarkers on images that simply lack those labels. This causes the gradients for Head 3 to collapse, driving all biomarker confidences permanently to 0%.
+
+### 3. Focal Loss & Dynamic Gradient Scaling
+Because medical datasets have extreme data scarcity for specific sub-diseases (e.g., 30,000 CNV scans vs. only 60 VID scans), standard Cross-Entropy Loss fails to learn the rare classes.
+* **The Solution:** We implement Custom **Focal Loss** modules (`BinaryFocalLossWithLogits` and `MultiClassFocalLoss`).
+* **Mechanism:** Focal Loss dynamically scales down the gradients for "easy" predictions (like the massively overrepresented CNV) and mathematically forces 100% of the network's learning capacity onto the rare classes (VID, CSR) using a focusing parameter ($\gamma = 2.0$).
+* **Class Weighting:** We integrate dynamic positive weighting ($\alpha$) inversely proportional to the class frequency. This is clamped to a minimum of `1.0` to prevent catastrophic zero-gradient collapse for single-member subfamilies (e.g., Fluid Accumulation).
 
 To solve this, we implemented **Boolean Loss Masking**:
 During the forward pass in `MultiHeadTrainer._compute_loss`, we use the *ground-truth* Head 2 label (the Pathology Family) to generate a boolean mask. We explicitly zero out the Head 3 loss for any biomarker that does *not* belong to the current image's Head 2 family. This guarantees that Head 3 only receives gradient updates from images that actually contain valid, high-resolution biomarker labels, perfectly preserving the gradient flow.
