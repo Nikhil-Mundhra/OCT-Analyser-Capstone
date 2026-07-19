@@ -27,14 +27,13 @@ class MultiHeadGradCAM:
     def save_gradient(self, module, grad_input, grad_output):
         self.gradients = grad_output[0]
 
-    def generate_cam(self, input_tensor, target_head=2, sub_head=None, target_class=None):
+    def generate_cam(self, input_tensor, target_head=2, target_class=None):
         """
         Generates the Class Activation Map (CAM).
         
         Args:
             input_tensor (torch.Tensor): Preprocessed image tensor (1, C, H, W)
-            target_head (int): Which head to explain (1, 2, or 3). Defaults to 2 (Pathology Routing).
-            sub_head (str, optional): The severity family (e.g., 'macular') if target_head == 3.
+            target_head (int): Which head to explain (1 or 2). Defaults to 2 (Pathology Routing).
             target_class (int, optional): The class within the target head. 
                                           If None, uses the class with the highest score.
         """
@@ -47,10 +46,6 @@ class MultiHeadGradCAM:
             target_output = outputs['normal_abnormal']
         elif target_head == 2:
             target_output = outputs['pathology']
-        elif target_head == 3:
-            if sub_head is None:
-                raise ValueError("sub_head must be provided when target_head=3 (e.g., 'macular')")
-            target_output = outputs['severity'][sub_head]
         else:
             raise ValueError(f"Unknown target_head: {target_head}")
         
@@ -59,7 +54,8 @@ class MultiHeadGradCAM:
             score = target_output[0, 0]
         else:
             if target_class is None:
-                target_class = target_output.argmax(dim=1).item()
+                # for multi-label, find highest activation
+                target_class = torch.sigmoid(target_output).argmax(dim=1).item()
             score = target_output[0, target_class]
         
         # Backward pass

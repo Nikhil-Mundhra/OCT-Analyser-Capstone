@@ -2,7 +2,8 @@
 scripts/inference_pipeline.py
 
 End-to-End Inference Pipeline for Multi-Head ConvNeXt OCT Classification.
-Mimics the old L1 -> L2 -> L3 interface for compatibility with the backend API.
+Flattened architecture (H1 = Triage, H2 = Granular Multi-Label Pathology).
+Maintains L1/L2/L3 result dict structure for backend API compatibility.
 """
 
 import sys
@@ -25,6 +26,12 @@ from backend.core_ml.classification.utils.gradcam import MultiHeadGradCAM
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
+PATHOLOGY_CLASSES = [
+    'CNV', 'DRUSEN', 'AMD', 'General_AMD', 
+    'DME', 'DR', 'MH', 'RVO', 'RAO', 
+    'CSR', 'ERM', 'VID'
+]
+
 class OCTInferencePipeline:
     def __init__(
         self,
@@ -32,13 +39,6 @@ class OCTInferencePipeline:
         device: str = "auto",
         **kwargs
     ):
-        """
-        Initializes the Multi-Head inference pipeline.
-        Accepts *args and **kwargs to ignore legacy arguments (l1_ckpt, l2_ckpt, etc).
-        
-        Args:
-            device: 'cuda', 'mps', 'cpu', or 'auto'.
-        """
         if device == "auto":
             if torch.backends.mps.is_available():
                 self.device = torch.device("mps")
@@ -52,7 +52,6 @@ class OCTInferencePipeline:
         logger.info(f"Initialising OCT Inference Pipeline on device: {self.device}")
         
         class BlackoutCorners(object):
-            """Blacks out bottom corners to hide scanner UI compasses/logos."""
             def __init__(self, fraction=0.18, x_offset_frac=0.0, y_offset_frac=0.0):
                 self.fraction = fraction
                 self.x_offset_frac = x_offset_frac
@@ -76,7 +75,6 @@ class OCTInferencePipeline:
                 return img
 
         class LetterboxPad(object):
-            """Pads an image to a square aspect ratio using black pixels."""
             def __call__(self, img):
                 from torchvision.transforms.functional import pad
                 w, h = img.size
@@ -97,9 +95,6 @@ class OCTInferencePipeline:
         
         # Build Model
         logger.info("Building Multi-Head ConvNeXt V2...")
-        # Since we just transitioned, we may not have trained weights yet.
-        # We load pretrained=False (unless training completed and weights exist).
-        # We will check if multi_head.pth exists in weights_dir.
         weights_dir = Path(__file__).resolve().parent.parent / "weights"
         multi_head_ckpt = weights_dir / "multi_head.pth"
         if not multi_head_ckpt.exists():
@@ -111,7 +106,6 @@ class OCTInferencePipeline:
             state = torch.load(multi_head_ckpt, map_location=self.device)
             state_dict = state.get("model_state_dict", state)
             
-            # Strip 'module.' prefix if the model was saved with DataParallel
             clean_state_dict = {}
             for k, v in state_dict.items():
                 clean_key = k[7:] if k.startswith('module.') else k
@@ -123,34 +117,7 @@ class OCTInferencePipeline:
             logger.warning(f"  -> No checkpoint found at {multi_head_ckpt}. Using random initialization!")
             
         self.model.eval()
-            
-        # Label Mappings
         self.l1_mapping = {0: "NORMAL", 1: "ABNORMAL"}
-        self.l2_mapping = {
-            0: "Macular",
-            1: "Diabetic",
-            2: "Vascular",
-            3: "Fluid",
-            4: "Structural"
-        }
-        
-        # L3 Mapping depends on L2 result
-        self.l3_mappings = {
-            "Macular": {0: 'CNV', 1: 'DRUSEN', 2: 'Generic_AMD'},
-            "Diabetic": {0: 'DME', 1: 'DR'},
-            "Vascular": {0: 'RVO', 1: 'RAO', 2: 'Generic_Vascular'},
-            "Fluid": {0: 'CSR'},
-            "Structural": {0: 'ERM', 1: 'VID'}
-        }
-
-        # Key mapping for model dict
-        self.l2_to_dict_key = {
-            "Macular": "macular",
-            "Diabetic": "diabetic",
-            "Vascular": "vascular",
-            "Fluid": "fluid",
-            "Structural": "structural"
-        }
 
     def _get_heatmap_base64(self, img_pil, cam_array):
         import base64
@@ -167,9 +134,6 @@ class OCTInferencePipeline:
         gradcam: bool = False, 
         output_dir: str = "output/explanations"
     ) -> Dict[str, Any]:
-        """
-        Runs the multi-head inference pipeline on a single image.
-        """
         logger.info(f"Processing image: {image_path}")
         
         try:
@@ -177,7 +141,6 @@ class OCTInferencePipeline:
         except Exception as e:
             return {"error": f"Failed to load image: {e}"}
             
-        # Torchvision Transform
         tensor = self.transform(img)
         input_tensor = tensor.unsqueeze(0).to(self.device)
         
@@ -203,7 +166,6 @@ class OCTInferencePipeline:
             outputs = self.model(input_tensor)
             out1 = outputs['normal_abnormal']
             out2 = outputs['pathology']
-            out3_dict = outputs['severity']
             
             # --- LEVEL 1: Gatekeeper ---
             prob1 = torch.sigmoid(out1[0, 0]).item()
@@ -227,56 +189,29 @@ class OCTInferencePipeline:
                 logger.info("Pipeline terminated at Level 1 (NORMAL)")
                 return results
                 
-            # --- LEVEL 2: Disease Router ---
-            probs_l2 = F.softmax(out2[0], dim=0)
-            pred_l2_idx = torch.argmax(probs_l2).item()
-            pred_l2_label = self.l2_mapping[pred_l2_idx]
-            conf_l2 = probs_l2[pred_l2_idx].item()
+            # --- LEVEL 2 & 3: Granular Pathology (Multi-Label Flat) ---
+            # Using Sigmoid for multi-label probabilities
+            probs_h2 = torch.sigmoid(out2[0]).cpu().numpy()
+            pred_l2_idx = np.argmax(probs_h2)
+            pred_l2_label = PATHOLOGY_CLASSES[pred_l2_idx]
+            conf_l2 = probs_h2[pred_l2_idx].item()
             
+            # We mock Level 2 and Level 3 to be the same to maintain API compatibility
             results["Level2"] = {
                 "prediction": pred_l2_label,
                 "confidence": conf_l2,
-                "probs": {self.l2_mapping[i]: probs_l2[i].item() for i in range(5)}
+                "probs": {PATHOLOGY_CLASSES[i]: probs_h2[i].item() for i in range(len(PATHOLOGY_CLASSES))}
             }
-            results["Path"].append(f"L2: {pred_l2_label}")
+            results["Level3"] = results["Level2"]
+            results["Path"].append(f"L2/L3: {pred_l2_label}")
             
             if gradcam:
-                heatmap = cam_generator.generate_cam(input_tensor, target_head=2)
+                heatmap = cam_generator.generate_cam(input_tensor, target_head=2, target_class=pred_l2_idx)
                 results["gradcams"]["L2"] = self._get_heatmap_base64(img, heatmap)
+                results["gradcams"]["L3"] = results["gradcams"]["L2"]
             
-            # --- LEVEL 3: Specialist ---
-            dict_key = self.l2_to_dict_key[pred_l2_label]
-            l3_logits = out3_dict[dict_key][0]
-            l3_probs = torch.sigmoid(l3_logits) # Since it's multi-label
+            results["Final_Diagnosis"] = pred_l2_label
             
-            l3_classes_map = self.l3_mappings[pred_l2_label]
-            
-            # For Final Diagnosis, we pick the one with highest probability
-            pred_l3_idx = torch.argmax(l3_probs).item()
-            # If the probability is still very low, we might just return the L2 label? 
-            # We'll just mimic old behavior and pick the argmax
-            pred_l3_label = l3_classes_map.get(pred_l3_idx, pred_l2_label)
-            conf_l3 = l3_probs[pred_l3_idx].item()
-            
-            results["Level3"] = {
-                "specialist_used": pred_l2_label,
-                "prediction": pred_l3_label,
-                "confidence": conf_l3,
-                "probs": {l3_classes_map[i]: l3_probs[i].item() for i in range(len(l3_classes_map))}
-            }
-            results["Path"].append(f"L3: {pred_l3_label}")
-            results["Final_Diagnosis"] = pred_l3_label
-            
-            if gradcam:
-                # Target the highest severity class in Head 3 for this pathology
-                # NOTE: Due to unmasked BCE loss training for Head 3 across disjoint datasets, 
-                # H3 gradients suffer from spurious correlations with background scanner noise.
-                # Since H2 was correctly masked during training, its gradients accurately localize the pathology.
-                # The spatial features for H3 (Biomarkers) perfectly overlap with H2 (Pathology Family),
-                # so we reuse the H2 attention map for H3 explainability.
-                heatmap = cam_generator.generate_cam(input_tensor, target_head=2)
-                results["gradcams"]["L3"] = self._get_heatmap_base64(img, heatmap)
-                
         return results
 
 if __name__ == "__main__":

@@ -17,15 +17,7 @@ import timm.layers.weight_init
 timm.layers.weight_init.trunc_normal_ = lambda tensor, mean=0., std=1., a=-2., b=2.: torch.nn.init.normal_(tensor, mean=mean, std=std)
 
 from models.multi_head_convnext import build_multi_head_model
-from train_convnext_mps import MultiHeadOCTDataset, H2_CLASS_TO_IDX, H3_MAPPINGS
-
-H3_KEY_MAP = {
-    'Macular_Degeneration': 'macular',
-    'Diabetic_Complications': 'diabetic',
-    'Vascular_Occlusions': 'vascular',
-    'Fluid_Accumulation': 'fluid',
-    'Structural_Issues': 'structural'
-}
+from train_convnext_mps import MultiHeadOCTDataset, PATHOLOGY_CLASSES
 
 class GradCAM:
     def __init__(self, model, target_layer):
@@ -43,7 +35,7 @@ class GradCAM:
     def save_gradient(self, module, grad_input, grad_output):
         self.gradients = grad_output[0]
         
-    def __call__(self, x, class_idx, head='pathology', branch_key=None):
+    def __call__(self, x, class_idx, head='pathology'):
         self.model.zero_grad()
         logits = self.model(x)
         
@@ -51,8 +43,6 @@ class GradCAM:
             score = logits[head][0, class_idx]
         elif head == 'normal_abnormal':
             score = logits[head][0, 0]
-        elif head == 'severity':
-            score = logits[head][branch_key][0, class_idx]
             
         score.backward(retain_graph=True)
         
@@ -126,67 +116,58 @@ def get_overlay(img_tensor, cam):
     overlay = 0.4 * heatmap + 0.6 * img
     return np.clip(overlay, 0, 1), img
 
-def generate_patient_case_study(img_tensor, gt_h2, gt_h3_arr, class_name, model, grad_cam, pdf):
+def generate_patient_case_study(img_tensor, gt_h2_arr, class_name, model, grad_cam, pdf):
     img = img_tensor.unsqueeze(0)
-    branch_key = H3_KEY_MAP[class_name]
     
     cam_h1 = grad_cam(img, class_idx=0, head='normal_abnormal')
-    cam_h2 = grad_cam(img, class_idx=gt_h2, head='pathology')
     
-    h3_target_class = np.argmax(gt_h3_arr) if np.sum(gt_h3_arr) > 0 else 0
-    cam_h3 = grad_cam(img, class_idx=h3_target_class, head='severity', branch_key=branch_key)
+    h2_target_class = PATHOLOGY_CLASSES.index(class_name)
+    cam_h2 = grad_cam(img, class_idx=h2_target_class, head='pathology')
     
     overlay_h1, orig_img = get_overlay(img[0], cam_h1)
     overlay_h2, _ = get_overlay(img[0], cam_h2)
-    overlay_h3, _ = get_overlay(img[0], cam_h3)
     
-    fig = plt.figure(figsize=(15, 10))
-    gs = fig.add_gridspec(2, 3)
+    fig = plt.figure(figsize=(15, 6))
+    gs = fig.add_gridspec(1, 4)
     
     ax1 = fig.add_subplot(gs[0, 0])
     ax1.imshow(orig_img)
     ax1.set_title(f"Original Scan\nTrue: {class_name}")
     ax1.axis('off')
     
-    ax2 = fig.add_subplot(gs[0, 1:])
+    ax2 = fig.add_subplot(gs[0, 1])
     ax2.axis('off')
     
     with torch.no_grad():
         l = model(img)
         p_h1 = torch.sigmoid(l['normal_abnormal'])[0, 0].item()
-        p_h2 = l['pathology'].argmax(dim=1)[0].item()
-        pred_class_name = [k for k, v in H2_CLASS_TO_IDX.items() if v == p_h2][0]
-        p_h3_probs = torch.sigmoid(l['severity'][branch_key])[0].cpu().numpy()
+        p_h2_probs = torch.sigmoid(l['pathology'])[0].cpu().numpy()
+        pred_class_idx = p_h2_probs.argmax()
+        pred_class_name = PATHOLOGY_CLASSES[pred_class_idx]
     
-    h3_class_names = [k for k, v in sorted(H3_MAPPINGS[class_name].items(), key=lambda item: item[1])]
-    h3_str = "\n".join([f"  - {c}: {p*100:.1f}%" for c, p in zip(h3_class_names, p_h3_probs)])
+    h2_str = "\n".join([f"  - {c}: {p*100:.1f}%" for c, p in zip(PATHOLOGY_CLASSES, p_h2_probs) if p > 0.1])
     
     text_str = (
         f"PATIENT CASE STUDY\n"
         f"=================================\n\n"
         f"[ H1 - Triage Prediction ]\n"
-        f"Abnormal Probability: {p_h1*100:.2f}%\n\n"
+        f"Abnormal Probability: {p_h1*100:.2f}%\n"
+        f"Threshold Used: 0.50\n\n"
         f"[ H2 - Pathology Routing Prediction ]\n"
-        f"Predicted: {pred_class_name} (True: {class_name})\n\n"
-        f"[ H3 - Severity & Biomarker Prediction ]\n"
-        f"{h3_str}"
+        f"Top Predicted: {pred_class_name} (True: {class_name})\n\n"
+        f"Granular Pathology Probs (>10%):\n{h2_str}"
     )
     ax2.text(0.1, 0.9, text_str, fontsize=12, family='monospace', va='top')
     
-    ax3 = fig.add_subplot(gs[1, 0])
+    ax3 = fig.add_subplot(gs[0, 2])
     ax3.imshow(overlay_h1)
     ax3.set_title("H1 Grad-CAM (Triage)")
     ax3.axis('off')
     
-    ax4 = fig.add_subplot(gs[1, 1])
+    ax4 = fig.add_subplot(gs[0, 3])
     ax4.imshow(overlay_h2)
-    ax4.set_title(f"H2 Grad-CAM ({pred_class_name})")
+    ax4.set_title(f"H2 Grad-CAM ({class_name})")
     ax4.axis('off')
-    
-    ax5 = fig.add_subplot(gs[1, 2])
-    ax5.imshow(overlay_h3)
-    ax5.set_title(f"H3 Grad-CAM ({h3_class_names[h3_target_class]})")
-    ax5.axis('off')
     
     plt.tight_layout()
     pdf.savefig(fig)
@@ -194,12 +175,9 @@ def generate_patient_case_study(img_tensor, gt_h2, gt_h3_arr, class_name, model,
 
 def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
     h1_preds, h1_targets, h1_probs_arr = [], [], []
-    h2_preds, h2_targets = [], []
-    h3_preds = {k: [] for k in H3_MAPPINGS.keys()}
-    h3_targets = {k: [] for k in H3_MAPPINGS.keys()}
-    h3_probs = {k: [] for k in H3_MAPPINGS.keys()}
+    h2_preds, h2_targets, h2_probs_arr = [], [], []
     
-    gradcam_counts = {k: 0 for k in H2_CLASS_TO_IDX.keys()}
+    gradcam_counts = {k: 0 for k in PATHOLOGY_CLASSES}
     max_cases_per_disease = 2
     
     _amp_dtype = torch.float16 if device.type in ('mps', 'cuda') else torch.bfloat16
@@ -213,42 +191,40 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
                 logits = model(images)
             
             h1_prob_batch = torch.sigmoid(logits['normal_abnormal']).cpu().numpy()
-            h1_pred_batch = (h1_prob_batch > 0.5).astype(int)
+            h1_pred_batch = (h1_prob_batch > 0.5).astype(int)  # 0.5 Triage Threshold
             h1_preds.extend(h1_pred_batch)
             h1_targets.extend(labels['normal_abnormal'].numpy())
             h1_probs_arr.extend(h1_prob_batch)
             
-            valid_h2 = labels['pathology'] != -1
-            if valid_h2.sum() > 0:
-                h2_preds_batch = logits['pathology'][valid_h2].argmax(dim=1).cpu().numpy()
-                h2_targets.extend(labels['pathology'][valid_h2].numpy())
-                h2_preds.extend(h2_preds_batch)
+            # Mask out normal images from H2 metrics
+            valid_h2_mask = (labels['normal_abnormal'] == 1).squeeze()
+            if valid_h2_mask.sum() > 0:
+                probs_h2 = torch.sigmoid(logits['pathology'][valid_h2_mask]).cpu().numpy()
+                preds_h2 = (probs_h2 > 0.5).astype(int)
+                targets_h2 = labels['pathology'][valid_h2_mask].numpy()
                 
-            for family, branch_key in H3_KEY_MAP.items():
-                idx_for_family = (labels['pathology'] == H2_CLASS_TO_IDX[family])
-                if idx_for_family.sum() > 0:
-                    probs = torch.sigmoid(logits['severity'][branch_key][idx_for_family]).cpu().numpy()
-                    preds = (probs > 0.5).astype(int)
-                    targets = labels['severity'][branch_key][idx_for_family].numpy()
-                    h3_preds[family].extend(preds)
-                    h3_targets[family].extend(targets)
-                    h3_probs[family].extend(probs)
+                h2_probs_arr.extend(probs_h2)
+                h2_preds.extend(preds_h2)
+                h2_targets.extend(targets_h2)
                     
         for b_idx in range(images.size(0)):
-            gt_h2 = labels['pathology'][b_idx].item()
-            if gt_h2 != -1:
-                class_name = [k for k, v in H2_CLASS_TO_IDX.items() if v == gt_h2][0]
-                if gradcam_counts[class_name] < max_cases_per_disease:
-                    gt_h3_arr = labels['severity'][H3_KEY_MAP[class_name]][b_idx].numpy()
-                    generate_patient_case_study(images[b_idx], gt_h2, gt_h3_arr, class_name, model, grad_cam, pdf)
-                    gradcam_counts[class_name] += 1
+            is_abnormal = labels['normal_abnormal'][b_idx].item() == 1
+            if is_abnormal:
+                gt_h2_arr = labels['pathology'][b_idx].numpy()
+                if np.sum(gt_h2_arr) > 0:
+                    class_idx = np.argmax(gt_h2_arr)
+                    class_name = PATHOLOGY_CLASSES[class_idx]
+                    
+                    if gradcam_counts.get(class_name, 0) < max_cases_per_disease:
+                        generate_patient_case_study(images[b_idx], gt_h2_arr, class_name, model, grad_cam, pdf)
+                        gradcam_counts[class_name] = gradcam_counts.get(class_name, 0) + 1
                     
         if i % 100 == 0:
             print(f"Batch {i}/{len(val_loader)}")
             
-    return h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h3_preds, h3_targets, h3_probs
+    return h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr
 
-def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h3_preds, h3_targets, h3_probs, pdf):
+def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr, pdf):
     print("\n" + "="*50)
     print("H1 (Normal vs Abnormal) Metrics")
     print("="*50)
@@ -256,11 +232,12 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     print(classification_report(h1_targets, h1_preds, target_names=["Normal", "Abnormal"]))
     
     print("\n" + "="*50)
-    print("H2 (Pathology Routing) Metrics")
+    print("H2 (Granular Pathology Multi-Label) Metrics")
     print("="*50)
-    print(f"Accuracy: {accuracy_score(h2_targets, h2_preds):.4f} | Macro F1: {f1_score(h2_targets, h2_preds, average='macro'):.4f}")
-    h2_target_names = [k for k, v in sorted(H2_CLASS_TO_IDX.items(), key=lambda item: item[1])]
-    print(classification_report(h2_targets, h2_preds, target_names=h2_target_names))
+    # Multi-label F1 and accuracy
+    print(f"Exact Match Ratio (Subset Accuracy): {accuracy_score(h2_targets, h2_preds):.4f}")
+    print(f"Macro F1: {f1_score(h2_targets, h2_preds, average='macro', zero_division=0):.4f}")
+    print(classification_report(h2_targets, h2_preds, target_names=PATHOLOGY_CLASSES, zero_division=0))
 
     print("\nSaving Telemetry Population Graphs to PDF...")
     
@@ -276,33 +253,22 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     plt.xlabel('Recall'); plt.ylabel('Precision'); plt.title('H1 Triage PR Curve'); plt.legend(); plt.grid(True)
     pdf.savefig(fig1); plt.close()
     
-    cm = confusion_matrix(h2_targets, h2_preds)
-    fig2 = plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=h2_target_names, yticklabels=h2_target_names)
-    plt.xlabel('Predicted'); plt.ylabel('Actual'); plt.title('H2 Disease Router Confusion Matrix'); plt.tight_layout()
-    pdf.savefig(fig2); plt.close()
-    
-    for family, mapping in H3_MAPPINGS.items():
-        targets, probs = np.array(h3_targets[family]), np.array(h3_probs[family])
-        if len(targets) == 0: continue
-        
-        fig3 = plt.figure(figsize=(8, 6))
-        class_names = [k for k, v in sorted(mapping.items(), key=lambda item: item[1])]
-        
-        for class_idx, class_name in enumerate(class_names):
-            t, p = (targets, probs) if targets.ndim == 1 else (targets[:, class_idx], probs[:, class_idx])
-            if np.sum(t) > 0:
-                prec, rec, _ = precision_recall_curve(t, p)
-                plt.plot(rec, prec, lw=2, label=f'{class_name} (AP = {average_precision_score(t, p):.3f})')
-                
-        plt.xlabel('Recall'); plt.ylabel('Precision'); plt.title(f'H3 PR Curve: {family}'); plt.legend(); plt.grid(True)
-        pdf.savefig(fig3); plt.close()
+    fig3 = plt.figure(figsize=(10, 8))
+    for class_idx, class_name in enumerate(PATHOLOGY_CLASSES):
+        t, p = np.array(h2_targets)[:, class_idx], np.array(h2_probs_arr)[:, class_idx]
+        if np.sum(t) > 0:
+            prec, rec, _ = precision_recall_curve(t, p)
+            plt.plot(rec, prec, lw=2, label=f'{class_name} (AP = {average_precision_score(t, p):.3f})')
+            
+    plt.xlabel('Recall'); plt.ylabel('Precision'); plt.title('H2 Granular Pathology PR Curves'); plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left'); plt.grid(True)
+    plt.tight_layout()
+    pdf.savefig(fig3); plt.close()
 
 def main():
     device, pdf_path = setup_environment()
     pdf = PdfPages(pdf_path)
     val_loader = get_data_loader("dataset_manifest.csv")
-    model, grad_cam = load_model("../archive/convnext_v2_poc_july_2026/fold0_best_model.pth", device)
+    model, grad_cam = load_model("hf_space/weights/multi_head_mps/fold0_best_model.pth", device)
     
     res = run_evaluation_loop(model, val_loader, grad_cam, pdf, device)
     compile_population_metrics(*res, pdf)

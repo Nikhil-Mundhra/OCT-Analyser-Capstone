@@ -2,17 +2,60 @@ import torch
 import torch.nn as nn
 import timm
 
+class ChannelAttention(nn.Module):
+    def __init__(self, in_planes, ratio=16):
+        super(ChannelAttention, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+        
+        self.fc = nn.Sequential(
+            nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False),
+            nn.ReLU(),
+            nn.Conv2d(in_planes // ratio, in_planes, 1, bias=False)
+        )
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avg_out = self.fc(self.avg_pool(x))
+        max_out = self.fc(self.max_pool(x))
+        out = avg_out + max_out
+        return self.sigmoid(out)
+
+class SpatialAttention(nn.Module):
+    def __init__(self, kernel_size=7):
+        super(SpatialAttention, self).__init__()
+        self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=kernel_size//2, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avg_out = torch.mean(x, dim=1, keepdim=True)
+        max_out, _ = torch.max(x, dim=1, keepdim=True)
+        x = torch.cat([avg_out, max_out], dim=1)
+        x = self.conv1(x)
+        return self.sigmoid(x)
+
+class CBAMBlock(nn.Module):
+    def __init__(self, in_planes, ratio=16, kernel_size=7):
+        super(CBAMBlock, self).__init__()
+        self.ca = ChannelAttention(in_planes, ratio)
+        self.sa = SpatialAttention(kernel_size)
+
+    def forward(self, x):
+        x = x * self.ca(x)
+        x = x * self.sa(x)
+        return x
+
 class MultiHeadConvNeXt(nn.Module):
     """
     Multi-Head ConvNeXt V2 Model
     
     1. Initializes a pre-trained convnextv2_base.
     2. Freezes the stem and first three stages, leaving Stage 4 unfrozen.
-    3. Attaches Global Average Pooling to the Stage 4 output.
-    4. Branches into parallel MLP heads for Normal/Abnormal (H1), Pathology (H2).
-    5. Branches Head 3 (Severity) into 5 distinct sub-tensors for clinical families.
+    3. Branches into Dual-Streams:
+       - Stream 1: Un-gated GAP -> H1 (Gatekeeper: Normal vs Abnormal)
+       - Stream 2: CBAM-filtered GAP + H1 Prob Conditioning -> H2 (Granular Pathology: 12 classes)
     """
-    def __init__(self, num_pathology_classes: int = 5, pretrained: bool = True):
+    def __init__(self, num_pathology_classes: int = 12, pretrained: bool = True):
         super().__init__()
         
         # 1. Initialize pre-trained convnextv2_base from timm
@@ -22,8 +65,6 @@ class MultiHeadConvNeXt(nn.Module):
         self.backbone.reset_classifier(0)
         
         # 2. Freeze all parameters in the stem and the first three stages.
-        # ConvNeXt stages are 0-indexed in timm (stages.0 to stages.3).
-        # We leave Stage 4 (stages.3) unfrozen.
         for name, param in self.backbone.named_parameters():
             if name.startswith('stem.') or \
                name.startswith('stages.0.') or \
@@ -31,11 +72,7 @@ class MultiHeadConvNeXt(nn.Module):
                name.startswith('stages.2.'):
                 param.requires_grad = False
                 
-        # 3. Attach a Global Average Pooling layer
         self.gap = nn.AdaptiveAvgPool2d(1)
-        
-        # 4. Branch this vector into three parallel MLP heads
-        # ConvNeXt V2 base has a 1024-d output feature map at the final stage
         embed_dim = 1024
         
         # normal_abnormal_head (binary -> 1 output)
@@ -46,62 +83,42 @@ class MultiHeadConvNeXt(nn.Module):
             nn.Linear(512, 1)
         )
         
-        # pathology_type_head (multi-class -> `num_pathology_classes` outputs)
-        self.pathology_type_head = nn.Sequential(
-            nn.Linear(embed_dim, 512),
+        # CBAM Attention Module for H2
+        self.cbam = CBAMBlock(in_planes=embed_dim)
+        
+        # granular_pathology_head (multi-label -> 12 outputs)
+        # Input dim is embed_dim + 1 (for H1 probability concatenation)
+        self.granular_pathology_head = nn.Sequential(
+            nn.Linear(embed_dim + 1, 512),
             nn.GELU(),
             nn.Dropout(p=0.2),
             nn.Linear(512, num_pathology_classes)
         )
-        
-        # severity_head -> Branched into 5 clinical family sub-vectors (Option A)
-        self.macular_head = nn.Sequential(
-            nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 3) # CNV, DRUSEN, Generic_AMD
-        )
-        self.diabetic_head = nn.Sequential(
-            nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 2) # DME, DR
-        )
-        self.vascular_head = nn.Sequential(
-            nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 3) # MH, RVO, RAO
-        )
-        self.fluid_head = nn.Sequential(
-            nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 1) # CSR
-        )
-        self.structural_head = nn.Sequential(
-            nn.Linear(embed_dim, 256), nn.GELU(), nn.Dropout(p=0.2), nn.Linear(256, 2) # ERM, VID
-        )
 
     def forward(self, x: torch.Tensor):
-        # 5. Clean forward pass that does not detach the computational graph.
-        # forward_features returns the unpooled feature map from Stage 4
-        # (e.g., shape: [B, 1024, H, W])
-        x = self.backbone.forward_features(x)
+        # forward_features returns the unpooled feature map from Stage 4 [B, 1024, H, W]
+        features = self.backbone.forward_features(x)
         
-        # Apply Global Average Pooling (yielding a 1024-d vector per image)
-        x = self.gap(x)
-        x = torch.flatten(x, 1)
+        # --- Stream 1: H1 Gatekeeper ---
+        # Un-gated Global Average Pooling
+        gap_features = self.gap(features).flatten(1)
+        out_normal = self.normal_abnormal_head(gap_features)
         
-        # Pass through the main heads
-        out_normal = self.normal_abnormal_head(x)
-        out_pathology = self.pathology_type_head(x)
+        # --- Stream 2: H2 Granular Pathology ---
+        # CBAM Attention Filtering
+        att_features = self.cbam(features)
+        gap_att_features = self.gap(att_features).flatten(1)
         
-        # Pass through the 5 clinical sub-vectors for Head 3
-        out_macular = self.macular_head(x)
-        out_diabetic = self.diabetic_head(x)
-        out_vascular = self.vascular_head(x)
-        out_fluid = self.fluid_head(x)
-        out_structural = self.structural_head(x)
+        # Hierarchical Conditioning: Append H1 Probability
+        # Detach h1_prob to prevent H2 from changing H1's parameters (optional, but safe)
+        h1_prob = torch.sigmoid(out_normal).detach()
+        h2_input = torch.cat([gap_att_features, h1_prob], dim=1)
+        
+        out_pathology = self.granular_pathology_head(h2_input)
         
         return {
             'normal_abnormal': out_normal,
-            'pathology': out_pathology,
-            'severity': {
-                'macular': out_macular,
-                'diabetic': out_diabetic,
-                'vascular': out_vascular,
-                'fluid': out_fluid,
-                'structural': out_structural
-            }
+            'pathology': out_pathology
         }
 
     def freeze_backbone(self):
@@ -116,28 +133,23 @@ class MultiHeadConvNeXt(nn.Module):
             param.requires_grad = True
 
     def get_param_groups(self, backbone_lr=5e-5, head_lr=5e-4):
-        """Differential LRs: backbone at backbone_lr, all heads at head_lr."""
+        """Differential LRs: backbone at backbone_lr, all heads and attention at head_lr."""
         backbone_params = list(self.backbone.parameters())
         head_params = (
             list(self.normal_abnormal_head.parameters()) +
-            list(self.pathology_type_head.parameters()) +
-            list(self.macular_head.parameters()) +
-            list(self.diabetic_head.parameters()) +
-            list(self.vascular_head.parameters()) +
-            list(self.fluid_head.parameters()) +
-            list(self.structural_head.parameters())
+            list(self.cbam.parameters()) +
+            list(self.granular_pathology_head.parameters())
         )
         return [
             {"params": backbone_params, "lr": backbone_lr},
             {"params": head_params,     "lr": head_lr},
         ]
 
-
 def build_multi_head_model(pretrained=True, warmup=True) -> MultiHeadConvNeXt:
     """
     Factory function for creating the Multi-Head ConvNeXt model.
     """
-    model = MultiHeadConvNeXt(num_pathology_classes=5, pretrained=pretrained)
+    model = MultiHeadConvNeXt(num_pathology_classes=12, pretrained=pretrained)
     if warmup:
         model.freeze_backbone()
     return model

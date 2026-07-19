@@ -25,6 +25,21 @@ l2_labels:
   Fluid_Accumulation:     3
   Structural_Issues:      4
 
+# Flat 12-class pathology list for H2
+granular_classes:
+  CNV:         0
+  DRUSEN:      1
+  AMD:         2
+  General_AMD: 3
+  DME:         4
+  DR:          5
+  MH:          6
+  RVO:         7
+  RAO:         8
+  CSR:         9
+  ERM:         10
+  VID:         11
+
 # L3 specialist definitions: per-specialist class → integer index
 l3_specialists:
   Macular:
@@ -34,7 +49,8 @@ l3_specialists:
     classes:
       CNV:         0    # Wet AMD / Choroidal Neovascularization
       DRUSEN:      1    # Dry AMD / Drusen deposits
-      Generic_AMD: 2    # Unclassified / General AMD (OCTID source)
+      AMD:         2    # Unclassified / General AMD
+      General_AMD: 3    # OCTID source
 
   Diabetic:
     name: L3_Diabetic
@@ -123,18 +139,18 @@ class_map:
     l3_class:     DRUSEN       # Dry AMD — strictly separate from CNV
 
   - path: "Macular Degeneration Spectrum/AMD"
-    fine_class:   Generic_AMD
+    fine_class:   AMD
     l1:           ABNORMAL
     l2:           Macular_Degeneration
     l3_specialist: Macular
-    l3_class:     Generic_AMD  # Not merged with DRUSEN or CNV
+    l3_class:     AMD
 
   - path: "Macular Degeneration Spectrum/General/108503_OCTID_AMD"
-    fine_class:   Generic_AMD
+    fine_class:   General_AMD
     l1:           ABNORMAL
     l2:           Macular_Degeneration
     l3_specialist: Macular
-    l3_class:     Generic_AMD  # Second source of Generic_AMD — merged at class level only
+    l3_class:     General_AMD
 
   # ── DIABETIC COMPLICATIONS ──────────────────────────────────────────────────
   - path: "Diabetic Complications/Diabetic Macular Edema (DME)/DME"

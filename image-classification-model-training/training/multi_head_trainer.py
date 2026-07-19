@@ -58,40 +58,20 @@ class MultiHeadTrainer:
         # Head 1 (Binary BCEWithLogitsLoss)
         loss_h1 = self.criterions['h1'](logits_dict['normal_abnormal'], labels_dict['normal_abnormal'].float())
         
-        # Head 2 (Pathology Routing Multi-class)
-        # Filter out normal images for H2 (label == -1)
-        valid_h2 = labels_dict['pathology'] != -1
-        if valid_h2.sum() > 0:
-            loss_h2 = self.criterions['h2'](logits_dict['pathology'][valid_h2], labels_dict['pathology'][valid_h2])
+        # Head 2 (Granular Pathology - Asymmetric Loss)
+        # Hierarchical Loss Masking: Only calculate H2 loss for Abnormal samples (h1 label == 1)
+        valid_h2_mask = (labels_dict['normal_abnormal'] == 1).squeeze()
+        
+        if valid_h2_mask.sum() > 0:
+            target_logits = logits_dict['pathology'][valid_h2_mask]
+            target_labels = labels_dict['pathology'][valid_h2_mask]
+            loss_h2 = self.criterions['h2'](target_logits, target_labels)
         else:
             loss_h2 = torch.tensor(0.0, device=self.device, requires_grad=True)
 
-        # Head 3 (Severity - Multi-Label BCEWithLogitsLoss)
-        loss_h3 = 0.0
-        family_idx_map = {
-            'macular': 0, 'diabetic': 1, 'vascular': 2, 'fluid': 3, 'structural': 4
-        }
-        
-        for key in ['macular', 'diabetic', 'vascular', 'fluid', 'structural']:
-            family_idx = family_idx_map[key]
-            
-            # Mask to isolate only images belonging to this specific family
-            mask = (labels_dict['pathology'] == family_idx)
-            
-            if mask.sum() > 0:
-                target_logits = logits_dict['severity'][key][mask]
-                target_labels = labels_dict['severity'][key].float()[mask]
-                
-                if isinstance(self.criterions['h3'], dict):
-                    loss_h3 += self.criterions['h3'][key](target_logits, target_labels)
-                else:
-                    loss_h3 += self.criterions['h3'](target_logits, target_labels)
-            
-        total_loss = (self.loss_weights['h1'] * loss_h1 + 
-                      self.loss_weights['h2'] * loss_h2 + 
-                      self.loss_weights['h3'] * loss_h3)
+        total_loss = self.loss_weights['h1'] * loss_h1 + self.loss_weights['h2'] * loss_h2
                       
-        return total_loss, loss_h1, loss_h2, loss_h3
+        return total_loss, loss_h1, loss_h2, torch.tensor(0.0, device=self.device)
 
     def _train_epoch(self, loader, optimizer, max_norm: float = 5.0, smoke_test: bool = False):
         self.model.train()
@@ -152,11 +132,11 @@ class MultiHeadTrainer:
 
             total_loss += loss.item()
             
-            # Extract H2 metrics for selection
-            valid_h2 = labels['pathology'] != -1
-            if valid_h2.sum() > 0:
-                h2_targets.extend(labels['pathology'][valid_h2].cpu().numpy())
-                h2_preds.extend(logits['pathology'][valid_h2].argmax(dim=1).cpu().numpy())
+            # Extract H2 metrics for selection (Multi-Label)
+            valid_h2_mask = (labels['normal_abnormal'] == 1).squeeze()
+            if valid_h2_mask.sum() > 0:
+                h2_targets.extend(labels['pathology'][valid_h2_mask].cpu().numpy())
+                h2_preds.extend((torch.sigmoid(logits['pathology'][valid_h2_mask]) > 0.5).int().cpu().numpy())
                 
             if smoke_test and batch_idx >= 2:
                 break

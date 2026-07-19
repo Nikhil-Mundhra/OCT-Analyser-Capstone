@@ -53,46 +53,45 @@ class BinaryFocalLossWithLogits(nn.Module):
             return focal_loss.sum()
         return focal_loss
 
-class MultiClassFocalLoss(nn.Module):
-    def __init__(self, weight=None, gamma=2.0, ignore_index=-100, reduction='mean'):
-        super().__init__()
+class AsymmetricLoss(nn.Module):
+    def __init__(self, gamma_neg=4.0, gamma_pos=1.0, clip=0.05, eps=1e-8, weight=None):
+        super(AsymmetricLoss, self).__init__()
+        self.gamma_neg = gamma_neg
+        self.gamma_pos = gamma_pos
+        self.clip = clip
+        self.eps = eps
         self.weight = weight
-        self.gamma = gamma
-        self.ignore_index = ignore_index
-        self.reduction = reduction
 
-    def forward(self, inputs, targets):
-        ce_loss = F.cross_entropy(inputs, targets, weight=self.weight, ignore_index=self.ignore_index, reduction='none')
-        pt = torch.exp(-ce_loss)
-        focal_loss = ((1 - pt) ** self.gamma) * ce_loss
+    def forward(self, x, y):
+        x_sigmoid = torch.sigmoid(x)
+        xs_pos = x_sigmoid
+        xs_neg = 1 - x_sigmoid
+
+        if self.clip is not None and self.clip > 0:
+            xs_neg = (xs_neg + self.clip).clamp(max=1)
+
+        los_pos = y * torch.log(xs_pos.clamp(min=self.eps))
+        los_neg = (1 - y) * torch.log(xs_neg.clamp(min=self.eps))
+        loss = los_pos + los_neg
+
+        pt0 = xs_pos * y
+        pt1 = xs_neg * (1 - y)
+        pt = pt0 + pt1
+        one_sided_gamma = self.gamma_pos * y + self.gamma_neg * (1 - y)
+        one_sided_w = torch.pow(1 - pt, one_sided_gamma)
+
+        loss *= one_sided_w
         
-        if self.reduction == 'mean':
-            # PyTorch's cross_entropy already ignores ignore_index in the reduction
-            # but focal loss reduction 'none' returns a masked tensor with 0s. 
-            # Mean is over valid elements.
-            valid_mask = (targets != self.ignore_index)
-            return focal_loss[valid_mask].mean() if valid_mask.sum() > 0 else torch.tensor(0.0, device=inputs.device)
-        elif self.reduction == 'sum':
-            return focal_loss.sum()
-        return focal_loss
+        if self.weight is not None:
+            loss *= self.weight.to(loss.device)
+            
+        return -loss.mean()
 
-
-# Mappings
-H2_CLASS_TO_IDX = {
-    'Macular_Degeneration': 0,
-    'Diabetic_Complications': 1,
-    'Vascular_Occlusions': 2,
-    'Fluid_Accumulation': 3,
-    'Structural_Issues': 4
-}
-
-H3_MAPPINGS = {
-    'Macular_Degeneration': {'CNV': 0, 'DRUSEN': 1, 'Generic_AMD': 2},
-    'Diabetic_Complications': {'DME': 0, 'DR': 1},
-    'Vascular_Occlusions': {'MH': 0, 'RVO': 1, 'RAO': 2},
-    'Fluid_Accumulation': {'CSR': 0},
-    'Structural_Issues': {'ERM': 0, 'VID': 1}
-}
+PATHOLOGY_CLASSES = [
+    'CNV', 'DRUSEN', 'AMD', 'General_AMD', 
+    'DME', 'DR', 'MH', 'RVO', 'RAO', 
+    'CSR', 'ERM', 'VID'
+]
 
 class MultiHeadOCTDataset(Dataset):
     def __init__(self, csv_path, transform=None):
@@ -114,41 +113,20 @@ class MultiHeadOCTDataset(Dataset):
         # Parse labels
         h1 = int(row['head1_label'])
         
-        h2 = -1
-        if pd.notna(row['head2_label']) and row['head2_label'] != "":
-            h2 = H2_CLASS_TO_IDX.get(row['head2_label'], -1)
-            
-        # Initialize h3 vectors (multi-label binary vectors)
-        h3_m = torch.zeros(3)
-        h3_d = torch.zeros(2)
-        h3_v = torch.zeros(3)
-        h3_f = torch.zeros(1)
-        h3_s = torch.zeros(2)
+        # Initialize flat multi-label vector for 12 classes
+        h2 = torch.zeros(len(PATHOLOGY_CLASSES), dtype=torch.float32)
         
         if pd.notna(row['head3_labels']) and row['head3_labels'] != "":
             labels = [l.strip() for l in str(row['head3_labels']).split(',')]
             for label in labels:
-                if row['head2_label'] == 'Macular_Degeneration' and label in H3_MAPPINGS['Macular_Degeneration']:
-                    h3_m[H3_MAPPINGS['Macular_Degeneration'][label]] = 1
-                elif row['head2_label'] == 'Diabetic_Complications' and label in H3_MAPPINGS['Diabetic_Complications']:
-                    h3_d[H3_MAPPINGS['Diabetic_Complications'][label]] = 1
-                elif row['head2_label'] == 'Vascular_Occlusions' and label in H3_MAPPINGS['Vascular_Occlusions']:
-                    h3_v[H3_MAPPINGS['Vascular_Occlusions'][label]] = 1
-                elif row['head2_label'] == 'Fluid_Accumulation' and label in H3_MAPPINGS['Fluid_Accumulation']:
-                    h3_f[H3_MAPPINGS['Fluid_Accumulation'][label]] = 1
-                elif row['head2_label'] == 'Structural_Issues' and label in H3_MAPPINGS['Structural_Issues']:
-                    h3_s[H3_MAPPINGS['Structural_Issues'][label]] = 1
+                if label == 'Generic_AMD': # Backwards compatibility
+                    h2[PATHOLOGY_CLASSES.index('AMD')] = 1
+                elif label in PATHOLOGY_CLASSES:
+                    h2[PATHOLOGY_CLASSES.index(label)] = 1
 
         labels_dict = {
             'normal_abnormal': torch.tensor([h1], dtype=torch.float32),
-            'pathology': torch.tensor(h2, dtype=torch.long),
-            'severity': {
-                'macular': h3_m,
-                'diabetic': h3_d,
-                'vascular': h3_v,
-                'fluid': h3_f,
-                'structural': h3_s
-            }
+            'pathology': h2
         }
         return image, labels_dict
 
@@ -156,8 +134,6 @@ def compute_loss_weights(df, device):
     logger.info("Calculating dynamic loss weights to handle class imbalance...")
     
     # Mathematical Multiplier to force the network toward 0 False Negatives
-    # Abnormal (1) is the majority class (12k vs 5k Normals). The natural balanced weight is < 1.0.
-    # We must use a massive multiplier to override the balance and aggressively force high recall.
     FALSE_NEGATIVE_PENALTY_MULTIPLIER = 5.0
     logger.info(f"Applying False Negative Penalty Multiplier: {FALSE_NEGATIVE_PENALTY_MULTIPLIER}x")
 
@@ -166,37 +142,27 @@ def compute_loss_weights(df, device):
     h1_neg = len(df) - h1_pos
     h1_pos_weight = torch.tensor([float(h1_neg) / max(1, h1_pos) * FALSE_NEGATIVE_PENALTY_MULTIPLIER], dtype=torch.float32).to(device)
 
-    # Head 2
-    h2_counts = df['head2_label'].value_counts()
-    h2_weights = torch.ones(5, dtype=torch.float32).to(device)
-    total_h2 = h2_counts.sum()
-    for class_name, count in h2_counts.items():
-        if pd.notna(class_name) and class_name in H2_CLASS_TO_IDX:
-            idx = H2_CLASS_TO_IDX[class_name]
-            h2_weights[idx] = total_h2 / (5.0 * max(1, count))
-
-    # Head 3
-    h3_pos_weights = {}
-    for family, mapping in H3_MAPPINGS.items():
-        family_df = df[df['head2_label'] == family]
-        family_total = len(family_df)
+    # Head 2 Multi-Label Frequency Weights
+    h2_counts = {c: 0 for c in PATHOLOGY_CLASSES}
+    for idx, row in df.iterrows():
+        if pd.notna(row['head3_labels']) and str(row['head3_labels']).strip() != "":
+            labels = [l.strip() for l in str(row['head3_labels']).split(',')]
+            for label in labels:
+                if label == 'Generic_AMD':
+                    h2_counts['AMD'] += 1
+                elif label in h2_counts:
+                    h2_counts[label] += 1
+                    
+    max_count = max(h2_counts.values()) if h2_counts else 1
+    h2_weights = torch.ones(len(PATHOLOGY_CLASSES), dtype=torch.float32)
+    for i, cls_name in enumerate(PATHOLOGY_CLASSES):
+        count = max(1, h2_counts[cls_name])
+        # Scale so the most frequent class has weight 1.0, and rarer classes have higher weights
+        # We cap it at 10.0 to prevent gradient explosions on extremely rare classes
+        weight = min(max_count / count, 10.0)
+        h2_weights[i] = weight
         
-        weights = torch.ones(len(mapping), dtype=torch.float32).to(device)
-        for label, idx in mapping.items():
-            count = family_df['head3_labels'].apply(lambda x: label in str(x).split(',')).sum()
-            neg_count = family_total - count
-            weights[idx] = max(1.0, (neg_count / max(1, count)))
-        
-        key_map = {
-            'Macular_Degeneration': 'macular',
-            'Diabetic_Complications': 'diabetic',
-            'Vascular_Occlusions': 'vascular',
-            'Fluid_Accumulation': 'fluid',
-            'Structural_Issues': 'structural'
-        }
-        h3_pos_weights[key_map[family]] = weights
-
-    return h1_pos_weight, h2_weights, h3_pos_weights
+    return h1_pos_weight, h2_weights.to(device)
 
 class BlackoutCorners(object):
     """Blacks out bottom corners to hide scanner UI compasses/logos."""
@@ -283,7 +249,7 @@ def main():
     full_dataset = MultiHeadOCTDataset(args.manifest, transform=train_transform)
     logger.info(f"Dataset loaded with {len(full_dataset)} items.")
     
-    h1_w, h2_w, h3_w = compute_loss_weights(full_dataset.df, device)
+    h1_w, h2_w = compute_loss_weights(full_dataset.df, device)
     
     logger.info("Splitting dataset...")
     train_size = int(0.8 * len(full_dataset))
@@ -316,21 +282,13 @@ def main():
     
     criterions = {
         'h1': BinaryFocalLossWithLogits(alpha=h1_w, gamma=2.0),
-        'h2': MultiClassFocalLoss(weight=h2_w, ignore_index=-1, gamma=2.0),
-        'h3': {
-            'macular': BinaryFocalLossWithLogits(alpha=h3_w['macular'], gamma=2.0),
-            'diabetic': BinaryFocalLossWithLogits(alpha=h3_w['diabetic'], gamma=2.0),
-            'vascular': BinaryFocalLossWithLogits(alpha=h3_w['vascular'], gamma=2.0),
-            'fluid': BinaryFocalLossWithLogits(alpha=h3_w['fluid'], gamma=2.0),
-            'structural': BinaryFocalLossWithLogits(alpha=h3_w['structural'], gamma=2.0)
-        }
+        'h2': AsymmetricLoss(gamma_neg=4.0, gamma_pos=1.0, clip=0.05, weight=h2_w)
     }
     logger.info("Criterions initialized.")
     
     loss_weights = {
         'h1': 1.0,
-        'h2': 2.0,
-        'h3': 0.2  # Scaled down because H3 sums 5 individual BCE losses
+        'h2': 1.0
     }
 
     # 4. Trainer Initialization
