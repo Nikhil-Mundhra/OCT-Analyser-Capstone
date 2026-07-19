@@ -32,5 +32,8 @@ docker-compose.override.yml
 .agents
 graphify-out/
 
+# Ignore image assets
+**/*.png
+
 # Next.js build output
 frontend/.next/
