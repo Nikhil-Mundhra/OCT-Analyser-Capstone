@@ -47,75 +47,90 @@ class CBAMBlock(nn.Module):
 
 class MultiHeadConvNeXt(nn.Module):
     """
-    Multi-Head ConvNeXt V2 Model
-    
-    1. Initializes a pre-trained convnextv2_base.
-    2. Freezes the stem and first three stages, leaving Stage 4 unfrozen.
-    3. Branches into Dual-Streams:
-       - Stream 1: Un-gated GAP -> H1 (Gatekeeper: Normal vs Abnormal)
-       - Stream 2: CBAM-filtered GAP + H1 Prob Conditioning -> H2 (Granular Pathology: 12 classes)
+    Multi-Head ConvNeXt V2 Model with Multi-Scale Aggregation and Strict Hierarchical Conditioning
     """
     def __init__(self, num_pathology_classes: int = 12, pretrained: bool = True):
         super().__init__()
         
-        # 1. Initialize pre-trained convnextv2_base from timm
-        self.backbone = timm.create_model('convnextv2_base', pretrained=pretrained)
+        # 1. Initialize pre-trained convnextv2_base, extracting features from stages 1, 2, 3
+        # (Resolutions for 224x224 input: Stage 1=28x28, Stage 2=14x14, Stage 3=7x7)
+        self.backbone = timm.create_model('convnextv2_base', pretrained=pretrained, features_only=True, out_indices=(1, 2, 3))
         
-        # Remove the original classification head
-        self.backbone.reset_classifier(0)
-        
-        # 2. Freeze all parameters in the stem and the first three stages.
-        for name, param in self.backbone.named_parameters():
-            if name.startswith('stem.') or \
-               name.startswith('stages.0.') or \
-               name.startswith('stages.1.') or \
-               name.startswith('stages.2.'):
-                param.requires_grad = False
+        # 2. Freeze all parameters in the stem and the first three stages (stages 0, 1, 2)
+        self.freeze_backbone()
                 
         self.gap = nn.AdaptiveAvgPool2d(1)
-        embed_dim = 1024
+        
+        # Output channels for convnextv2_base stages 1, 2, 3
+        dim_s2 = 256
+        dim_s3 = 512
+        dim_s4 = 1024
         
         # normal_abnormal_head (binary -> 1 output)
+        # H1 only looks at the global context (Stage 4)
         self.normal_abnormal_head = nn.Sequential(
-            nn.Linear(embed_dim, 512),
+            nn.Linear(dim_s4, 512),
             nn.GELU(),
             nn.Dropout(p=0.2),
             nn.Linear(512, 1)
         )
         
-        # CBAM Attention Module for H2
-        self.cbam = CBAMBlock(in_planes=embed_dim)
+        # Multi-Scale CBAM Attention Modules for H2
+        self.cbam_s2 = CBAMBlock(in_planes=dim_s2)
+        self.cbam_s3 = CBAMBlock(in_planes=dim_s3)
+        self.cbam_s4 = CBAMBlock(in_planes=dim_s4)
         
-        # granular_pathology_head (multi-label -> 12 outputs)
-        # Input dim is embed_dim + 1 (for H1 probability concatenation)
+        multi_scale_dim = dim_s2 + dim_s3 + dim_s4
+        
+        # granular_pathology_head (multi-label)
+        # Input dim is multi_scale_dim + 1 (for H1 probability concatenation)
         self.granular_pathology_head = nn.Sequential(
-            nn.Linear(embed_dim + 1, 512),
+            nn.Linear(multi_scale_dim + 1, 512),
             nn.GELU(),
             nn.Dropout(p=0.2),
             nn.Linear(512, num_pathology_classes)
         )
 
-    def forward(self, x: torch.Tensor):
-        # forward_features returns the unpooled feature map from Stage 4 [B, 1024, H, W]
-        features = self.backbone.forward_features(x)
+    def forward(self, x: torch.Tensor, return_probs: bool = False):
+        # forward_features with features_only=True returns a list of feature maps
+        features_list = self.backbone(x)
+        f_s2 = features_list[0] # [B, 256, 28, 28]
+        f_s3 = features_list[1] # [B, 512, 14, 14]
+        f_s4 = features_list[2] # [B, 1024, 7, 7]
         
         # --- Stream 1: H1 Gatekeeper ---
-        # Un-gated Global Average Pooling
-        gap_features = self.gap(features).flatten(1)
-        out_normal = self.normal_abnormal_head(gap_features)
+        # Un-gated Global Average Pooling on the final bottleneck
+        gap_s4 = self.gap(f_s4).flatten(1)
+        out_normal = self.normal_abnormal_head(gap_s4)
         
-        # --- Stream 2: H2 Granular Pathology ---
-        # CBAM Attention Filtering
-        att_features = self.cbam(features)
-        gap_att_features = self.gap(att_features).flatten(1)
+        # --- Stream 2: H2 Granular Pathology (Multi-Scale) ---
+        # Apply CBAM at each scale BEFORE global pooling
+        att_s2 = self.cbam_s2(f_s2)
+        att_s3 = self.cbam_s3(f_s3)
+        att_s4 = self.cbam_s4(f_s4)
         
-        # Hierarchical Conditioning: Append H1 Probability
-        # Detach h1_prob to prevent H2 from changing H1's parameters (optional, but safe)
+        gap_att_s2 = self.gap(att_s2).flatten(1)
+        gap_att_s3 = self.gap(att_s3).flatten(1)
+        gap_att_s4 = self.gap(att_s4).flatten(1)
+        
+        multi_scale_features = torch.cat([gap_att_s2, gap_att_s3, gap_att_s4], dim=1)
+        
+        # Hierarchical Feature Conditioning: Append H1 Probability (Soft constraint for the Linear layer)
         h1_prob = torch.sigmoid(out_normal).detach()
-        h2_input = torch.cat([gap_att_features, h1_prob], dim=1)
+        h2_input = torch.cat([multi_scale_features, h1_prob], dim=1)
         
         out_pathology = self.granular_pathology_head(h2_input)
         
+        if return_probs:
+            # Strict Hierarchical Classification Conditioning (Mathematical Constraint)
+            p_h1 = torch.sigmoid(out_normal)
+            p_h2_given_h1 = torch.sigmoid(out_pathology)
+            final_h2_prob = p_h2_given_h1 * p_h1
+            return {
+                'normal_abnormal': p_h1,
+                'pathology': final_h2_prob
+            }
+            
         return {
             'normal_abnormal': out_normal,
             'pathology': out_pathology
@@ -137,7 +152,9 @@ class MultiHeadConvNeXt(nn.Module):
         backbone_params = list(self.backbone.parameters())
         head_params = (
             list(self.normal_abnormal_head.parameters()) +
-            list(self.cbam.parameters()) +
+            list(self.cbam_s2.parameters()) +
+            list(self.cbam_s3.parameters()) +
+            list(self.cbam_s4.parameters()) +
             list(self.granular_pathology_head.parameters())
         )
         return [

@@ -75,11 +75,18 @@ def main():
         
         model = build_multi_head_model(pretrained=True, warmup=True)
         
+        if torch.cuda.device_count() > 1:
+            logger.info(f"Using {torch.cuda.device_count()} GPUs with DataParallel!")
+            model = nn.DataParallel(model)
+        
         trainer = MultiHeadTrainer(
             model=model,
             criterions=criterions,
             loss_weights=loss_weights,
             mode="multi_head",
+            metric_extractors={
+                'h2': lambda logits: torch.argmax(logits, dim=1)
+            }
         )
         
         best_metrics = trainer.train(
