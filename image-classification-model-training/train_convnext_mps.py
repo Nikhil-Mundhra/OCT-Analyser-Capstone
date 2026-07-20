@@ -301,7 +301,10 @@ def main():
         checkpoint_dir=args.checkpoint_dir,
         log_dir="logs",
         device=device,
-        amp_dtype=amp_dtype
+        amp_dtype=amp_dtype,
+        metric_extractors={
+            'h2': lambda logits: (torch.sigmoid(logits) > 0.5).int()
+        }
     )
     logger.info("Trainer initialized.")
 
