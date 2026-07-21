@@ -123,6 +123,13 @@ class_map:
     l3_specialist: null
     l3_class:     null
 
+  - path: "Normal (Healthy)/OCT5K_NORMAL"
+    fine_class:   NORMAL
+    l1:           NORMAL
+    l2:           null
+    l3_specialist: null
+    l3_class:     null
+
   # ── MACULAR DEGENERATION ────────────────────────────────────────────────────
   - path: "Macular Degeneration Spectrum/Choroidal Neovascularization/CNV"
     fine_class:   CNV
@@ -152,6 +159,20 @@ class_map:
     l3_specialist: Macular
     l3_class:     General_AMD
 
+  - path: "Macular Degeneration Spectrum/AMD1"
+    fine_class:   AMD
+    l1:           ABNORMAL
+    l2:           Macular_Degeneration
+    l3_specialist: Macular
+    l3_class:     AMD
+
+  - path: "Macular Degeneration Spectrum/OCT5K_AMD"
+    fine_class:   AMD
+    l1:           ABNORMAL
+    l2:           Macular_Degeneration
+    l3_specialist: Macular
+    l3_class:     AMD
+
   # ── DIABETIC COMPLICATIONS ──────────────────────────────────────────────────
   - path: "Diabetic Complications/Diabetic Macular Edema (DME)/DME"
     fine_class:   DME
@@ -166,6 +187,13 @@ class_map:
     l2:           Diabetic_Complications
     l3_specialist: Diabetic
     l3_class:     DME          # Second source of DME — same class
+
+  - path: "Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME"
+    fine_class:   DME
+    l1:           ABNORMAL
+    l2:           Diabetic_Complications
+    l3_specialist: Diabetic
+    l3_class:     DME          # Third source of DME
 
   - path: "Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR"
     fine_class:   DR
