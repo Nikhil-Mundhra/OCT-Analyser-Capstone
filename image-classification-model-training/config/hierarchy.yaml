@@ -195,7 +195,7 @@ class_map:
     l3_specialist: Diabetic
     l3_class:     DME          # Third source of DME
 
-  - path: "Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR"
+  - path: "Diabetic Complications/General (DR)/OCTID_DR"
     fine_class:   DR
     l1:           ABNORMAL
     l2:           Diabetic_Complications
