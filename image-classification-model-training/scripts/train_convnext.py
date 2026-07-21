@@ -37,8 +37,8 @@ def main():
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--epochs-warmup", type=int, default=5)
     parser.add_argument("--epochs-finetune", type=int, default=45)
-    parser.add_argument("--lr-head", type=float, default=1e-3)
-    parser.add_argument("--lr-backbone", type=float, default=1e-4)
+    parser.add_argument("--lr-head", type=float, default=1e-4)
+    parser.add_argument("--lr-backbone", type=float, default=1e-5)
     parser.add_argument("--num-workers", type=int, default=2, help="Set to 0 to bypass shared memory")
     parser.add_argument("--smoke-test", action="store_true", help="Run 1 epoch per phase to verify pipeline")
     parser.add_argument("--w-h1", type=float, default=1.0, help="Weight for Head 1 loss")
@@ -97,6 +97,7 @@ def main():
             train_loader=train_loader,
             val_loader=val_loader,
             warmup_epochs=args.epochs_warmup,
+            warmup_lr=args.lr_head,
             finetune_epochs=args.epochs_finetune,
             head_lr=args.lr_head,
             backbone_lr=args.lr_backbone,
