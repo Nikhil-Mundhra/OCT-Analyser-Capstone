@@ -39,6 +39,7 @@ def main():
     parser.add_argument("--epochs-finetune", type=int, default=45)
     parser.add_argument("--lr-head", type=float, default=1e-3)
     parser.add_argument("--lr-backbone", type=float, default=1e-4)
+    parser.add_argument("--num-workers", type=int, default=2, help="Set to 0 to bypass shared memory")
     parser.add_argument("--smoke-test", action="store_true", help="Run 1 epoch per phase to verify pipeline")
     parser.add_argument("--w-h1", type=float, default=1.0, help="Weight for Head 1 loss")
     parser.add_argument("--w-h2", type=float, default=2.0, help="Weight for Head 2 loss (prioritized for imbalance mitigation)")
@@ -71,7 +72,7 @@ def main():
         mode="multi_head",
         n_splits=5,
         batch_size=args.batch_size,
-        num_workers=2,
+        num_workers=args.num_workers,
         train_transform=train_transforms,
         val_transform=val_transforms
     )

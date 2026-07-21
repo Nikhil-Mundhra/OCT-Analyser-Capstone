@@ -115,6 +115,9 @@ class MultiHeadTrainer:
             
             total_loss += loss.item()
             
+            if (batch_idx + 1) % 50 == 0 or (batch_idx + 1) == n_batches:
+                logger.info(f"   [Train] Batch {batch_idx + 1}/{n_batches} | Loss: {loss.item():.4f}")
+            
             if smoke_test and batch_idx >= 2:
                 break
 
