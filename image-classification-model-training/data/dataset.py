@@ -47,7 +47,8 @@ class MultiHeadOCTDataset(Dataset):
         self._data_root = Path(data_root) if data_root else Path(default_root)
         self._l1_labels = self._cfg["l1_labels"]
         self._l2_labels = self._cfg["l2_labels"]
-        self._l3_specs  = self._cfg["l3_specialists"]
+        self._l3_specs  = self._cfg.get("l3_specialists", {})
+        self._granular_classes = self._cfg.get("granular_classes", {})
 
         self._manifest: pd.DataFrame = self._build_manifest()
 
@@ -70,7 +71,9 @@ class MultiHeadOCTDataset(Dataset):
             spec_key = entry.get("l3_specialist")
             l3_class = entry.get("l3_class")
 
-            for img_path in sorted(dir_path.iterdir()):
+            for img_path in sorted(dir_path.rglob('*')):
+                if not img_path.is_file():
+                    continue
                 if img_path.suffix.lower() not in _VALID_EXTENSIONS:
                     continue
 
@@ -78,6 +81,7 @@ class MultiHeadOCTDataset(Dataset):
                     "image_path": str(img_path),
                     "l1_idx": self._l1_labels.get(entry["l1"], 0),
                     "l2_idx": self._l2_labels.get(entry.get("l2"), -1) if entry.get("l2") else -1,
+                    "granular_idx": self._granular_classes.get(l3_class, -1) if l3_class else -1,
                     "spec_key": spec_key,
                     "l3_class": l3_class
                 })
@@ -103,6 +107,19 @@ class MultiHeadOCTDataset(Dataset):
             for i in range(5):
                 if i not in counts:
                     counts[i] = 1 # avoid inf
+            counts = counts.sort_index()
+            weights = 1.0 / counts
+            weights = weights / weights.sum() * len(counts)
+            return torch.tensor(weights.values, dtype=torch.float32)
+        elif target == "h2":
+            df_abnormal = self._manifest[self._manifest['granular_idx'] != -1]
+            if df_abnormal.empty:
+                return torch.ones(len(self._granular_classes))
+            counts = df_abnormal['granular_idx'].value_counts().sort_index()
+            num_classes = len(self._granular_classes)
+            for i in range(num_classes):
+                if i not in counts:
+                    counts[i] = 1
             counts = counts.sort_index()
             weights = 1.0 / counts
             weights = weights / weights.sum() * len(counts)
@@ -152,39 +169,12 @@ class MultiHeadOCTDataset(Dataset):
         # Cast to float32 for BCEWithLogitsLoss
         h1 = torch.tensor([row["l1_idx"]], dtype=torch.float32)
 
-        # ── Target H2: Router (Multi-class 0-4, or -1 for Normal) ──
-        h2 = torch.tensor(row["l2_idx"], dtype=torch.long)
-
-        # ── Target H3: Severity (5 Sub-tensors) ──
-        # Initialized as zeros (negative for BCE/Multi-Label if activated)
-        macular = torch.zeros(3, dtype=torch.float32)
-        diabetic = torch.zeros(2, dtype=torch.float32)
-        vascular = torch.zeros(3, dtype=torch.float32)
-        fluid = torch.zeros(1, dtype=torch.float32)
-        structural = torch.zeros(2, dtype=torch.float32)
-
-        spec = row["spec_key"]
-        l3_cls = row["l3_class"]
-
-        if pd.notna(spec) and pd.notna(l3_cls) and spec and l3_cls:
-            class_idx = self._l3_specs[spec]["classes"].get(l3_cls, -1)
-            if class_idx != -1:
-                if spec == "Macular": macular[class_idx] = 1.0
-                elif spec == "Diabetic": diabetic[class_idx] = 1.0
-                elif spec == "Vascular": vascular[class_idx] = 1.0
-                elif spec == "Fluid": fluid[class_idx] = 1.0
-                elif spec == "Structural": structural[class_idx] = 1.0
+        # ── Target H2: Granular Pathology (Multi-class 0-11, or -1 for Normal) ──
+        h2 = torch.tensor(row["granular_idx"], dtype=torch.long)
 
         targets = {
             "normal_abnormal": h1,
-            "pathology": h2,
-            "severity": {
-                "macular": macular,
-                "diabetic": diabetic,
-                "vascular": vascular,
-                "fluid": fluid,
-                "structural": structural
-            }
+            "pathology": h2
         }
 
         return image, targets

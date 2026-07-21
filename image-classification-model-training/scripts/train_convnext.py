@@ -49,7 +49,7 @@ def main():
 
     # Get class weights from full dataset for FocalLoss alpha
     full_ds = MultiHeadOCTDataset(config_path=args.config, transform=None)
-    h2_alpha = full_ds.compute_class_weights("l2")
+    h2_alpha = full_ds.compute_class_weights("h2")
     logger.info(f"H2 FocalLoss Alpha weights: {h2_alpha.tolist()}")
 
     criterions = {
