@@ -14,8 +14,10 @@ from typing import Dict, List, Optional
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 from training.trainer import EarlyStopping, get_device
 from sklearn.metrics import f1_score, roc_auc_score, accuracy_score, recall_score
@@ -93,7 +95,7 @@ class MultiHeadTrainer:
             else torch.autocast(device_type="cpu", enabled=False)
         )
 
-        for batch_idx, (images, labels) in enumerate(loader):
+        for batch_idx, (images, labels) in enumerate(tqdm(loader, desc="Training", leave=False)):
             images = images.to(self.device, non_blocking=True)
             labels = {k: v.to(self.device, non_blocking=True) if not isinstance(v, dict) 
                       else {k2: v2.to(self.device, non_blocking=True) for k2, v2 in v.items()}
@@ -133,7 +135,7 @@ class MultiHeadTrainer:
             else torch.autocast(device_type="cpu", enabled=False)
         )
 
-        for batch_idx, (images, labels) in enumerate(loader):
+        for batch_idx, (images, labels) in enumerate(tqdm(loader, desc="Validation", leave=False)):
             images = images.to(self.device, non_blocking=True)
             labels = {k: v.to(self.device, non_blocking=True) if not isinstance(v, dict) 
                       else {k2: v2.to(self.device, non_blocking=True) for k2, v2 in v.items()}

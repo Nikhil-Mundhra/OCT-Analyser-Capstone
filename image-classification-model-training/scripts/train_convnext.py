@@ -10,6 +10,12 @@ import logging
 import os
 import sys
 
+# Crucial to prevent PyTorch DataLoader multiprocessing deadlocks with OpenCV/ITK
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+os.environ['OMP_NUM_THREADS'] = '1'
+import cv2
+cv2.setNumThreads(0)
+
 import torch
 import torch.nn as nn
 
@@ -65,7 +71,7 @@ def main():
         mode="multi_head",
         n_splits=5,
         batch_size=args.batch_size,
-        num_workers=4,
+        num_workers=2,
         train_transform=train_transforms,
         val_transform=val_transforms
     )
@@ -83,10 +89,7 @@ def main():
             model=model,
             criterions=criterions,
             loss_weights=loss_weights,
-            mode="multi_head",
-            metric_extractors={
-                'h2': lambda logits: torch.argmax(logits, dim=1)
-            }
+            mode="multi_head"
         )
         
         best_metrics = trainer.train(
