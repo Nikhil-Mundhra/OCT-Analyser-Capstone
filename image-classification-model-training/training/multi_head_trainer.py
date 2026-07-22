@@ -42,9 +42,9 @@ class MultiHeadTrainer:
         self.mode = mode
         self.device = device or get_device()
         
-        # Default strategy to Multi-Label if not provided
+        # Default strategy for Multi-Class classification (H2 Pathology)
         self.metric_extractors = metric_extractors or {
-            'h2': lambda logits: (torch.sigmoid(logits) > 0.5).int()
+            'h2': lambda logits: torch.argmax(logits, dim=1)
         }
         self.ckpt_dir = Path(checkpoint_dir) / mode
         self.ckpt_dir.mkdir(parents=True, exist_ok=True)
@@ -155,21 +155,12 @@ class MultiHeadTrainer:
                 batch_targets = labels['pathology'][valid_h2_mask]
                 batch_logits = logits['pathology'][valid_h2_mask]
                 
-                # Ensure 2D shape to prevent scalar mask edge cases in batch_size=1
-                if batch_targets.dim() > 2:
-                    batch_targets = batch_targets.view(-1, batch_targets.size(-1))
-                elif batch_targets.dim() == 1:
-                    batch_targets = batch_targets.unsqueeze(0)
-                    
-                if batch_logits.dim() > 2:
-                    batch_logits = batch_logits.view(-1, batch_logits.size(-1))
-                elif batch_logits.dim() == 1:
-                    batch_logits = batch_logits.unsqueeze(0)
-                
-                h2_targets.extend(batch_targets.cpu().numpy())
+                # Keep targets and logits 1D/2D as they naturally are.
+                # Just flatten them into the list.
+                h2_targets.extend(batch_targets.cpu().numpy().tolist())
                 
                 batch_preds = self.metric_extractors['h2'](batch_logits)
-                h2_preds.extend(batch_preds.cpu().numpy())
+                h2_preds.extend(batch_preds.cpu().numpy().tolist())
                 
             if smoke_test and batch_idx >= 2:
                 break
@@ -178,9 +169,9 @@ class MultiHeadTrainer:
         
         if len(h2_targets) > 0:
             from sklearn.metrics import recall_score
-            # Stack into dense 2D arrays to prevent sklearn mixed shape object array errors
-            h2_targets_np = np.vstack(h2_targets)
-            h2_preds_np = np.vstack(h2_preds)
+            # Convert flat lists back to 1D numpy arrays
+            h2_targets_np = np.array(h2_targets)
+            h2_preds_np = np.array(h2_preds)
             
             h2_macro_f1 = f1_score(h2_targets_np, h2_preds_np, average='macro', zero_division=0)
             h2_recall = recall_score(h2_targets_np, h2_preds_np, average='macro', zero_division=0)
