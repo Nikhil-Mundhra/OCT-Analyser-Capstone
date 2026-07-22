@@ -70,7 +70,7 @@ class MultiHeadTrainer:
         
         # Head 2 (Granular Pathology - Asymmetric Loss)
         # Hierarchical Loss Masking: Only calculate H2 loss for Abnormal samples (h1 label == 1)
-        valid_h2_mask = (labels_dict['normal_abnormal'] == 1).squeeze()
+        valid_h2_mask = (labels_dict['normal_abnormal'] == 1).view(-1)
         
         if valid_h2_mask.sum() > 0:
             target_logits = logits_dict['pathology'][valid_h2_mask]
@@ -115,7 +115,7 @@ class MultiHeadTrainer:
             
             total_loss += loss.item()
             
-            if (batch_idx + 1) % 50 == 0 or (batch_idx + 1) == n_batches:
+            if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == n_batches:
                 logger.info(f"   [Train] Batch {batch_idx + 1}/{n_batches} | Loss: {loss.item():.4f}")
             
             if smoke_test and batch_idx >= 2:
@@ -150,7 +150,7 @@ class MultiHeadTrainer:
             total_loss += loss.item()
             
             # Extract H2 metrics via Injected Strategy (SOLID Dependency Inversion)
-            valid_h2_mask = (labels['normal_abnormal'] == 1).squeeze()
+            valid_h2_mask = (labels['normal_abnormal'] == 1).view(-1)
             if valid_h2_mask.sum() > 0:
                 batch_targets = labels['pathology'][valid_h2_mask]
                 batch_logits = logits['pathology'][valid_h2_mask]

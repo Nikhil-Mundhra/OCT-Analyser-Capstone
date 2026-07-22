@@ -85,10 +85,15 @@ class FocalLoss(nn.Module):
         Returns:
             Scalar loss.
         """
-        num_classes = inputs.size(1)
+        if inputs.ndim > 2:
+            inputs = inputs.view(-1, inputs.size(-1))
+        if targets.ndim > 1:
+            targets = targets.view(-1)
+
+        num_classes = inputs.size(-1)
 
         # ── Compute per-sample cross-entropy (with optional label smoothing) ─
-        if self.label_smoothing > 0.0:
+        if self.label_smoothing > 0.0 and num_classes > 1:
             eps = self.label_smoothing
             with torch.no_grad():
                 # Build soft target distribution
