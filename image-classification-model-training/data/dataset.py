@@ -231,8 +231,23 @@ def build_kfold_dataloaders(
         train_ds = MultiHeadOCTDataset(config_path=config_path, fold_indices=train_idx, transform=train_transform)
         val_ds = MultiHeadOCTDataset(config_path=config_path, fold_indices=val_idx, transform=val_transform)
         
-        train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-        val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+        _pin = torch.cuda.is_available()
+        train_loader = DataLoader(
+            train_ds,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            pin_memory=_pin,
+            persistent_workers=(num_workers > 0)
+        )
+        val_loader = DataLoader(
+            val_ds,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            pin_memory=_pin,
+            persistent_workers=(num_workers > 0)
+        )
         
         fold_loaders.append((train_loader, val_loader))
         
