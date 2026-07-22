@@ -54,8 +54,8 @@ class MultiHeadGradCAM:
             score = target_output[0, 0]
         else:
             if target_class is None:
-                # for multi-label, find highest activation
-                target_class = torch.sigmoid(target_output).argmax(dim=1).item()
+                # for multi-class, find highest activation
+                target_class = torch.softmax(target_output, dim=1).argmax(dim=1).item()
             score = target_output[0, target_class]
         
         # Backward pass

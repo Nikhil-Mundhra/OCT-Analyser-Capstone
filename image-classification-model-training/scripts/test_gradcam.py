@@ -1,4 +1,5 @@
 import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 import sys
 import numpy as np
 import cv2
@@ -9,10 +10,14 @@ import torch.nn.functional as F
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from models.level1_gatekeeper import build_gatekeeper
-from models.level2_router import build_router
+from models.multi_head_convnext import build_multi_head_model
 from data.transforms import get_transforms
-from utils.gradcam import GradCAM
+from utils.gradcam import MultiHeadGradCAM
+PATHOLOGY_CLASSES = [
+    'CNV', 'DRUSEN', 'AMD', 'General_AMD', 
+    'DME', 'DR', 'MH', 'RVO', 'RAO', 
+    'CSR', 'ERM', 'VID'
+]
 
 def main():
     device = torch.device("cpu")
@@ -22,41 +27,44 @@ def main():
     img = Image.open(img_path).convert("RGB")
     
     # 2. Transform
-    transform = get_transforms("level1", "val")
+    transform = get_transforms("val")
     tensor_224 = transform(img).unsqueeze(0).to(device)
     tensor_224.requires_grad = True
     
-    # 3. Build L1
-    l1_model = build_gatekeeper(pretrained=True).to(device)
-    l1_model.eval()
+    # 3. Build Multi-Head Model
+    model = build_multi_head_model(pretrained=True).to(device)
+    model.eval()
     
-    # 4. Build L2
-    l2_model = build_router(pretrained=True).to(device)
-    l2_model.eval()
+    # Initialize Multi-Head Grad-CAM on the last backbone stage
+    # For ConvNeXt, the last feature map is stage 3
+    cam_gen = MultiHeadGradCAM(model, model.backbone)
     
     with torch.enable_grad():
-        # L1 CAM
-        l1_cam_gen = GradCAM(l1_model, l1_model.features[-1])
+        logits = model(tensor_224)
+        print("Model Forward Pass Successful")
+        print(f"H1 Logits: {logits['normal_abnormal']}")
+        print(f"H2 Logits (shape {logits['pathology'].shape}): {logits['pathology'].detach().numpy()}")
         
-        feats = l1_model.features(tensor_224)
-        print(f"Features non-zero count: {torch.count_nonzero(feats)}")
-        print(f"Features max: {feats.max().item()}, min: {feats.min().item()}")
+        # H1 CAM (Triage)
+        pred_h1_prob = torch.sigmoid(logits['normal_abnormal']).item()
+        print(f"\nH1 Prediction: {'Abnormal' if pred_h1_prob > 0.5 else 'Normal'} ({pred_h1_prob:.4f})")
         
-        logits_l1 = l1_model(tensor_224)
-        print(f"Logits: {logits_l1}")
-        pred_l1_idx = torch.argmax(logits_l1).item()
-        cam1 = l1_cam_gen.generate_cam(tensor_224, pred_l1_idx)
-        print(f"L1 CAM - Max: {np.max(cam1)}, Min: {np.min(cam1)}, Sum: {np.sum(cam1)}")
+        cam1 = cam_gen.generate_cam(tensor_224, target_head=1)
+        print(f"H1 CAM - Max: {np.max(cam1):.4f}, Min: {np.min(cam1):.4f}, Sum: {np.sum(cam1):.4f}")
         
-        # L2 CAM
-        l2_cam_gen = GradCAM(l2_model, l2_model.features[-1])
-        logits_l2 = l2_model(tensor_224)
-        pred_l2_idx = torch.argmax(logits_l2).item()
-        cam2 = l2_cam_gen.generate_cam(tensor_224, pred_l2_idx)
-        print(f"L2 CAM - Max: {np.max(cam2)}, Min: {np.min(cam2)}, Sum: {np.sum(cam2)}")
+        # H2 CAM (Pathology Router)
+        pred_h2_idx = torch.argmax(logits['pathology']).item()
+        pred_h2_class = PATHOLOGY_CLASSES[pred_h2_idx]
+        print(f"\nH2 Top Prediction: {pred_h2_class}")
         
-        # Are they identical?
-        print(f"Are CAM1 and CAM2 exactly equal? {np.array_equal(cam1, cam2)}")
+        cam2 = cam_gen.generate_cam(tensor_224, target_head=2, target_class=pred_h2_idx)
+        print(f"H2 CAM - Max: {np.max(cam2):.4f}, Min: {np.min(cam2):.4f}, Sum: {np.sum(cam2):.4f}")
         
+        # Overlay and save examples (optional)
+        # overlay1 = MultiHeadGradCAM.overlay_cam(img, cam1)
+        # overlay2 = MultiHeadGradCAM.overlay_cam(img, cam2)
+        
+        print("\nMulti-Head Grad-CAM test completed successfully!")
+
 if __name__ == "__main__":
     main()
