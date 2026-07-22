@@ -11494,113 +11494,191 @@ image_path,head1_label,head2_label,head3_labels
 /Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/OCTDL_DME/dme_8464326_1.jpg,1,Diabetic_Complications,DME
 /Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/OCTDL_DME/dme_5025764_2.jpg,1,Diabetic_Complications,DME
 /Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/OCTDL_DME/dme_9434533_1.jpg,1,Diabetic_Complications,DME
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR105.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR26.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR71.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR67.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR88.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR30.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR92.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR84.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR47.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR10.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR6.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR51.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR7.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR50.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR11.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR46.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR85.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR93.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR31.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR66.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR89.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR70.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR27.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR104.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR94.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR82.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR41.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR16.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR57.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR103.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR20.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR77.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR98.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR61.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR36.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR37.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR60.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR76.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR99.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR21.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR102.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR56.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR1.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR17.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR40.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR83.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR95.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR2.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR55.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR14.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR43.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR38.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR80.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR96.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR79.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR59.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR18.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR34.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR63.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR75.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR22.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR101.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR100.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR23.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR74.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR62.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR35.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR19.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR58.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR97.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR78.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR81.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR39.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR42.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR15.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR3.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR54.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR8.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR49.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR32.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR65.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR73.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR24.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR107.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR53.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR4.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR12.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR45.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR86.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR69.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR90.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR28.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR29.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR91.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR87.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR68.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR44.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR13.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR52.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR5.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR106.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR25.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR72.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR64.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR33.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR48.jpeg,1,Diabetic_Complications,DR
-/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General/Diabetic-Retinopathy-Retinal-OCT-Images/OCTID_DR/DR9.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_05_slice_028.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_04_slice_026.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_01_slice_015.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_01_slice_028.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_06_slice_010.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_07_slice_036.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_09_slice_050.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_10_slice_020.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_04_slice_031.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_03_slice_020.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_04_slice_024.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_10_slice_035.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_10_slice_025.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_07_slice_031.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_03_slice_030.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_03_slice_025.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_10_slice_030.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_04_slice_021.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_05_slice_013.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_10_slice_032.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_06_slice_028.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_01_slice_010.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_02_slice_028.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_03_slice_032.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_07_slice_033.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_05_slice_038.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_10_slice_040.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_09_slice_032.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_08_slice_028.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_04_slice_046.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_09_slice_025.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_09_slice_030.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_09_slice_020.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_08_slice_013.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_09_slice_035.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_10_slice_045.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_10_slice_050.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_04_slice_041.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_05_slice_043.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_06_slice_050.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_01_slice_040.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_02_slice_045.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_02_slice_050.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_08_slice_023.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_06_slice_045.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_08_slice_033.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_02_slice_040.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_06_slice_040.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_08_slice_026.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_09_slice_028.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_08_slice_030.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_08_slice_018.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_06_slice_030.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_01_slice_020.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_02_slice_025.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_02_slice_030.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_01_slice_035.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_08_slice_043.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_06_slice_025.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_05_slice_008.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_07_slice_029.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_03_slice_028.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_02_slice_032.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_06_slice_032.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_04_slice_011.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_10_slice_028.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_05_slice_023.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_05_slice_033.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_01_slice_032.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_04_slice_028.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_05_slice_026.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_05_slice_018.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_05_slice_030.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_04_slice_016.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_06_slice_035.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_01_slice_025.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_01_slice_030.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME/Subject_06_slice_020.png,1,Diabetic_Complications,DME
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR105.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR26.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR71.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR67.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR88.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR30.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR92.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR84.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR47.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR10.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR6.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR51.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR7.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR50.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR11.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR46.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR85.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR93.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR31.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR66.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR89.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR70.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR27.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR104.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR94.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR82.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR41.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR16.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR57.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR103.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR20.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR77.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR98.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR61.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR36.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR37.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR60.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR76.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR99.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR21.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR102.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR56.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR1.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR17.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR40.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR83.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR95.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR2.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR55.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR14.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR43.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR38.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR80.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR96.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR79.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR59.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR18.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR34.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR63.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR75.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR22.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR101.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR100.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR23.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR74.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR62.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR35.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR19.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR58.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR97.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR78.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR81.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR39.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR42.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR15.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR3.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR54.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR8.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR49.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR32.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR65.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR73.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR24.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR107.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR53.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR4.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR12.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR45.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR86.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR69.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR90.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR28.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR29.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR91.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR87.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR68.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR44.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR13.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR52.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR5.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR106.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR25.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR72.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR64.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR33.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR48.jpeg,1,Diabetic_Complications,DR
+/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/General (DR)/OCTID_DR/DR9.jpeg,1,Diabetic_Complications,DR
 /Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Normal (Healthy)/NO/no_1409061_5.jpg,0,,
 /Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Normal (Healthy)/NO/no_2830193_3.jpg,0,,
 /Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Normal (Healthy)/NO/no_9773651_1.jpg,0,,

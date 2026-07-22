@@ -57,7 +57,7 @@ def generate_manifest(root_dir, output_csv):
                 if l2_folder == "Macular-Hole-Retinal-OCT-images":
                     head2_label = "Structural_Issues"
                     head3_labels = "MH"
-                elif l1_folder == "Diabetic Complications" and l2_folder == "General":
+                elif l1_folder == "Diabetic Complications" and l2_folder == "General (DR)":
                     head3_labels = "DR"
                 elif l1_folder == "Macular Degeneration Spectrum" and l2_folder == "General":
                     head3_labels = "Generic_AMD"

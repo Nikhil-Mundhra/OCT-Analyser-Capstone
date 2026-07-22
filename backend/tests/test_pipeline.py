@@ -510,6 +510,8 @@ def test_segmentation_structure_validates_placeholder_and_injected_segmenter(mon
 
     monkeypatch.delenv(SEGMENTATION_ATLAS_ENV, raising=False)
     monkeypatch.setattr("backend.oct_analyzer.segmentation.HierarchicalUNet", None)
+    monkeypatch.setattr("backend.oct_analyzer.segmentation.UNetSegmenter._instance", None)
+    monkeypatch.setattr("backend.oct_analyzer.segmentation.UnifiedOCTAnalyzer._instance", None)
     
     volume = np.ones((4, 3, 2), dtype=np.float32)
     placeholder, _ = segment_retinal_layers(volume, (1.0, 1.0, 1.0))
@@ -580,6 +582,8 @@ def test_process_scan_returns_completed_payload_and_previews(tmp_path, monkeypat
     monkeypatch.setattr(pipeline, "get_preprocessing_pipeline", lambda: lambda volume: torch.from_numpy(volume).unsqueeze(0).float())
     monkeypatch.setattr(pipeline, "flatten_volume_to_rpe", lambda tensor: tensor)
     monkeypatch.setattr("backend.oct_analyzer.segmentation.HierarchicalUNet", None)
+    monkeypatch.setattr("backend.oct_analyzer.segmentation.UNetSegmenter._instance", None)
+    monkeypatch.setattr("backend.oct_analyzer.segmentation.UnifiedOCTAnalyzer._instance", None)
 
     volume = np.zeros((6, 5, 5), dtype=np.float32)
     volume[1:5, 1:4, 1:4] = 5
