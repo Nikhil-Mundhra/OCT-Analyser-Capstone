@@ -116,7 +116,7 @@ def get_overlay(img_tensor, cam):
     overlay = 0.4 * heatmap + 0.6 * img
     return np.clip(overlay, 0, 1), img
 
-def generate_patient_case_study(img_tensor, gt_h2_arr, class_name, model, grad_cam, pdf):
+def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_cam, pdf):
     img = img_tensor.unsqueeze(0)
     
     cam_h1 = grad_cam(img, class_idx=0, head='normal_abnormal')
@@ -141,9 +141,11 @@ def generate_patient_case_study(img_tensor, gt_h2_arr, class_name, model, grad_c
     with torch.no_grad():
         l = model(img)
         p_h1 = torch.sigmoid(l['normal_abnormal'])[0, 0].item()
-        p_h2_probs = torch.sigmoid(l['pathology'])[0].cpu().numpy()
-        pred_class_idx = p_h2_probs.argmax()
-        pred_class_name = PATHOLOGY_CLASSES[pred_class_idx]
+        p_h2_probs = torch.softmax(l['pathology'], dim=1)[0].cpu().numpy()
+        
+        pred_h1 = "Abnormal" if p_h1 > 0.5 else "Normal"
+        pred_h2_idx = np.argmax(p_h2_probs)
+        pred_class_name = PATHOLOGY_CLASSES[pred_h2_idx]
     
     h2_str = "\n".join([f"  - {c}: {p*100:.1f}%" for c, p in zip(PATHOLOGY_CLASSES, p_h2_probs) if p > 0.1])
     
@@ -175,7 +177,7 @@ def generate_patient_case_study(img_tensor, gt_h2_arr, class_name, model, grad_c
 
 def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
     h1_preds, h1_targets, h1_probs_arr = [], [], []
-    h2_preds, h2_targets, h2_probs_arr = [], [], []
+    all_h2_preds, all_h2_targets, all_h2_probs = [], [], []
     
     gradcam_counts = {k: 0 for k in PATHOLOGY_CLASSES}
     max_cases_per_disease = 2
@@ -196,33 +198,32 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
             h1_targets.extend(labels['normal_abnormal'].numpy())
             h1_probs_arr.extend(h1_prob_batch)
             
-            # Mask out normal images from H2 metrics
+            # Calculate H2 metrics only for abnormal samples
             valid_h2_mask = (labels['normal_abnormal'] == 1).squeeze()
             if valid_h2_mask.sum() > 0:
-                probs_h2 = torch.sigmoid(logits['pathology'][valid_h2_mask]).cpu().numpy()
-                preds_h2 = (probs_h2 > 0.5).astype(int)
-                targets_h2 = labels['pathology'][valid_h2_mask].numpy()
+                probs_h2 = torch.softmax(logits['pathology'][valid_h2_mask], dim=1).cpu().numpy()
+                preds_h2 = np.argmax(probs_h2, axis=1)
                 
-                h2_probs_arr.extend(probs_h2)
-                h2_preds.extend(preds_h2)
-                h2_targets.extend(targets_h2)
+                targets_h2 = labels['pathology'][valid_h2_mask].numpy()
+                all_h2_targets.extend(targets_h2)
+                all_h2_probs.extend(probs_h2)
+                all_h2_preds.extend(preds_h2)
                     
         for b_idx in range(images.size(0)):
             is_abnormal = labels['normal_abnormal'][b_idx].item() == 1
             if is_abnormal:
-                gt_h2_arr = labels['pathology'][b_idx].numpy()
-                if np.sum(gt_h2_arr) > 0:
-                    class_idx = np.argmax(gt_h2_arr)
+                class_idx = int(labels['pathology'][b_idx].item())
+                if class_idx != -1:
                     class_name = PATHOLOGY_CLASSES[class_idx]
                     
                     if gradcam_counts.get(class_name, 0) < max_cases_per_disease:
-                        generate_patient_case_study(images[b_idx], gt_h2_arr, class_name, model, grad_cam, pdf)
+                        generate_patient_case_study(images[b_idx], class_idx, class_name, model, grad_cam, pdf)
                         gradcam_counts[class_name] = gradcam_counts.get(class_name, 0) + 1
                     
         if i % 100 == 0:
             print(f"Batch {i}/{len(val_loader)}")
             
-    return h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr
+    return h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs
 
 def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr, pdf):
     print("\n" + "="*50)
@@ -232,10 +233,10 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     print(classification_report(h1_targets, h1_preds, target_names=["Normal", "Abnormal"]))
     
     print("\n" + "="*50)
-    print("H2 (Granular Pathology Multi-Label) Metrics")
+    print("H2 (Granular Pathology Multi-Class) Metrics")
     print("="*50)
-    # Multi-label F1 and accuracy
-    print(f"Exact Match Ratio (Subset Accuracy): {accuracy_score(h2_targets, h2_preds):.4f}")
+    # Multi-class F1 and accuracy
+    print(f"Accuracy: {accuracy_score(h2_targets, h2_preds):.4f}")
     print(f"Macro F1: {f1_score(h2_targets, h2_preds, average='macro', zero_division=0):.4f}")
     print(classification_report(h2_targets, h2_preds, target_names=PATHOLOGY_CLASSES, zero_division=0))
 

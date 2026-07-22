@@ -124,7 +124,7 @@ class MultiHeadConvNeXt(nn.Module):
         if return_probs:
             # Strict Hierarchical Classification Conditioning (Mathematical Constraint)
             p_h1 = torch.sigmoid(out_normal)
-            p_h2_given_h1 = torch.sigmoid(out_pathology)
+            p_h2_given_h1 = torch.softmax(out_pathology, dim=1)
             final_h2_prob = p_h2_given_h1 * p_h1
             return {
                 'normal_abnormal': p_h1,
