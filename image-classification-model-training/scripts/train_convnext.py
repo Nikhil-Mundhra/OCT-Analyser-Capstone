@@ -41,9 +41,8 @@ def main():
     parser.add_argument("--lr-backbone", type=float, default=1e-5)
     parser.add_argument("--num-workers", type=int, default=2, help="Set to 0 to bypass shared memory")
     parser.add_argument("--smoke-test", action="store_true", help="Run 1 epoch per phase to verify pipeline")
-    parser.add_argument("--w-h1", type=float, default=1.0, help="Weight for Head 1 loss")
-    parser.add_argument("--w-h2", type=float, default=2.0, help="Weight for Head 2 loss (prioritized for imbalance mitigation)")
-    parser.add_argument("--w-h3", type=float, default=0.5, help="Weight for Head 3 loss")
+    parser.add_argument("--w-h1", type=float, default=1.0, help="Weight for Head 1 (Binary) loss")
+    parser.add_argument("--w-h2", type=float, default=1.0, help="Weight for Head 2 (12-Class) loss")
     
     args = parser.parse_args()
 
@@ -54,14 +53,12 @@ def main():
 
     criterions = {
         'h1': nn.BCEWithLogitsLoss(),
-        'h2': FocalLoss(gamma=2.0, alpha=h2_alpha, reduction="mean", label_smoothing=0.1),
-        'h3': nn.BCEWithLogitsLoss()
+        'h2': FocalLoss(gamma=2.0, alpha=h2_alpha, reduction="mean", label_smoothing=0.1)
     }
     
     loss_weights = {
         'h1': args.w_h1,
-        'h2': args.w_h2,
-        'h3': args.w_h3
+        'h2': args.w_h2
     }
 
     train_transforms = get_transforms("train")

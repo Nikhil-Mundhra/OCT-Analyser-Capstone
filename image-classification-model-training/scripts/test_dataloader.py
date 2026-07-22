@@ -47,14 +47,9 @@ def main():
         # Check targets
         h1 = targets["normal_abnormal"]
         h2 = targets["pathology"]
-        h3 = targets["severity"]
         
         print(f"H1 (Binary) shape: {h1.shape} | values: {h1.squeeze().tolist()}")
-        print(f"H2 (Router) shape: {h2.shape} | values: {h2.tolist()}")
-        
-        print("H3 (Severity) sub-tensors:")
-        for k, v in h3.items():
-            print(f"  - {k}: shape {v.shape}")
+        print(f"H2 (12-Class) shape: {h2.shape} | values: {h2.tolist()}")
             
         if i == 0:
             print("\nTest passed for first batch. Dataset works correctly!")
