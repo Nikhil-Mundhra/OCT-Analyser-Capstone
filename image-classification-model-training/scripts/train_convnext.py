@@ -43,6 +43,7 @@ def main():
     parser.add_argument("--smoke-test", action="store_true", help="Run 1 epoch per phase to verify pipeline")
     parser.add_argument("--w-h1", type=float, default=1.0, help="Weight for Head 1 (Binary) loss")
     parser.add_argument("--w-h2", type=float, default=1.0, help="Weight for Head 2 (12-Class) loss")
+    parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint file to resume training from")
     
     args = parser.parse_args()
 
@@ -99,7 +100,8 @@ def main():
             head_lr=args.lr_head,
             backbone_lr=args.lr_backbone,
             fold_id=fold_id,
-            smoke_test=args.smoke_test
+            smoke_test=args.smoke_test,
+            resume_path=args.resume
         )
         
         logger.info(f"Fold {fold_id} Best Metrics: {best_metrics}")
