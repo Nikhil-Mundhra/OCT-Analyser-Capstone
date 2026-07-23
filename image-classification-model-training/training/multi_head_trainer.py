@@ -83,7 +83,7 @@ class MultiHeadTrainer:
                       
         return total_loss, loss_h1, loss_h2, torch.tensor(0.0, device=self.device)
 
-    def _train_epoch(self, loader, optimizer, max_norm: float = 5.0, smoke_test: bool = False):
+    def _train_epoch(self, loader, optimizer, max_norm: float = 5.0, smoke_test: bool = False, accum_steps: int = 1):
         self.model.train()
         total_loss = 0.0
         n_batches = len(loader)
@@ -94,26 +94,40 @@ class MultiHeadTrainer:
             else torch.autocast(device_type="cpu", enabled=False)
         )
 
+        optimizer.zero_grad(set_to_none=True)
+
         for batch_idx, (images, labels) in enumerate(loader):
             images = images.to(self.device, non_blocking=True)
             labels = {k: v.to(self.device, non_blocking=True) if not isinstance(v, dict) 
                       else {k2: v2.to(self.device, non_blocking=True) for k2, v2 in v.items()}
                       for k, v in labels.items()}
 
-            optimizer.zero_grad(set_to_none=True)
-
             with _amp_ctx:
                 logits = self.model(images)
                 loss, _, _, _ = self._compute_loss(logits, labels)
+                # Scale loss for gradient accumulation
+                accum_loss = loss / accum_steps
 
-            # Use scaler for backward pass to safely handle FP16 gradients
-            self.scaler.scale(loss).backward()
-            self.scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=max_norm)
-            self.scaler.step(optimizer)
-            self.scaler.update()
-            
+            # Backward pass
+            self.scaler.scale(accum_loss).backward()
+
+            # Perform optimizer step every accum_steps or on the last batch
+            if (batch_idx + 1) % accum_steps == 0 or (batch_idx + 1) == n_batches:
+                self.scaler.unscale_(optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=max_norm)
+                self.scaler.step(optimizer)
+                self.scaler.update()
+                optimizer.zero_grad(set_to_none=True)
+
             total_loss += loss.item()
+
+            # In-Loop Intermediate Tensor Flushing & Memory Garbage Collection
+            if (batch_idx + 1) % 10 == 0:
+                del logits, accum_loss
+                if self.device.type == 'mps':
+                    torch.mps.empty_cache()
+                elif self.device.type == 'cuda':
+                    torch.cuda.empty_cache()
             
             if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == n_batches:
                 logger.info(f"   [Train] Batch {batch_idx + 1}/{n_batches} | Loss: {loss.item():.4f}")
@@ -198,7 +212,8 @@ class MultiHeadTrainer:
         fold_id: int = 0,
         smoke_test: bool = False,
         resume_path: str = None,
-        hf_repo: str = None
+        hf_repo: str = None,
+        accum_steps: int = 1
     ) -> Dict:
         global_step = fold_id * 100_000
         best_val_loss = float("inf")
@@ -244,7 +259,7 @@ class MultiHeadTrainer:
                 optimizer_warmup.load_state_dict(ckpt['optimizer_state_dict'])
 
             for epoch in range(start_epoch_warmup, warmup_epochs):
-                train_loss = self._train_epoch(train_loader, optimizer_warmup, smoke_test=smoke_test)
+                train_loss = self._train_epoch(train_loader, optimizer_warmup, smoke_test=smoke_test, accum_steps=accum_steps)
                 val_loss, h2_f1, h2_recall, h2_acc = self._val_epoch(val_loader, smoke_test=smoke_test)
                 global_step += 1
                 
@@ -284,7 +299,7 @@ class MultiHeadTrainer:
             early_stopper.best_value = best_val_loss
 
             for epoch in range(start_epoch_ft, finetune_epochs):
-                train_loss = self._train_epoch(train_loader, optimizer_ft, smoke_test=smoke_test)
+                train_loss = self._train_epoch(train_loader, optimizer_ft, smoke_test=smoke_test, accum_steps=accum_steps)
                 val_loss, h2_f1, h2_recall, h2_acc = self._val_epoch(val_loader, smoke_test=smoke_test)
                 scheduler.step()
                 

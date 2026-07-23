@@ -42,8 +42,10 @@ def main():
     parser.add_argument("--num-workers", type=int, default=2, help="Set to 0 to bypass shared memory")
     parser.add_argument("--smoke-test", action="store_true", help="Run 1 epoch per phase to verify pipeline")
     parser.add_argument("--w-h1", type=float, default=1.0, help="Weight for Head 1 (Binary) loss")
+    parser.add_argument("--w-h2", type=float, default=1.0, help="Weight for Head 2 (12-Class) loss")
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint file to resume training from")
     parser.add_argument("--hf-repo", type=str, default=None, help="Hugging Face Hub repository ID (e.g. username/repo) for real-time cloud backup")
+    parser.add_argument("--accum-steps", type=int, default=1, help="Number of gradient accumulation steps (effective batch size = batch_size * accum_steps)")
     
     args = parser.parse_args()
 
@@ -102,7 +104,8 @@ def main():
             fold_id=fold_id,
             smoke_test=args.smoke_test,
             resume_path=args.resume,
-            hf_repo=args.hf_repo
+            hf_repo=args.hf_repo,
+            accum_steps=args.accum_steps
         )
         
         logger.info(f"Fold {fold_id} Best Metrics: {best_metrics}")
