@@ -343,20 +343,39 @@ class MultiHeadTrainer:
         if best_val_macro_f1 is not None: state["best_val_macro_f1"] = best_val_macro_f1
         torch.save(state, path)
 
-        # Real-time Cloud Backup to Hugging Face Hub (prevents data loss on Kaggle timeout)
+        # Real-time Cloud Backup to Hugging Face Hub (prevents data loss on Kaggle/Colab timeout)
         hf_token = os.environ.get("HF_TOKEN")
         target_repo = hf_repo or os.environ.get("HF_REPO_ID")
         if target_repo and hf_token and "best" in filename:
+            clean_repo = target_repo.replace("https://huggingface.co/", "").strip("/")
+            r_type = "model"
+            if clean_repo.startswith("spaces/"):
+                clean_repo = clean_repo.replace("spaces/", "")
+                r_type = "space"
+            elif "space" in os.environ.get("HF_REPO_TYPE", "").lower():
+                r_type = "space"
+
             try:
                 from huggingface_hub import HfApi
                 api = HfApi()
-                api.upload_file(
-                    path_or_fileobj=str(path),
-                    path_in_repo=filename,
-                    repo_id=target_repo,
-                    token=hf_token,
-                    repo_type="model"
-                )
-                logger.info(f"   ☁ Checkpoint '{filename}' successfully backed up to HuggingFace Hub ({target_repo})")
+                try:
+                    api.upload_file(
+                        path_or_fileobj=str(path),
+                        path_in_repo=filename,
+                        repo_id=clean_repo,
+                        token=hf_token,
+                        repo_type=r_type
+                    )
+                except Exception:
+                    # Fallback to alternate repo_type (space vs model)
+                    alt_type = "space" if r_type == "model" else "model"
+                    api.upload_file(
+                        path_or_fileobj=str(path),
+                        path_in_repo=filename,
+                        repo_id=clean_repo,
+                        token=hf_token,
+                        repo_type=alt_type
+                    )
+                logger.info(f"   ☁ Checkpoint '{filename}' successfully backed up to HuggingFace ({clean_repo})")
             except Exception as e:
-                logger.warning(f"   ⚠ Could not upload checkpoint to HuggingFace Hub: {e}")
+                logger.warning(f"   ⚠ Could not upload checkpoint to HuggingFace: {e}")
