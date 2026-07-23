@@ -18,7 +18,7 @@ class OCT5KDetectionDataset(Dataset):
         self.transform = transform
 
         self.image_paths = sorted(list(self.images_dir.glob("*.jpg")) + list(self.images_dir.glob("*.png")))
-        print(f"[OCT5KDetectionDataset] Found {len(self.image_paths)} images in {self.images_dir}")
+        print(f"[OCT5KDetectionDataset] Found {len(self.image_paths)} images in {self.images_dir}", flush=True)
 
     def __len__(self) -> int:
         return len(self.image_paths)
@@ -27,11 +27,12 @@ class OCT5KDetectionDataset(Dataset):
         img_path = self.image_paths[idx]
         txt_path = self.labels_dir / f"{img_path.stem}.txt"
 
-        image = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
-        if image is None:
+        image_bgr = cv2.imread(str(img_path))
+        if image_bgr is None:
             raise FileNotFoundError(f"Image not found: {img_path}")
 
-        h, w = image.shape
+        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        h, w, _ = image_rgb.shape
         boxes = []
         labels = []
 
@@ -44,10 +45,10 @@ class OCT5KDetectionDataset(Dataset):
                         xc, yc, bw, bh = map(float, parts[1:])
 
                         # Convert normalized YOLO (xc, yc, bw, bh) to absolute (xmin, ymin, xmax, ymax)
-                        xmin = max(0, (xc - bw / 2.0) * w)
-                        ymin = max(0, (yc - bh / 2.0) * h)
-                        xmax = min(w, (xc + bw / 2.0) * w)
-                        ymax = min(h, (yc + bh / 2.0) * h)
+                        xmin = max(0.0, (xc - bw / 2.0) * w)
+                        ymin = max(0.0, (yc - bh / 2.0) * h)
+                        xmax = min(float(w), (xc + bw / 2.0) * w)
+                        ymax = min(float(h), (yc + bh / 2.0) * h)
 
                         if xmax > xmin and ymax > ymin:
                             boxes.append([xmin, ymin, xmax, ymax])
@@ -65,6 +66,6 @@ class OCT5KDetectionDataset(Dataset):
             "labels": labels
         }
 
-        image_tensor = torch.from_numpy(image).float().unsqueeze(0) / 255.0
+        image_tensor = torch.from_numpy(image_rgb.transpose(2, 0, 1)).float() / 255.0
 
         return image_tensor, target

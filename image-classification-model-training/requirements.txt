@@ -1,10 +1,10 @@
 # Core ML stack (already installed in environment)
-torch==2.11.0
-torchvision==0.26.0
-torchaudio==2.11.0
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
 
 # Data handling
-numpy<2.0.0
+numpy>=1.24.0
 pillow>=10.0
 pandas>=2.0
 

@@ -84,6 +84,32 @@ export async function createScan(file, onProgress = null) {
   return normalized;
 }
 
+/**
+ * Runs single or multiple segmentation & detection models from the 5-Model Suite.
+ *
+ * @param {File} file
+ * @param {string} modelId - "all" | "model1" | "model2" | "model3" | "model4" | "model5"
+ * @param {number} scoreThreshold - Confidence threshold for Model 5 detector (default 0.5)
+ * @returns {Promise<object>}
+ */
+export async function runModelSuite(file, modelId = "all", scoreThreshold = 0.5) {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("model_id", modelId);
+  form.append("score_threshold", scoreThreshold.toString());
+
+  const response = await fetch(apiUrl("/api/segment_suite"), {
+    method: "POST",
+    body: form,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to execute Segmentation 5-Model Suite (HTTP ${response.status})`);
+  }
+
+  return await response.json();
+}
+
 export function normalizeScanResult(scan, segmentation = null) {
   if (!scan || typeof scan !== "object") {
     return scan;
@@ -129,3 +155,4 @@ function apiUrl(path) {
   }
   return `${OCT_ANALYZER_API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
 }
+

@@ -1,14 +1,23 @@
 import os
 import sys
+
+sys.stdout.reconfigure(line_buffering=True)
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+from pathlib import Path
+
+WORKSPACE_ROOT = Path("/Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone")
+TRAINING_ROOT = WORKSPACE_ROOT / "image-segmentation-model-training"
+if str(WORKSPACE_ROOT) not in sys.path:
+    sys.path.insert(0, str(WORKSPACE_ROOT))
+if str(TRAINING_ROOT) not in sys.path:
+    sys.path.insert(0, str(TRAINING_ROOT))
+
+from train_cleanup import enforce_single_instance_and_clean_memory, clean_gpu_memory
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, random_split
-from pathlib import Path
-from tqdm import tqdm
-
-WORKSPACE_ROOT = Path("/Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone")
-if str(WORKSPACE_ROOT) not in sys.path:
-    sys.path.insert(0, str(WORKSPACE_ROOT))
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
@@ -18,8 +27,11 @@ from dataset import OCT5KLayersDataset
 import config
 
 def train():
+    # HARDWIRED CLEANUP & SINGLE INSTANCE GUARD
+    enforce_single_instance_and_clean_memory("train_model1_oct5k_layers")
+
     device = torch.device("mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu"))
-    print(f"Training Model 1 (OCT5K 6-Retinal Layer U-Net) on device: {device}", flush=True)
+    print(f"Training Model 1 (OCT5K 6-Retinal Layer U-Net 512x512) on device: {device}", flush=True)
 
     full_dataset = OCT5KLayersDataset(root_dir=config.DATASET_ROOT)
     train_size = int(0.85 * len(full_dataset))
@@ -39,20 +51,36 @@ def train():
     os.makedirs(suite_ckpt_dir, exist_ok=True)
 
     best_loss = float('inf')
+    accumulation_steps = getattr(config, "ACCUMULATION_STEPS", 4)
 
     for epoch in range(1, config.EPOCHS + 1):
         model.train()
         train_loss = 0.0
-        for images, masks in train_loader:
+        total_batches = len(train_loader)
+        optimizer.zero_grad()
+        
+        for i, (images, masks) in enumerate(train_loader):
             images, masks = images.to(device), masks.to(device)
 
-            optimizer.zero_grad()
             outputs = model(images)
-            loss = criterion(outputs, masks)
+            loss = criterion(outputs, masks) / accumulation_steps
             loss.backward()
-            optimizer.step()
 
-            train_loss += loss.item() * images.size(0)
+            if (i + 1) % accumulation_steps == 0 or (i + 1) == total_batches:
+                optimizer.step()
+                optimizer.zero_grad()
+
+            batch_loss = loss.item() * accumulation_steps
+            train_loss += batch_loss * images.size(0)
+
+            # Garbage collect GPU tensors every 10 steps
+            if (i + 1) % 10 == 0:
+                clean_gpu_memory()
+
+            if (i + 1) % 50 == 0 or (i + 1) == total_batches:
+                print(f"Epoch {epoch:02d}/{config.EPOCHS:02d} | Batch {i+1}/{total_batches} | Loss: {batch_loss:.4f}", flush=True)
+
+            del outputs, loss, images, masks
 
         train_loss /= len(train_set)
         scheduler.step()
@@ -66,9 +94,10 @@ def train():
                 outputs = model(images)
                 loss = criterion(outputs, masks)
                 val_loss += loss.item() * images.size(0)
+                del outputs, loss, images, masks
 
         val_loss /= len(val_set)
-        print(f"Epoch {epoch:02d}/{config.EPOCHS:02d} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}", flush=True)
+        print(f">>> Epoch {epoch:02d}/{config.EPOCHS:02d} COMPLETE | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}", flush=True)
 
         if val_loss < best_loss:
             best_loss = val_loss
@@ -84,6 +113,9 @@ def train():
             torch.save(ckpt_data, local_ckpt)
             torch.save(ckpt_data, suite_ckpt)
             print(f" -> Saved new best checkpoint to {suite_ckpt}", flush=True)
+
+        # HARDWIRED END-OF-EPOCH MEMORY FLUSH
+        clean_gpu_memory()
 
 if __name__ == "__main__":
     train()

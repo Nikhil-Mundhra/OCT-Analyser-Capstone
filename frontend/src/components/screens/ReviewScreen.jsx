@@ -15,6 +15,7 @@ import { Metric } from "../ui/Metric";
 import { WireBox } from "../ui/WireBox";
 import { riskFromScan } from "../utils/riskUtils";
 import { getClassColor } from "../utils/colorUtils";
+import SegmentationSuitePanel from "./SegmentationSuitePanel";
 
 export function ReviewScreen() {
   const { scan, resetUpload } = useAppContext();
@@ -205,6 +206,11 @@ export function ReviewScreen() {
               )}
             </>
           )}
+        </div>
+
+        {/* 5-Model Suite & Diagnostic Engine Panel */}
+        <div className="lg:col-span-12 mt-5">
+          <SegmentationSuitePanel file={scan?.file} classification={scan} />
         </div>
 
         {completed && scan?.ai_supported !== false && gradcams && Object.keys(gradcams).length > 0 && (

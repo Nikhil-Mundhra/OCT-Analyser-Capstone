@@ -35,7 +35,7 @@ export function UploadScreen() {
       });
       const combinedScanType = `${modality} - ${target} - ${pattern}`;
       const aiSupported = modality === "Structural OCT" && target === "Macula";
-      const enrichedPayload = { ...payload, patient_id: finalPatientId, scan_type: combinedScanType, modality, target, pattern, ai_supported: aiSupported };
+      const enrichedPayload = { ...payload, file, patient_id: finalPatientId, scan_type: combinedScanType, modality, target, pattern, ai_supported: aiSupported };
       setScan(enrichedPayload);
       addScanToHistory(enrichedPayload);
       setUploadState({ status: "Completed", progress: 100, detail: "", fileName: file.name, error: "" });

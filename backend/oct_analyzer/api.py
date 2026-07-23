@@ -2,10 +2,14 @@ from pathlib import Path
 from shutil import copyfileobj
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, UploadFile, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, Depends, Form, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+
+import base64
+import io
+from PIL import Image
 
 from .data_loader import load_normalized_scan
 from .interfaces import ScanResult
@@ -137,6 +141,86 @@ def segment_2d(file: UploadFile) -> dict:
             img_path.unlink()
         if out_json.exists():
             out_json.unlink()
+
+def _pil_to_base64(img: Image.Image) -> str:
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    return f"data:image/png;base64,{base64.b64encode(buffered.getvalue()).decode('utf-8')}"
+
+@app.post("/api/segment_suite")
+async def run_segmentation_suite(
+    file: UploadFile = File(...),
+    model_id: str = Form("all"),
+    score_threshold: float = Form(0.5)
+) -> dict:
+    """
+    Executes models from the 5-Model Segmentation & Detection Suite (models_suite/).
+    Supports single model selection ("model1".."model5") or full suite ("all").
+    """
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in SUPPORTED_SUFFIXES:
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+
+    content = await file.read()
+    try:
+        image = Image.open(io.BytesIO(content)).convert("RGB")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid image file: {e}")
+
+    try:
+        from hf_space.app import (
+            predict_model1,
+            predict_model2,
+            predict_model3,
+            predict_model4,
+            predict_model5
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to load Segmentation 5-Model Suite: {exc}")
+
+    results = {}
+
+    if model_id in ["model1", "all"]:
+        overlay, metrics = predict_model1(image)
+        results["model1"] = {
+            "name": "Retinal Layers U-Net",
+            "overlay": _pil_to_base64(overlay) if overlay else None,
+            "details": metrics
+        }
+
+    if model_id in ["model2", "all"]:
+        overlay, metrics = predict_model2(image)
+        results["model2"] = {
+            "name": "Choroidalyzer U-Net",
+            "overlay": _pil_to_base64(overlay) if overlay else None,
+            "details": metrics
+        }
+
+    if model_id in ["model3", "all"]:
+        overlay, metrics = predict_model3(image)
+        results["model3"] = {
+            "name": "HRF Attention U-Net",
+            "overlay": _pil_to_base64(overlay) if overlay else None,
+            "details": metrics
+        }
+
+    if model_id in ["model4", "all"]:
+        overlay, metrics = predict_model4(image)
+        results["model4"] = {
+            "name": "OIMHS Hole & Cyst U-Net",
+            "overlay": _pil_to_base64(overlay) if overlay else None,
+            "details": metrics
+        }
+
+    if model_id in ["model5", "all"]:
+        overlay, metrics = predict_model5(image, score_threshold=score_threshold)
+        results["model5"] = {
+            "name": "OCT Pathology Detector",
+            "overlay": _pil_to_base64(overlay) if overlay else None,
+            "details": metrics
+        }
+
+    return {"status": "success", "results": results}
 
 @app.post("/predict")
 async def predict_image(file: UploadFile) -> dict:

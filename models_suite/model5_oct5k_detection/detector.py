@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from torchvision.models.detection import torchvision, FasterRCNN
+import torchvision
+from torchvision.models.detection import FasterRCNN
 from torchvision.models.detection.rpn import AnchorGenerator
 
 OCT5K_DETECTION_CLASSES = [
@@ -19,12 +20,11 @@ OCT5K_DETECTION_CLASSES = [
 class OCTPathologyDetector(nn.Module):
     """
     Model 5: Object Detector for 9 Pathological Biomarker Bounding Boxes.
-    Built on Faster R-CNN with a ResNet backbone, adapted for single-channel B-scans.
+    Built on Faster R-CNN with a ResNet50 backbone.
     """
     def __init__(self, num_classes: int = 10):
         super().__init__()
         backbone = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
-        backbone.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
         modules = list(backbone.children())[:-2]
         self.backbone = nn.Sequential(*modules)
         self.backbone.out_channels = 2048
