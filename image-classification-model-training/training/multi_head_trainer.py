@@ -53,11 +53,11 @@ class MultiHeadTrainer:
         self.writer = SummaryWriter(log_dir=str(tb_dir))
 
         self.model.to(self.device)
-        self._amp_enabled = (self.device.type in ("mps", "cuda"))
+        self._amp_enabled = (self.device.type == "cuda")
         self._amp_dtype = amp_dtype
         
-        # Initialize GradScaler for mixed precision to prevent FP16 gradient overflow
-        self.scaler = torch.cuda.amp.GradScaler(enabled=self._amp_enabled and self.device.type == "cuda")
+        # Initialize GradScaler for mixed precision (CUDA only) to prevent FP16 gradient overflow
+        self.scaler = torch.cuda.amp.GradScaler(enabled=self._amp_enabled)
 
         logger.info(
             "MultiHeadTrainer ready | device=%s | amp=%s | checkpoints=%s",
