@@ -42,8 +42,8 @@ def main():
     parser.add_argument("--num-workers", type=int, default=2, help="Set to 0 to bypass shared memory")
     parser.add_argument("--smoke-test", action="store_true", help="Run 1 epoch per phase to verify pipeline")
     parser.add_argument("--w-h1", type=float, default=1.0, help="Weight for Head 1 (Binary) loss")
-    parser.add_argument("--w-h2", type=float, default=1.0, help="Weight for Head 2 (12-Class) loss")
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint file to resume training from")
+    parser.add_argument("--hf-repo", type=str, default=None, help="Hugging Face Hub repository ID (e.g. username/repo) for real-time cloud backup")
     
     args = parser.parse_args()
 
@@ -101,7 +101,8 @@ def main():
             backbone_lr=args.lr_backbone,
             fold_id=fold_id,
             smoke_test=args.smoke_test,
-            resume_path=args.resume
+            resume_path=args.resume,
+            hf_repo=args.hf_repo
         )
         
         logger.info(f"Fold {fold_id} Best Metrics: {best_metrics}")

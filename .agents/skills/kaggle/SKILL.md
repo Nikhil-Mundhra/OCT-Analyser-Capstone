@@ -101,3 +101,6 @@ Kaggle sessions have a strict 9-hour maximum execution limit. Long-running train
   2. Restore the phase (`warmup` vs `finetune`) and absolute epoch index.
   3. Restore optimizer and learning rate scheduler states (`optimizer_state_dict`, `scheduler_state_dict`).
   4. Pass `--resume` in the Kaggle command line for subsequent runs to continue seamlessly without wasting completed epochs.
+- **Fail-Safe Real-Time Cloud Backup (HF Hub)**: To guarantee zero data loss if Kaggle hard-crashes or times out without committing output:
+  - Pass `--hf-repo username/repo_name` and set `HF_TOKEN` in the environment.
+  - The trainer automatically streams `fold0_best_model.pth` directly to Hugging Face Hub the exact second a new peak score is achieved. Even if Kaggle times out 4 hours later, the checkpoint is already safe in the cloud.

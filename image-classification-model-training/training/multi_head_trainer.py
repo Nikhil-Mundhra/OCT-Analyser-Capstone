@@ -197,7 +197,8 @@ class MultiHeadTrainer:
         patience: int = 10,
         fold_id: int = 0,
         smoke_test: bool = False,
-        resume_path: str = None
+        resume_path: str = None,
+        hf_repo: str = None
     ) -> Dict:
         global_step = fold_id * 100_000
         best_val_loss = float("inf")
@@ -251,7 +252,7 @@ class MultiHeadTrainer:
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
                 
-                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_warmup, epoch=epoch, phase='warmup', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1)
+                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_warmup, epoch=epoch, phase='warmup', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
                 if smoke_test: break
             
             phase = 'finetune'
@@ -300,10 +301,10 @@ class MultiHeadTrainer:
                 if h2_f1 > best_val_macro_f1:
                     best_val_macro_f1 = h2_f1
                     best_metrics = {"val_loss": val_loss, "h2_macro_f1": h2_f1, "epoch": abs_epoch}
-                    self._save_checkpoint(f"fold{fold_id}_best_model.pth", optimizer=optimizer_ft, scheduler=scheduler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1)
+                    self._save_checkpoint(f"fold{fold_id}_best_model.pth", optimizer=optimizer_ft, scheduler=scheduler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
                     logger.info(f"  ✓ New best — H2 macro_f1={h2_f1:.4f}")
 
-                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_ft, scheduler=scheduler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1)
+                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_ft, scheduler=scheduler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
 
                 if early_stopper.step(val_loss):
                     logger.info(f"Early stopping at epoch {abs_epoch}")
@@ -313,7 +314,7 @@ class MultiHeadTrainer:
 
         return best_metrics
 
-    def _save_checkpoint(self, filename: str, optimizer=None, scheduler=None, epoch=None, phase=None, best_val_loss=None, best_val_macro_f1=None) -> None:
+    def _save_checkpoint(self, filename: str, optimizer=None, scheduler=None, epoch=None, phase=None, best_val_loss=None, best_val_macro_f1=None, hf_repo: str = None) -> None:
         path = self.ckpt_dir / filename
         state = {
             "model_state_dict": self.model.state_dict(),
@@ -326,3 +327,21 @@ class MultiHeadTrainer:
         if best_val_loss is not None: state["best_val_loss"] = best_val_loss
         if best_val_macro_f1 is not None: state["best_val_macro_f1"] = best_val_macro_f1
         torch.save(state, path)
+
+        # Real-time Cloud Backup to Hugging Face Hub (prevents data loss on Kaggle timeout)
+        hf_token = os.environ.get("HF_TOKEN")
+        target_repo = hf_repo or os.environ.get("HF_REPO_ID")
+        if target_repo and hf_token and "best" in filename:
+            try:
+                from huggingface_hub import HfApi
+                api = HfApi()
+                api.upload_file(
+                    path_or_fileobj=str(path),
+                    path_in_repo=filename,
+                    repo_id=target_repo,
+                    token=hf_token,
+                    repo_type="model"
+                )
+                logger.info(f"   ☁ Checkpoint '{filename}' successfully backed up to HuggingFace Hub ({target_repo})")
+            except Exception as e:
+                logger.warning(f"   ⚠ Could not upload checkpoint to HuggingFace Hub: {e}")
