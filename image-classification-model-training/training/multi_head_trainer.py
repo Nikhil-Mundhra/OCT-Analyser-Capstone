@@ -348,34 +348,39 @@ class MultiHeadTrainer:
         target_repo = hf_repo or os.environ.get("HF_REPO_ID")
         if target_repo and hf_token and "best" in filename:
             clean_repo = target_repo.replace("https://huggingface.co/", "").strip("/")
-            r_type = "model"
+            primary_type = "model"
             if clean_repo.startswith("spaces/"):
                 clean_repo = clean_repo.replace("spaces/", "")
-                r_type = "space"
+                primary_type = "space"
+            elif clean_repo.startswith("datasets/"):
+                clean_repo = clean_repo.replace("datasets/", "")
+                primary_type = "dataset"
+            elif "dataset" in os.environ.get("HF_REPO_TYPE", "").lower():
+                primary_type = "dataset"
             elif "space" in os.environ.get("HF_REPO_TYPE", "").lower():
-                r_type = "space"
+                primary_type = "space"
 
+            candidate_types = [primary_type] + [t for t in ["model", "dataset", "space"] if t != primary_type]
+            
+            uploaded = False
             try:
                 from huggingface_hub import HfApi
                 api = HfApi()
-                try:
-                    api.upload_file(
-                        path_or_fileobj=str(path),
-                        path_in_repo=filename,
-                        repo_id=clean_repo,
-                        token=hf_token,
-                        repo_type=r_type
-                    )
-                except Exception:
-                    # Fallback to alternate repo_type (space vs model)
-                    alt_type = "space" if r_type == "model" else "model"
-                    api.upload_file(
-                        path_or_fileobj=str(path),
-                        path_in_repo=filename,
-                        repo_id=clean_repo,
-                        token=hf_token,
-                        repo_type=alt_type
-                    )
-                logger.info(f"   ☁ Checkpoint '{filename}' successfully backed up to HuggingFace ({clean_repo})")
+                for r_type in candidate_types:
+                    try:
+                        api.upload_file(
+                            path_or_fileobj=str(path),
+                            path_in_repo=filename,
+                            repo_id=clean_repo,
+                            token=hf_token,
+                            repo_type=r_type
+                        )
+                        logger.info(f"   ☁ Checkpoint '{filename}' successfully backed up to HuggingFace ({clean_repo} | type={r_type})")
+                        uploaded = True
+                        break
+                    except Exception:
+                        continue
+                if not uploaded:
+                    logger.warning(f"   ⚠ Could not upload checkpoint to HuggingFace ({clean_repo}) across model/dataset/space types.")
             except Exception as e:
-                logger.warning(f"   ⚠ Could not upload checkpoint to HuggingFace: {e}")
+                logger.warning(f"   ⚠ Could not initialize HuggingFace upload: {e}")
