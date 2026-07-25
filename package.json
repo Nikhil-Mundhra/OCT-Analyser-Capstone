@@ -4,6 +4,8 @@
   "description": "Root workspace to run frontend and backend concurrently",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix frontend\" \"uv run python -m uvicorn backend.oct_analyzer.api:app --reload --port 8000\" \"uv run celery -A backend.oct_analyzer.celery_app worker --pool=solo --loglevel=info\"",
+    "build": "npm run build --prefix frontend",
+    "start": "npm run start --prefix frontend",
     "install:all": "npm install --prefix frontend"
   },
   "devDependencies": {

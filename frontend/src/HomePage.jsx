@@ -3,7 +3,7 @@ import React from 'react';
 import Link from "next/link";
 import { ScanLine, ArrowRight, ShieldAlert, Activity, Route } from 'lucide-react';
 
-import { HomeNav } from './components';
+import { HomeNav, ROUTES } from './components';
 
 const FEATURE_CARDS = [
   {
@@ -57,7 +57,7 @@ export function HomePage() {
         </div>
 
         <Link
-          href="/QC"
+          href={ROUTES.QC}
           className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-slate-800 transition shadow-lg hover:shadow-xl"
         >
           Enter Clinical Workspace <ArrowRight className="h-5 w-5" />
