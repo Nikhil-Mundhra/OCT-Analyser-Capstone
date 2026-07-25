@@ -85,6 +85,12 @@ class MultiHeadOCTDataset(Dataset):
                     "spec_key": spec_key,
                     "l3_class": l3_class
                 })
+        if not records:
+            raise ValueError(
+                f"Dataset manifest is empty (0 images found)! "
+                f"Please check OCT_DATA_ROOT='{self._data_root}'. "
+                f"Ensure it points to the folder containing subfolders like 'Normal (Healthy)', 'AMD', etc."
+            )
         return pd.DataFrame(records)
 
     def compute_class_weights(self, target="l2") -> torch.Tensor:
