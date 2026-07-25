@@ -15,7 +15,10 @@ def flatten_volume_to_rpe(volume_tensor):
     Takes a 3D tensor (C, Z, Y, X) and flattens the anatomical curvature.
     """
     # Work on a 3D numpy array temporarily
-    vol_np = volume_tensor.detach().cpu().numpy()[0] # Drop channel for calculation
+    if isinstance(volume_tensor, torch.Tensor):
+        vol_np = volume_tensor.detach().cpu().numpy()[0] # Drop channel for calculation
+    else:
+        vol_np = np.asarray(volume_tensor)[0]
     
     # 1. Apply vertical blur to smooth noise and find the macro-structure.
     if gaussian_filter1d is None:
@@ -40,7 +43,8 @@ def flatten_volume_to_rpe(volume_tensor):
             flattened_vol[:, y, x] = np.roll(vol_np[:, y, x], shift_amount)
             
     # Return as channel-first tensor
-    return torch.from_numpy(flattened_vol).unsqueeze(0).to(volume_tensor.device)
+    device = volume_tensor.device if isinstance(volume_tensor, torch.Tensor) else "cpu"
+    return torch.from_numpy(flattened_vol).unsqueeze(0).to(device)
 
 
 def _moving_average_z(volume, window_size):
