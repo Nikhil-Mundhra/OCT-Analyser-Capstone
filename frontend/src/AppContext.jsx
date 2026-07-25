@@ -9,6 +9,65 @@ export const INITIAL_UPLOAD_STATE = { status: "Waiting", progress: 0, fileName: 
 /** Shape of the decision reset value — single source of truth. */
 export const INITIAL_DECISION = { choice: "", rationale: "", submittedAt: "" };
 
+/**
+ * Strips heavy non-serializable fields (like File instances) and multi-megabyte base64 data URLs
+ * before persisting to localStorage to avoid browser QuotaExceededError (5MB limit).
+ */
+function stripHeavyScanData(item) {
+  if (!item || typeof item !== "object") return item;
+  if (Array.isArray(item)) {
+    return item.slice(0, 10).map(stripHeavyScanData);
+  }
+
+  const copy = { ...item };
+  delete copy.file;
+
+  if (typeof copy.localImageUrl === "string" && copy.localImageUrl.startsWith("data:")) {
+    delete copy.localImageUrl;
+  }
+
+  if (copy.previews && typeof copy.previews === "object") {
+    const cleanPreviews = {};
+    for (const [k, v] of Object.entries(copy.previews)) {
+      if (typeof v === "string" && v.startsWith("data:")) continue;
+      cleanPreviews[k] = v;
+    }
+    copy.previews = cleanPreviews;
+  }
+
+  if (copy.gradcams && typeof copy.gradcams === "object") {
+    const cleanGradcams = {};
+    for (const [k, v] of Object.entries(copy.gradcams)) {
+      if (typeof v === "string" && v.startsWith("data:")) continue;
+      cleanGradcams[k] = v;
+    }
+    copy.gradcams = cleanGradcams;
+  }
+
+  return copy;
+}
+
+/**
+ * Safely sets an item in localStorage with quota error handling.
+ */
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    if (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014) {
+      console.warn(`[AppContext] localStorage quota exceeded for key '${key}'. Pruning storage...`);
+      try {
+        localStorage.removeItem("oct_scan_history");
+        localStorage.setItem(key, value);
+      } catch (innerErr) {
+        console.error(`[AppContext] Failed to set localStorage even after pruning:`, innerErr);
+      }
+    } else {
+      console.error(`[AppContext] Error writing to localStorage for key '${key}':`, e);
+    }
+  }
+}
+
 export function AppProvider({ children }) {
   const [scan, setScan] = useState(null);
   const [scanHistory, setScanHistory] = useState([]);
@@ -41,23 +100,26 @@ export function AppProvider({ children }) {
   // Persist to localStorage whenever state changes (after hydration)
   useEffect(() => {
     if (!isLoaded) return;
-    if (scan) localStorage.setItem("oct_scan", JSON.stringify(scan));
-    else localStorage.removeItem("oct_scan");
+    if (scan) {
+      safeSetItem("oct_scan", JSON.stringify(stripHeavyScanData(scan)));
+    } else {
+      localStorage.removeItem("oct_scan");
+    }
   }, [scan, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("oct_scan_history", JSON.stringify(scanHistory));
+    safeSetItem("oct_scan_history", JSON.stringify(stripHeavyScanData(scanHistory)));
   }, [scanHistory, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("oct_uploadState", JSON.stringify(uploadState));
+    safeSetItem("oct_uploadState", JSON.stringify(uploadState));
   }, [uploadState, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("oct_decision", JSON.stringify(decision));
+    safeSetItem("oct_decision", JSON.stringify(decision));
   }, [decision, isLoaded]);
 
   // --- Named actions (consumers use these; raw setters for uploadState/decision are not exposed) ---
