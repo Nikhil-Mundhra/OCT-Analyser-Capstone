@@ -1,4 +1,4 @@
-import { Client as GradioClient } from "@gradio/client";
+import { Client as GradioClient, handle_file } from "@gradio/client";
 
 const queryApiBase = globalThis.location
   ? new URLSearchParams(globalThis.location.search).get("apiBase")
@@ -109,13 +109,29 @@ export async function createScan(file, onProgress = null) {
     return normalized;
   }
 
-  // Step 3: Standalone client mode — query HuggingFace ConvNeXt V2 Classifier Space directly
+  // Step 3: Standalone client mode — query HuggingFace ConvNeXt V2 Classifier & Segmentation Spaces directly
   console.log("[OCT Analyzer Client] Standalone mode: Initiating ConvNeXt V2 classification via HuggingFace ZeroGPU...");
   if (onProgress) onProgress("Connecting to HuggingFace ZeroGPU space (NMundhra/OCT-Image-Classifier-Model)...");
 
   const fallbackId = typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `SCAN-${Date.now()}`;
+
+  // Prepare a File or Blob payload for Gradio client
+  let targetFile = file;
+  if (!(targetFile instanceof File) && !(targetFile instanceof Blob)) {
+    if (localImageUrl && localImageUrl.startsWith("data:")) {
+      try {
+        const res = await fetch(localImageUrl);
+        const blob = await res.blob();
+        targetFile = new File([blob], `oct_scan_${Date.now()}.png`, { type: blob.type || "image/png" });
+      } catch (err) {
+        console.warn("Could not convert localImageUrl to Blob:", err);
+      }
+    }
+  }
+
+  // targetFile is a valid File/Blob ready to send to HF Spaces
 
   const hfPredictPromise = (async () => {
     const hfSpaceName = "NMundhra/OCT-Image-Classifier-Model";
@@ -124,25 +140,77 @@ export async function createScan(file, onProgress = null) {
     console.log(`[OCT Analyzer Client] Connected to ${hfSpaceName}! Submitting payload to /predict_multi_head...`);
     if (onProgress) onProgress("Running ConvNeXt V2 classification & generating Grad-CAM...");
 
-    const payloadImage = localImageUrl || file;
-    const hfRes = await hfClient.predict("/predict_multi_head", [payloadImage, true]);
+    // Two-step approach to avoid Gradio FileData(**string) deserialization bug:
+    // Step A — Upload the file to the HF Space /upload endpoint to get a server-side FileData dict.
+    // Step B — Pass that dict directly to predict; Gradio can unpack it cleanly.
+    let imagePayload;
+    try {
+      const uploadedFiles = await hfClient.upload_files([targetFile]);
+      // hfClient.upload_files returns an array of FileData objects with {path, url, orig_name, ...}
+      const uploadedFile = Array.isArray(uploadedFiles) ? uploadedFiles[0] : uploadedFiles;
+      if (uploadedFile && (uploadedFile.path || uploadedFile.url)) {
+        // Use the server-returned FileData object directly — Gradio can deserialize its own output
+        imagePayload = uploadedFile;
+        console.log("[OCT Analyzer Client] File pre-uploaded to HF Space, using server-side FileData:", uploadedFile);
+      } else {
+        throw new Error("upload_files returned unexpected shape");
+      }
+    } catch (uploadErr) {
+      // Fallback: use handle_file as before (works when versions match)
+      console.warn("[OCT Analyzer Client] Pre-upload failed, falling back to handle_file:", uploadErr?.message);
+      imagePayload = handle_file(targetFile);
+    }
+
+    const hfRes = await hfClient.predict("/predict_multi_head", [imagePayload, true]);
     console.log("[OCT Analyzer Client] HuggingFace prediction response received:", hfRes);
     return hfRes;
   })();
 
+  // Also query HF Segmentation Space for initial Model 1 (Retinal Layers U-Net) overlay
+  const segPredictPromise = (async () => {
+    try {
+      const segSpaceName = "NMundhra/OCT-Segmentation-Model";
+      const segClient = await GradioClient.connect(segSpaceName);
+
+      // Use the same two-step upload pattern to avoid FileData deserialization errors
+      let segPayload;
+      try {
+        const segUploaded = await segClient.upload_files([targetFile]);
+        const segFile = Array.isArray(segUploaded) ? segUploaded[0] : segUploaded;
+        segPayload = (segFile && (segFile.path || segFile.url)) ? segFile : handle_file(targetFile);
+      } catch {
+        segPayload = handle_file(targetFile);
+      }
+
+      const segRes = await segClient.predict("/predict_model1", [segPayload]);
+      const outImgObj = segRes?.data?.[0];
+      const imgUrl = typeof outImgObj === "object" ? (outImgObj?.url || outImgObj?.path) : outImgObj;
+      return imgUrl || null;
+    } catch (err) {
+      console.warn("[OCT Analyzer Client] HF Segmentation Space fetch warning:", err);
+      return null;
+    }
+  })();
+
   const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("HuggingFace ZeroGPU prediction timed out after 15 seconds")), 15_000)
+    setTimeout(() => reject(new Error("HuggingFace prediction timed out after 60 seconds")), 60_000)
   );
 
   try {
-    const hfRes = await Promise.race([hfPredictPromise, timeoutPromise]);
+    const [hfRes, unetOverlayUrl] = await Promise.all([
+      Promise.race([hfPredictPromise, timeoutPromise]),
+      segPredictPromise
+    ]);
+
     const classificationJson = hfRes?.data?.[0];
     const gradcamObj = hfRes?.data?.[1];
 
     if (classificationJson && !classificationJson.error) {
       let gradcamUrl = localImageUrl;
-      if (gradcamObj && gradcamObj.url) {
-        gradcamUrl = gradcamObj.url;
+      if (gradcamObj && typeof gradcamObj === "object") {
+        gradcamUrl = gradcamObj.url || gradcamObj.path || localImageUrl;
+      } else if (typeof gradcamObj === "string") {
+        gradcamUrl = gradcamObj;
       } else if (classificationJson.gradcams?.L2) {
         gradcamUrl = classificationJson.gradcams.L2;
       } else if (classificationJson.gradcams?.L1) {
@@ -151,6 +219,8 @@ export async function createScan(file, onProgress = null) {
 
       console.log("[OCT Analyzer Client] Successfully processed ConvNeXt V2 diagnosis:", classificationJson.diagnosis);
       if (onProgress) onProgress("Classification complete! Preparing clinician review...");
+
+      const activeUnetOverlay = unetOverlayUrl || localImageUrl;
 
       const realRecord = {
         scan_id: fallbackId,
@@ -161,8 +231,8 @@ export async function createScan(file, onProgress = null) {
         level2: classificationJson.level2 || {},
         level3: classificationJson.level3 || {},
         gradcams: { L1: gradcamUrl, L2: gradcamUrl },
-        previews: { raw: localImageUrl, unet_overlay: localImageUrl, gradcam: gradcamUrl },
-        segmentation: null,
+        previews: { raw: localImageUrl, unet_overlay: activeUnetOverlay, gradcam: gradcamUrl },
+        segmentation: unetOverlayUrl ? { overlay: unetOverlayUrl } : null,
         localImageUrl
       };
 
@@ -226,8 +296,72 @@ export async function runModelSuite(file, modelId = "all", scoreThreshold = 0.5)
         return await response.json();
       }
     } catch (err) {
-      console.warn("Segmentation API unreachable, returning mock suite results...", err);
+      console.warn("Segmentation API unreachable, querying HuggingFace space fallback...", err);
     }
+  }
+
+  // Standalone client mode — query Hugging Face Segmentation Space (NMundhra/OCT-Segmentation-Model)
+  try {
+    const segSpaceName = "NMundhra/OCT-Segmentation-Model";
+    console.log(`[OCT Analyzer Client] Connecting to HF Segmentation Space ${segSpaceName}...`);
+    const segClient = await GradioClient.connect(segSpaceName);
+
+    // Pre-upload to avoid FileData(**string) deserialization error in Gradio 4+
+    let payloadImage;
+    try {
+      const uploaded = await segClient.upload_files([uploadFile]);
+      const uploadedFile = Array.isArray(uploaded) ? uploaded[0] : uploaded;
+      payloadImage = (uploadedFile && (uploadedFile.path || uploadedFile.url))
+        ? uploadedFile
+        : handle_file(uploadFile);
+    } catch {
+      payloadImage = handle_file(uploadFile);
+    }
+
+    const modelDefs = [
+      { key: "model1", name: "Model 1: 6-Class Retinal Layers", api: "/predict_model1", args: [payloadImage] },
+      { key: "model2", name: "Model 2: Choroidalyzer", api: "/predict_model2", args: [payloadImage] },
+      { key: "model3", name: "Model 3: HRF DME Fluid Attention U-Net", api: "/predict_model3", args: [payloadImage] },
+      { key: "model4", name: "Model 4: OIMHS Macular Hole & Cyst U-Net", api: "/predict_model4", args: [payloadImage] },
+      { key: "model5", name: "Model 5: OCT Pathology Detector", api: "/predict_model5", args: [payloadImage, scoreThreshold] },
+    ];
+
+    const targets = modelId === "all" ? modelDefs : modelDefs.filter(m => m.key === modelId);
+    const results = {};
+
+    await Promise.all(
+      targets.map(async (m) => {
+        try {
+          const res = await segClient.predict(m.api, m.args);
+          const outImgObj = res?.data?.[0];
+          const txtInfo = res?.data?.[1] || "";
+          const imgUrl = typeof outImgObj === "object" ? (outImgObj?.url || outImgObj?.path) : outImgObj;
+
+          results[m.key] = {
+            name: m.name,
+            status: "completed",
+            overlay: imgUrl,
+            mask: imgUrl,
+            info: txtInfo
+          };
+        } catch (err) {
+          console.warn(`Error running ${m.name} via HF space:`, err);
+          results[m.key] = {
+            name: m.name,
+            status: "failed",
+            error: err?.message || String(err)
+          };
+        }
+      })
+    );
+
+    return {
+      status: "completed",
+      model_id: modelId,
+      results
+    };
+  } catch (segErr) {
+    console.warn("HF Segmentation Space unreachable, returning mock suite results...", segErr);
   }
 
   return {

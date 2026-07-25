@@ -46,14 +46,18 @@ def _run_classification(image_input, generate_gradcam=True):
 
     img_path = None
     if isinstance(image_input, str):
+        # Plain filepath string — the expected case for gr.Api and legacy clients
         img_path = image_input
-    elif isinstance(image_input, dict) and "path" in image_input:
-        img_path = image_input["path"]
-    elif hasattr(image_input, "name") and isinstance(image_input.name, str):
-        img_path = image_input.name
-    elif hasattr(image_input, "path") and isinstance(image_input.path, str):
+    elif isinstance(image_input, dict):
+        # Gradio 4+ FileData serialised as a dict: {"path": ..., "url": ..., "orig_name": ...}
+        img_path = image_input.get("path") or image_input.get("name") or image_input.get("url")
+    elif hasattr(image_input, "path") and image_input.path and isinstance(image_input.path, str):
+        # Gradio 4 FileData Pydantic model — access .path attribute directly
         img_path = image_input.path
+    elif hasattr(image_input, "name") and isinstance(getattr(image_input, "name", None), str):
+        img_path = image_input.name
     elif hasattr(image_input, "save"):
+        # PIL Image object
         temp_dir = Path(tempfile.gettempdir())
         img_path = str(temp_dir / "temp_input_scan.png")
         image_input.save(img_path)
@@ -64,6 +68,9 @@ def _run_classification(image_input, generate_gradcam=True):
             Image.fromarray(np.array(image_input)).save(img_path)
         except Exception as err:
             return {"error": f"Invalid image format received: {type(image_input)} - {err}"}
+
+    if not img_path:
+        return {"error": f"Could not extract a file path from input type: {type(image_input)}"}
 
     # Dynamic CUDA transfer inside GPU context
     if torch.cuda.is_available():
@@ -114,6 +121,7 @@ if HAS_GRADIO:
 
             return res, cam_img
 
+        # UI route — for browser usage via the Gradio web interface
         btn_run.click(gradio_adapter, inputs=[inp_img, chk_gradcam], outputs=[out_json, out_cam], api_name="predict_multi_head")
 
     demo.queue()
@@ -121,3 +129,4 @@ if HAS_GRADIO:
 if __name__ == "__main__":
     if HAS_GRADIO:
         demo.launch(show_error=True)
+
