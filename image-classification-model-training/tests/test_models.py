@@ -63,5 +63,18 @@ class TestModels(unittest.TestCase):
         
         self.assertEqual(num_params_in_groups, num_params_in_model, "All parameters must be in a param group")
 
+    def test_feature_channels_contract(self):
+        """Verify that ConvNeXt V2 Base extracts exact channel dimensions (256, 512, 1024)."""
+        model = build_multi_head_model(pretrained=False, warmup=False)
+        
+        # Verify backbone channels
+        feature_channels = model.backbone.feature_info.channels()
+        self.assertEqual(feature_channels, [256, 512, 1024], "Channel dimensions must match baseline contract")
+        
+        # Verify concatenated linear input dimension (256 + 512 + 1024 + 1 = 1793)
+        expected_concat_dim = sum(feature_channels) + 1
+        actual_in_features = model.granular_pathology_head[0].in_features
+        self.assertEqual(actual_in_features, expected_concat_dim, "Head input dimension mismatch!")
+
 if __name__ == '__main__':
     unittest.main()

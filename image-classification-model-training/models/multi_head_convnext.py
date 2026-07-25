@@ -49,22 +49,27 @@ class MultiHeadConvNeXt(nn.Module):
     """
     Multi-Head ConvNeXt V2 Model with Multi-Scale Aggregation and Strict Hierarchical Conditioning
     """
-    def __init__(self, num_pathology_classes: int = 12, pretrained: bool = True):
+    def __init__(self, num_pathology_classes: int = 12, pretrained: bool = True, backbone_name: str = 'convnextv2_base'):
         super().__init__()
         
-        # 1. Initialize pre-trained convnextv2_base, extracting features from stages 1, 2, 3
-        # (Resolutions for 224x224 input: Stage 1=28x28, Stage 2=14x14, Stage 3=7x7)
-        self.backbone = timm.create_model('convnextv2_base', pretrained=pretrained, features_only=True, out_indices=(1, 2, 3))
+        # 1. Initialize pre-trained backbone, extracting features from stages 1, 2, 3
+        # (Resolutions for 224x224 input with convnextv2_base: Stage 1=28x28, Stage 2=14x14, Stage 3=7x7)
+        self.backbone_name = backbone_name
+        self.backbone = timm.create_model(backbone_name, pretrained=pretrained, features_only=True, out_indices=(1, 2, 3))
         
         # 2. Freeze all parameters in the stem and the first three stages (stages 0, 1, 2)
         self.freeze_backbone()
                 
         self.gap = nn.AdaptiveAvgPool2d(1)
         
-        # Output channels for convnextv2_base stages 1, 2, 3
-        dim_s2 = 256
-        dim_s3 = 512
-        dim_s4 = 1024
+        # Extract output channels for backbone stages 1, 2, 3 dynamically
+        feature_channels = self.backbone.feature_info.channels()
+        dim_s2, dim_s3, dim_s4 = feature_channels
+        
+        # Sanity check: Ensure default convnextv2_base matches expected baseline contract (256, 512, 1024)
+        if backbone_name == 'convnextv2_base':
+            assert (dim_s2, dim_s3, dim_s4) == (256, 512, 1024), \
+                f"Architecture mismatch! Expected (256, 512, 1024), got {feature_channels}"
         
         # normal_abnormal_head (binary -> 1 output)
         # H1 only looks at the global context (Stage 4)
