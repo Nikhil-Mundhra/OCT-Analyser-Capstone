@@ -218,7 +218,7 @@ function normalizePreviewMap(previews = {}) {
 }
 
 function apiUrl(path) {
-  if (!path || /^https?:\/\//i.test(path)) {
+  if (!path || /^https?:\/\//i.test(path) || /^(data|blob):/i.test(path)) {
     return path;
   }
   return `${OCT_ANALYZER_API_BASE}${path.startsWith("/") ? path : `/${path}`}`;

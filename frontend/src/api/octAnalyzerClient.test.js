@@ -58,4 +58,19 @@ describe('normalizeScanResult', () => {
     
     expect(result.segmentation).toEqual(segmentation);
   });
+
+  it('should preserve data: base64 URLs in preview map without prepending slash', () => {
+    const scan = {
+      id: '123',
+      previews: {
+        raw: 'data:image/jpeg;base64,/9j/4AAQ...',
+        unet_overlay: 'data:image/jpeg;base64,/9j/4AAQ...'
+      }
+    };
+
+    const result = normalizeScanResult(scan);
+
+    expect(result.previews.raw).toBe('data:image/jpeg;base64,/9j/4AAQ...');
+    expect(result.previews.unet_overlay).toBe('data:image/jpeg;base64,/9j/4AAQ...');
+  });
 });
