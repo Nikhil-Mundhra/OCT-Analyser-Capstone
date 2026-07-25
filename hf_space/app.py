@@ -75,23 +75,46 @@ def safe_load_ckpt(cp_path, device):
 
 
 
+def get_checkpoint_file(local_rel_path: str, bucket_key: str) -> Path:
+    target_path = WORKSPACE_ROOT / local_rel_path
+    if target_path.exists():
+        return target_path
+    
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    token = os.getenv("HF_TOKEN")
+    
+    try:
+        from huggingface_hub import hf_hub_download
+        print(f"Downloading weight from HF Bucket: segmentation/{bucket_key}...", flush=True)
+        cached_path = hf_hub_download(
+            repo_id="NMundhra/OCT-Image-Classifier-Model-storage",
+            filename=f"segmentation/{bucket_key}",
+            repo_type="dataset",
+            token=token
+        )
+        import shutil
+        shutil.copy(cached_path, target_path)
+        print(f"Successfully cached {bucket_key} to {target_path}", flush=True)
+    except Exception as e:
+        print(f"Warning: Could not download segmentation/{bucket_key} from bucket: {e}", flush=True)
+        
+    return target_path
+
+
 # Initialize model instances and load checkpoints
 def load_suite():
     print("Loading M1...", flush=True)
     m1 = RetinalLayersUNet(in_channels=1, num_classes=6)
-    cp1 = WORKSPACE_ROOT / "models_suite/model1_oct5k_layers/checkpoints/best_model.pth"
+    cp1 = get_checkpoint_file("models_suite/model1_oct5k_layers/checkpoints/best_model.pth", "model1_oct5k_layers.pth")
     if cp1.exists():
-        print("M1 checkpoint file exists. Calling safe_load_ckpt...", flush=True)
         ckpt = safe_load_ckpt(cp1, DEVICE)
-        print("M1 safe_load_ckpt returned! Loading state dict...", flush=True)
         m1.load_state_dict(ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt)
     m1.to(DEVICE).eval()
     print("M1 Done.", flush=True)
 
-
     print("Loading M2...", flush=True)
     m2 = ChoroidalyzerUNet(in_channels=1, out_channels=3, depth=7, channels='8_doublemax-64', up_type='conv_then_interpolate', extra_out_conv=True)
-    cp2 = WORKSPACE_ROOT / "models_suite/model2_choroidalyzer/checkpoints/best_model.pth"
+    cp2 = get_checkpoint_file("models_suite/model2_choroidalyzer/checkpoints/best_model.pth", "model2_choroidalyzer.pth")
     if cp2.exists():
         ckpt = safe_load_ckpt(cp2, DEVICE)
         m2.load_state_dict(ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt)
@@ -100,7 +123,7 @@ def load_suite():
 
     print("Loading M3...", flush=True)
     m3 = HRF_AttentionUNet(n_channels=3, n_classes=1)
-    cp3 = WORKSPACE_ROOT / "models_suite/model3_hrf_dme/checkpoints/best_model.pth"
+    cp3 = get_checkpoint_file("models_suite/model3_hrf_dme/checkpoints/best_model.pth", "model3_hrf_dme.pth")
     if cp3.exists():
         ckpt = safe_load_ckpt(cp3, DEVICE)
         m3.load_state_dict(ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt)
@@ -109,7 +132,7 @@ def load_suite():
 
     print("Loading M4...", flush=True)
     m4 = OIMHSUNet(in_channels=1, num_classes=5)
-    cp4 = WORKSPACE_ROOT / "models_suite/model4_oimhs_hole_cysts/checkpoints/best_model.pth"
+    cp4 = get_checkpoint_file("models_suite/model4_oimhs_hole_cysts/checkpoints/best_model.pth", "model4_oimhs_hole_cysts.pth")
     if cp4.exists():
         ckpt = safe_load_ckpt(cp4, DEVICE)
         m4.load_state_dict(ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt)
@@ -118,7 +141,7 @@ def load_suite():
 
     print("Loading M5...", flush=True)
     m5 = OCTPathologyDetector(num_classes=10)
-    cp5 = WORKSPACE_ROOT / "models_suite/model5_oct5k_detection/checkpoints/best_model.pth"
+    cp5 = get_checkpoint_file("models_suite/model5_oct5k_detection/checkpoints/best_model.pth", "model5_oct5k_detection.pth")
     if cp5.exists():
         ckpt = safe_load_ckpt(cp5, DEVICE)
         m5.load_state_dict(ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt)
@@ -141,6 +164,14 @@ def preprocess_image(image: Image.Image, target_size=(256, 256)):
     tensor = torch.from_numpy(arr).unsqueeze(0).unsqueeze(0) # (1, 1, H, W)
     return gray, tensor
 
+def create_pure_mask(orig_img: Image.Image, mask: np.ndarray, num_classes: int, cmap: list) -> Image.Image:
+    h, w = mask.shape
+    mask_rgba = np.zeros((h, w, 4), dtype=np.uint8)
+    for c in range(1, num_classes):
+        color = cmap[c % len(cmap)]
+        mask_rgba[mask == c] = [color[0], color[1], color[2], 255]
+    return Image.fromarray(mask_rgba, mode="RGBA").resize(orig_img.size, Image.NEAREST)
+
 def create_segmentation_overlay(orig_img: Image.Image, mask: np.ndarray, num_classes: int, cmap: list):
     orig_rgb = orig_img.convert("RGB")
     h, w = mask.shape
@@ -151,7 +182,7 @@ def create_segmentation_overlay(orig_img: Image.Image, mask: np.ndarray, num_cla
 
     overlay_img = Image.fromarray(overlay).resize(orig_rgb.size)
     blended = Image.blend(orig_rgb, overlay_img, alpha=0.45)
-    return blended
+    return blended, Image.fromarray(overlay).resize(orig_rgb.size)
 
 def preprocess_rgb_image(image: Image.Image, target_size=(256, 256)):
     rgb = image.convert("RGB").resize(target_size)

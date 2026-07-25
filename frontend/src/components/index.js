@@ -6,7 +6,7 @@
  */
 
 // Constants
-export { screens, MIN_RATIONALE_LENGTH } from "./constants";
+export { screens, MIN_RATIONALE_LENGTH, ROUTES } from "./constants";
 
 // UI primitives
 export { StatusBadge } from "./ui/StatusBadge";

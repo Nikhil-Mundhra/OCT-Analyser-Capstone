@@ -1,8 +1,5 @@
-import os
 from celery import Celery
-
-# Configure Celery
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+from .constants import REDIS_URL
 
 celery_app = Celery(
     "oct_analyzer_tasks",

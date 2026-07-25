@@ -100,6 +100,22 @@ class OCTInferencePipeline:
         if not multi_head_ckpt.exists():
             multi_head_ckpt = weights_dir / "multi_head_mps" / "fold0_best_model.pth"
         
+        if not multi_head_ckpt.exists():
+            token = os.getenv("HF_TOKEN")
+            try:
+                from huggingface_hub import hf_hub_download
+                logger.info("Downloading classification weights from HF Hub: NMundhra/OCT-Classifier-Model-Weights...")
+                cached = hf_hub_download(
+                    repo_id="NMundhra/OCT-Classifier-Model-Weights",
+                    filename="fold0_best_model.pth",
+                    repo_type="model",
+                    token=token
+                )
+                multi_head_ckpt = Path(cached)
+                logger.info(f"Successfully cached classification weights to {multi_head_ckpt}")
+            except Exception as err:
+                logger.warning(f"Could not download weights from HF Hub: {err}")
+        
         self.model = build_multi_head_model(pretrained=False, warmup=False).to(self.device)
         
         if multi_head_ckpt.exists():
@@ -160,7 +176,14 @@ class OCTInferencePipeline:
             grad_context = torch.no_grad()
             
         with grad_context:
-            target_layer = self.model.backbone.stages[-1].blocks[-1]
+            if hasattr(self.model.backbone, "stages"):
+                target_layer = self.model.backbone.stages[-1].blocks[-1]
+            elif hasattr(self.model.backbone, "stages_3"):
+                target_layer = self.model.backbone.stages_3.blocks[-1]
+            elif hasattr(self.model, "cbam_s4"):
+                target_layer = self.model.cbam_s4
+            else:
+                target_layer = self.model.granular_pathology_head
             cam_generator = MultiHeadGradCAM(self.model, target_layer)
             
             outputs = self.model(input_tensor)
@@ -191,7 +214,7 @@ class OCTInferencePipeline:
                 
             # --- LEVEL 2 & 3: Granular Pathology (Multi-Label Flat) ---
             # Using Sigmoid for multi-label probabilities
-            probs_h2 = torch.sigmoid(out2[0]).cpu().numpy()
+            probs_h2 = torch.sigmoid(out2[0]).detach().cpu().numpy()
             pred_l2_idx = np.argmax(probs_h2)
             pred_l2_label = PATHOLOGY_CLASSES[pred_l2_idx]
             conf_l2 = probs_h2[pred_l2_idx].item()
@@ -203,12 +226,11 @@ class OCTInferencePipeline:
                 "probs": {PATHOLOGY_CLASSES[i]: probs_h2[i].item() for i in range(len(PATHOLOGY_CLASSES))}
             }
             results["Level3"] = results["Level2"]
-            results["Path"].append(f"L2/L3: {pred_l2_label}")
+            results["Path"].append(f"L2: {pred_l2_label}")
             
             if gradcam:
                 heatmap = cam_generator.generate_cam(input_tensor, target_head=2, target_class=pred_l2_idx)
                 results["gradcams"]["L2"] = self._get_heatmap_base64(img, heatmap)
-                results["gradcams"]["L3"] = results["gradcams"]["L2"]
             
             results["Final_Diagnosis"] = pred_l2_label
             

@@ -1,26 +1,17 @@
-# OCT Hierarchical Classification Pipeline Documentation
+# OCT Multi-Head Classification Pipeline
 
-This folder contains the comprehensive documentation for the design, architecture, and engineering decisions behind the PyTorch OCT Image Classification Pipeline.
+This folder contains the authoritative documentation for the design, architecture, and engineering optimizations behind the PyTorch OCT Image Classification Pipeline. 
 
-## Table of Contents
+> [!NOTE]
+> This documentation reflects the modernized unified architecture (post-July 2026), superseding the legacy 3-Level Gatekeeper/Router framework.
 
-### 1. [Architecture & Flow](/docs/classification-architecture)
-Detailed breakdown of the 3-Level Hierarchical structure (Gatekeeper → Router → Specialists). Explains the model selection decisions, resolution pipelines (224px vs 384px), and the specific logic for separating and grouping diseases (AMD splits, Vascular aggregation/re-separation).
+## Documentation Suite
 
-> **Level 1 Backbone:** EfficientNet-B3 (upgraded from ResNet-50, 1st July, 2026)
+### 1. [Architecture & Model Design](/docs/classification-architecture)
+Detailed breakdown of the unified **Multi-Head ConvNeXt V2** architecture. Covers the dual-stream feature processing, the CBAM Attention Module, and the Hierarchical Conditioning protocol that safely passes binary probabilities into the multi-class pathology router.
 
-### 2. [Data Pipeline & Imbalance Strategy](/docs/classification-data_pipeline)
-How the pipeline ingests 86,120 images from three disparate datasets (OCTDL, Kermany/UCSD, OCTID). Details the three-tiered defence against extreme long-tail class imbalance (Stratified K-Fold, WeightedRandomSampler, Focal Loss) and the CLAHE preprocessing step that normalises contrast across scanner manufacturers.
+### 2. [Training Pipeline & Optimizations](/docs/classification-training_pipeline)
+Documentation of the robust training engine (`MultiHeadTrainer`). Covers the Two-Phase (Warm-up & Fine-Tuning) protocol, Adam Momentum Porting, Automatic Mixed Precision (GradScaler) setups, and the exact asymmetric loss configuration (BCE vs. Focal Loss) used to conquer extreme class imbalance.
 
-### 3. [Training Engine & Optimisations](/docs/classification-training)
-The `HierarchyTrainer` loop: Two-Phase protocol (head warm-up → backbone fine-tuning), checkpoint selection on `val_macro_f1`, cosine warm restarts, and Apple Silicon M2 Pro hardware optimisations. Also covers the post-training calibration pipeline: ROC-derived threshold, temperature scaling, TTA, and Grad-CAM.
-
-### 4. [Level 1 Improvements (1st July, 2026)](/docs/classification-improvements)
-A detailed record of all improvements made to the Level 1 Gatekeeper model, the rationale for each change, and the expected metric impact. Use this as a reference when evaluating the new trained checkpoint.
-
-### 5. [Project To-Do List](/docs/classification-TODO)
-Prioritised backlog of outstanding work across all three model levels — high, medium, and low priority items, plus a completed work log.
-
----
-
-*Documentation last updated: 1st July, 2026. Reflects EfficientNet-B3 backbone and full calibration pipeline.*
+### 3. [Data & Augmentation Strategy](/docs/classification-data_augmentation)
+Details the medical-specific preprocessing utilizing the MONAI library. Covers Contrast Limited Adaptive Histogram Equalization (CLAHE), safe spatial transforms, and the explicit exclusion of destructive spatial crops (`RandomResizedCrop`) to protect peripheral biological markers.

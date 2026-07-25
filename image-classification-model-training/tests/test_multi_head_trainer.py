@@ -19,16 +19,18 @@ class TestMultiHeadTrainer(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
         self.model = build_multi_head_model(pretrained=False, warmup=False)
-        criterions = {
-            'h1': DummyLoss(),
-            'h2': DummyLoss()
-        }
-        loss_weights = {'h1': 1.0, 'h2': 1.0}
-        
-        self.trainer = MultiHeadTrainer(
+        self.criterions = {'h1': DummyLoss(), 'h2': DummyLoss()}
+        self.loss_weights = {'h1': 1.0, 'h2': 1.0}
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_multiclass_batch_size_1(self):
+        """Verify multi-class mode (default argmax) works with batch size 1."""
+        trainer = MultiHeadTrainer(
             model=self.model,
-            criterions=criterions,
-            loss_weights=loss_weights,
+            criterions=self.criterions,
+            loss_weights=self.loss_weights,
             mode="test_mode",
             checkpoint_dir=os.path.join(self.test_dir, "checkpoints"),
             log_dir=os.path.join(self.test_dir, "logs"),
@@ -36,11 +38,40 @@ class TestMultiHeadTrainer(unittest.TestCase):
             amp_dtype=torch.float32 
         )
         
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
+        # Single multiclass index (e.g. class 2)
+        images = torch.randn(1, 3, 224, 224)
+        labels = {
+            'normal_abnormal': torch.tensor([[1.0]]),
+            'pathology': torch.tensor([2], dtype=torch.long)
+        }
+        
+        class MockBatchLoader:
+            def __iter__(self):
+                yield images, labels
+            def __len__(self):
+                return 1
+                
+        val_loss, h2_f1, h2_recall, h2_acc = trainer._val_epoch(MockBatchLoader(), smoke_test=True)
+        self.assertIsInstance(val_loss, float)
+        self.assertIsInstance(h2_f1, float)
 
-    def test_trainer_batch_size_1_edge_case(self):
-        """Verify that validation does not crash with a batch size of exactly 1."""
+    def test_multilabel_batch_size_1(self):
+        """Verify multi-label mode (injected sigmoid extractor) works with batch size 1."""
+        trainer = MultiHeadTrainer(
+            model=self.model,
+            criterions=self.criterions,
+            loss_weights=self.loss_weights,
+            mode="test_mode",
+            checkpoint_dir=os.path.join(self.test_dir, "checkpoints"),
+            log_dir=os.path.join(self.test_dir, "logs"),
+            device=torch.device("cpu"),
+            amp_dtype=torch.float32,
+            metric_extractors={
+                'h2': lambda logits: (torch.sigmoid(logits) > 0.5).int()
+            }
+        )
+        
+        # 12-class multi-hot target
         images = torch.randn(1, 3, 224, 224)
         labels = {
             'normal_abnormal': torch.tensor([[1.0]]),
@@ -53,20 +84,25 @@ class TestMultiHeadTrainer(unittest.TestCase):
             def __len__(self):
                 return 1
                 
-        try:
-            val_loss, h2_f1, h2_recall, h2_acc = self.trainer._val_epoch(MockBatchLoader(), smoke_test=True)
-        except ValueError as e:
-            self.fail(f"Trainer crashed on batch size 1 with ValueError: {e}")
-            
+        val_loss, h2_f1, h2_recall, h2_acc = trainer._val_epoch(MockBatchLoader(), smoke_test=True)
         self.assertIsInstance(val_loss, float)
         self.assertIsInstance(h2_f1, float)
 
-    def test_trainer_empty_h2_mask(self):
+    def test_empty_h2_mask(self):
         """Verify that validation works when NO images in the batch are abnormal."""
+        trainer = MultiHeadTrainer(
+            model=self.model,
+            criterions=self.criterions,
+            loss_weights=self.loss_weights,
+            mode="test_mode",
+            checkpoint_dir=os.path.join(self.test_dir, "checkpoints"),
+            log_dir=os.path.join(self.test_dir, "logs"),
+            device=torch.device("cpu")
+        )
         images = torch.randn(4, 3, 224, 224)
         labels = {
             'normal_abnormal': torch.tensor([[0.0], [0.0], [0.0], [0.0]]),
-            'pathology': torch.zeros(4, 12)
+            'pathology': torch.zeros(4, dtype=torch.long)
         }
         
         class MockBatchLoader:
@@ -75,23 +111,25 @@ class TestMultiHeadTrainer(unittest.TestCase):
             def __len__(self):
                 return 1
                 
-        try:
-            val_loss, h2_f1, h2_recall, h2_acc = self.trainer._val_epoch(MockBatchLoader(), smoke_test=True)
-        except Exception as e:
-            self.fail(f"Trainer crashed on empty H2 mask with: {e}")
-            
+        val_loss, h2_f1, h2_recall, h2_acc = trainer._val_epoch(MockBatchLoader(), smoke_test=True)
         self.assertIsInstance(h2_f1, float)
 
-    def test_metric_extractor_fallback(self):
-        """Verify that the default metric_extractor produces multilabel outputs (B, 12) rather than multiclass argmax."""
-        # Using the base trainer initialized without metric_extractors
-        self.assertIn('h2', self.trainer.metric_extractors)
+    def test_default_metric_extractor_fallback(self):
+        """Verify that default fallback is argmax for multi-class classification."""
+        trainer = MultiHeadTrainer(
+            model=self.model,
+            criterions=self.criterions,
+            loss_weights=self.loss_weights,
+            mode="test_mode",
+            checkpoint_dir=os.path.join(self.test_dir, "checkpoints"),
+            device=torch.device("cpu")
+        )
         
-        dummy_logits = torch.tensor([[10.0, -10.0], [-10.0, 10.0]])
-        extracted = self.trainer.metric_extractors['h2'](dummy_logits)
+        dummy_logits = torch.tensor([[10.0, -10.0, 2.0], [-10.0, 10.0, 0.0]])
+        extracted = trainer.metric_extractors['h2'](dummy_logits)
         
-        expected = torch.tensor([[1, 0], [0, 1]], dtype=torch.int32)
-        self.assertTrue(torch.all(extracted == expected), "Fallback metric extractor must output multilabel predictions")
+        expected = torch.tensor([0, 1])
+        self.assertTrue(torch.all(extracted == expected), "Default fallback must be argmax for multi-class targets")
 
 if __name__ == '__main__':
     unittest.main()

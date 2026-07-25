@@ -2,18 +2,18 @@
 import React from "react";
 
 const TONES = {
-  neutral: "bg-slate-50 text-slate-900 border-slate-200",
-  safe:    "bg-emerald-50 text-emerald-800 border-emerald-200",
-  warning: "bg-amber-50 text-amber-900 border-amber-200",
-  danger:  "bg-rose-50 text-rose-800 border-rose-200",
-  info:    "bg-sky-50 text-sky-800 border-sky-200",
+  neutral: "bg-slate-950/80 text-slate-100 border-slate-800",
+  safe:    "bg-emerald-950/40 text-emerald-300 border-emerald-500/30",
+  warning: "bg-amber-950/40 text-amber-300 border-amber-500/30",
+  danger:  "bg-rose-950/40 text-rose-300 border-rose-500/30",
+  info:    "bg-sky-950/40 text-sky-300 border-sky-500/30",
 };
 
 export function Metric({ label, value, tone = "neutral" }) {
   return (
-    <div className={`rounded-2xl border p-4 ${TONES[tone]}`}>
-      <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
-      <p className="mt-2 text-2xl font-black">{value}</p>
+    <div className={`rounded-xl border p-3.5 ${TONES[tone]}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="mt-1.5 text-xl font-bold font-mono tracking-tight">{value}</p>
     </div>
   );
 }

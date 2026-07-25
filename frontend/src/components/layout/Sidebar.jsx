@@ -11,7 +11,7 @@ import {
   Search,
   UploadCloud,
 } from "lucide-react";
-import { screens } from "../constants";
+import { screens, ROUTES } from "../constants";
 
 /** Width of the collapsed sidebar — keep in sync with the Tailwind class w-[72px] on the <aside>. */
 const SIDEBAR_WIDTH_COLLAPSED_PX = 72; // eslint-disable-line no-unused-vars
@@ -31,7 +31,7 @@ export function Sidebar() {
     <aside className="group w-[72px] hover:w-[260px] transition-all duration-300 ease-in-out border-r border-slate-200 bg-white flex flex-col h-full shrink-0 shadow-sm z-40 overflow-hidden absolute md:relative">
       <div className="p-4">
         <button
-          onClick={() => router.push("/QC")}
+          onClick={() => router.push(ROUTES.QC)}
           className="flex items-center justify-center gap-0 group-hover:gap-3 mx-auto h-11 w-11 group-hover:w-full group-hover:h-auto bg-sky-500 hover:bg-sky-600 text-white rounded-full group-hover:py-3 group-hover:px-4 font-bold transition-all shadow-sm overflow-hidden"
         >
           <Plus className="h-5 w-5 shrink-0" />

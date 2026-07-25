@@ -6,6 +6,7 @@ import os
 import cv2
 import torch
 import numpy as np
+from .constants import get_compute_device
 
 SEGMENTATION_ATLAS_ENV = "OCT_LAYER_ATLAS"
 DEFAULT_LAYER_COUNT = 15
@@ -30,26 +31,24 @@ class UNetSegmenter:
     _instance = None
 
     def __init__(self):
-        if torch.cuda.is_available():
-            self.device = torch.device('cuda')
-        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
-            self.device = torch.device('mps')
-        else:
-            self.device = torch.device('cpu')
+        self.device = get_compute_device()
         self.model = None
-        checkpoint_path = CORE_ML_SEG_DIR / "weights" / "unet_hierarchical_best_cls.pth"
+        from .constants import UNET_CHECKPOINT_PATH
+        checkpoint_path = UNET_CHECKPOINT_PATH
             
-        if HierarchicalUNet is not None and checkpoint_path.exists():
-            try:
-                self.model = HierarchicalUNet(n_channels=1, n_coarse_classes=3, n_granular_classes=15)
+        try:
+            from models_suite.model1_oct5k_layers.unet_layers import RetinalLayersUNet
+            if checkpoint_path.exists():
+                self.model = RetinalLayersUNet(in_channels=1, num_classes=6)
                 checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
-                self.model.load_state_dict(checkpoint['model_state_dict'])
+                state_dict = checkpoint['model_state_dict'] if 'model_state_dict' in checkpoint else checkpoint
+                self.model.load_state_dict(state_dict)
                 self.model.to(self.device)
                 self.model.eval()
-                print("Successfully loaded legacy UNetSegmenter.")
-            except Exception as e:
-                print(f"Failed to load legacy UNet model: {e}")
-                self.model = None
+                print("Successfully loaded Model 1 RetinalLayersUNet Segmenter.")
+        except Exception as e:
+            print(f"Failed to load RetinalLayersUNet model: {e}")
+            self.model = None
 
     @classmethod
     def get_instance(cls):
@@ -105,7 +104,10 @@ class UnifiedOCTAnalyzer:
     _instance = None
 
     def __init__(self):
-        if torch.cuda.is_available():
+        env_device = os.environ.get("OCT_LOCAL_DEVICE", "cpu").strip().lower()
+        if env_device != "auto":
+            self.device = torch.device(env_device)
+        elif torch.cuda.is_available():
             self.device = torch.device('cuda')
         elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
             self.device = torch.device('mps')

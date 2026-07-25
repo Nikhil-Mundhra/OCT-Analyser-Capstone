@@ -13,8 +13,7 @@ import tempfile
 RUNTIME_DIR = Path(tempfile.gettempdir()) / "runtime_uploads"
 PREVIEW_DIR = RUNTIME_DIR / "previews"
 
-@celery_app.task(bind=True)
-def process_scan_task(self, scan_id: str, upload_path_str: str):
+def process_scan_task_direct(scan_id: str, upload_path_str: str, task_id_override: str = None):
     db: Session = SessionLocal()
     scan_record = db.query(ScanRecord).filter(ScanRecord.id == scan_id).first()
     
@@ -24,7 +23,8 @@ def process_scan_task(self, scan_id: str, upload_path_str: str):
 
     try:
         scan_record.status = "processing"
-        scan_record.task_id = self.request.id
+        if task_id_override:
+            scan_record.task_id = task_id_override
         db.commit()
 
         upload_path = Path(upload_path_str)
@@ -57,6 +57,10 @@ def process_scan_task(self, scan_id: str, upload_path_str: str):
         raise exc
     finally:
         db.close()
+
+@celery_app.task(bind=True)
+def process_scan_task(self, scan_id: str, upload_path_str: str):
+    return process_scan_task_direct(scan_id, upload_path_str, task_id_override=self.request.id)
 
 def _prefix_preview_urls(scan_id: str, result: dict) -> None:
     result["previews"] = {

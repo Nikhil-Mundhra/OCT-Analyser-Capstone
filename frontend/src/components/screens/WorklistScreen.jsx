@@ -20,8 +20,8 @@ export function WorklistScreen() {
   return (
     <div className="grid gap-5 lg:grid-cols-12">
       <Card title="Triage Queue" subtitle="AI rapidly processes routine scans and protects specialist bandwidth." icon={RouteIcon} className="lg:col-span-8">
-        <div className="overflow-hidden rounded-2xl border border-slate-200">
-          <div className="grid grid-cols-5 bg-slate-100 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">
+        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+          <div className="grid grid-cols-5 bg-slate-900 border-b border-slate-800 px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">
             <span>Patient</span>
             <span>Scan</span>
             <span>AI route</span>
@@ -30,22 +30,22 @@ export function WorklistScreen() {
           </div>
 
           {scanHistory.length === 0 ? (
-            <div className="p-8 text-center text-slate-500">No scans in triage queue. Upload a new scan to get started.</div>
+            <div className="p-8 text-center text-slate-400 text-xs">No scans in triage queue. Upload a new scan to get started.</div>
           ) : (
             scanHistory.map((s) => {
               const liveRisk = riskFromScan(s);
               return (
-                <div key={s.scan_id} className="grid grid-cols-5 items-center border-t border-slate-100 px-4 py-4 text-sm text-slate-700">
-                  <span className="font-bold text-slate-900">{s.patient_id || "Unknown"}</span>
-                  <span>{s.scan_type || s.source_format}</span>
+                <div key={s.scan_id} className="grid grid-cols-5 items-center border-t border-slate-800/80 px-4 py-3.5 text-xs text-slate-300 hover:bg-slate-900/50 transition-all">
+                  <span className="font-bold font-mono text-slate-100">{s.patient_id || "Unknown"}</span>
+                  <span className="text-slate-300 truncate pr-2">{s.scan_type || s.source_format}</span>
                   <span><StatusBadge tone={liveRisk.tone}>{liveRisk.label}</StatusBadge></span>
-                  <span className="font-bold">{liveRisk.confidence}</span>
-                  <span className="flex gap-2">
-                    <button onClick={() => handleView(s)} className="rounded bg-sky-50 px-2 py-1 text-xs font-bold text-sky-700 hover:bg-sky-100 transition-colors">
+                  <span className="font-bold font-mono text-sky-400">{liveRisk.confidence}</span>
+                  <span className="flex items-center gap-2">
+                    <button onClick={() => handleView(s)} className="rounded-lg bg-sky-500/20 text-sky-400 hover:bg-sky-500/30 border border-sky-500/30 px-3 py-1 text-xs font-bold transition-all">
                       View
                     </button>
-                    <button onClick={() => deleteScan(s.scan_id || s.id)} className="rounded bg-rose-50 p-1 text-rose-700 hover:bg-rose-100 transition-colors" title="Delete">
-                      <Trash2 className="h-4 w-4" />
+                    <button onClick={() => deleteScan(s.scan_id || s.id)} className="rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 p-1.5 transition-all" title="Delete">
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </span>
                 </div>
@@ -54,11 +54,11 @@ export function WorklistScreen() {
           )}
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button onClick={() => router.push("/QC")} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-sm">
+          <button onClick={() => router.push("/qc")} className="rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 px-5 py-2.5 text-xs font-bold transition-all shadow-md">
             Upload new scan
           </button>
           {scan?.status === "completed" ? (
-            <button onClick={() => router.push("/review")} className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm">
+            <button onClick={() => router.push("/review")} className="rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 text-xs font-bold transition-all">
               Review active case
             </button>
           ) : null}
@@ -66,11 +66,11 @@ export function WorklistScreen() {
       </Card>
 
       <Card title="Triage Rules" subtitle="Routing logic is visible to reduce blind trust." icon={ShieldAlert} className="lg:col-span-4">
-        <div className="space-y-3 text-sm text-slate-700">
-          <div className="rounded-2xl bg-emerald-50 p-4"><b>Low risk:</b> routine queue, optional clinician sampling.</div>
-          <div className="rounded-2xl bg-amber-50 p-4"><b>Ambiguous:</b> requires human audit before report sign-off.</div>
-          <div className="rounded-2xl bg-rose-50 p-4"><b>High risk:</b> route to specialist with anomaly overlays and history.</div>
-          <div className="rounded-2xl bg-slate-50 p-4"><b>Poor QC:</b> no model claim, request re-upload or manual inspection.</div>
+        <div className="space-y-3 text-xs">
+          <div className="rounded-xl bg-emerald-950/40 border border-emerald-500/30 p-3.5 text-emerald-200"><b className="text-emerald-400">Low risk:</b> routine queue, optional clinician sampling.</div>
+          <div className="rounded-xl bg-amber-950/40 border border-amber-500/30 p-3.5 text-amber-200"><b className="text-amber-400">Ambiguous:</b> requires human audit before report sign-off.</div>
+          <div className="rounded-xl bg-rose-950/40 border border-rose-500/30 p-3.5 text-rose-200"><b className="text-rose-400">High risk:</b> route to specialist with anomaly overlays and history.</div>
+          <div className="rounded-xl bg-slate-950 border border-slate-800 p-3.5 text-slate-300"><b className="text-slate-400">Poor QC:</b> no model claim, request re-upload or manual inspection.</div>
         </div>
       </Card>
     </div>

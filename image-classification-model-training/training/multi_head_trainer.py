@@ -53,15 +53,15 @@ class MultiHeadTrainer:
         self.writer = SummaryWriter(log_dir=str(tb_dir))
 
         self.model.to(self.device)
-        self._amp_enabled = (self.device.type == "cuda")
+        self._amp_enabled = (self.device.type in ["cuda", "mps"])
         self._amp_dtype = amp_dtype
         
         # Initialize GradScaler for mixed precision (CUDA only) to prevent FP16 gradient overflow
-        self.scaler = torch.cuda.amp.GradScaler(enabled=self._amp_enabled)
+        self.scaler = torch.amp.GradScaler('cuda', enabled=(self.device.type == "cuda"))
 
         logger.info(
-            "MultiHeadTrainer ready | device=%s | amp=%s | checkpoints=%s",
-            self.device, self._amp_enabled, self.ckpt_dir,
+            "MultiHeadTrainer ready | device=%s | amp=%s (%s) | checkpoints=%s",
+            self.device, self._amp_enabled, self._amp_dtype, self.ckpt_dir,
         )
 
     def _compute_loss(self, logits_dict: dict, labels_dict: dict):
@@ -83,10 +83,25 @@ class MultiHeadTrainer:
                       
         return total_loss, loss_h1, loss_h2, torch.tensor(0.0, device=self.device)
 
-    def _train_epoch(self, loader, optimizer, max_norm: float = 5.0, smoke_test: bool = False, accum_steps: int = 1):
+    def _train_epoch(
+        self,
+        loader,
+        optimizer,
+        max_norm: float = 5.0,
+        smoke_test: bool = False,
+        accum_steps: int = 1,
+        save_steps: int = 2250,
+        fold_id: int = 0,
+        epoch: int = 0,
+        phase: str = "finetune",
+        best_val_loss: float = float("inf"),
+        best_val_macro_f1: float = 0.0,
+        hf_repo: Optional[str] = None,
+    ):
         self.model.train()
         total_loss = 0.0
         n_batches = len(loader)
+        start_time = time.time()
 
         _amp_ctx = (
             torch.autocast(device_type=self.device.type, dtype=self._amp_dtype)
@@ -130,7 +145,23 @@ class MultiHeadTrainer:
                     torch.cuda.empty_cache()
             
             if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == n_batches:
-                logger.info(f"   [Train] Batch {batch_idx + 1}/{n_batches} | Loss: {loss.item():.4f}")
+                elapsed = time.time() - start_time
+                sec_per_batch = elapsed / (batch_idx + 1)
+                logger.info(f"   [Train] Batch {batch_idx + 1}/{n_batches} | Loss: {loss.item():.4f} | Time: {elapsed:.1f}s ({sec_per_batch:.2f}s/batch)")
+
+            # Mid-Epoch Checkpoint Saving
+            if save_steps > 0 and (batch_idx + 1) % save_steps == 0 and (batch_idx + 1) < n_batches:
+                self._save_checkpoint(
+                    f"fold{fold_id}_last_model.pth",
+                    optimizer=optimizer,
+                    epoch=epoch,
+                    phase=phase,
+                    batch_idx=batch_idx,
+                    best_val_loss=best_val_loss,
+                    best_val_macro_f1=best_val_macro_f1,
+                    hf_repo=hf_repo,
+                )
+                logger.info(f"   ✓ Mid-epoch checkpoint saved at batch {batch_idx + 1}/{n_batches} (fold{fold_id}_last_model.pth)")
             
             if smoke_test and batch_idx >= 2:
                 break
@@ -175,6 +206,9 @@ class MultiHeadTrainer:
                 
                 batch_preds = self.metric_extractors['h2'](batch_logits)
                 h2_preds.extend(batch_preds.cpu().numpy().tolist())
+
+            if (batch_idx + 1) % 200 == 0 or (batch_idx + 1) == n_batches:
+                logger.info(f"   [Val] Batch {batch_idx + 1}/{n_batches} | Loss: {loss.item():.4f}")
                 
             if smoke_test and batch_idx >= 2:
                 break
@@ -213,7 +247,8 @@ class MultiHeadTrainer:
         smoke_test: bool = False,
         resume_path: str = None,
         hf_repo: str = None,
-        accum_steps: int = 1
+        accum_steps: int = 1,
+        save_steps: int = 2250
     ) -> Dict:
         global_step = fold_id * 100_000
         best_val_loss = float("inf")
@@ -259,11 +294,25 @@ class MultiHeadTrainer:
                 optimizer_warmup.load_state_dict(ckpt['optimizer_state_dict'])
 
             for epoch in range(start_epoch_warmup, warmup_epochs):
-                train_loss = self._train_epoch(train_loader, optimizer_warmup, smoke_test=smoke_test, accum_steps=accum_steps)
+                ep_start = time.time()
+                train_loss = self._train_epoch(
+                    train_loader,
+                    optimizer_warmup,
+                    smoke_test=smoke_test,
+                    accum_steps=accum_steps,
+                    save_steps=save_steps,
+                    fold_id=fold_id,
+                    epoch=epoch,
+                    phase='warmup',
+                    best_val_loss=best_val_loss,
+                    best_val_macro_f1=best_val_macro_f1,
+                    hf_repo=hf_repo
+                )
                 val_loss, h2_f1, h2_recall, h2_acc = self._val_epoch(val_loader, smoke_test=smoke_test)
                 global_step += 1
+                ep_duration = time.time() - ep_start
                 
-                logger.info(f"Ep {epoch:3d} [warmup|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lr {warmup_lr:.2e}")
+                logger.info(f"Ep {epoch:3d} [warmup|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lr {warmup_lr:.2e} | time {ep_duration:.1f}s")
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
                 
@@ -299,19 +348,33 @@ class MultiHeadTrainer:
             early_stopper.best_value = best_val_loss
 
             for epoch in range(start_epoch_ft, finetune_epochs):
-                train_loss = self._train_epoch(train_loader, optimizer_ft, smoke_test=smoke_test, accum_steps=accum_steps)
+                ep_start = time.time()
+                abs_epoch = warmup_epochs + epoch
+                train_loss = self._train_epoch(
+                    train_loader,
+                    optimizer_ft,
+                    smoke_test=smoke_test,
+                    accum_steps=accum_steps,
+                    save_steps=save_steps,
+                    fold_id=fold_id,
+                    epoch=abs_epoch,
+                    phase='finetune',
+                    best_val_loss=best_val_loss,
+                    best_val_macro_f1=best_val_macro_f1,
+                    hf_repo=hf_repo
+                )
                 val_loss, h2_f1, h2_recall, h2_acc = self._val_epoch(val_loader, smoke_test=smoke_test)
                 scheduler.step()
                 
                 current_lr = scheduler.get_last_lr()[0]
                 global_step += 1
-                abs_epoch = warmup_epochs + epoch
+                ep_duration = time.time() - ep_start
                 
                 self.writer.add_scalar(f"fold{fold_id}/loss/train", train_loss, global_step)
                 self.writer.add_scalar(f"fold{fold_id}/loss/val", val_loss, global_step)
                 self.writer.add_scalar(f"fold{fold_id}/metrics/h2_macro_f1", h2_f1, global_step)
 
-                logger.info(f"Ep {abs_epoch:3d} [finetune|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lr {current_lr:.2e}")
+                logger.info(f"Ep {abs_epoch:3d} [finetune|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lr {current_lr:.2e} | time {ep_duration:.1f}s")
 
                 if h2_f1 > best_val_macro_f1:
                     best_val_macro_f1 = h2_f1
@@ -319,7 +382,10 @@ class MultiHeadTrainer:
                     self._save_checkpoint(f"fold{fold_id}_best_model.pth", optimizer=optimizer_ft, scheduler=scheduler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
                     logger.info(f"  ✓ New best — H2 macro_f1={h2_f1:.4f}")
 
+                # Always save last (rolling) and a numbered epoch snapshot so no epoch is ever lost
                 self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_ft, scheduler=scheduler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
+                self._save_checkpoint(f"fold{fold_id}_epoch_{abs_epoch:03d}.pth", optimizer=optimizer_ft, scheduler=scheduler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1)
+                logger.info(f"  Saved fold{fold_id}_epoch_{abs_epoch:03d}.pth  (f1={h2_f1:.4f})")
 
                 if early_stopper.step(val_loss):
                     logger.info(f"Early stopping at epoch {abs_epoch}")
@@ -329,8 +395,9 @@ class MultiHeadTrainer:
 
         return best_metrics
 
-    def _save_checkpoint(self, filename: str, optimizer=None, scheduler=None, epoch=None, phase=None, best_val_loss=None, best_val_macro_f1=None, hf_repo: str = None) -> None:
+    def _save_checkpoint(self, filename: str, optimizer=None, scheduler=None, epoch=None, phase=None, batch_idx=None, best_val_loss=None, best_val_macro_f1=None, hf_repo: str = None) -> None:
         path = self.ckpt_dir / filename
+        tmp_path = path.with_suffix(".pth.tmp")  # atomic write: temp → rename
         state = {
             "model_state_dict": self.model.state_dict(),
             "mode": self.mode,
@@ -339,14 +406,16 @@ class MultiHeadTrainer:
         if scheduler: state["scheduler_state_dict"] = scheduler.state_dict()
         if epoch is not None: state["epoch"] = epoch
         if phase is not None: state["phase"] = phase
+        if batch_idx is not None: state["batch_idx"] = batch_idx
         if best_val_loss is not None: state["best_val_loss"] = best_val_loss
         if best_val_macro_f1 is not None: state["best_val_macro_f1"] = best_val_macro_f1
-        torch.save(state, path)
+        torch.save(state, tmp_path)        # write to temp first
+        os.replace(tmp_path, path)         # atomic rename — SIGINT during write can't corrupt final .pth
 
         # Real-time Cloud Backup to Hugging Face Hub (prevents data loss on Kaggle/Colab timeout)
         hf_token = os.environ.get("HF_TOKEN")
         target_repo = hf_repo or os.environ.get("HF_REPO_ID")
-        if target_repo and hf_token and "best" in filename:
+        if target_repo and hf_token and ("best" in filename or "last" in filename):
             clean_repo = target_repo.replace("https://huggingface.co/", "").strip("/")
             primary_type = "model"
             if clean_repo.startswith("spaces/"):

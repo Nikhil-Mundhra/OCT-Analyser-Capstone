@@ -2,23 +2,25 @@
 import React, { useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronDown, ChevronUp, UserSquare2 } from "lucide-react";
+import { ROUTES } from "../constants";
 import { useAppContext } from "../../AppContext";
 
-const VALID_PATHS = ["/QC", "/review", "/human-check"];
+const VALID_PATHS = [ROUTES.QC, ROUTES.REVIEW, ROUTES.DECISION];
 
 export function CaseSwitcher() {
   const { scan, scanHistory, setScan, setUploadState } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  // Only render on clinical tabs where case-switching is meaningful
-  if (!VALID_PATHS.includes(pathname)) return null;
-
+  // All hooks must be called before any early return (Rules of Hooks)
   const handleSelect = useCallback((selectedScan) => {
     setScan(selectedScan);
     setUploadState({ status: "Completed", progress: 100, fileName: selectedScan.filename || "", error: "" });
     setIsOpen(false);
   }, [setScan, setUploadState]);
+
+  // Only render on clinical tabs where case-switching is meaningful
+  if (!VALID_PATHS.includes(pathname)) return null;
 
   return (
     <div className="relative z-20">

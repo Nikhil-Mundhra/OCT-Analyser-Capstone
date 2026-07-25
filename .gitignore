@@ -6,9 +6,16 @@ __pycache__/
 *.pyc
 runtime_uploads/
 
+# Ignore SQLite DBs and coverage
+backend/oct_analyzer.db
+.coverage
+*.tmp
+*.pth.tmp
+
 # Ignore model checkpoints
 image-classification-model-training/checkpoints/
 image-segmentation-model-training/checkpoints/
+image-segmentation-model-training/models_suite/
 *.pth
 
 # Ignore training logs and TensorBoard artifacts
@@ -25,7 +32,6 @@ logs_test/
 frontend/.env.local
 
 # Docker local overrides (optional per-developer customisations)
-# docker
 docker-compose.override.yml
 
 # agents
@@ -41,3 +47,4 @@ models_suite/model3_hrf_dme/results/Unet/MobaXterm_172.18.186.773_20260214_11432
 models_suite/model3_hrf_dme/results/Attention-Unet/MobaXterm_172.18.186.773_20260214_125108.rtf
 image-classification-model-training/hf_space
 models_suite/model3_hrf_dme/HRF-HPC/AUNET/MobaXterm_172.18.186.773_20260214_125108.rtf
+frontend/.next

@@ -90,7 +90,7 @@ export function DashboardScreen() {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <button
-                onClick={() => router.push("/QC")}
+                onClick={() => router.push("/qc")}
                 className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
               >
                 <Upload className="h-4 w-4" /> Upload scan
@@ -126,7 +126,7 @@ export function DashboardScreen() {
           {workflow.map(([title, detail, state, Icon]) => (
             <button
               key={title}
-              onClick={() => router.push(title === "Intake" ? "/QC" : title === "Review" ? "/review" : title === "Decision" ? "/human-check" : "/QC")}
+              onClick={() => router.push(title === "Intake" ? "/qc" : title === "Review" ? "/review" : title === "Decision" ? "/human-check" : "/qc")}
               className="flex min-h-44 flex-col items-start justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-white"
             >
               <Icon className="h-5 w-5 text-slate-700" />

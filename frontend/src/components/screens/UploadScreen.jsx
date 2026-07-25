@@ -15,6 +15,7 @@ export function UploadScreen() {
   const [modality, setModality] = useState("Structural OCT");
   const [target, setTarget] = useState("Macula");
   const [pattern, setPattern] = useState("Cube / Volume (3D)");
+  const [applyArtifactMask, setApplyArtifactMask] = useState(true);
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
 
@@ -76,22 +77,22 @@ export function UploadScreen() {
           </button>
         </div>
       )}
-      <div className="grid gap-5 lg:grid-cols-12">
-        <Card title="Patient &amp; Scan Intake" subtitle="Complete details before upload" icon={Upload} className="lg:col-span-4">
+      <div className="flex flex-col gap-5">
+        <Card title="Patient &amp; Scan Intake" subtitle="Complete details before upload" icon={Upload}>
           <div className="mb-4 space-y-3">
             <div>
-              <label className="mb-1 block text-sm font-bold text-slate-700">Patient ID</label>
+              <label className="mb-1 block text-xs font-bold text-slate-300">Patient ID</label>
               <input
                 type="text"
                 value={patientId}
                 onChange={(e) => setPatientId(e.target.value)}
                 disabled={uploadState.status !== "Waiting"}
                 placeholder="Optional (e.g. PT-10294)"
-                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-100"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none disabled:bg-slate-900 disabled:text-slate-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-bold text-slate-700">Imaging Modality</label>
+              <label className="mb-1 block text-xs font-bold text-slate-300">Imaging Modality</label>
               <select
                 value={modality}
                 onChange={(e) => {
@@ -100,15 +101,15 @@ export function UploadScreen() {
                   if (newModality === "OCTA") setPattern("Cube / Volume (3D)");
                 }}
                 disabled={uploadState.status !== "Waiting"}
-                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-100"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:bg-slate-900 disabled:text-slate-500"
               >
-                <option value="Structural OCT">Structural OCT</option>
-                <option value="OCTA">OCTA</option>
-                <option value="EDI-OCT">EDI-OCT</option>
+                <option value="Structural OCT" className="bg-slate-900 text-slate-100">Structural OCT</option>
+                <option value="OCTA" className="bg-slate-900 text-slate-100">OCTA</option>
+                <option value="EDI-OCT" className="bg-slate-900 text-slate-100">EDI-OCT</option>
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-bold text-slate-700">Anatomical Target</label>
+              <label className="mb-1 block text-xs font-bold text-slate-300">Anatomical Target</label>
               <select
                 value={target}
                 onChange={(e) => {
@@ -118,35 +119,54 @@ export function UploadScreen() {
                   else if (newTarget === "Anterior Segment") setPattern("Line / Single B-Scan");
                 }}
                 disabled={uploadState.status !== "Waiting"}
-                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-100"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:bg-slate-900 disabled:text-slate-500"
               >
-                <option value="Macula">Macula</option>
-                <option value="Optic Disc / ONH">Optic Disc / ONH</option>
-                <option value="Anterior Segment">Anterior Segment</option>
-                <option value="Widefield">Widefield</option>
+                <option value="Macula" className="bg-slate-900 text-slate-100">Macula</option>
+                <option value="Optic Disc / ONH" className="bg-slate-900 text-slate-100">Optic Disc / ONH</option>
+                <option value="Anterior Segment" className="bg-slate-900 text-slate-100">Anterior Segment</option>
+                <option value="Widefield" className="bg-slate-900 text-slate-100">Widefield</option>
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-bold text-slate-700">Scan Pattern</label>
+              <label className="mb-1 block text-xs font-bold text-slate-300">Scan Pattern</label>
               <select
                 value={pattern}
                 onChange={(e) => setPattern(e.target.value)}
                 disabled={uploadState.status !== "Waiting"}
-                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-100"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:bg-slate-900 disabled:text-slate-500"
               >
-                <option value="Cube / Volume (3D)">Cube / Volume (3D)</option>
-                <option value="Raster">Raster</option>
-                <option value="Line / Single B-Scan">Line / Single B-Scan</option>
-                <option value="Radial / Star">Radial / Star</option>
-                <option value="Circle / Ring">Circle / Ring</option>
-                <option value="Mesh / Grid">Mesh / Grid</option>
+                <option value="Cube / Volume (3D)" className="bg-slate-900 text-slate-100">Cube / Volume (3D)</option>
+                <option value="Raster" className="bg-slate-900 text-slate-100">Raster</option>
+                <option value="Line / Single B-Scan" className="bg-slate-900 text-slate-100">Line / Single B-Scan</option>
+                <option value="Radial / Star" className="bg-slate-900 text-slate-100">Radial / Star</option>
+                <option value="Circle / Ring" className="bg-slate-900 text-slate-100">Circle / Ring</option>
+                <option value="Mesh / Grid" className="bg-slate-900 text-slate-100">Mesh / Grid</option>
               </select>
+            </div>
+            
+            {/* Optional Bottom-Left Artifact Masking Toggle */}
+            <div className="pt-1">
+              <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 transition-all">
+                <input
+                  type="checkbox"
+                  checked={applyArtifactMask}
+                  onChange={(e) => setApplyArtifactMask(e.target.checked)}
+                  disabled={uploadState.status !== "Waiting"}
+                  className="mt-0.5 accent-sky-500 h-4 w-4 cursor-pointer"
+                />
+                <div>
+                  <span className="text-xs font-bold text-slate-200 block">Apply Artifact Mask (Bottom-Left Zeroing)</span>
+                  <span className="text-[11px] text-slate-400 block mt-0.5 leading-snug">
+                    Zeroes out manufacturer logo/compass artifacts. Uncheck if scan is clean or tissue extends into corner.
+                  </span>
+                </div>
+              </label>
             </div>
           </div>
 
           {aiDisabled && (
-            <div className="mt-4 rounded-2xl bg-amber-50 p-4 border border-amber-200 text-sm text-amber-900 shadow-sm">
-              <div className="font-bold flex items-center gap-2 mb-1 text-amber-950">
+            <div className="mt-4 rounded-2xl bg-amber-950/40 p-4 border border-amber-500/30 text-sm text-amber-300 shadow-sm">
+              <div className="font-bold flex items-center gap-2 mb-1 text-amber-200">
                 <AlertTriangle className="h-4 w-4" /> AI Inference Disabled
               </div>
               The AI models are only validated for <b>Structural OCT</b> of the <b>Macula</b>. This scan can be uploaded for manual review, but no AI insights will be generated.
@@ -158,7 +178,7 @@ export function UploadScreen() {
             onDragLeave={() => setDragging(false)}
             onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
             className={`flex h-40 flex-col items-center justify-center rounded-2xl border-2 border-dashed p-4 text-center transition-colors ${
-              dragging ? "border-sky-400 bg-sky-50 text-sky-800" : "border-slate-300 bg-slate-50 hover:border-slate-400 text-slate-500"
+              dragging ? "border-sky-400 bg-sky-950/40 text-sky-300" : "border-slate-800 bg-slate-950/60 hover:border-slate-700 text-slate-400"
             }`}
           >
             <input
@@ -168,48 +188,48 @@ export function UploadScreen() {
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
-            <Upload className="mb-2 h-7 w-7" />
-            <p className="text-sm font-bold text-slate-800">Drag OCT/OCTA volume here</p>
-            <button onClick={() => inputRef.current?.click()} className="mt-2 rounded-xl bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-800">
+            <Upload className="mb-2 h-7 w-7 text-sky-400" />
+            <p className="text-sm font-bold text-slate-200">Drag OCT/OCTA volume here</p>
+            <button onClick={() => inputRef.current?.click()} className="mt-2 rounded-xl bg-sky-500 border border-sky-400 px-4 py-1.5 text-xs font-bold text-slate-950 hover:bg-sky-400 transition-all">
               Browse Files
             </button>
           </div>
 
-          <div className="mt-4 grid gap-3 text-sm">
-            <div className="rounded-2xl bg-slate-50 p-4"><b>File:</b> {scan?.filename || uploadState.fileName || "No scan uploaded"}</div>
-            <div className="rounded-2xl bg-slate-50 p-4"><b>Format:</b> {scan?.source_format || "Awaiting upload"}</div>
-            <div className="rounded-2xl bg-slate-50 p-4"><b>Shape:</b> {scan?.volume_shape?.join(" x ") || "N/A"}</div>
+          <div className="mt-4 grid gap-3 text-xs">
+            <div className="rounded-xl bg-slate-950 border border-slate-800 p-3 text-slate-300"><b className="text-slate-400">File:</b> {scan?.filename || uploadState.fileName || "No scan uploaded"}</div>
+            <div className="rounded-xl bg-slate-950 border border-slate-800 p-3 text-slate-300"><b className="text-slate-400">Format:</b> {scan?.source_format || "Awaiting upload"}</div>
+            <div className="rounded-xl bg-slate-950 border border-slate-800 p-3 text-slate-300"><b className="text-slate-400">Shape:</b> {scan?.volume_shape?.join(" x ") || "N/A"}</div>
           </div>
         </Card>
 
-        <Card title="Quality Control Gate" subtitle="The model can be blocked before inference if scan quality is unsafe." icon={CheckCircle2} className="lg:col-span-4">
+        <Card title="Quality Control Gate" subtitle="The model can be blocked before inference if scan quality is unsafe." icon={CheckCircle2}>
           <div className="space-y-3">
             <Metric label="Signal range" value={signalRange.length ? `${signalRange[0].toFixed(1)}-${signalRange[1].toFixed(1)}` : "N/A"} tone={completed ? "safe" : "neutral"} />
             <Metric label="Crop applied" value={scan?.qc?.crop_applied ? "Yes" : completed ? "No" : "N/A"} tone={scan?.qc?.crop_applied ? "info" : completed ? "safe" : "neutral"} />
             <Metric label="Warnings" value={qcWarnings.length} tone={qcWarnings.length ? "warning" : completed ? "safe" : "neutral"} />
             <Metric label="QC decision" value={uploadState.error ? "Blocked" : completed ? "Proceed" : uploadState.status} tone={uploadState.error ? "danger" : completed ? "info" : "neutral"} />
           </div>
-          {uploadState.error ? <div className="mt-4 rounded-2xl bg-rose-50 p-4 text-sm text-rose-800">{uploadState.error}</div> : null}
-          {qcWarnings.length ? <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">{qcWarnings.join(" ")}</div> : null}
+          {uploadState.error ? <div className="mt-4 rounded-2xl bg-rose-950/40 border border-rose-500/30 p-4 text-sm text-rose-300">{uploadState.error}</div> : null}
+          {qcWarnings.length ? <div className="mt-4 rounded-2xl bg-amber-950/40 border border-amber-500/30 p-4 text-sm text-amber-300">{qcWarnings.join(" ")}</div> : null}
         </Card>
 
-        <Card title="Pipeline Status" subtitle="Clinician sees where the case is in the system." icon={Activity} className="lg:col-span-4">
-          <div className="space-y-4">
+        <Card title="Pipeline Status" subtitle="Clinician sees where the case is in the system." icon={Activity}>
+          <div className="space-y-3">
             {["Upload received", "Preprocessing complete", "QC passed", "Inference complete", "Report ready"].map((step, index) => {
               const done = completed || uploadState.progress > index * 20;
               return (
-                <div key={step} className={`flex items-center gap-3 rounded-2xl p-4 transition-colors ${done ? "bg-emerald-50" : "bg-slate-50"}`}>
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-black ${done ? "bg-emerald-600 text-white" : "bg-white text-slate-700"}`}>
+                <div key={step} className={`flex items-center gap-3 rounded-xl p-3.5 border transition-all ${done ? "bg-emerald-950/30 border-emerald-500/30 text-emerald-300" : "bg-slate-950 border-slate-800 text-slate-400"}`}>
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold font-mono ${done ? "bg-emerald-500 text-slate-950" : "bg-slate-800 text-slate-400"}`}>
                     {index + 1}
                   </div>
-                  <span className="font-semibold text-slate-700">{step}</span>
+                  <span className="font-semibold text-xs">{step}</span>
                 </div>
               );
             })}
           </div>
           {!completed && uploadState.detail && (
-            <div className="mt-4 rounded-2xl bg-sky-50 p-4 text-sm text-sky-800 flex items-center gap-2">
-              <Spinner className="h-4 w-4 text-sky-800" />
+            <div className="mt-4 rounded-xl bg-sky-950/40 border border-sky-500/30 p-3.5 text-xs text-sky-300 flex items-center gap-2">
+              <Spinner className="h-4 w-4 text-sky-400" />
               <b>Current step:</b> {uploadState.detail}
             </div>
           )}

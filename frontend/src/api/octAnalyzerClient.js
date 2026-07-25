@@ -1,7 +1,9 @@
 const queryApiBase = globalThis.location
   ? new URLSearchParams(globalThis.location.search).get("apiBase")
   : "";
-const DEFAULT_API_BASE = "http://127.0.0.1:8000";
+const DEFAULT_API_BASE = globalThis.location?.hostname
+  ? `${globalThis.location.protocol}//${globalThis.location.hostname}:8000`
+  : "http://127.0.0.1:8000";
 
 export const OCT_ANALYZER_API_BASE = (
   globalThis.OCT_ANALYZER_API_BASE || queryApiBase || DEFAULT_API_BASE
@@ -93,8 +95,14 @@ export async function createScan(file, onProgress = null) {
  * @returns {Promise<object>}
  */
 export async function runModelSuite(file, modelId = "all", scoreThreshold = 0.5) {
+  let uploadFile = file;
+  if (!(file instanceof File) || !file.name || !file.name.includes('.')) {
+    const filename = `oct_scan_${Date.now()}.png`;
+    uploadFile = new File([file], filename, { type: file?.type || "image/png" });
+  }
+
   const form = new FormData();
-  form.append("file", file);
+  form.append("file", uploadFile, uploadFile.name);
   form.append("model_id", modelId);
   form.append("score_threshold", scoreThreshold.toString());
 
@@ -104,7 +112,8 @@ export async function runModelSuite(file, modelId = "all", scoreThreshold = 0.5)
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to execute Segmentation 5-Model Suite (HTTP ${response.status})`);
+    const errText = await response.text();
+    throw new Error(`Failed to execute Segmentation 5-Model Suite (HTTP ${response.status}): ${errText}`);
   }
 
   return await response.json();

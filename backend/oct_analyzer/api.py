@@ -1,15 +1,19 @@
+import base64
+import io
+import json
+import os
+import subprocess
+import tempfile
+import threading
 from pathlib import Path
 from shutil import copyfileobj
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, UploadFile, Depends, Form, File
+from fastapi import FastAPI, HTTPException, UploadFile, Depends, Form, File, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
-
-import base64
-import io
+from fastapi.responses import FileResponse, JSONResponse, Response
 from PIL import Image
+from sqlalchemy.orm import Session
 
 from .data_loader import load_normalized_scan
 from .interfaces import ScanResult
@@ -18,32 +22,48 @@ from .preview import preview_path
 from .classifier_integration import get_classifier
 from .database import Base, engine, get_db
 from .models import ScanRecord
-from .tasks import process_scan_task
+from .tasks import process_scan_task, process_scan_task_direct
 from .auth import get_api_key
 from .audit_log import log_scan_accessed, log_scan_created
 from .report_generator import generate_pdf_report
-from fastapi.responses import Response
 
-import tempfile
-import subprocess
-import json
-import os
+from .constants import (
+    CORS_ORIGINS,
+    CORS_ORIGIN_REGEX,
+    PREVIEW_DIR,
+    SEGMENT_PREDICT_SCRIPT,
+    SUPPORTED_SUFFIXES,
+    UNET_CHECKPOINT_PATH,
+    UPLOAD_DIR,
+)
 
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
 
-RUNTIME_DIR = Path(tempfile.gettempdir()) / "runtime_uploads"
-UPLOAD_DIR = RUNTIME_DIR / "uploads"
-PREVIEW_DIR = RUNTIME_DIR / "previews"
-SUPPORTED_SUFFIXES = {".vol", ".dcm", ".zip", ".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".bmp"}
-
 app = FastAPI(title="Local OCT Analyzer MVP")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
+    allow_origin_regex=CORS_ORIGIN_REGEX,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin", "*")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}"},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 @app.get("/")
 def read_root() -> dict[str, str]:
@@ -81,10 +101,16 @@ def create_scan(file: UploadFile, db: Session = Depends(get_db), api_key: str = 
     
     log_scan_created(scan_id, user_id=api_key or "anonymous")
 
-    # Dispatch Celery task
-    task = process_scan_task.delay(scan_id, str(upload_path))
-    
-    scan_record.task_id = task.id
+    # Dispatch Celery task with graceful background thread fallback if broker is unreachable
+    try:
+        task = process_scan_task.delay(scan_id, str(upload_path))
+        scan_record.task_id = task.id
+    except Exception as exc:
+        print(f"[API] Celery broker dispatch failed ({exc}). Running task in background thread.")
+        t = threading.Thread(target=process_scan_task_direct, args=(scan_id, str(upload_path)), daemon=True)
+        t.start()
+        scan_record.task_id = f"sync_{scan_id}"
+
     db.commit()
 
     return {
@@ -110,8 +136,8 @@ def segment_2d(file: UploadFile) -> dict:
     with img_path.open("wb") as handle:
         copyfileobj(file.file, handle)
         
-    script_path = Path(__file__).resolve().parent.parent.parent / "image-segmentation-model-training" / "scripts" / "predict.py"
-    checkpoint_path = Path(__file__).resolve().parent.parent.parent / "image-segmentation-model-training" / "checkpoints" / "unet_hierarchical_best.pth"
+    script_path = SEGMENT_PREDICT_SCRIPT
+    checkpoint_path = UNET_CHECKPOINT_PATH
     
     env = os.environ.copy()
     env["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -157,9 +183,10 @@ async def run_segmentation_suite(
     Executes models from the 5-Model Segmentation & Detection Suite (models_suite/).
     Supports single model selection ("model1".."model5") or full suite ("all").
     """
-    suffix = Path(file.filename or "").suffix.lower()
+    filename = file.filename or "scan.png"
+    suffix = Path(filename).suffix.lower() or ".png"
     if suffix not in SUPPORTED_SUFFIXES:
-        raise HTTPException(status_code=400, detail="Unsupported file type")
+        raise HTTPException(status_code=400, detail=f"Unsupported file type '{suffix}'")
 
     content = await file.read()
     try:
@@ -180,43 +207,61 @@ async def run_segmentation_suite(
 
     results = {}
 
+    def _extract_images(res):
+        if isinstance(res, tuple):
+            blended, mask = res[0], res[1]
+            return _pil_to_base64(blended) if blended else None, _pil_to_base64(mask) if mask else None
+        elif res:
+            return _pil_to_base64(res), None
+        return None, None
+
     if model_id in ["model1", "all"]:
-        overlay, metrics = predict_model1(image)
+        res, metrics = predict_model1(image)
+        ov, mk = _extract_images(res)
         results["model1"] = {
             "name": "Retinal Layers U-Net",
-            "overlay": _pil_to_base64(overlay) if overlay else None,
+            "overlay": ov,
+            "mask": mk,
             "details": metrics
         }
 
     if model_id in ["model2", "all"]:
-        overlay, metrics = predict_model2(image)
+        res, metrics = predict_model2(image)
+        ov, mk = _extract_images(res)
         results["model2"] = {
             "name": "Choroidalyzer U-Net",
-            "overlay": _pil_to_base64(overlay) if overlay else None,
+            "overlay": ov,
+            "mask": mk,
             "details": metrics
         }
 
     if model_id in ["model3", "all"]:
-        overlay, metrics = predict_model3(image)
+        res, metrics = predict_model3(image)
+        ov, mk = _extract_images(res)
         results["model3"] = {
             "name": "HRF Attention U-Net",
-            "overlay": _pil_to_base64(overlay) if overlay else None,
+            "overlay": ov,
+            "mask": mk,
             "details": metrics
         }
 
     if model_id in ["model4", "all"]:
-        overlay, metrics = predict_model4(image)
+        res, metrics = predict_model4(image)
+        ov, mk = _extract_images(res)
         results["model4"] = {
             "name": "OIMHS Hole & Cyst U-Net",
-            "overlay": _pil_to_base64(overlay) if overlay else None,
+            "overlay": ov,
+            "mask": mk,
             "details": metrics
         }
 
     if model_id in ["model5", "all"]:
-        overlay, metrics = predict_model5(image, score_threshold=score_threshold)
+        res, metrics = predict_model5(image, score_threshold=score_threshold)
+        ov, mk = _extract_images(res)
         results["model5"] = {
             "name": "OCT Pathology Detector",
-            "overlay": _pil_to_base64(overlay) if overlay else None,
+            "overlay": ov,
+            "mask": mk,
             "details": metrics
         }
 

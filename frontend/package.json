@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "dompurify": "^3.4.11",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.16.0",
     "marked": "^18.0.5",
     "next": "^15.1.7",
