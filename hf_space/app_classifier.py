@@ -65,7 +65,9 @@ def _run_classification(image_input, generate_gradcam=True):
     result = pipeline.predict(img_path, gradcam=generate_gradcam)
     return result
 
-if IS_HF_SPACE and spaces is not None:
+HAS_ZEROGPU = os.getenv("SPACES_ZERO_GPU") is not None or os.getenv("ZERO_GPU") is not None
+
+if HAS_ZEROGPU and IS_HF_SPACE and spaces is not None:
     @spaces.GPU
     def predict_multi_head(image, gradcam=True):
         return _run_classification(image, generate_gradcam=gradcam)
