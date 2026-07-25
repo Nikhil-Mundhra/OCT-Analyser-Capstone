@@ -103,16 +103,19 @@ if HAS_GRADIO:
             if isinstance(res, dict) and "error" in res:
                 return res, None
 
-            cam_img = None
+            cam_img_path = None
             if use_cam and isinstance(res, dict) and "gradcams" in res:
                 cam_data = res["gradcams"].get("L2") or res["gradcams"].get("L1")
-                if cam_data and cam_data.startswith("data:image"):
-                    import base64, io
+                if cam_data and isinstance(cam_data, str) and cam_data.startswith("data:image"):
+                    import base64, io, time
                     base64_data = cam_data.split(",")[1]
                     cam_bytes = base64.b64decode(base64_data)
-                    cam_img = Image.open(io.BytesIO(cam_bytes))
+                    pil_img = Image.open(io.BytesIO(cam_bytes))
+                    temp_dir = Path(tempfile.gettempdir())
+                    cam_img_path = str(temp_dir / f"gradcam_overlay_{int(time.time()*1000)}.png")
+                    pil_img.save(cam_img_path)
 
-            return res, cam_img
+            return res, cam_img_path
 
         btn_run.click(gradio_adapter, inputs=[inp_img, chk_gradcam], outputs=[out_json, out_cam], api_name="predict_multi_head")
 
