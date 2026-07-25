@@ -119,7 +119,8 @@ export async function createScan(file, onProgress = null) {
   try {
     const hfSpaceName = "NMundhra/OCT-Image-Classifier-Model";
     const hfClient = await GradioClient.connect(hfSpaceName);
-    const hfRes = await hfClient.predict("/predict_multi_head", [file, true]);
+    const payloadImage = localImageUrl || file;
+    const hfRes = await hfClient.predict("/predict_multi_head", [payloadImage, true]);
 
     const classificationJson = hfRes?.data?.[0];
     const gradcamObj = hfRes?.data?.[1];
