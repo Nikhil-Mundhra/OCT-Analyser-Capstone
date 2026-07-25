@@ -237,7 +237,7 @@ def build_kfold_dataloaders(
         train_ds = MultiHeadOCTDataset(config_path=config_path, fold_indices=train_idx, transform=train_transform)
         val_ds = MultiHeadOCTDataset(config_path=config_path, fold_indices=val_idx, transform=val_transform)
         
-        _pin = torch.cuda.is_available()
+        _pin = torch.cuda.is_available() or torch.backends.mps.is_available()
         train_loader = DataLoader(
             train_ds,
             batch_size=batch_size,

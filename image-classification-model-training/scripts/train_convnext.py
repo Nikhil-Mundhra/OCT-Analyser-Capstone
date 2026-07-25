@@ -20,6 +20,8 @@ cv2.setNumThreads(0)
 import torch
 import torch.nn as nn
 import torch.nn.init
+if torch.cuda.is_available():
+    torch.backends.cudnn.benchmark = True
 try:
     import timm.layers.weight_init
     timm.layers.weight_init.trunc_normal_ = lambda tensor, mean=0., std=1., a=-2., b=2.: torch.nn.init.normal_(tensor, mean=mean, std=std)
@@ -34,6 +36,7 @@ from data.dataset import build_kfold_dataloaders, MultiHeadOCTDataset
 from data.transforms import get_transforms
 from training.multi_head_trainer import MultiHeadTrainer
 from training.losses import FocalLoss
+from utils.device import ComputeManager
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
@@ -54,8 +57,11 @@ def main():
     parser.add_argument("--hf-repo", type=str, default=None, help="Hugging Face Hub repository ID (e.g. username/repo) for real-time cloud backup")
     parser.add_argument("--accum-steps", type=int, default=1, help="Number of gradient accumulation steps (effective batch size = batch_size * accum_steps)")
     parser.add_argument("--save-steps", type=int, default=2250, help="Save a mid-epoch checkpoint every N batches (0 to disable)")
+    parser.add_argument("--use-data-parallel", action="store_true", help="Enable PyTorch DataParallel across multi-GPU (disabled by default for single-GPU efficiency)")
     
     args = parser.parse_args()
+
+    compute_manager = ComputeManager(use_data_parallel=args.use_data_parallel)
 
     # Get class weights from full dataset for FocalLoss alpha
     full_ds = MultiHeadOCTDataset(config_path=args.config, transform=None)
@@ -90,14 +96,11 @@ def main():
         
         model = build_multi_head_model(pretrained=True, warmup=True)
         
-        if torch.cuda.device_count() > 1:
-            logger.info(f"Using {torch.cuda.device_count()} GPUs with DataParallel!")
-            model = nn.DataParallel(model)
-        
         trainer = MultiHeadTrainer(
             model=model,
             criterions=criterions,
             loss_weights=loss_weights,
+            compute_manager=compute_manager,
             mode="multi_head"
         )
         

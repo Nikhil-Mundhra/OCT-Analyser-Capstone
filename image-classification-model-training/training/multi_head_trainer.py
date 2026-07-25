@@ -18,7 +18,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from training.trainer import EarlyStopping, get_device
+from training.trainer import EarlyStopping
+from utils.device import get_device, get_raw_model, ComputeManager
 from sklearn.metrics import f1_score, roc_auc_score, accuracy_score, recall_score
 
 logger = logging.getLogger(__name__)
@@ -33,14 +34,16 @@ class MultiHeadTrainer:
         checkpoint_dir: str = "checkpoints",
         log_dir: str = "logs",
         device: Optional[torch.device] = None,
+        compute_manager: Optional[ComputeManager] = None,
         amp_dtype: torch.dtype = torch.float16,
         metric_extractors: Optional[Dict[str, callable]] = None,
     ) -> None:
-        self.model = model
         self.criterions = criterions
         self.loss_weights = loss_weights
         self.mode = mode
-        self.device = device or get_device()
+        self.compute_manager = compute_manager or ComputeManager(device=device)
+        self.device = self.compute_manager.device
+        self.model = self.compute_manager.prepare_model(model)
         
         # Default strategy for Multi-Class classification (H2 Pathology)
         self.metric_extractors = metric_extractors or {
@@ -52,7 +55,6 @@ class MultiHeadTrainer:
         tb_dir.mkdir(parents=True, exist_ok=True)
         self.writer = SummaryWriter(log_dir=str(tb_dir))
 
-        self.model.to(self.device)
         self._amp_enabled = (self.device.type in ["cuda", "mps"])
         self._amp_dtype = amp_dtype
         
@@ -136,13 +138,8 @@ class MultiHeadTrainer:
 
             total_loss += loss.item()
 
-            # In-Loop Intermediate Tensor Flushing & Memory Garbage Collection
-            if (batch_idx + 1) % 10 == 0:
-                del logits, accum_loss
-                if self.device.type == 'mps':
-                    torch.mps.empty_cache()
-                elif self.device.type == 'cuda':
-                    torch.cuda.empty_cache()
+            del logits, accum_loss
+            self.compute_manager.flush_cache(batch_idx=batch_idx)
             
             if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == n_batches:
                 elapsed = time.time() - start_time
