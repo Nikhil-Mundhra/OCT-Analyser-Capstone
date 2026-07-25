@@ -215,24 +215,63 @@ export function UploadScreen() {
 
         <Card title="Pipeline Status" subtitle="Clinician sees where the case is in the system." icon={Activity}>
           <div className="space-y-3">
-            {["Upload received", "Preprocessing complete", "QC passed", "Inference complete", "Report ready"].map((step, index) => {
-              const done = completed || uploadState.progress > index * 20;
+            {[
+              { label: "Upload received", doneThreshold: 20 },
+              { label: "Preprocessing complete", doneThreshold: 55 },
+              { label: "QC passed", doneThreshold: 60 },
+              { label: "Inference", doneThreshold: 99 },
+              { label: "Report ready", doneThreshold: 100 }
+            ].map((stepObj, index) => {
+              const isDone = completed || uploadState.progress >= stepObj.doneThreshold;
+              const isActive = !completed && !isDone && (
+                index === 0 ? uploadState.progress < 20 :
+                index === 1 ? uploadState.progress >= 20 && uploadState.progress < 55 :
+                index === 2 ? uploadState.progress >= 55 && uploadState.progress < 60 :
+                index === 3 ? uploadState.progress >= 60 && uploadState.progress < 99 :
+                uploadState.progress >= 99
+              );
+
+              let stepTitle = stepObj.label;
+              if (index === 3) {
+                stepTitle = isDone ? "Inference complete" : isActive ? "Inference in progress" : "Inference complete";
+              }
+
               return (
-                <div key={step} className={`flex items-center gap-3 rounded-xl p-3.5 border transition-all ${done ? "bg-emerald-950/30 border-emerald-500/30 text-emerald-300" : "bg-slate-950 border-slate-800 text-slate-400"}`}>
-                  <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold font-mono ${done ? "bg-emerald-500 text-slate-950" : "bg-slate-800 text-slate-400"}`}>
-                    {index + 1}
+                <div
+                  key={stepObj.label}
+                  className={`flex flex-col gap-1 rounded-xl p-3.5 border transition-all ${
+                    isDone
+                      ? "bg-emerald-950/30 border-emerald-500/30 text-emerald-300"
+                      : isActive
+                      ? "bg-sky-950/40 border-sky-500/50 text-sky-200 shadow-sm shadow-sky-950"
+                      : "bg-slate-950 border-slate-800 text-slate-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold font-mono transition-colors ${
+                        isDone
+                          ? "bg-emerald-500 text-slate-950"
+                          : isActive
+                          ? "bg-sky-500 text-slate-950"
+                          : "bg-slate-800 text-slate-400"
+                      }`}
+                    >
+                      {isActive ? <Spinner className="h-3.5 w-3.5 text-slate-950" /> : index + 1}
+                    </div>
+                    <span className="font-semibold text-xs">{stepTitle}</span>
                   </div>
-                  <span className="font-semibold text-xs">{step}</span>
+
+                  {/* Inline active detail string for current processing step */}
+                  {isActive && uploadState.detail && (
+                    <div className="ml-10 text-[11px] font-medium text-sky-300/90 leading-tight">
+                      {uploadState.detail}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
-          {!completed && uploadState.detail && (
-            <div className="mt-4 rounded-xl bg-sky-950/40 border border-sky-500/30 p-3.5 text-xs text-sky-300 flex items-center gap-2">
-              <Spinner className="h-4 w-4 text-sky-400" />
-              <b>Current step:</b> {uploadState.detail}
-            </div>
-          )}
         </Card>
       </div>
     </div>
