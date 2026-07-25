@@ -107,5 +107,7 @@ if HAS_GRADIO:
 
         btn_run.click(gradio_adapter, inputs=[inp_img, chk_gradcam], outputs=[out_json, out_cam], api_name="predict_multi_head")
 
-if HAS_GRADIO:
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    demo.queue()
+
+if __name__ == "__main__":
+    demo.launch()
