@@ -42,15 +42,28 @@ print("✅ ConvNeXt V2 Model loaded into CPU memory!", flush=True)
 # Inference function wrapped in ZeroGPU decorator
 def _run_classification(image_input, generate_gradcam=True):
     if image_input is None:
-        return None, "Please upload a valid OCT scan image."
+        return {"error": "Please upload a valid OCT scan image."}
 
-    # Handle image input types (PIL or file path)
+    img_path = None
     if isinstance(image_input, str):
         img_path = image_input
-    else:
+    elif isinstance(image_input, dict) and "path" in image_input:
+        img_path = image_input["path"]
+    elif hasattr(image_input, "name") and isinstance(image_input.name, str):
+        img_path = image_input.name
+    elif hasattr(image_input, "path") and isinstance(image_input.path, str):
+        img_path = image_input.path
+    elif hasattr(image_input, "save"):
         temp_dir = Path(tempfile.gettempdir())
         img_path = str(temp_dir / "temp_input_scan.png")
         image_input.save(img_path)
+    else:
+        try:
+            temp_dir = Path(tempfile.gettempdir())
+            img_path = str(temp_dir / "temp_input_scan.png")
+            Image.fromarray(np.array(image_input)).save(img_path)
+        except Exception as err:
+            return {"error": f"Invalid image format received: {type(image_input)} - {err}"}
 
     # Dynamic CUDA transfer inside GPU context
     if torch.cuda.is_available():
@@ -107,4 +120,4 @@ if HAS_GRADIO:
 
 if __name__ == "__main__":
     if HAS_GRADIO:
-        demo.launch()
+        demo.launch(show_error=True)
