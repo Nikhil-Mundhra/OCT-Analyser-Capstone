@@ -1,8 +1,9 @@
 const queryApiBase = globalThis.location
   ? new URLSearchParams(globalThis.location.search).get("apiBase")
   : "";
-const DEFAULT_API_BASE = globalThis.location?.hostname
-  ? `${globalThis.location.protocol}//${globalThis.location.hostname}:8000`
+
+const DEFAULT_API_BASE = (globalThis.location?.hostname && globalThis.location.hostname !== "localhost" && globalThis.location.hostname !== "127.0.0.1")
+  ? "" // On static Vercel host without apiBase, default to empty (standalone client mode)
   : "http://127.0.0.1:8000";
 
 export const OCT_ANALYZER_API_BASE = (
@@ -12,15 +13,25 @@ export const OCT_ANALYZER_API_BASE = (
   DEFAULT_API_BASE
 ).replace(/\/$/, "");
 
-// Segmentation endpoint:
-//   - Local dev:  set NEXT_PUBLIC_SEGMENTATION_API_URL=http://127.0.0.1:8000 in frontend/.env.local
-//   - Production: set NEXT_PUBLIC_SEGMENTATION_API_URL=https://nmundhra-oct-segmentation-model.hf.space in frontend/.env.production
-//   - Fallback:   same host as the backend API (local /predict endpoint)
 export const SEGMENTATION_API_BASE = (
   (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_SEGMENTATION_API_URL) ||
   globalThis.SEGMENTATION_API_BASE ||
-  OCT_ANALYZER_API_BASE
+  "https://nmundhra-oct-segmentation-model.hf.space"
 ).replace(/\/$/, "");
+
+export const CLASSIFIER_API_BASE = (
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_CLASSIFIER_API_URL) ||
+  globalThis.CLASSIFIER_API_BASE ||
+  "https://nmundhra-oct-image-classifier-model.hf.space"
+).replace(/\/$/, "");
+
+function isFastApiBackendAvailable() {
+  if (!OCT_ANALYZER_API_BASE) return false;
+  if (OCT_ANALYZER_API_BASE.includes("hf.space") || OCT_ANALYZER_API_BASE.includes("huggingface.co")) {
+    return false;
+  }
+  return true;
+}
 
 /** Maximum time to wait for a scan to move from pending/processing to a terminal state. */
 const MAX_POLL_DURATION_MS = 120_000; // 2 minutes
@@ -44,17 +55,19 @@ export async function createScan(file, onProgress = null) {
 
   let scanRecord = null;
 
-  // Step 1: Submit scan to background queue if backend is reachable
-  try {
-    const res = await fetch(apiUrl("/api/scans"), {
-      method: "POST",
-      body: form,
-    });
-    if (res.ok) {
-      scanRecord = await res.json();
+  // Step 1: Submit scan to background queue ONLY if a valid FastAPI backend is configured
+  if (isFastApiBackendAvailable()) {
+    try {
+      const res = await fetch(apiUrl("/api/scans"), {
+        method: "POST",
+        body: form,
+      });
+      if (res.ok) {
+        scanRecord = await res.json();
+      }
+    } catch (err) {
+      console.warn("FastAPI backend not directly reachable, switching to client/HF fallback...", err);
     }
-  } catch (err) {
-    console.warn("Backend API not directly reachable, switching to client/HF fallback...", err);
   }
 
   // Step 2: Poll for completion if job queue is active
@@ -94,7 +107,7 @@ export async function createScan(file, onProgress = null) {
     return normalized;
   }
 
-  // Fallback: Client-side scan object if backend API is unreachable on static host
+  // Fallback: Client-side scan object if backend API is unreachable or on static host
   if (onProgress) onProgress("Preprocessing scan & generating evidence...");
 
   const fallbackId = typeof crypto !== "undefined" && crypto.randomUUID
@@ -140,17 +153,19 @@ export async function runModelSuite(file, modelId = "all", scoreThreshold = 0.5)
   form.append("model_id", modelId);
   form.append("score_threshold", scoreThreshold.toString());
 
-  try {
-    const response = await fetch(apiUrl("/api/segment_suite"), {
-      method: "POST",
-      body: form,
-    });
+  if (isFastApiBackendAvailable()) {
+    try {
+      const response = await fetch(apiUrl("/api/segment_suite"), {
+        method: "POST",
+        body: form,
+      });
 
-    if (response.ok) {
-      return await response.json();
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.warn("Segmentation API unreachable, returning mock suite results...", err);
     }
-  } catch (err) {
-    console.warn("Segmentation API unreachable, returning mock suite results...", err);
   }
 
   return {
