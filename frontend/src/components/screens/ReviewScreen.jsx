@@ -169,12 +169,19 @@ export function ReviewScreen() {
                       {/* Mode: Segmented Layers & Lesions (Real Deep Learning Suite Mask or SVG Fallback) */}
                       {(viewMode === "segmented" || viewMode === "suite") && (
                         <>
-                          {currentResult ? (
+                          {currentResult && (currentResult.mask || currentResult.overlay) ? (
                             <img
                               src={currentResult.mask || currentResult.overlay}
                               alt="Real Segmentation Suite Mask Overlay"
                               className="absolute top-0 left-0 h-full w-full object-contain pointer-events-none"
                               style={{ opacity: overlayOpacity, mixBlendMode: currentResult.mask ? "normal" : "screen" }}
+                            />
+                          ) : scan?.previews?.unet_overlay && scan.previews.unet_overlay !== scan.localImageUrl ? (
+                            <img
+                              src={scan.previews.unet_overlay}
+                              alt="Segmentation Layer Overlay"
+                              className="absolute top-0 left-0 h-full w-full object-contain pointer-events-none"
+                              style={{ opacity: overlayOpacity, mixBlendMode: "screen" }}
                             />
                           ) : scan?.segmentation ? (
                             <svg viewBox="0 0 512 512" className="absolute top-0 left-0 h-full w-full pointer-events-none" preserveAspectRatio="none">
@@ -205,9 +212,9 @@ export function ReviewScreen() {
                       )}
 
                       {/* Mode: Grad-CAM Overlay */}
-                      {viewMode === "gradcam" && gradcams?.L2 && (
+                      {viewMode === "gradcam" && (gradcams?.L2 || gradcams?.L1 || scan?.previews?.gradcam) && (
                         <img
-                          src={gradcams.L2}
+                          src={gradcams?.L2 || gradcams?.L1 || scan?.previews?.gradcam}
                           alt="Grad-CAM Attention Map"
                           className="absolute top-0 left-0 h-full w-full object-contain pointer-events-none opacity-75 mix-blend-screen"
                         />
