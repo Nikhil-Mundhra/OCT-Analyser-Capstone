@@ -1,14 +1,21 @@
 import io
 import datetime
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib import colors
+
+try:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+    from reportlab.lib import colors
+    HAS_REPORTLAB = True
+except ModuleNotFoundError:
+    HAS_REPORTLAB = False
 
 def generate_pdf_report(scan_id: str, result: dict) -> bytes:
     """
     Generates a PDF clinical report from an OCT scan result.
     Returns the PDF file as bytes.
     """
+    if not HAS_REPORTLAB:
+        raise RuntimeError("reportlab package is required for PDF report generation. Please install reportlab.")
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter

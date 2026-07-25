@@ -20,3 +20,4 @@ sqlalchemy
 pydantic-settings
 oct-converter
 torchvision
+reportlab
