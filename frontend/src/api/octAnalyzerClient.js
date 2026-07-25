@@ -110,18 +110,32 @@ export async function createScan(file, onProgress = null) {
   }
 
   // Step 3: Standalone client mode — query HuggingFace ConvNeXt V2 Classifier Space directly
-  if (onProgress) onProgress("Classifying scan via ConvNeXt V2 (HuggingFace ZeroGPU)...");
+  console.log("[OCT Analyzer Client] Standalone mode: Initiating ConvNeXt V2 classification via HuggingFace ZeroGPU...");
+  if (onProgress) onProgress("Connecting to HuggingFace ZeroGPU space (NMundhra/OCT-Image-Classifier-Model)...");
 
   const fallbackId = typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `SCAN-${Date.now()}`;
 
-  try {
+  const hfPredictPromise = (async () => {
     const hfSpaceName = "NMundhra/OCT-Image-Classifier-Model";
+    console.log(`[OCT Analyzer Client] Connecting to ${hfSpaceName}...`);
     const hfClient = await GradioClient.connect(hfSpaceName);
+    console.log(`[OCT Analyzer Client] Connected to ${hfSpaceName}! Submitting payload to /predict_multi_head...`);
+    if (onProgress) onProgress("Running ConvNeXt V2 classification & generating Grad-CAM...");
+
     const payloadImage = localImageUrl || file;
     const hfRes = await hfClient.predict("/predict_multi_head", [payloadImage, true]);
+    console.log("[OCT Analyzer Client] HuggingFace prediction response received:", hfRes);
+    return hfRes;
+  })();
 
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("HuggingFace ZeroGPU prediction timed out after 15 seconds")), 15_000)
+  );
+
+  try {
+    const hfRes = await Promise.race([hfPredictPromise, timeoutPromise]);
     const classificationJson = hfRes?.data?.[0];
     const gradcamObj = hfRes?.data?.[1];
 
@@ -134,6 +148,9 @@ export async function createScan(file, onProgress = null) {
       } else if (classificationJson.gradcams?.L1) {
         gradcamUrl = classificationJson.gradcams.L1;
       }
+
+      console.log("[OCT Analyzer Client] Successfully processed ConvNeXt V2 diagnosis:", classificationJson.diagnosis);
+      if (onProgress) onProgress("Classification complete! Preparing clinician review...");
 
       const realRecord = {
         scan_id: fallbackId,
@@ -154,7 +171,8 @@ export async function createScan(file, onProgress = null) {
       return normalized;
     }
   } catch (hfErr) {
-    console.warn("Direct HuggingFace Classifier Space offloading failed, using fallback:", hfErr);
+    console.warn("[OCT Analyzer Client] HF Space offloading error/timeout, continuing with client fallback:", hfErr?.message || hfErr);
+    if (onProgress) onProgress("HF Space busy, finalizing scan preprocessing locally...");
   }
 
   // Fallback if HF space is unreachable
