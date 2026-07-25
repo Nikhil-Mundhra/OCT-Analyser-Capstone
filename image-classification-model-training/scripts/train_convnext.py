@@ -13,11 +13,18 @@ import sys
 # Crucial to prevent PyTorch DataLoader multiprocessing deadlocks with OpenCV/ITK
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
 import cv2
 cv2.setNumThreads(0)
 
 import torch
 import torch.nn as nn
+import torch.nn.init
+try:
+    import timm.layers.weight_init
+    timm.layers.weight_init.trunc_normal_ = lambda tensor, mean=0., std=1., a=-2., b=2.: torch.nn.init.normal_(tensor, mean=mean, std=std)
+except ImportError:
+    pass
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

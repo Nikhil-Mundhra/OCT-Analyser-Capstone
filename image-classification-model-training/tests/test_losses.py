@@ -6,8 +6,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from training.losses import FocalLoss
-from train_convnext_mps import AsymmetricLoss, BinaryFocalLossWithLogits
+from training.losses import FocalLoss, LabelSmoothingCrossEntropy
 
 class TestLosses(unittest.TestCase):
     def test_focal_loss(self):
@@ -28,32 +27,14 @@ class TestLosses(unittest.TestCase):
         
         self.assertNotEqual(loss_val_weighted.item(), loss_val.item())
         
-    def test_asymmetric_loss(self):
-        """Verify AsymmetricLoss penalizes False Negatives more than False Positives."""
-        loss_fn = AsymmetricLoss(gamma_neg=4.0, gamma_pos=1.0, clip=0.05)
-        
-        inputs = torch.tensor([
-            [10.0, -10.0, -10.0],
-            [-10.0, 10.0, -10.0] 
-        ])
-        
-        targets = torch.tensor([
-            [1.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0] 
-        ])
+    def test_label_smoothing_loss(self):
+        """Verify LabelSmoothingCrossEntropy."""
+        loss_fn = LabelSmoothingCrossEntropy(smoothing=0.1)
+        inputs = torch.tensor([[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0]])
+        targets = torch.tensor([0, 1])
         
         loss_val = loss_fn(inputs, targets)
         self.assertGreater(loss_val.item(), 0)
-        self.assertFalse(torch.isnan(loss_val))
-
-    def test_binary_focal_loss(self):
-        """Verify BinaryFocalLossWithLogits handles scalar alpha properly."""
-        loss_fn = BinaryFocalLossWithLogits(alpha=torch.tensor([5.0]), gamma=2.0)
-        
-        inputs = torch.tensor([[10.0], [-10.0]])
-        targets = torch.tensor([[1.0], [0.0]])
-        
-        loss_val = loss_fn(inputs, targets)
         self.assertFalse(torch.isnan(loss_val))
 
 if __name__ == '__main__':

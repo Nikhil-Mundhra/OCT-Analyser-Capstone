@@ -13,11 +13,23 @@ from matplotlib.backends.backend_pdf import PdfPages
 import torch.nn.functional as F
 
 import torch.nn.init
-import timm.layers.weight_init
-timm.layers.weight_init.trunc_normal_ = lambda tensor, mean=0., std=1., a=-2., b=2.: torch.nn.init.normal_(tensor, mean=mean, std=std)
+try:
+    import timm.layers.weight_init
+    timm.layers.weight_init.trunc_normal_ = lambda tensor, mean=0., std=1., a=-2., b=2.: torch.nn.init.normal_(tensor, mean=mean, std=std)
+except ImportError:
+    pass
+
+# Add project root to sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.multi_head_convnext import build_multi_head_model
-from train_convnext_mps import MultiHeadOCTDataset, PATHOLOGY_CLASSES
+from data.dataset import MultiHeadOCTDataset
+
+PATHOLOGY_CLASSES = [
+    'CNV', 'DRUSEN', 'AMD', 'General_AMD', 
+    'DME', 'DR', 'MH', 'RVO', 'RAO', 
+    'CSR', 'ERM', 'VID'
+]
 
 class GradCAM:
     def __init__(self, model, target_layer):
@@ -79,7 +91,8 @@ def get_data_loader(manifest_path, batch_size=32):
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    full_dataset = MultiHeadOCTDataset(manifest_path, transform=val_transform)
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "hierarchy.yaml")
+    full_dataset = MultiHeadOCTDataset(config_path=config_path, transform=val_transform)
     train_size = int(0.8 * len(full_dataset))
     np.random.seed(42)
     indices = np.random.permutation(len(full_dataset)).tolist()
@@ -235,7 +248,6 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     print("\n" + "="*50)
     print("H2 (Granular Pathology Multi-Class) Metrics")
     print("="*50)
-    # Multi-class F1 and accuracy
     print(f"Accuracy: {accuracy_score(h2_targets, h2_preds):.4f}")
     print(f"Macro F1: {f1_score(h2_targets, h2_preds, average='macro', zero_division=0):.4f}")
     print(classification_report(h2_targets, h2_preds, target_names=PATHOLOGY_CLASSES, zero_division=0))
@@ -268,7 +280,7 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
 def main():
     device, pdf_path = setup_environment()
     pdf = PdfPages(pdf_path)
-    val_loader = get_data_loader("dataset_manifest.csv")
+    val_loader = get_data_loader("data/dataset_manifest.csv")
     model, grad_cam = load_model("hf_space/weights/multi_head_mps/fold0_best_model.pth", device)
     
     res = run_evaluation_loop(model, val_loader, grad_cam, pdf, device)

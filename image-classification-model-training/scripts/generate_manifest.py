@@ -92,7 +92,8 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_root', type=str, default="/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified")
-    parser.add_argument('--output_path', type=str, default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset_manifest.csv"))
+    default_out = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "dataset_manifest.csv")
+    parser.add_argument('--output_path', type=str, default=default_out)
     args = parser.parse_args()
     
     generate_manifest(args.dataset_root, args.output_path)
