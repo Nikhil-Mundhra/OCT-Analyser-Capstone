@@ -9,6 +9,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@gradio/client": "^2.3.1",
     "dompurify": "^3.4.11",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.1",

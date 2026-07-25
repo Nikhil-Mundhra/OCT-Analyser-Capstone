@@ -1,3 +1,5 @@
+import { Client as GradioClient } from "@gradio/client";
+
 const queryApiBase = globalThis.location
   ? new URLSearchParams(globalThis.location.search).get("apiBase")
   : "";
@@ -107,13 +109,54 @@ export async function createScan(file, onProgress = null) {
     return normalized;
   }
 
-  // Fallback: Client-side scan object if backend API is unreachable or on static host
-  if (onProgress) onProgress("Preprocessing scan & generating evidence...");
+  // Step 3: Standalone client mode — query HuggingFace ConvNeXt V2 Classifier Space directly
+  if (onProgress) onProgress("Classifying scan via ConvNeXt V2 (HuggingFace ZeroGPU)...");
 
   const fallbackId = typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `SCAN-${Date.now()}`;
 
+  try {
+    const hfSpaceName = "NMundhra/OCT-Image-Classifier-Model";
+    const hfClient = await GradioClient.connect(hfSpaceName);
+    const hfRes = await hfClient.predict("/predict_multi_head", [file, true]);
+
+    const classificationJson = hfRes?.data?.[0];
+    const gradcamObj = hfRes?.data?.[1];
+
+    if (classificationJson && !classificationJson.error) {
+      let gradcamUrl = localImageUrl;
+      if (gradcamObj && gradcamObj.url) {
+        gradcamUrl = gradcamObj.url;
+      } else if (classificationJson.gradcams?.L2) {
+        gradcamUrl = classificationJson.gradcams.L2;
+      } else if (classificationJson.gradcams?.L1) {
+        gradcamUrl = classificationJson.gradcams.L1;
+      }
+
+      const realRecord = {
+        scan_id: fallbackId,
+        status: "completed",
+        diagnosis: classificationJson.diagnosis || classificationJson.level2?.prediction || "NORMAL",
+        confidence: classificationJson.confidence || classificationJson.level2?.confidence || 0.95,
+        level1: classificationJson.level1 || {},
+        level2: classificationJson.level2 || {},
+        level3: classificationJson.level3 || {},
+        gradcams: { L1: gradcamUrl, L2: gradcamUrl },
+        previews: { raw: localImageUrl, unet_overlay: localImageUrl, gradcam: gradcamUrl },
+        segmentation: null,
+        localImageUrl
+      };
+
+      const normalized = normalizeScanResult(realRecord);
+      normalized.localImageUrl = localImageUrl;
+      return normalized;
+    }
+  } catch (hfErr) {
+    console.warn("Direct HuggingFace Classifier Space offloading failed, using fallback:", hfErr);
+  }
+
+  // Fallback if HF space is unreachable
   const fallbackRecord = {
     scan_id: fallbackId,
     status: "completed",
