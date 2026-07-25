@@ -91,7 +91,7 @@ if HAS_GRADIO:
 
         with gr.Row():
             with gr.Column():
-                inp_img = gr.Image(type="pil", label="Input OCT Scan")
+                inp_img = gr.Image(type="filepath", label="Input OCT Scan")
                 chk_gradcam = gr.Checkbox(value=True, label="Generate Grad-CAM Heatmaps")
                 btn_run = gr.Button("Classify Scan", variant="primary")
             with gr.Column():
@@ -103,20 +103,16 @@ if HAS_GRADIO:
             if isinstance(res, dict) and "error" in res:
                 return res, None
 
-            cam_out = None
+            cam_img = None
             if use_cam and isinstance(res, dict) and "gradcams" in res:
                 cam_data = res["gradcams"].get("L2") or res["gradcams"].get("L1")
                 if cam_data and isinstance(cam_data, str) and cam_data.startswith("data:image"):
-                    import base64, io, time
+                    import base64, io
                     base64_data = cam_data.split(",")[1]
                     cam_bytes = base64.b64decode(base64_data)
-                    pil_img = Image.open(io.BytesIO(cam_bytes))
-                    temp_dir = Path(tempfile.gettempdir())
-                    cam_img_path = str(temp_dir / f"gradcam_overlay_{int(time.time()*1000)}.png")
-                    pil_img.save(cam_img_path)
-                    cam_out = {"path": cam_img_path}
+                    cam_img = Image.open(io.BytesIO(cam_bytes))
 
-            return res, cam_out
+            return res, cam_img
 
         btn_run.click(gradio_adapter, inputs=[inp_img, chk_gradcam], outputs=[out_json, out_cam], api_name="predict_multi_head")
 
