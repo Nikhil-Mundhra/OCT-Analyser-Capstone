@@ -1,13 +1,21 @@
 .DS_Store
 .pytest_cache/
 .venv/
+node_modules/
 __pycache__/
 *.pyc
 runtime_uploads/
 
+# Ignore SQLite DBs and coverage
+backend/oct_analyzer.db
+.coverage
+*.tmp
+*.pth.tmp
+
 # Ignore model checkpoints
 image-classification-model-training/checkpoints/
 image-segmentation-model-training/checkpoints/
+image-segmentation-model-training/models_suite/
 *.pth
 
 # Ignore training logs and TensorBoard artifacts
@@ -19,7 +27,24 @@ logs_test/
 
 # Environment variables
 .env
+# .env.local is developer-specific and must NOT be committed.
+# .env.production IS committed so CI/CD uses the correct HF Space URL.
+frontend/.env.local
+
+# Docker local overrides (optional per-developer customisations)
+docker-compose.override.yml
 
 # agents
 .agents
 graphify-out/
+
+# Ignore image assets
+**/*.png
+
+# Next.js build output
+frontend/.next/
+models_suite/model3_hrf_dme/results/Unet/MobaXterm_172.18.186.773_20260214_114324.rtf
+models_suite/model3_hrf_dme/results/Attention-Unet/MobaXterm_172.18.186.773_20260214_125108.rtf
+image-classification-model-training/hf_space
+models_suite/model3_hrf_dme/HRF-HPC/AUNET/MobaXterm_172.18.186.773_20260214_125108.rtf
+frontend/.next

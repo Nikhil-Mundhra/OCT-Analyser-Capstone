@@ -10,6 +10,7 @@ import csv
 import xml.etree.ElementTree as ET
 
 from .scan_types import NormalizedScan
+from .proprietary_ingest import load_proprietary_volume
 
 def load_oct_volume(file_path: str) -> tuple[np.ndarray, tuple[float, float, float]]:
     """
@@ -72,8 +73,11 @@ def load_normalized_scan(file_path: str | Path) -> NormalizedScan:
 
     if suffix in {".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".bmp"}:
         return _load_single_image(path)
+        
+    if suffix in {".fds", ".boct", ".e2e", ".opt"}:
+        return load_proprietary_volume(path)
 
-    raise ValueError("Unsupported file format. Please provide .vol, .dcm, .zip, or a 2D image")
+    raise ValueError(f"Unsupported file format {suffix}. Please provide .vol, .dcm, .zip, a proprietary format, or a 2D image")
 
 
 def _load_dicom_scan(path: Path) -> NormalizedScan:
@@ -206,6 +210,8 @@ def _spacing_from_metadata(metadata: dict[str, str]) -> tuple[float, float, floa
 def _ensure_zyx_volume(volume: np.ndarray) -> np.ndarray:
     array = np.asarray(volume)
     if array.ndim == 2:
+        # A 2D image is a single B-scan (H, W).
+        # We map the missing slice dimension to the first axis: (1, H, W).
         array = array[np.newaxis, :, :]
     if array.ndim != 3:
         raise ValueError(f"Expected 2D or 3D OCT volume, got shape {array.shape}")

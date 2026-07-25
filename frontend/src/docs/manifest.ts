@@ -43,12 +43,6 @@ export const baseDocCategories: DocCategory[] = [
         sidebarTitle: "Implementation Specs",
         title: "Implementation Details & Specs",
         description: "Technical specifications detailing integration with local servers, dicom image viewing, and python API.",
-      },
-      {
-        slug: "ipnv2-readme",
-        sidebarTitle: "IPNV2 Architecture",
-        title: "IPNV2 System Architecture",
-        description: "Details regarding the Inference Pipeline Network version 2 and how images are processed.",
       }
     ],
   },
@@ -63,7 +57,7 @@ export const baseDocCategories: DocCategory[] = [
         sidebarTitle: "Biomarker Mapping",
         title: "3D OCT/OCTA Biomarker Mapping",
         description: "Layer-specific structural and vascular biomarkers with OCT/OCTA reference images and disease-feature mappings.",
-        externalHref: "/public/docs/biomarker_mapping_docs/oct_biomarker_mapping.html",
+        externalHref: "/docs_content/biomarker_mapping_docs/oct_biomarker_mapping.html",
       },
       {
         slug: "wireframe-demo",

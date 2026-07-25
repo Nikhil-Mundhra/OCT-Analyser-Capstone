@@ -39,8 +39,8 @@ def test_predict_image_success(monkeypatch):
             response = client.post("/predict", files={"file": ("test.png", f, "image/png")})
         assert response.status_code == 200
         data = response.json()
-        assert data["level1_prediction"] == "NORMAL"
-        assert data["final_diagnosis"] == "NORMAL"
+        assert data["Level1"]["prediction"] == "NORMAL"
+        assert data["Final_Diagnosis"] == "NORMAL"
     finally:
         os.remove(tmp_path)
 
@@ -90,7 +90,7 @@ def test_process_scan_classifier_exception(monkeypatch):
     def mock_get_classifier():
         raise ValueError("Simulated classifier error")
         
-    monkeypatch.setattr(mvp_pipeline, "get_classifier", mock_get_classifier)
+    monkeypatch.setattr(ci, "get_classifier", mock_get_classifier)
     
     from backend.oct_analyzer.scan_types import NormalizedScan
     scan = NormalizedScan(
@@ -112,7 +112,7 @@ def test_process_scan_classifier_success(monkeypatch):
                 "Final_Diagnosis": "NORMAL"
             }
             
-    monkeypatch.setattr(mvp_pipeline, "get_classifier", lambda: MockClassifier())
+    monkeypatch.setattr(ci, "get_classifier", lambda: MockClassifier())
     
     from backend.oct_analyzer.scan_types import NormalizedScan
     scan = NormalizedScan(

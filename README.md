@@ -72,8 +72,8 @@ OCT-Analyser-Capstone/
 The application currently acts as a strong foundational MVP, but there are major components scheduled for future deployment:
 - **Clinical Validation:** The app must undergo formal clinical trials and robust accuracy evaluations; it cannot currently be used for real patient diagnosis.
 - **Trained 15-Layer Anatomical Segmentation:** The MVP currently uses a 12-layer deterministic placeholder. We will fully integrate our newly developed **15-layer Hierarchical U-Net model** (located in `OCT-Segmentation-Model/`) for robust anatomical structure extraction in the 3D pipeline.
-- **Live Classification Inference:** Diagnosis and layer votes currently utilize demo placeholders. These will be replaced by the heavily trained ResNet/EfficientNet ANNs being developed in the `image-classification-model-training/` module.
-- **Advanced IPN-V2 Checkpoints:** IPN-V2 en face logic operates in an untrained smoke-test state unless a valid checkpoint is supplied via `IPNV2_CHECKPOINT`.
+- **Live Classification Inference:** 
+  > **[WARNING] The live classification pipeline is currently running with a RANDOMLY INITIALIZED ConvNeXt V2 model because the trained weights (`multi_head.pth`) are missing from the `hf_space/weights/` directory.** The legacy models were only partially trained (last layers only). A full training run on real OCT data is required before classification outputs can be trusted.
 - **Background Jobs & Database Persistence:** Very large scans will soon require a background job queue (e.g., Celery/Redis). Currently, scan state only lives in the local filesystem/process memory.
 - **Enterprise Capabilities:** Future releases will introduce PDF report generation, HIPAA-compliant access controls, user authentication, and audit-grade clinical logging.
 - **Proprietary Archive Support:** Expanding beyond standard `.dcm` and `.vol`, future ingestion targets may include reverse-engineering proprietary Solix archives (e.g. `.fds`).
@@ -97,11 +97,11 @@ npm --prefix frontend install
 
 ### Local MVP App
 
-Run the full local MVP from a fresh checkout with one command:
+Run the full local MVP (Frontend, Backend, and Celery worker) from a fresh checkout with one command:
 ```bash
-make run
+./start.sh
 ```
-That command creates or updates `.venv`, installs Python dependencies, Node dependencies, builds the Next.js bundle, starts the FastAPI backend at `http://127.0.0.1:8000`, and serves the frontend at `http://127.0.0.1:3000`.
+That script installs dependencies, boots up the Next.js frontend, the FastAPI backend, and the Redis-backed Celery worker concurrently, while tailing their outputs from the `logs/` directory.
 
 Useful Make targets:
 ```bash
@@ -159,7 +159,7 @@ If you are a new developer or an AI agent analyzing this repository, read this s
         1. Fovea detection and auto-cropping (standardizing scan dimensions).
         2. RPE-based anatomical flattening.
         3. Feature extraction: Calculates **MGRF** (2nd-order reflectivity Gibbs energy) and extracts **CDF** (Cumulative Distribution Function) deciles.
-        4. Classification and IPN-V2 adapter smoke inference.
+        4. Classification.
     *   **API (`oct_analyzer/api.py`)**: Exposes `/api/scans` (upload), `/api/segment_2d` (2D UNet predictions), and preview endpoints.
 *   **`frontend/` (Next.js / React)**:
     *   Provides a clinical drag-and-drop workflow. 
@@ -167,7 +167,7 @@ If you are a new developer or an AI agent analyzing this repository, read this s
     *   **`src/api/octAnalyzerClient.js`**: Frontend API client.
 *   **`OCT-Segmentation-Model/`** & **`image-classification-model-training/`**: 
     *   Standalone ML repositories for training the models.
-    *   Classification uses a 2-level router: **Level 1 (ResNet-50)** Gatekeeper to triage Abnormal vs. Normal, and **Level 2 (EfficientNet-B2)** Disease Router to classify specific pathologies.
+    *   Classification utilizes a **Unified Multi-Head ConvNeXt V2** model. A shared feature backbone extracts global representations, which then feed into three specialized heads: **Head 1** (Normal vs. Abnormal), **Head 2** (5 Broad Pathology Families), and **Head 3** (11 Granular Biomarkers/Severities).
     *   **Segmentation utilizes a custom 15-layer Hierarchical U-Net model** (`n_granular_classes=15`, `n_coarse_classes=3`) trained in PyTorch. The inference API for this model is located in `OCT-Segmentation-Model/main.py`.
 
 ### 3. Detailed ML Documentation

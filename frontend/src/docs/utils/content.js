@@ -4,9 +4,8 @@ import DOMPurify from 'dompurify';
 import generatedDocs from '../modelDocsGenerated.json';
 
 export const slugToPath = {
-  'readme': '/public/docs/README.md',
-  'implementation-info': '/public/docs/implementation-info.txt',
-  'ipnv2-readme': '/public/docs/IPNV2_README.md',
+  'readme': '/docs_content/README.md',
+  'implementation-info': '/docs_content/implementation-info.txt',
   ...generatedDocs.slugPaths
 };
 

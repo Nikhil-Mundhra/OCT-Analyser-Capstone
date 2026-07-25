@@ -2,7 +2,6 @@
 source = backend/oct_analyzer
 omit =
     backend/tests/*
-    IPNV2_pytorch/*
 
 [report]
 exclude_lines =

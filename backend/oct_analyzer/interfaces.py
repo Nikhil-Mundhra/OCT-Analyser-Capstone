@@ -18,13 +18,7 @@ class QualityControlReport(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
-class IPNV2Metadata(BaseModel):
-    available: bool = False
-    mode: str = "unavailable"
-    input_shape: list[int] = Field(default_factory=list)
-    output_shape: list[int] = Field(default_factory=list)
-    warning: str = ""
-    previews: dict[str, str] = Field(default_factory=dict)
+
 
 
 class ScanResult(BaseModel):
@@ -40,7 +34,6 @@ class ScanResult(BaseModel):
     qc: QualityControlReport | None = None
     layers: list[LayerFeature] = Field(default_factory=list)
     previews: dict[str, Any] = Field(default_factory=dict)
-    ipnv2: IPNV2Metadata | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     level1: dict[str, Any] = Field(default_factory=dict)
     level2: dict[str, Any] = Field(default_factory=dict)

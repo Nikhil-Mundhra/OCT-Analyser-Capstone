@@ -5,15 +5,22 @@ import numpy as np
 import torch
 
 from .anatomical_flattener import flatten_volume_to_rpe
-from .ipnv2_adapter import failed_ipnv2_metadata, ipnv2_metadata, run_ipnv2_smoke_inference
 from .pre_processing import get_preprocessing_pipeline
 from .scan_types import NormalizedScan
 from .segmentation import placeholder_segment_layers as _placeholder_segment_layers
 from .segmentation import segment_retinal_layers
-from .classifier_integration import get_classifier
-import tempfile
 import os
 import cv2
+import sys
+from dataclasses import asdict
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+CORE_ML_SEG_DIR = PROJECT_ROOT / "backend" / "core_ml" / "segmentation"
+
+try:
+    from backend.core_ml.segmentation.inference.analyzer import SegmentationAnalyzer
+except ImportError:
+    SegmentationAnalyzer = None
 
 
 LAYER_NAMES = [
@@ -32,54 +39,101 @@ LAYER_NAMES = [
 ]
 
 
-def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[str, Any]:
+def process_scan(scan: NormalizedScan, preview_dir: Path | None = None, progress_cb=None) -> dict[str, Any]:
+    if progress_cb: progress_cb("Validating volume")
     validation = validate_volume(scan.volume)
-    cropped, crop_info = crop_black_padding(scan.volume)
-    foveal_crop, fovea_info = center_crop_volume(cropped, scan.spacing_mm)
+    if scan.source_format == "single-image":
+        if progress_cb: progress_cb("Skipping 3D depth cropping for 2D image")
+        foveal_crop = scan.volume
+        crop_info = {"crop_applied": False, "crop_bounds": [], "warnings": []}
+        fovea_info = {"crop_bounds": [], "warnings": ["Skipped foveal center crop for 2D image"]}
+    else:
+        if progress_cb: progress_cb("Preprocessing volume (padding/cropping)")
+        cropped, crop_info = crop_black_padding(scan.volume)
+        foveal_crop, fovea_info = center_crop_volume(cropped, scan.spacing_mm)
 
     pipeline = get_preprocessing_pipeline()
     tensor = pipeline(foveal_crop)
-    flattened = flatten_volume_to_rpe(tensor)
-    flattened_volume = flattened.detach().cpu().numpy()[0]
-
-    segmentation_result = segment_retinal_layers(flattened_volume, scan.spacing_mm)
-    segmentation = segmentation_result.labels
-    layers = extract_layer_features(flattened_volume, segmentation)
-    diagnosis, confidence = classify_layers(layers)
     
-    # Run hierarchical classifier (L1/L2/L3) on the 2D flattened volume
-    pipeline_results = {}
-    try:
-        classifier = get_classifier()
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-            tmp_path = tmp.name
-        
-        # Normalize and save the flattened volume as an image
-        flattened_img = np.squeeze(flattened_volume)
-        norm_vol = cv2.normalize(flattened_img, None, 0, 255, cv2.NORM_MINMAX)
-        cv2.imwrite(tmp_path, norm_vol.astype(np.uint8))
-        
-        pipeline_results = classifier.predict(tmp_path, gradcam=True)
-        if "error" not in pipeline_results:
-            diagnosis = pipeline_results.get("Final_Diagnosis", diagnosis)
-            # Find the highest confidence from the levels
-            conf = 0.0
-            for lvl in ["Level3", "Level2", "Level1"]:
-                if pipeline_results.get(lvl, {}).get("confidence"):
-                    conf = pipeline_results[lvl]["confidence"]
-                    break
-            confidence = conf if conf > 0 else confidence
-    except Exception as e:
-        print(f"Failed to run hierarchical classifier: {e}")
-    finally:
-        if 'tmp_path' in locals() and os.path.exists(tmp_path):
-            os.remove(tmp_path)
-    ipnv2_result = None
-    try:
-        ipnv2_result = run_ipnv2_smoke_inference(flattened_volume)
-        ipnv2 = ipnv2_metadata(ipnv2_result)
-    except Exception as exc:
-        ipnv2 = failed_ipnv2_metadata(exc)
+    # Only run the anatomical flattener on actual 3D volumes.
+    # Single 2D slices (e.g. PNG/JPEG uploads) should preserve their curvature.
+    if tensor.shape[1] > 1:
+        if progress_cb: progress_cb("Flattening anatomical structures to RPE")
+        flattened = flatten_volume_to_rpe(tensor)
+        flattened_volume = flattened.detach().cpu().numpy()[0]
+    else:
+        if progress_cb: progress_cb("Skipping anatomical flattening for 2D image")
+        flattened_volume = tensor.detach().cpu().numpy()[0]
+
+    model_type = os.environ.get("OCT_MODEL_TYPE", "legacy_convnext")
+    if progress_cb:
+        if model_type == "unified_unet":
+            progress_cb("Running hierarchical UNet inference (segmentation & classification)")
+        else:
+            progress_cb("Running segmentation model")
+    
+    segmentation_result, pipeline_results = segment_retinal_layers(flattened_volume, scan.spacing_mm)
+    segmentation = segmentation_result.labels
+    if progress_cb: progress_cb("Extracting biomarker features")
+    layers = extract_layer_features(flattened_volume, segmentation)
+    
+    # Run Segmentation Analyzer on the appropriate slice
+    segmentation_analysis = None
+    if SegmentationAnalyzer is not None:
+        try:
+            model_type = os.environ.get("OCT_MODEL_TYPE", "legacy_convnext")
+            if model_type == "unified_unet":
+                best_slice_idx = pipeline_results.get("best_slice_idx", 0)
+                best_mask = segmentation[best_slice_idx, :, :]
+            else:
+                z_dim, y_dim, x_dim = segmentation.shape
+                best_mask = segmentation[:, int(y_dim * 0.5), :]
+                
+            analyzer = SegmentationAnalyzer()
+            seg_obj = analyzer.analyze(best_mask)
+            segmentation_analysis = asdict(seg_obj)
+        except Exception as e:
+            print(f"Failed to run SegmentationAnalyzer: {e}")
+
+    model_type = os.environ.get("OCT_MODEL_TYPE", "legacy_convnext")
+    if model_type == "unified_unet":
+        diagnosis = pipeline_results.get("Final_Diagnosis", "Unknown")
+        confidence = pipeline_results.get("confidence", 0.0)
+    else:
+        # Run hierarchical classifier (L1/L2/L3) on the 2D flattened volume
+        try:
+            if progress_cb: progress_cb("Running Multi-Head classification model")
+            from .classifier_integration import get_classifier
+            import tempfile
+            from uuid import uuid4
+            classifier = get_classifier()
+            # Save flattened volume to temporary file for classifier
+            temp_img = Path(tempfile.gettempdir()) / f"flattened_{uuid4().hex}.png"
+            cv2.imwrite(str(temp_img), flattened_volume[0] * 255)
+            legacy_pipeline_results = classifier.predict(str(temp_img), gradcam=True)
+            temp_img.unlink(missing_ok=True)
+            
+            # Merge results for frontend display
+            pipeline_results["Level1"] = legacy_pipeline_results.get("Level1", {})
+            pipeline_results["Level2"] = legacy_pipeline_results.get("Level2", {})
+            pipeline_results["Level3"] = legacy_pipeline_results.get("Level3", {})
+            pipeline_results["gradcams"] = legacy_pipeline_results.get("gradcams", {})
+            
+            # Set the top-level diagnosis to the deepest available prediction
+            if "Level3" in legacy_pipeline_results and legacy_pipeline_results["Level3"].get("prediction"):
+                diagnosis = legacy_pipeline_results["Level3"]["prediction"]
+                confidence = legacy_pipeline_results["Level3"]["confidence"]
+            elif "Level2" in legacy_pipeline_results and legacy_pipeline_results["Level2"].get("prediction"):
+                diagnosis = legacy_pipeline_results["Level2"]["prediction"]
+                confidence = legacy_pipeline_results["Level2"]["confidence"]
+            else:
+                diagnosis = legacy_pipeline_results.get("Level1", {}).get("prediction", "Unknown")
+                confidence = legacy_pipeline_results.get("Level1", {}).get("confidence", 0.0)
+                
+        except Exception as e:
+            print(f"Failed to run ClassifierWrapper: {e}")
+            # Fallback
+            diagnosis, confidence = classify_layers(layers)
 
     previews = {}
     if preview_dir is not None:
@@ -91,19 +145,11 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
             cropped_volume=foveal_crop,
             segmentation=segmentation,
             layers=layers,
-            ipnv2_result=ipnv2_result,
         )
-        ipnv2["previews"] = {
-            key: previews[key]
-            for key in ("ipnv2_probability", "ipnv2_overlay")
-            if key in previews
-        }
 
     warnings = [*scan.warnings, *validation["warnings"], *crop_info["warnings"], *fovea_info["warnings"]]
     if segmentation_result.warning:
         warnings.append(segmentation_result.warning)
-    if ipnv2.get("warning"):
-        warnings.append(ipnv2["warning"])
 
     return {
         "status": "completed",
@@ -113,6 +159,7 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
         "volume_shape": list(scan.volume_shape),
         "spacing_mm": list(scan.spacing_mm),
         "is_demo_model": segmentation_result.mode == "placeholder",
+        "model_type": model_type,
         "qc": {
             "signal_range": validation["signal_range"],
             "crop_applied": crop_info["crop_applied"],
@@ -122,12 +169,12 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None) -> dict[
         },
         "layers": layers,
         "previews": previews,
-        "ipnv2": ipnv2,
         "metadata": scan.metadata,
         "level1": pipeline_results.get("Level1", {}),
         "level2": pipeline_results.get("Level2", {}),
         "level3": pipeline_results.get("Level3", {}),
         "gradcams": pipeline_results.get("gradcams", {}),
+        "segmentation": segmentation_analysis,
     }
 
 

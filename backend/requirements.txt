@@ -14,3 +14,10 @@ httpx
 pytest
 pytest-cov
 opencv-python-headless
+celery
+redis
+sqlalchemy
+pydantic-settings
+oct-converter
+torchvision
+reportlab

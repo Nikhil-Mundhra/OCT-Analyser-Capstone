@@ -1,0 +1,28 @@
+l1_labels:
+  NORMAL: 0
+  ABNORMAL: 1
+
+l2_labels:
+  Macular_Degeneration: 0
+  Diabetic_Complications: 1
+
+granular_classes:
+  CNV: 0
+  DRUSEN: 1
+  DME: 4
+
+class_map:
+  - path: "NORMAL"
+    l1: "NORMAL"
+    
+  - path: "CNV"
+    l1: "ABNORMAL"
+    l3_class: "CNV"
+    
+  - path: "DRUSEN"
+    l1: "ABNORMAL"
+    l3_class: "DRUSEN"
+    
+  - path: "DME"
+    l1: "ABNORMAL"
+    l3_class: "DME"

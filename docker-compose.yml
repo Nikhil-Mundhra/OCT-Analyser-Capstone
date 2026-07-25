@@ -1,0 +1,67 @@
+# docker-compose.yml
+#
+# Spins up the local backend AND a local mirror of the Hugging Face Space,
+# so you can test the full ML stack without touching HF at all.
+#
+# Usage:
+#   docker-compose up --build          # Start both services
+#   docker-compose up backend          # Backend only (port 8000)
+#   docker-compose up hf-space         # HF Space mirror only (port 7860)
+#
+# After `docker-compose up`, set your frontend env:
+#   NEXT_PUBLIC_SEGMENTATION_API_URL=http://localhost:7860   # use HF Space mirror
+#   NEXT_PUBLIC_SEGMENTATION_API_URL=http://localhost:8000   # use local backend /predict
+
+version: "3.9"
+
+services:
+  # ---------------------------------------------------------------------------
+  # Main backend (FastAPI + Celery workers + SQLite)
+  # Mirrors what runs in production (Cloud Run / HF Spaces Docker).
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the model weights and HF space code so you don't need to rebuild
+      # the image every time you change Python source files.
+      - ./backend:/app/backend
+      - ./image-classification-model-training:/app/image-classification-model-training
+      - ./OCT-Segmentation-Model:/app/OCT-Segmentation-Model
+    environment:
+      # Force CPU on machines without a GPU inside Docker.
+      # Change to 'mps' or 'cuda' if your Docker runtime supports it.
+      - OCT_LOCAL_DEVICE=${OCT_LOCAL_DEVICE:-cpu}
+      - KMP_DUPLICATE_LIB_OK=TRUE
+      - PYTHONPATH=/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # HF Space mirror — runs the EXACT same Dockerfile as Hugging Face Spaces,
+  # exposing port 7860 (same as HF).  This is the environment parity service:
+  # push failures on HF can be caught here first.
+  # ---------------------------------------------------------------------------
+  hf-space:
+    build:
+      context: ./image-classification-model-training/hf_space
+      dockerfile: Dockerfile
+    ports:
+      - "7860:7860"
+    volumes:
+      # Mount weights directory so you can swap checkpoints without rebuilding.
+      - ./image-classification-model-training/hf_space/weights:/app/weights
+    environment:
+      - OCT_LOCAL_DEVICE=${OCT_LOCAL_DEVICE:-cpu}
+      - KMP_DUPLICATE_LIB_OK=TRUE
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
