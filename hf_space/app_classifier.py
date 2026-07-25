@@ -1,4 +1,5 @@
 import os
+import spaces
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["OMP_NUM_THREADS"] = "1"
 import sys
@@ -17,14 +18,9 @@ except ImportError:
     gr = None
     HAS_GRADIO = False
 
-try:
-    import spaces
-    IS_HF_SPACE = True
-except ImportError:
-    spaces = None
-    IS_HF_SPACE = False
+IS_HF_SPACE = os.getenv("SPACE_ID") is not None or os.getenv("SPACES_ZERO_GPU") is not None
 
-# Add workspace root to sys.path
+# Add workspace root / parent paths to sys.path
 WORKSPACE_ROOT = Path(__file__).resolve().parent.parent
 if str(WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(WORKSPACE_ROOT))
@@ -79,7 +75,7 @@ if HAS_GRADIO:
     with gr.Blocks(title="ConvNeXt V2 Multi-Head OCT Classifier (ZeroGPU)") as demo:
         gr.Markdown("# 👁️ ConvNeXt V2 Multi-Head OCT Pathology Classifier")
         gr.Markdown("ZeroGPU-accelerated hierarchical disease classification (15 pathology classes) with Grad-CAM explainability.")
-        
+
         with gr.Row():
             with gr.Column():
                 inp_img = gr.Image(type="pil", label="Input OCT Scan")
@@ -93,7 +89,7 @@ if HAS_GRADIO:
             res = predict_multi_head(img, gradcam=use_cam)
             if isinstance(res, dict) and "error" in res:
                 return res, None
-            
+
             cam_img = None
             if use_cam and isinstance(res, dict) and "gradcams" in res:
                 cam_data = res["gradcams"].get("L2") or res["gradcams"].get("L1")
@@ -102,10 +98,13 @@ if HAS_GRADIO:
                     base64_data = cam_data.split(",")[1]
                     cam_bytes = base64.b64decode(base64_data)
                     cam_img = Image.open(io.BytesIO(cam_bytes))
-                    
+
             return res, cam_img
 
         btn_run.click(gradio_adapter, inputs=[inp_img, chk_gradcam], outputs=[out_json, out_cam], api_name="predict_multi_head")
 
     demo.queue()
-    demo.launch()
+
+if __name__ == "__main__":
+    if HAS_GRADIO:
+        demo.launch()
