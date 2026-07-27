@@ -89,7 +89,7 @@ class MultiHeadTrainer:
         self,
         loader,
         optimizer,
-        max_norm: float = 5.0,
+        max_norm: float = 3.0,
         smoke_test: bool = False,
         accum_steps: int = 1,
         save_steps: int = 2250,
