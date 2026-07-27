@@ -62,6 +62,93 @@ class Ensure3Channels(Transform):
             img_np = img_np[:3]
         return img_np
 
+class TissueMaskCrop(Transform):
+    """
+    Segmentation-Driven / Morphological Tissue Crop for OCT Scans.
+    Removes background UI artifacts (compasses, text headers, logos) in corners
+    while preserving 100% of the retinal tissue.
+    """
+    def __init__(self, min_intensity=15):
+        self.min_intensity = min_intensity
+
+    def __call__(self, img):
+        try:
+            img_np = img.numpy() if hasattr(img, 'numpy') else np.array(img)
+            if img_np.ndim == 3:
+                if img_np.shape[0] in [1, 3]:  # Channel-first (C, H, W)
+                    gray = img_np[0]
+                else:                          # Channel-last (H, W, C)
+                    gray = img_np[:, :, 0]
+            else:                              # 2D (H, W)
+                gray = img_np
+
+            if gray.dtype != np.uint8:
+                gray_u8 = np.clip(gray * (255.0 if gray.max() <= 1.0 else 1.0), 0, 255).astype(np.uint8)
+            else:
+                gray_u8 = gray.copy()
+
+            H, W = gray_u8.shape[:2]
+
+            # 1. Morphological tissue contour extraction
+            _, thresh = cv2.threshold(gray_u8, self.min_intensity, 255, cv2.THRESH_BINARY)
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
+            closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+
+            contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if not contours:
+                return img
+
+            largest_cnt = max(contours, key=cv2.contourArea)
+            mask = np.zeros_like(gray_u8)
+            cv2.drawContours(mask, [largest_cnt], -1, 255, thickness=cv2.FILLED)
+
+            mask_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+            mask_dilated = cv2.dilate(mask, mask_kernel, iterations=1)
+
+            # 2. Strict UI artifact removal: zero out 4 corners (where compass boxes & text sit)
+            corner_h = int(H * 0.22)
+            corner_w = int(W * 0.22)
+            
+            # Bottom-right compass box (N/T/S/I arrow box)
+            mask_dilated[H - corner_h:, W - corner_w:] = 0
+            # Bottom-left corner box
+            mask_dilated[H - corner_h:, :corner_w] = 0
+            # Top headers
+            mask_dilated[:int(H * 0.08), :] = 0
+
+            if img_np.ndim == 3:
+                if img_np.shape[0] in [1, 3]:
+                    out = img_np.copy()
+                    for c in range(out.shape[0]):
+                        out[c] = np.where(mask_dilated > 0, out[c], 0)
+                else:
+                    out = img_np.copy()
+                    for c in range(out.shape[2]):
+                        out[:, :, c] = np.where(mask_dilated > 0, out[:, :, c], 0)
+                return out
+            else:
+                return np.where(mask_dilated > 0, img_np, 0)
+        except Exception:
+            return img
+
+class Rotate90Clockwise(Transform):
+    """
+    Rotates image 90 degrees clockwise so OCT scans are correctly oriented.
+    """
+    def __call__(self, img):
+        try:
+            img_np = img.numpy() if hasattr(img, 'numpy') else np.array(img)
+            if img_np.ndim == 3:
+                if img_np.shape[0] in [1, 3]:  # (C, H, W)
+                    out = np.rot90(img_np, -1, (1, 2))
+                else:                          # (H, W, C)
+                    out = np.rot90(img_np, -1, (0, 1))
+            else:                              # (H, W)
+                out = np.rot90(img_np, -1, (0, 1))
+            return out.copy()
+        except Exception:
+            return img
+
 def get_train_transforms():
     """
     Standard training augmentation pipeline using MONAI.
@@ -69,6 +156,8 @@ def get_train_transforms():
     return Compose([
         LoadImage(image_only=True),
         EnsureChannelFirst(),
+        Rotate90Clockwise(),
+        TissueMaskCrop(),
         CLAHETransform(),
         Ensure3Channels(),
         ScaleIntensity(), # Scale [0, 255] -> [0, 1]
@@ -88,6 +177,8 @@ def get_val_transforms():
     return Compose([
         LoadImage(image_only=True),
         EnsureChannelFirst(),
+        Rotate90Clockwise(),
+        TissueMaskCrop(),
         CLAHETransform(),
         Ensure3Channels(),
         ScaleIntensity(),

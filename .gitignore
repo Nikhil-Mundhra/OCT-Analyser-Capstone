@@ -41,6 +41,9 @@ graphify-out/
 # Ignore image assets
 **/*.png
 *.png
+*jpeg
+*.jpg
+*.zip
 
 # Next.js build output
 frontend/.next/
@@ -49,3 +52,5 @@ models_suite/model3_hrf_dme/results/Attention-Unet/MobaXterm_172.18.186.773_2026
 image-classification-model-training/hf_space
 models_suite/model3_hrf_dme/HRF-HPC/AUNET/MobaXterm_172.18.186.773_20260214_125108.rtf
 frontend/.next
+image-segmentation-model-training/models_suite/model2_choroidalyzer
+image-segmentation-model-training/models_suite/model3_hrf_dme

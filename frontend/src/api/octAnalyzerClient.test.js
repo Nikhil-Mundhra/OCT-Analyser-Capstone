@@ -73,4 +73,12 @@ describe('normalizeScanResult', () => {
     expect(result.previews.raw).toBe('data:image/jpeg;base64,/9j/4AAQ...');
     expect(result.previews.unet_overlay).toBe('data:image/jpeg;base64,/9j/4AAQ...');
   });
+
+  it('should preserve overlay segmentation objects', () => {
+    const scan = { id: '123' };
+    const segmentation = { overlay: 'https://hf.space/file=overlay.png' };
+    const result = normalizeScanResult(scan, segmentation);
+    expect(result.segmentation).toEqual({ overlay: 'https://hf.space/file=overlay.png' });
+  });
 });
+
