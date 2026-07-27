@@ -40,6 +40,7 @@ graphify-out/
 
 # Ignore image assets
 **/*.png
+*.png
 
 # Next.js build output
 frontend/.next/
