@@ -5,6 +5,7 @@ import sys
 import os
 import tempfile
 import shutil
+import types
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -130,6 +131,75 @@ class TestMultiHeadTrainer(unittest.TestCase):
         
         expected = torch.tensor([0, 1])
         self.assertTrue(torch.all(extracted == expected), "Default fallback must be argmax for multi-class targets")
+
+    def test_resume_checkpoint_restores_batch_idx_and_scaler(self):
+        """Resume should restore the scaler state and continue from the next batch."""
+        source_trainer = MultiHeadTrainer(
+            model=self.model,
+            criterions=self.criterions,
+            loss_weights=self.loss_weights,
+            mode="test_mode",
+            checkpoint_dir=os.path.join(self.test_dir, "checkpoints"),
+            log_dir=os.path.join(self.test_dir, "logs"),
+            device=torch.device("cpu"),
+            amp_dtype=torch.float32,
+        )
+        optimizer = torch.optim.SGD(source_trainer.model.parameters(), lr=0.1)
+        ckpt_path = os.path.join(source_trainer.ckpt_dir, "resume_checkpoint.pth")
+        source_trainer._save_checkpoint(
+            "resume_checkpoint.pth",
+            optimizer=optimizer,
+            scaler=source_trainer.scaler,
+            epoch=0,
+            phase="warmup",
+            batch_idx=3,
+            best_val_loss=1.0,
+            best_val_macro_f1=0.5,
+        )
+
+        resumed_trainer = MultiHeadTrainer(
+            model=build_multi_head_model(pretrained=False, warmup=False),
+            criterions=self.criterions,
+            loss_weights=self.loss_weights,
+            mode="test_mode",
+            checkpoint_dir=os.path.join(self.test_dir, "checkpoints"),
+            log_dir=os.path.join(self.test_dir, "logs"),
+            device=torch.device("cpu"),
+            amp_dtype=torch.float32,
+        )
+
+        recorded = {}
+
+        def fake_train_epoch(self, loader, optimizer, smoke_test=False, accum_steps=1, save_steps=2250, fold_id=0, epoch=0, phase="finetune", best_val_loss=float("inf"), best_val_macro_f1=0.0, hf_repo=None, start_batch=0):
+            recorded["start_batch"] = start_batch
+            return 0.0
+
+        def fake_val_epoch(self, loader, smoke_test=False):
+            return 0.0, 0.0, 0.0, 0.0
+
+        resumed_trainer._train_epoch = types.MethodType(fake_train_epoch, resumed_trainer)
+        resumed_trainer._val_epoch = types.MethodType(fake_val_epoch, resumed_trainer)
+
+        class MockLoader:
+            def __iter__(self):
+                return iter(())
+
+            def __len__(self):
+                return 0
+
+        resumed_trainer.train(
+            MockLoader(),
+            MockLoader(),
+            warmup_epochs=1,
+            finetune_epochs=0,
+            smoke_test=True,
+            resume_path=ckpt_path,
+        )
+
+        self.assertEqual(recorded["start_batch"], 4)
+        ckpt = torch.load(ckpt_path, map_location=torch.device("cpu"))
+        self.assertIn("scaler_state_dict", ckpt)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -99,9 +99,11 @@ class MultiHeadTrainer:
         best_val_loss: float = float("inf"),
         best_val_macro_f1: float = 0.0,
         hf_repo: Optional[str] = None,
+        start_batch: int = 0,
     ):
         self.model.train()
         total_loss = 0.0
+        processed_batches = 0
         n_batches = len(loader)
         start_time = time.time()
 
@@ -114,6 +116,9 @@ class MultiHeadTrainer:
         optimizer.zero_grad(set_to_none=True)
 
         for batch_idx, (images, labels) in enumerate(loader):
+            if batch_idx < start_batch:
+                continue
+
             images = images.to(self.device, non_blocking=True)
             labels = {k: v.to(self.device, non_blocking=True) if not isinstance(v, dict) 
                       else {k2: v2.to(self.device, non_blocking=True) for k2, v2 in v.items()}
@@ -136,6 +141,7 @@ class MultiHeadTrainer:
                 self.scaler.update()
                 optimizer.zero_grad(set_to_none=True)
 
+            processed_batches += 1
             total_loss += loss.item()
 
             del logits, accum_loss
@@ -151,6 +157,7 @@ class MultiHeadTrainer:
                 self._save_checkpoint(
                     f"fold{fold_id}_last_model.pth",
                     optimizer=optimizer,
+                    scaler=self.scaler,
                     epoch=epoch,
                     phase=phase,
                     batch_idx=batch_idx,
@@ -163,7 +170,7 @@ class MultiHeadTrainer:
             if smoke_test and batch_idx >= 2:
                 break
 
-        return total_loss / max(1, n_batches if not smoke_test else 3)
+        return total_loss / max(1, processed_batches if not smoke_test else min(3, processed_batches))
 
     @torch.no_grad()
     def _val_epoch(self, loader, smoke_test: bool = False):
@@ -254,7 +261,10 @@ class MultiHeadTrainer:
         
         start_epoch_warmup = 0
         start_epoch_ft = 0
+        start_batch_warmup = 0
+        start_batch_ft = 0
         phase = 'warmup'
+        ckpt = None
         
         if resume_path and os.path.exists(resume_path):
             logger.info(f"Loading checkpoint from {resume_path}...")
@@ -267,10 +277,21 @@ class MultiHeadTrainer:
                 best_val_macro_f1 = ckpt.get('best_val_macro_f1', 0.0)
                 
                 saved_epoch = ckpt.get('epoch', -1)
+                saved_batch_idx = ckpt.get('batch_idx')
+                if 'scaler_state_dict' in ckpt:
+                    self.scaler.load_state_dict(ckpt['scaler_state_dict'])
                 if phase == 'warmup':
-                    start_epoch_warmup = saved_epoch + 1
+                    if saved_batch_idx is None:
+                        start_epoch_warmup = saved_epoch + 1
+                    else:
+                        start_epoch_warmup = saved_epoch
+                        start_batch_warmup = saved_batch_idx + 1
                 else:
-                    start_epoch_ft = saved_epoch + 1 - warmup_epochs
+                    if saved_batch_idx is None:
+                        start_epoch_ft = saved_epoch + 1 - warmup_epochs
+                    else:
+                        start_epoch_ft = saved_epoch - warmup_epochs
+                        start_batch_ft = saved_batch_idx + 1
                     
                 logger.info(f"Resumed from {phase} at absolute epoch {saved_epoch + 1}.")
             except Exception as e:
@@ -291,6 +312,7 @@ class MultiHeadTrainer:
                 optimizer_warmup.load_state_dict(ckpt['optimizer_state_dict'])
 
             for epoch in range(start_epoch_warmup, warmup_epochs):
+                current_start_batch = start_batch_warmup if epoch == start_epoch_warmup else 0
                 ep_start = time.time()
                 train_loss = self._train_epoch(
                     train_loader,
@@ -303,7 +325,8 @@ class MultiHeadTrainer:
                     phase='warmup',
                     best_val_loss=best_val_loss,
                     best_val_macro_f1=best_val_macro_f1,
-                    hf_repo=hf_repo
+                    hf_repo=hf_repo,
+                    start_batch=current_start_batch,
                 )
                 val_loss, h2_f1, h2_recall, h2_acc = self._val_epoch(val_loader, smoke_test=smoke_test)
                 global_step += 1
@@ -313,7 +336,7 @@ class MultiHeadTrainer:
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
                 
-                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_warmup, epoch=epoch, phase='warmup', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
+                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_warmup, scaler=self.scaler, epoch=epoch, phase='warmup', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
                 if smoke_test: break
             
             phase = 'finetune'
@@ -345,6 +368,7 @@ class MultiHeadTrainer:
             early_stopper.best_value = best_val_loss
 
             for epoch in range(start_epoch_ft, finetune_epochs):
+                current_start_batch = start_batch_ft if epoch == start_epoch_ft else 0
                 ep_start = time.time()
                 abs_epoch = warmup_epochs + epoch
                 train_loss = self._train_epoch(
@@ -358,7 +382,8 @@ class MultiHeadTrainer:
                     phase='finetune',
                     best_val_loss=best_val_loss,
                     best_val_macro_f1=best_val_macro_f1,
-                    hf_repo=hf_repo
+                    hf_repo=hf_repo,
+                    start_batch=current_start_batch,
                 )
                 val_loss, h2_f1, h2_recall, h2_acc = self._val_epoch(val_loader, smoke_test=smoke_test)
                 scheduler.step()
@@ -376,12 +401,12 @@ class MultiHeadTrainer:
                 if h2_f1 > best_val_macro_f1:
                     best_val_macro_f1 = h2_f1
                     best_metrics = {"val_loss": val_loss, "h2_macro_f1": h2_f1, "epoch": abs_epoch}
-                    self._save_checkpoint(f"fold{fold_id}_best_model.pth", optimizer=optimizer_ft, scheduler=scheduler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
+                    self._save_checkpoint(f"fold{fold_id}_best_model.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
                     logger.info(f"  ✓ New best — H2 macro_f1={h2_f1:.4f}")
 
                 # Always save last (rolling) and a numbered epoch snapshot so no epoch is ever lost
-                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_ft, scheduler=scheduler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
-                self._save_checkpoint(f"fold{fold_id}_epoch_{abs_epoch:03d}.pth", optimizer=optimizer_ft, scheduler=scheduler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1)
+                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
+                self._save_checkpoint(f"fold{fold_id}_epoch_{abs_epoch:03d}.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1)
                 logger.info(f"  Saved fold{fold_id}_epoch_{abs_epoch:03d}.pth  (f1={h2_f1:.4f})")
 
                 if early_stopper.step(val_loss):
@@ -392,7 +417,7 @@ class MultiHeadTrainer:
 
         return best_metrics
 
-    def _save_checkpoint(self, filename: str, optimizer=None, scheduler=None, epoch=None, phase=None, batch_idx=None, best_val_loss=None, best_val_macro_f1=None, hf_repo: str = None) -> None:
+    def _save_checkpoint(self, filename: str, optimizer=None, scheduler=None, scaler=None, epoch=None, phase=None, batch_idx=None, best_val_loss=None, best_val_macro_f1=None, hf_repo: str = None) -> None:
         path = self.ckpt_dir / filename
         tmp_path = path.with_suffix(".pth.tmp")  # atomic write: temp → rename
         state = {
@@ -401,6 +426,7 @@ class MultiHeadTrainer:
         }
         if optimizer: state["optimizer_state_dict"] = optimizer.state_dict()
         if scheduler: state["scheduler_state_dict"] = scheduler.state_dict()
+        if scaler is not None: state["scaler_state_dict"] = scaler.state_dict()
         if epoch is not None: state["epoch"] = epoch
         if phase is not None: state["phase"] = phase
         if batch_idx is not None: state["batch_idx"] = batch_idx
