@@ -39,7 +39,7 @@ VALID_EXT = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
 # ─────────────────────────────────────────────────────────────────────────────
 # Core per-image transform
 # ─────────────────────────────────────────────────────────────────────────────
-def process_image(src_path: str, dst_path: str, quality: int = 95) -> bool:
+def process_image(src_path: str, dst_path: str, quality: int = 95, frame: bool = False, frame_size: int = 224) -> bool:
     try:
         img = cv2.imread(src_path, cv2.IMREAD_UNCHANGED)
         if img is None:
@@ -88,8 +88,21 @@ def process_image(src_path: str, dst_path: str, quality: int = 95) -> bool:
         # 4. Apply mask — background → pure black
         mask_3c = cv2.merge([mask, mask, mask])
         img = np.where(mask_3c > 0, img, 0).astype(np.uint8)
-        # ────────────────────────────────────────────────────────────────────
 
+        # 5. Optional framing (letterbox pad to square + resize)
+        if frame:
+            h, w = img.shape[:2]
+            max_dim = max(h, w)
+            pad_top = (max_dim - h) // 2
+            pad_bottom = max_dim - h - pad_top
+            pad_left = (max_dim - w) // 2
+            pad_right = max_dim - w - pad_left
+            img = cv2.copyMakeBorder(img, pad_top, pad_bottom, pad_left, pad_right,
+                                     cv2.BORDER_CONSTANT, value=[0, 0, 0])
+            if frame_size is not None:
+                img = cv2.resize(img, (frame_size, frame_size), interpolation=cv2.INTER_AREA)
+
+        # ────────────────────────────────────────────────────────────────────
         dst = Path(dst_path)
         dst.parent.mkdir(parents=True, exist_ok=True)
 
@@ -110,8 +123,8 @@ def process_image(src_path: str, dst_path: str, quality: int = 95) -> bool:
 
 
 def _worker(args):
-    src, dst, quality = args
-    return process_image(src, dst, quality)
+    src, dst, quality, frame, frame_size = args
+    return process_image(src, dst, quality, frame=frame, frame_size=frame_size)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -135,6 +148,10 @@ def main():
                         help="Parallel worker processes (default: cpu_count - 2)")
     parser.add_argument('--quality', type=int, default=95,     help="JPEG save quality (default 95)")
     parser.add_argument('--limit',   type=int, default=None,   help="Cap total images (for smoke tests)")
+    parser.add_argument('--frame', dest='frame', action='store_true', help="Apply letterbox framing: pad to square with black borders and resize to --frame-size (enabled by default)")
+    parser.add_argument('--no-frame', dest='frame', action='store_false', help="Disable framing (framing is enabled by default)")
+    parser.set_defaults(frame=True)
+    parser.add_argument('--frame-size', type=int, default=224, help="Framing size (default: 224)")
     args = parser.parse_args()
 
     src_root = Path(args.src)
@@ -165,7 +182,7 @@ def main():
         print("No images found. Check --src path.")
         sys.exit(1)
 
-    jobs_with_quality = [(s, d, args.quality) for s, d in jobs]
+    jobs_with_quality = [(s, d, args.quality, args.frame, args.frame_size) for s, d in jobs]
 
     ok = fail = 0
     report_every = max(1, total // 20)

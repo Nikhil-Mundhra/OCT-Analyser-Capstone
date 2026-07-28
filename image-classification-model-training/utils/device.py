@@ -17,6 +17,29 @@ def get_device() -> torch.device:
     else:
         return torch.device("cpu")
 
+
+def supports_bfloat16(device: torch.device) -> bool:
+    """
+    Runtime-check whether the given device supports bfloat16 autocasting without raising.
+
+    This performs a lightweight sanity check by running a trivial operation inside a
+    torch.autocast context with dtype=torch.bfloat16. If the context or the device
+    does not support bfloat16, an exception will be raised and the function returns False.
+    """
+    if device.type == "cpu":
+        # We intentionally avoid enabling autocast on CPU in this project.
+        return False
+
+    try:
+        # Create a small tensor on the target device and run a trivial op under autocast
+        t = torch.ones((2, 2), device=device)
+        with torch.autocast(device_type=device.type, dtype=torch.bfloat16, enabled=True):
+            _ = t + t
+        return True
+    except Exception:
+        return False
+
+
 def get_raw_model(model: nn.Module) -> nn.Module:
     """
     Unwraps DataParallel container to expose raw underlying PyTorch module.
@@ -46,6 +69,18 @@ class ComputeManager:
 
         logger.info(f"ComputeManager initialized on device: {self.device} (DataParallel={self.use_data_parallel})")
 
+        # Log selected autocast preference (bfloat16 preferred when supported)
+        try:
+            if self.device.type in ("cuda", "mps"):
+                if supports_bfloat16(self.device):
+                    logger.info("Autocast preference: using torch.bfloat16 on device %s", self.device)
+                else:
+                    logger.info("Autocast preference: using torch.float16 on device %s", self.device)
+            else:
+                logger.info("Autocast disabled for CPU device: %s", self.device)
+        except Exception as e:
+            logger.debug("Failed to determine autocast preference: %s", e)
+
     def prepare_model(self, model: nn.Module) -> nn.Module:
         """Move model to device and optionally wrap with DataParallel if explicitly requested."""
         model = model.to(self.device)
@@ -74,7 +109,22 @@ class ComputeManager:
             torch.cuda.empty_cache()
 
     def get_autocast_context(self):
-        """Returns the appropriate PyTorch autocast context for AMP."""
-        amp_dtype = torch.float16 if self.device.type in ("cuda", "mps") else torch.bfloat16
+        """Returns the appropriate PyTorch autocast context for AMP.
+
+        Preference order:
+        - Use torch.bfloat16 autocast on MPS/CUDA if the runtime supports it (recommended on M2 Pro / Apple Silicon).
+        - Fall back to torch.float16 autocast when bfloat16 is not supported but the device supports fp16.
+        - Autocast is disabled on CPU by default in this project.
+        """
         enabled = self.device.type in ("cuda", "mps")
-        return torch.autocast(device_type=self.device.type, dtype=amp_dtype, enabled=enabled)
+
+        if not enabled:
+            return torch.autocast(device_type="cpu", enabled=False)
+
+        # Prefer bfloat16 when supported on the device to avoid FP16 overflow issues
+        if supports_bfloat16(self.device):
+            amp_dtype = torch.bfloat16
+        else:
+            amp_dtype = torch.float16
+
+        return torch.autocast(device_type=self.device.type, dtype=amp_dtype, enabled=True)

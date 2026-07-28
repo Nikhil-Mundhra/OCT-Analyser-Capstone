@@ -195,7 +195,10 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
     gradcam_counts = {k: 0 for k in PATHOLOGY_CLASSES}
     max_cases_per_disease = 2
     
-    _amp_dtype = torch.float16 if device.type in ('mps', 'cuda') else torch.bfloat16
+    from utils.device import supports_bfloat16
+
+    # Prefer bfloat16 where supported (MPS on M2 Pro with modern PyTorch), else fall back to float16
+    _amp_dtype = torch.bfloat16 if supports_bfloat16(device) else torch.float16
     print("Evaluating Telemetry...")
     
     for i, (images, labels) in enumerate(val_loader):

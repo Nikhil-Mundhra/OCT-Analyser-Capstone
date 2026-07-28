@@ -165,7 +165,7 @@ class HierarchyTrainer:
         checkpoint_dir: str = "checkpoints",
         log_dir: str = "logs",
         device: Optional[torch.device] = None,
-        amp_dtype: torch.dtype = torch.float16,
+        amp_dtype: torch.dtype = torch.bfloat16,
     ) -> None:
         self.model     = model
         self.criterion = criterion
