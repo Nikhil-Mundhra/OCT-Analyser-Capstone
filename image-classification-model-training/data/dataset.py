@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import yaml
 import torch
+from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import StratifiedKFold
 
@@ -165,9 +166,13 @@ class MultiHeadOCTDataset(Dataset):
                 elif isinstance(image, np.ndarray):
                     image = torch.from_numpy(image)
             except Exception as exc:
-                logger.error("Failed to process %s: %s", image_path, exc)
-                # Return black placeholder for stability
-                image = torch.zeros(3, 384, 384, dtype=torch.float32)
+                logger.warning("MONAI LoadImage failed for %s: %s. Retrying with PIL.", image_path, exc)
+                try:
+                    pil_img = Image.open(image_path).convert("RGB")
+                    image = torch.from_numpy(np.array(pil_img)).permute(2, 0, 1).float() / 255.0
+                except Exception as exc2:
+                    logger.error("PIL fallback also failed for %s: %s. Using placeholder.", image_path, exc2)
+                    image = torch.zeros(3, 384, 384, dtype=torch.float32)
         else:
             image = image_path
 
