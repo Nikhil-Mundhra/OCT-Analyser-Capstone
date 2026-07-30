@@ -20,18 +20,21 @@ def get_device() -> torch.device:
 
 def supports_bfloat16(device: torch.device) -> bool:
     """
-    Runtime-check whether the given device supports bfloat16 autocasting without raising.
-
-    This performs a lightweight sanity check by running a trivial operation inside a
-    torch.autocast context with dtype=torch.bfloat16. If the context or the device
-    does not support bfloat16, an exception will be raised and the function returns False.
+    Runtime-check whether the given device has native hardware bfloat16 Tensor Core support.
+    CUDA requires Compute Capability >= 8.0 (Ampere architecture or newer, e.g. A100, RTX 3000, L4).
+    Turing GPUs (like NVIDIA T4, CC 7.5) do NOT have hardware BF16 Tensor Cores, so torch.float16
+    must be used to trigger 130 TFLOPS FP16 Tensor Core acceleration.
     """
+    if device.type == "cuda":
+        if torch.cuda.is_available():
+            major, _ = torch.cuda.get_device_capability(device)
+            return major >= 8
+        return False
+
     if device.type == "cpu":
-        # We intentionally avoid enabling autocast on CPU in this project.
         return False
 
     try:
-        # Create a small tensor on the target device and run a trivial op under autocast
         t = torch.ones((2, 2), device=device)
         with torch.autocast(device_type=device.type, dtype=torch.bfloat16, enabled=True):
             _ = t + t
