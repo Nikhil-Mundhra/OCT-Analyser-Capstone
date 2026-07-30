@@ -236,7 +236,8 @@ def run_telemetry_eval():
             h1_probs_arr.extend(h1_prob_batch)
             
             # H2 head processing
-            valid_h2_mask = (labels['normal_abnormal'] == 1).view(-1)
+            num_h2_classes = logits['pathology'].size(-1)
+            valid_h2_mask = ((labels['normal_abnormal'] == 1).view(-1)) & (labels['pathology'] >= 0) & (labels['pathology'] < num_h2_classes)
             if valid_h2_mask.sum() > 0:
                 probs_h2 = torch.softmax(logits['pathology'][valid_h2_mask], dim=1).cpu().numpy()
                 preds_h2 = np.argmax(probs_h2, axis=1)

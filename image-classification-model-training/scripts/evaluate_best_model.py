@@ -197,8 +197,8 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
     
     from utils.device import supports_bfloat16
 
-    # Prefer bfloat16 where supported (MPS on M2 Pro with modern PyTorch), else fall back to float16
-    _amp_dtype = torch.bfloat16 if supports_bfloat16(device) else torch.float16
+    # MPS has native FP16 (AMX) but emulates bfloat16 → prefer float16 on MPS
+    _amp_dtype = torch.float16 if device.type == "mps" else (torch.bfloat16 if device.type == "cuda" else torch.float16)
     print("Evaluating Telemetry...")
     
     for i, (images, labels) in enumerate(val_loader):
@@ -207,15 +207,19 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
         with torch.no_grad():
             with torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=device.type in ('mps', 'cuda')):
                 logits = model(images)
-            
+
+            # Cast to float32 before sigmoid/softmax to prevent NaN from FP16 overflow
+            logits = {k: v.float() if isinstance(v, torch.Tensor) else v for k, v in logits.items()}
+
             h1_prob_batch = torch.sigmoid(logits['normal_abnormal']).cpu().numpy()
             h1_pred_batch = (h1_prob_batch > 0.5).astype(int)  # 0.5 Triage Threshold
             h1_preds.extend(h1_pred_batch)
             h1_targets.extend(labels['normal_abnormal'].numpy())
             h1_probs_arr.extend(h1_prob_batch)
             
-            # Calculate H2 metrics only for abnormal samples
-            valid_h2_mask = (labels['normal_abnormal'] == 1).squeeze()
+            # Calculate H2 metrics only for abnormal samples with valid pathology labels
+            num_h2_classes = logits['pathology'].size(-1)
+            valid_h2_mask = ((labels['normal_abnormal'] == 1).view(-1)) & (labels['pathology'] >= 0) & (labels['pathology'] < num_h2_classes)
             if valid_h2_mask.sum() > 0:
                 probs_h2 = torch.softmax(logits['pathology'][valid_h2_mask], dim=1).cpu().numpy()
                 preds_h2 = np.argmax(probs_h2, axis=1)

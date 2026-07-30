@@ -65,12 +65,14 @@ class FocalLoss(nn.Module):
         alpha: Optional[torch.Tensor] = None,
         reduction: str = "mean",
         label_smoothing: float = 0.0,
+        ignore_index: int = -1,
     ) -> None:
         super().__init__()
         self.gamma           = gamma
         self.alpha           = alpha
         self.reduction       = reduction
         self.label_smoothing = label_smoothing
+        self.ignore_index    = ignore_index
 
     def forward(
         self,
@@ -90,7 +92,18 @@ class FocalLoss(nn.Module):
         if targets.ndim > 1:
             targets = targets.view(-1)
 
+        # Force FP32 to prevent NaN from FP16 exp/log overflow on MPS/CUDA
+        inputs = inputs.float()
+
         num_classes = inputs.size(-1)
+
+        # Mask out targets that are ignored (-1) or out of bounds to prevent CUDA illegal memory access
+        valid_mask = (targets != self.ignore_index) & (targets >= 0) & (targets < num_classes)
+
+        if not valid_mask.any():
+            return torch.tensor(0.0, device=inputs.device, requires_grad=True)
+
+        targets_clamped = targets.clamp(0, num_classes - 1)
 
         # ── Compute per-sample cross-entropy (with optional label smoothing) ─
         if self.label_smoothing > 0.0 and num_classes > 1:
@@ -98,29 +111,32 @@ class FocalLoss(nn.Module):
             with torch.no_grad():
                 # Build soft target distribution
                 smooth_targets = torch.full_like(inputs, eps / (num_classes - 1))
-                smooth_targets.scatter_(1, targets.unsqueeze(1), 1.0 - eps)
+                smooth_targets.scatter_(1, targets_clamped.unsqueeze(1), 1.0 - eps)
             log_prob = F.log_softmax(inputs, dim=1)
             # KL-divergence-style CE with soft labels
             ce_loss = -(smooth_targets * log_prob).sum(dim=1)
         else:
             log_prob = F.log_softmax(inputs, dim=1)
-            ce_loss  = F.nll_loss(log_prob, targets, reduction="none")
+            ce_loss  = F.nll_loss(log_prob, targets_clamped, reduction="none")
 
         # ── Focal modulation: (1 - p_t)^gamma ────────────────────────────────
-        prob  = F.softmax(inputs, dim=1)
-        p_t   = prob.gather(1, targets.unsqueeze(1)).squeeze(1)
+        prob  = F.softmax(inputs, dim=1).clamp(min=1e-7, max=1.0 - 1e-7)
+        p_t   = prob.gather(1, targets_clamped.unsqueeze(1)).squeeze(1)
         focal = (1.0 - p_t) ** self.gamma
 
         # ── Alpha class weighting ─────────────────────────────────────────────
         if self.alpha is not None:
-            alpha_t = self.alpha.to(inputs.device).gather(0, targets)
+            alpha_t = self.alpha.to(inputs.device).gather(0, targets_clamped)
             loss    = alpha_t * focal * ce_loss
         else:
             loss    = focal * ce_loss
 
+        # Mask out ignored target indices
+        loss = loss * valid_mask.float()
+
         # ── Reduction ─────────────────────────────────────────────────────────
         if self.reduction == "mean":
-            return loss.mean()
+            return loss.sum() / valid_mask.sum().clamp(min=1)
         if self.reduction == "sum":
             return loss.sum()
         return loss
@@ -143,26 +159,35 @@ class LabelSmoothingCrossEntropy(nn.Module):
         self,
         smoothing: float = 0.1,
         weight: Optional[torch.Tensor] = None,
+        ignore_index: int = -1,
     ) -> None:
         super().__init__()
-        self.smoothing = smoothing
-        self.weight    = weight
+        self.smoothing    = smoothing
+        self.weight       = weight
+        self.ignore_index = ignore_index
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         n_classes = inputs.size(1)
         log_prob  = F.log_softmax(inputs, dim=1)
 
+        valid_mask = (targets != self.ignore_index) & (targets >= 0) & (targets < n_classes)
+        if not valid_mask.any():
+            return torch.tensor(0.0, device=inputs.device, requires_grad=True)
+
+        targets_clamped = targets.clamp(0, n_classes - 1)
+
         with torch.no_grad():
             smooth = torch.full_like(log_prob, self.smoothing / (n_classes - 1))
-            smooth.scatter_(1, targets.unsqueeze(1), 1.0 - self.smoothing)
+            smooth.scatter_(1, targets_clamped.unsqueeze(1), 1.0 - self.smoothing)
 
         loss = -(smooth * log_prob).sum(dim=1)
 
         if self.weight is not None:
             w    = self.weight.to(inputs.device)
-            loss = loss * w.gather(0, targets)
+            loss = loss * w.gather(0, targets_clamped)
 
-        return loss.mean()
+        loss = loss * valid_mask.float()
+        return loss.sum() / valid_mask.sum().clamp(min=1)
 
 
 # ──────────────────────────────────────────────────────────────────────────────

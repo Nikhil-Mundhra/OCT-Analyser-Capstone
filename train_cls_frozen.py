@@ -35,10 +35,17 @@ class FocalLoss(nn.Module):
         self.ce = nn.CrossEntropyLoss(weight=weight, ignore_index=ignore_index, reduction='none')
 
     def forward(self, logits, targets):
-        ce_loss = self.ce(logits, targets)
+        num_classes = logits.size(-1)
+        valid_mask = (targets != self.ignore_index) & (targets >= 0) & (targets < num_classes)
+        if not valid_mask.any():
+            return torch.tensor(0.0, device=logits.device, requires_grad=True)
+
+        targets_clamped = targets.clamp(0, num_classes - 1)
+        ce_loss = self.ce(logits, targets_clamped)
         pt = torch.exp(-ce_loss)
         focal_loss = ((1 - pt) ** self.gamma) * ce_loss
-        return focal_loss.mean()
+        focal_loss = focal_loss * valid_mask.float()
+        return focal_loss.sum() / valid_mask.sum().clamp(min=1)
 
 def load_image_gray(img_path: str):
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)

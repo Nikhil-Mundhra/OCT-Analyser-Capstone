@@ -121,9 +121,13 @@ class ComputeManager:
         if not enabled:
             return torch.autocast(device_type="cpu", enabled=False)
 
-        # Prefer bfloat16 when supported on the device to avoid FP16 overflow issues
-        if supports_bfloat16(self.device):
+        # MPS has native FP16 matrix engines (AMX) but emulates bfloat16 in software,
+        # making bfloat16 SLOWER than float32 on Apple Silicon. Prefer float16 on MPS.
+        # CUDA has native bfloat16 support, so prefer it there.
+        if self.device.type == "cuda" and supports_bfloat16(self.device):
             amp_dtype = torch.bfloat16
+        elif self.device.type == "mps":
+            amp_dtype = torch.float16
         else:
             amp_dtype = torch.float16
 

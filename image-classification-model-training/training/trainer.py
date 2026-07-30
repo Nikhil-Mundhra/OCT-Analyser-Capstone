@@ -165,7 +165,7 @@ class HierarchyTrainer:
         checkpoint_dir: str = "checkpoints",
         log_dir: str = "logs",
         device: Optional[torch.device] = None,
-        amp_dtype: torch.dtype = torch.bfloat16,
+        amp_dtype: torch.dtype = torch.float16,
     ) -> None:
         self.model     = model
         self.criterion = criterion
@@ -257,7 +257,14 @@ class HierarchyTrainer:
 
             with _amp_ctx:
                 logits = self.model(images)
-                loss   = self.criterion(logits, labels)
+
+            # Cast to float32 BEFORE loss to prevent NaN from FP16 overflow on MPS
+            if isinstance(logits, dict):
+                logits = {k: v.float() if isinstance(v, torch.Tensor) else v for k, v in logits.items()}
+            else:
+                logits = logits.float()
+
+            loss   = self.criterion(logits, labels)
 
             # NOTE: No GradScaler on MPS (CUDA-only). The loss.backward() call
             # uses float32 gradients even though the forward pass ran in float16.
@@ -304,7 +311,14 @@ class HierarchyTrainer:
 
             with _amp_ctx:
                 logits = self.model(images)
-                loss   = self.criterion(logits, labels)
+
+            # Cast to float32 BEFORE loss to prevent NaN from FP16 overflow on MPS
+            if isinstance(logits, dict):
+                logits = {k: v.float() if isinstance(v, torch.Tensor) else v for k, v in logits.items()}
+            else:
+                logits = logits.float()
+
+            loss   = self.criterion(logits, labels)
 
             total_loss += loss.item()
             accumulator.update(logits.detach(), labels)

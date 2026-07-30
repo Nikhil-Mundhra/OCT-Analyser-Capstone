@@ -216,55 +216,24 @@ async def run_segmentation_suite(
             return _pil_to_base64(res), None
         return None, None
 
-    if model_id in ["model1", "all"]:
-        res, metrics = predict_model1(image)
-        ov, mk = _extract_images(res)
-        results["model1"] = {
-            "name": "Retinal Layers U-Net",
-            "overlay": ov,
-            "mask": mk,
-            "details": metrics
-        }
+    model_registry = [
+        ("model1", "Retinal Layers U-Net", lambda: predict_model1(image)),
+        ("model2", "Choroidalyzer U-Net", lambda: predict_model2(image)),
+        ("model3", "HRF Attention U-Net", lambda: predict_model3(image)),
+        ("model4", "OIMHS Hole & Cyst U-Net", lambda: predict_model4(image)),
+        ("model5", "OCT Pathology Detector", lambda: predict_model5(image, score_threshold=score_threshold)),
+    ]
 
-    if model_id in ["model2", "all"]:
-        res, metrics = predict_model2(image)
-        ov, mk = _extract_images(res)
-        results["model2"] = {
-            "name": "Choroidalyzer U-Net",
-            "overlay": ov,
-            "mask": mk,
-            "details": metrics
-        }
-
-    if model_id in ["model3", "all"]:
-        res, metrics = predict_model3(image)
-        ov, mk = _extract_images(res)
-        results["model3"] = {
-            "name": "HRF Attention U-Net",
-            "overlay": ov,
-            "mask": mk,
-            "details": metrics
-        }
-
-    if model_id in ["model4", "all"]:
-        res, metrics = predict_model4(image)
-        ov, mk = _extract_images(res)
-        results["model4"] = {
-            "name": "OIMHS Hole & Cyst U-Net",
-            "overlay": ov,
-            "mask": mk,
-            "details": metrics
-        }
-
-    if model_id in ["model5", "all"]:
-        res, metrics = predict_model5(image, score_threshold=score_threshold)
-        ov, mk = _extract_images(res)
-        results["model5"] = {
-            "name": "OCT Pathology Detector",
-            "overlay": ov,
-            "mask": mk,
-            "details": metrics
-        }
+    for key, name, predict_fn in model_registry:
+        if model_id in [key, "all"]:
+            res, metrics = predict_fn()
+            ov, mk = _extract_images(res)
+            results[key] = {
+                "name": name,
+                "overlay": ov,
+                "mask": mk,
+                "details": metrics,
+            }
 
     return {"status": "success", "results": results}
 

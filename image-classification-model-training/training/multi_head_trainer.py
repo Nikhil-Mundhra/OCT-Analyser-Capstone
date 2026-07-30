@@ -35,7 +35,7 @@ class MultiHeadTrainer:
         log_dir: str = "logs",
         device: Optional[torch.device] = None,
         compute_manager: Optional[ComputeManager] = None,
-        amp_dtype: torch.dtype = torch.bfloat16,
+        amp_dtype: torch.dtype = torch.float16,
         metric_extractors: Optional[Dict[str, callable]] = None,
     ) -> None:
         self.criterions = criterions
@@ -67,12 +67,17 @@ class MultiHeadTrainer:
         )
 
     def _compute_loss(self, logits_dict: dict, labels_dict: dict):
+        # Cast logits to float32 BEFORE loss to prevent NaN from FP16 overflow.
+        # Backbone stays in fast FP16 (Apple AMX), loss runs safely in FP32.
+        logits_dict = {k: v.float() if isinstance(v, torch.Tensor) else v for k, v in logits_dict.items()}
+
         # Head 1 (Binary BCEWithLogitsLoss)
         loss_h1 = self.criterions['h1'](logits_dict['normal_abnormal'], labels_dict['normal_abnormal'].float())
         
         # Head 2 (Granular Pathology - Asymmetric Loss)
-        # Hierarchical Loss Masking: Only calculate H2 loss for Abnormal samples (h1 label == 1)
-        valid_h2_mask = (labels_dict['normal_abnormal'] == 1).view(-1)
+        # Hierarchical Loss Masking: Only calculate H2 loss for Abnormal samples (h1 label == 1) with valid pathology class (>= 0)
+        num_h2_classes = logits_dict['pathology'].size(-1)
+        valid_h2_mask = ((labels_dict['normal_abnormal'] == 1).view(-1)) & (labels_dict['pathology'] >= 0) & (labels_dict['pathology'] < num_h2_classes)
         
         if valid_h2_mask.sum() > 0:
             target_logits = logits_dict['pathology'][valid_h2_mask]
@@ -199,10 +204,11 @@ class MultiHeadTrainer:
             total_loss += loss.item()
             
             # Extract H2 metrics via Injected Strategy (SOLID Dependency Inversion)
-            valid_h2_mask = (labels['normal_abnormal'] == 1).view(-1)
+            num_h2_classes = logits['pathology'].size(-1)
+            valid_h2_mask = ((labels['normal_abnormal'] == 1).view(-1)) & (labels['pathology'] >= 0) & (labels['pathology'] < num_h2_classes)
             if valid_h2_mask.sum() > 0:
                 batch_targets = labels['pathology'][valid_h2_mask]
-                batch_logits = logits['pathology'][valid_h2_mask]
+                batch_logits = logits['pathology'][valid_h2_mask].float()
                 
                 # Keep targets and logits 1D/2D as they naturally are.
                 # Just flatten them into the list.

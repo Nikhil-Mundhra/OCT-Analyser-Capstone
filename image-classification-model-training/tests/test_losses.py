@@ -27,11 +27,23 @@ class TestLosses(unittest.TestCase):
         
         self.assertNotEqual(loss_val_weighted.item(), loss_val.item())
         
+        # Test with -1 (ignored) target
+        targets_with_ignored = torch.tensor([0, -1])
+        loss_val_ignored = loss_fn_unweighted(inputs, targets_with_ignored)
+        self.assertGreater(loss_val_ignored.item(), 0)
+        self.assertFalse(torch.isnan(loss_val_ignored))
+
+        # Test with label smoothing and -1 targets
+        loss_fn_smoothed = FocalLoss(gamma=2.0, label_smoothing=0.1, alpha=alpha)
+        loss_val_smoothed = loss_fn_smoothed(inputs, targets_with_ignored)
+        self.assertGreater(loss_val_smoothed.item(), 0)
+        self.assertFalse(torch.isnan(loss_val_smoothed))
+        
     def test_label_smoothing_loss(self):
         """Verify LabelSmoothingCrossEntropy."""
         loss_fn = LabelSmoothingCrossEntropy(smoothing=0.1)
         inputs = torch.tensor([[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0]])
-        targets = torch.tensor([0, 1])
+        targets = torch.tensor([0, -1])
         
         loss_val = loss_fn(inputs, targets)
         self.assertGreater(loss_val.item(), 0)

@@ -54,3 +54,4 @@ models_suite/model3_hrf_dme/HRF-HPC/AUNET/MobaXterm_172.18.186.773_20260214_1251
 frontend/.next
 image-segmentation-model-training/models_suite/model2_choroidalyzer
 image-segmentation-model-training/models_suite/model3_hrf_dme
+scripts/hpc-nyuad.txt
