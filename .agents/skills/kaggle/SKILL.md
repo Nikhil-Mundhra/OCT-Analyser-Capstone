@@ -115,8 +115,32 @@ When indexing multi-head targets or masks (e.g. `valid_h2_mask`), **NEVER** use 
   valid_h2_mask = (labels['normal_abnormal'] == 1).view(-1)
   ```
 
-## 8. Checkpoint Saving & Resuming Across Session Timeouts
+## 8. Checkpoint Saving, Safe Resuming, and Path Validation Across Session Timeouts
 Kaggle sessions have a strict 9-hour maximum execution limit.
 - **Automatic Checkpoint Persistence**: Ensure trainers save `fold0_best_model.pth` and `fold0_last_model.pth` to `/kaggle/working/checkpoints/` after every epoch.
-- **Seamless Resuming**: Always support a `--resume` argument pointing to `checkpoints/multi_head/fold0_last_model.pth` to restore model state, optimizer state, and epoch indices seamlessly.
+- **Safe Checkpoint Path Validation**: Always verify `if resume_path and os.path.exists(resume_path):` before calling `torch.load()`. If the file path is invalid or missing, log a warning and fall back to fresh model initialization rather than crashing mid-run with an unhandled `FileNotFoundError`.
+- **Seamless Resuming**: When `--resume` points to an existing `.pth` file, restore model parameters, optimizer momentum, scheduler states, and epoch indices cleanly.
 - **Fail-Safe Real-Time Cloud Backup (HF Hub)**: Pass `--hf-repo username/repo_name` and set `HF_TOKEN` in the environment to stream peak model checkpoints directly to Hugging Face Hub in real-time.
+
+## 9. Automatic Mixed Precision (AMP) & VRAM Optimization
+Heavy architectures combining ConvNeXt V2 Base with multi-scale CBAM attention blocks require careful memory management:
+- **`PYTORCH_CUDA_ALLOC_CONF`**: Always set `os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"` at script startup to prevent VRAM fragmentation crashes.
+- **Autocast Dtype**: Use `torch.autocast(device_type="cuda", dtype=torch.float16)` (or `torch.bfloat16` on Ampere/A100 GPUs) combined with `torch.amp.GradScaler('cuda')` to accelerate matrix multiplications while computing loss safely in FP32.
+
+## 10. Seed & Determinism Protocol
+To guarantee reproducible K-Fold cross-validation splits and model initializations across Kaggle runs, enforce seed setting across all RNG backends:
+```python
+import random
+import numpy as np
+import torch
+
+def set_seed(seed: int = 42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+```
