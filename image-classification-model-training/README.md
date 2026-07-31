@@ -1,10 +1,10 @@
-# 👁️ Multi-Head ConvNeXt V2 Hierarchical OCT Classification Pipeline
+# Multi-Head ConvNeXt V2 Hierarchical OCT Classification Pipeline
 
 A state-of-the-art, multi-task deep learning pipeline for hierarchical retinal pathology classification from Optical Coherence Tomography (OCT) B-scans. Built on top of **ConvNeXt V2 Base** with **Multi-Scale Encoder Aggregation**, **CBAM Attention Modules**, **Strict Hierarchical Conditioning**, and **Focal Loss** for extreme class imbalance mitigation.
 
 ---
 
-## 📐 Architecture & Key Features
+## Architecture & Key Features
 
 ```mermaid
 graph TD
@@ -29,7 +29,7 @@ graph TD
     H1 & H2 --> SoftmaxCond["Joint Probability Constraint: P(H2) = P(H2|H1) × P(H1)"]
 ```
 
-### 🌟 Core Capabilities
+### Core Capabilities
 - **Multi-Scale Encoder Aggregation (Decoder-less Localization)**: Pools spatial feature maps from multiple encoder depths (Stage 1 @ $28 \times 28$, Stage 2 @ $14 \times 14$, Stage 3 @ $7 \times 7$) directly into the classification head, retaining fine-grained spatial details (such as peripheral cysts or drusen deposits) lost at the bottleneck.
 - **CBAM Attention Modules**: Channel & Spatial Convolutional Block Attention Modules (`CBAMBlock`) applied independently at each feature scale before pooling.
 - **Dual-Head Output**:
@@ -41,7 +41,7 @@ graph TD
 
 ---
 
-## ⚖️ Imbalance-Resilient Loss Strategy
+## Imbalance-Resilient Loss Strategy
 
 - **Focal Loss ($\gamma=2.0$)**: $\text{FL}(p_t) = -\alpha_t (1 - p_t)^\gamma \log(p_t)$ focuses gradient updates on hard minority classes (`RAO`, `CSR`, `VID`) and down-weights dominant classes (`CNV`, `DRUSEN`).
 - **Automated Class Imbalance Weighting ($\alpha_t$)**: Calculates exact per-class inverse frequency weights dynamically from the dataset.
@@ -50,7 +50,7 @@ graph TD
 
 ---
 
-## 📈 Progressive Training & Optimization
+## Progressive Training & Optimization
 
 - **Two-Phase Training Protocol**:
   - **Phase 1 (Warmup)**: Backbone frozen (`freeze_backbone()`), training only classification heads and CBAM blocks with higher LR (`1e-3`) to stabilize head weights.
@@ -62,7 +62,7 @@ graph TD
 
 ---
 
-## ⚡ Hardware Acceleration & Checkpointing
+## Hardware Acceleration & Checkpointing
 
 - **Native FP16 Autocast (MPS & CUDA)**: `torch.autocast(device_type, dtype=torch.float16)` accelerates matrix multiplication on Apple Silicon M2 Pro matrix engines and NVIDIA CUDA Cores, keeping loss calculations safely in FP32.
 - **Gradient Accumulation (`--accum-steps`)**: Simulates larger effective batch sizes (e.g. `batch_size=16` $\times$ `accum_steps=2` = effective batch 32) without increasing VRAM.
@@ -73,7 +73,7 @@ graph TD
 
 ---
 
-## 📂 Directory Layout
+## Directory Layout
 
 ```text
 image-classification-model-training/
@@ -100,7 +100,7 @@ image-classification-model-training/
 
 ---
 
-## 🚀 Execution & Usage Commands
+## Execution & Usage Commands
 
 ### 1. Local Training (Apple Silicon Mac - MPS)
 ```bash
