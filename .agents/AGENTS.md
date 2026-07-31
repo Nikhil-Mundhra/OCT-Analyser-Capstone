@@ -37,3 +37,39 @@ The model must function as a unified architecture with a shared encoder that sim
 3. **Strict Hierarchical Classification Conditioning:** The classification branch must explicitly enforce hierarchy (e.g., L2 conditioned on L1 probabilities, L3 conditioned on L2 probabilities) via cascaded features to prevent contradictory multi-head predictions.
 4. **Decoupled Decoder:** The segmentation decoder operates independently to predict tissue boundaries, without its outputs feeding back into the classification head, avoiding catastrophic failure on unseen diseases.
 5. **Medical Data Augmentation Constraints:** NEVER use `RandomResizedCrop` or destructive spatial augmentations that chop off the edges of medical scans, as this acts as spatial dropout and can inadvertently erase edge-located biological markers (e.g., peripheral cysts). To eliminate UI artifacts (like compasses or logos) without risking tissue loss, strictly mandate **Segmentation-Driven Cropping**—using the U-Net to dynamically identify and preserve 100% of the retinal tissue while zeroing out the background.
+
+## Design Principles
+
+These principles guide how code should be structured in this repository. Apply judgment: the goal is maintainable, testable code, not mechanical rule following.
+
+### Core principles (SOLID)
+
+- **Single Responsibility**: Each module, class, or function should have one reason to change. If you find yourself describing a function with "and," it likely does too much.
+- **Open/Closed**: Code should be open for extension but closed for modification. Prefer adding new code (new classes, new strategy implementations) over editing tested, working code to bolt on a special case.
+- **Liskov Substitution**: A subtype must be usable anywhere its parent type is expected, without surprising behavior. If a subclass throws on a method the parent supports, the hierarchy is wrong.
+- **Interface Segregation**: Prefer several small, focused interfaces over one large general purpose interface. Callers shouldn't depend on methods they never use.
+- **Dependency Inversion**: High level modules should depend on abstractions, not on low level implementation details. Inject dependencies (via constructor, function args, or config) rather than reaching for globals or hardcoded instances.
+
+### General principles
+
+- **DRY (Don't Repeat Yourself)**: Extract shared logic once it appears three times, not on the first duplication. Premature abstraction is its own cost.
+- **KISS (Keep It Simple)**: Choose the simplest design that solves the actual problem. Avoid clever solutions when a plain one reads clearly.
+- **Separation of Concerns**: Keep business logic, data access, and presentation in distinct layers. A UI component shouldn't contain SQL; a data model shouldn't contain formatting logic.
+- **Composition over Inheritance**: Favor combining small, focused objects over deep inheritance chains. Inheritance should model a true "is a" relationship, not just a way to reuse code.
+
+### Structural guidelines
+
+- **Dependency direction**: Dependencies should point inward, toward core domain logic, and outward toward infrastructure (databases, APIs, frameworks). Core logic should not import framework or infrastructure code directly.
+- **File and function size**: If a file exceeds roughly 300 to 400 lines or a function exceeds 40 to 50 lines, treat that as a signal to consider splitting it, not a hard rule.
+- **Naming**: Names should describe intent and behavior, not implementation. `calculateTotalPrice()` over `doStuff()`. Boolean names should read as questions: `isValid`, `hasPermission`.
+- **Error handling**: Fail fast and explicitly. Don't silently swallow exceptions. Validate inputs at boundaries (API handlers, public functions) rather than scattering checks throughout internal logic.
+- **Immutability by default**: Prefer immutable data structures and pure functions where practical. Mutate state only when there's a clear reason (performance, or the domain genuinely models mutable state).
+
+### Practical rules for agents working in this codebase
+
+- Before adding a new abstraction (interface, base class, factory), check whether an existing one already covers the need.
+- When modifying existing code, match the surrounding style and structure rather than introducing a new pattern in isolation.
+- Prefer small, reviewable changes over large refactors bundled with feature work.
+- New modules should have a single, clearly stated purpose documented at the top of the file or in its docstring.
+- Write code so that a test can be added without needing to restructure it (this usually means: inject dependencies, avoid hidden global state, keep functions pure where possible).
+- All features should be built incrementally by default. Ship the smallest working version first, then extend it in follow up steps, rather than building the full scope in one pass. Only skip this and build a feature in full if explicitly told to do so.

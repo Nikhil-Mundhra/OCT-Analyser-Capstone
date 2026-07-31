@@ -122,52 +122,37 @@ def create_scan(file: UploadFile, db: Session = Depends(get_db), api_key: str = 
     }
 
 @app.post("/api/segment_2d")
-def segment_2d(file: UploadFile) -> dict:
+async def segment_2d(file: UploadFile = File(...)) -> dict:
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in SUPPORTED_SUFFIXES:
         raise HTTPException(status_code=400, detail="Unsupported file type")
         
-    scan_id = uuid4().hex
-    temp_dir = Path(tempfile.gettempdir()) / "oct_segmentation"
-    temp_dir.mkdir(parents=True, exist_ok=True)
-    
-    img_path = temp_dir / f"{scan_id}{suffix}"
-    out_json = temp_dir / f"{scan_id}_out.json"
-    
-    with img_path.open("wb") as handle:
-        copyfileobj(file.file, handle)
-        
-    script_path = SEGMENT_PREDICT_SCRIPT
-    checkpoint_path = UNET_CHECKPOINT_PATH
-    
-    env = os.environ.copy()
-    env["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-    
+    content = await file.read()
     try:
-        subprocess.run(
-            [
-                "python3", str(script_path),
-                "--image", str(img_path),
-                "--checkpoint", str(checkpoint_path),
-                "--output", str(out_json)
-            ],
-            env=env,
-            check=True,
-            capture_output=True,
-            text=True
-        )
-        
-        with open(out_json, "r") as f:
-            result = json.load(f)
-            
-        return result
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"Segmentation failed: {e.stderr}")
-    finally:
-        if img_path.exists():
-            img_path.unlink()
-        if out_json.exists():
-            out_json.unlink()
+        image = Image.open(io.BytesIO(content)).convert("RGB")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid image file: {e}")
+
+    try:
+        from hf_space.app import predict_model1
+        res, info = predict_model1(image)
+        if isinstance(res, tuple):
+            blended, mask = res[0], res[1]
+            ov = _pil_to_base64(blended) if blended else None
+            mk = _pil_to_base64(mask) if mask else None
+        elif res:
+            ov, mk = _pil_to_base64(res), None
+        else:
+            ov, mk = None, None
+
+        return {
+            "status": "success",
+            "overlay": ov,
+            "mask": mk,
+            "info": info
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Segmentation failed: {exc}")
 
 def _pil_to_base64(img: Image.Image) -> str:
     buffered = io.BytesIO()

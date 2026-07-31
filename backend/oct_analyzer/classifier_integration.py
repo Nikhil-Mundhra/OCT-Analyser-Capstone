@@ -53,20 +53,20 @@ class ClassifierWrapper:
             cls._instance = cls()
         return cls._instance
 
-    def predict(self, image_path: str, gradcam: bool = True) -> dict[str, Any]:
+    def predict(self, image_input: Any, gradcam: bool = True) -> dict[str, Any]:
         """Runs prediction locally or offloads to HF ZeroGPU Space if enabled."""
         if os.getenv("OCT_REMOTE_OFFLOAD", "false").lower() == "true":
             try:
                 from .remote_hf_client import RemoteHFSpaceClient
                 remote_client = RemoteHFSpaceClient.get_instance()
                 logger.info("Offloading classification to HF ZeroGPU Space (NMundhra/OCT-Image-Classifier-Model)...")
-                res = remote_client.predict_classification(image_path)
+                res = remote_client.predict_classification(image_input)
                 if isinstance(res, dict):
                     return res
             except Exception as e:
                 logger.warning(f"Remote HF offloading failed ({e}). Falling back to local execution.")
 
-        return self.pipeline.predict(image_path, gradcam=gradcam)
+        return self.pipeline.predict(image_input, gradcam=gradcam)
 
 
 def get_classifier() -> ClassifierWrapper:

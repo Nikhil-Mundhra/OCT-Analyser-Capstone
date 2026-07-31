@@ -21,6 +21,49 @@ from monai.transforms import (
     Transform
 )
 
+from PIL import ImageDraw
+from torchvision.transforms.functional import pad
+
+class BlackoutCorners(object):
+    """
+    Zeros out bottom-left corner region where extraneous scanner metadata or logos exist.
+    """
+    def __init__(self, fraction: float = 0.18, x_offset_frac: float = 0.0, y_offset_frac: float = 0.0):
+        self.fraction = fraction
+        self.x_offset_frac = x_offset_frac
+        self.y_offset_frac = y_offset_frac
+
+    def __call__(self, img):
+        w, h = img.size
+        base_dim = max(w, h)
+        box_size = int(base_dim * self.fraction)
+        x_off = int(base_dim * self.x_offset_frac)
+        y_off = int(base_dim * self.y_offset_frac)
+        
+        draw = ImageDraw.Draw(img)
+        # Bottom Left
+        x1 = x_off
+        y1 = h - box_size - y_off
+        x2 = x_off + box_size
+        y2 = h - y_off
+        draw.rectangle([x1, y1, x2, y2], fill="black")
+        return img
+
+
+class LetterboxPad(object):
+    """
+    Pads rectangular images to square dimensions using symmetric letterboxing.
+    """
+    def __call__(self, img):
+        w, h = img.size
+        max_dim = max(w, h)
+        pad_left = (max_dim - w) // 2
+        pad_right = max_dim - w - pad_left
+        pad_top = (max_dim - h) // 2
+        pad_bottom = max_dim - h - pad_top
+        return pad(img, (pad_left, pad_top, pad_right, pad_bottom), fill=0)
+
+
 # ImageNet statistics for ConvNeXt
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD  = [0.229, 0.224, 0.225]
