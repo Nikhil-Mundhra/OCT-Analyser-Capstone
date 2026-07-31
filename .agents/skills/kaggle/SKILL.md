@@ -1,11 +1,11 @@
 ---
 name: kaggle
-description: MANDATORY skill for deploying, writing, running, or debugging model training scripts on Kaggle. Enforces critical rules for preventing DataLoader deadlocks, tail-batch crashes (batch-size 1 squeeze traps), shared memory OOMs, multi-GPU setup, and mandatory local pre-flight smoke testing.
+description: MANDATORY skill for deploying, writing, running, or debugging model training scripts on Kaggle. Enforces critical rules for preventing DataLoader deadlocks, tail-batch crashes (batch-size 1 squeeze traps), shared memory OOMs, multi-GPU setup, medical spatial augmentation rules, and mandatory local pre-flight smoke testing.
 ---
 
 # Kaggle Training Guidelines
 
-When deploying PyTorch training scripts to Kaggle (especially those using Multi-processing DataLoaders and OpenCV/MONAI), you MUST enforce the following rules to prevent silent deadlocks and shared memory crashes:
+When deploying PyTorch training scripts to Kaggle (especially those using Multi-processing DataLoaders, OpenCV, and MONAI), you MUST enforce the following rules to prevent silent deadlocks, shared memory crashes, and invalid medical data augmentations:
 
 ## 1. Prevent Multiprocessing Deadlocks
 Kaggle Notebooks often hang indefinitely at the start of a PyTorch DataLoader epoch due to thread contention between Python's multiprocessing workers and underlying C++ threading libraries (like OpenMP or OpenCV).
@@ -19,52 +19,77 @@ import cv2
 cv2.setNumThreads(0)
 ```
 
-## 2. Shared Memory Limits (`/dev/shm`)
+## 2. Shared Memory Limits (`/dev/shm`) & DataLoader Configuration
 Kaggle kernels and Docker containers have strict limits on shared memory. PyTorch uses shared memory to transfer tensors from DataLoader workers to the main process.
-- **Maximum Workers**: Never set `num_workers` higher than `2` for high-resolution images (e.g., 384x384) with large batch sizes (e.g., 64). 
-- If training still hangs, fallback to `num_workers=0` to force synchronous data loading and completely bypass `/dev/shm`.
+- **Maximum Workers**: Never set `num_workers` higher than `2` for high-resolution images (e.g., 384x384 or 512x512) with large batch sizes (e.g., 64).
+- **Fallback (`num_workers=0`)**: If training still hangs, fallback to `num_workers=0` to force synchronous data loading and completely bypass `/dev/shm`.
+- **Drop Last Batch (`drop_last=True`)**: Always set `drop_last=True` for training DataLoaders to prevent single-sample micro-batches at epoch ends that break BatchNorm statistics or target tensor shapes.
 
-## 3. Progress Tracking
-- Avoid printing high-frequency updates directly to `stdout`/`stderr` inside loops, as it can flood and crash the Kaggle web interface.
-- If using `tqdm`, the user may request it to be removed to keep logs clean. Respect the user's preference for clean, epoch-level logging over batch-level progress bars.
+## 3. Medical Data Augmentation Constraints
+Medical OCT scans contain critical disease markers along peripheral edges (e.g., peripheral cysts, drusen).
+- **STRICT PROHIBITION**: NEVER use `RandomResizedCrop` or destructive spatial augmentations that slice off image edges (acts as spatial dropout and erases edge-located markers).
+- **Segmentation-Driven Cropping**: Use U-Net or morphological thresholding (`TissueMaskCrop`) to dynamically preserve 100% of retinal tissue while zeroing out background scanner text or compass artifacts.
 
-## 4. Multi-GPU Saturation
-When running on Kaggle kernels equipped with dual GPUs (like Dual T4s):
-- Use `nn.DataParallel` to automatically split the batch across both GPUs.
-- Override default batch sizes via command line (e.g., `--batch-size 64`) so that each GPU receives an optimal chunk (e.g., 32 per GPU) to keep VRAM fully utilized without overflowing.
+## 4. Multi-GPU Saturation & Distributed Data Parallel (DDP)
+When running on Kaggle kernels equipped with dual GPUs (e.g., Dual T4s):
+- **DistributedDataParallel (DDP)**: Prefer launching multi-GPU training via `torchrun --nproc_per_node=2` over legacy `nn.DataParallel`. DDP runs isolated per-GPU processes, eliminating Global Interpreter Lock (GIL) contention and yielding ~1.9x speedup.
+- **Global Effective Batch Size**: $(\text{Batch Size per GPU}) \times (\text{Number of GPUs}) \times (\text{Accumulation Steps})$. Setting `--batch-size 16` per GPU across 2 GPUs achieves a target Global Batch Size of 32 while reducing per-GPU VRAM overhead.
+- **Memory View Optimization**: Pass `gradient_as_bucket_view=True` in `DistributedDataParallel` constructor to assign gradients directly as reduction bucket views, eliminating 1x1 conv stride copy warnings and saving VRAM.
 
-## 5. Executing the Multi-Head ConvNeXt Model
-When the user wants to kick off the final Multi-Head ConvNeXt training on Kaggle, they will typically run this in a Kaggle Notebook using the "Save & Run All (Commit)" feature.
+## 5. Model Training Execution Pipelines on Kaggle
 
-Ensure they use the following blocks in their notebook:
+### Pipeline A: Multi-Head ConvNeXt Model (`train_convnext.py`)
+
+**Cell 1: Clone Repository and Install Dependencies**
+```bash
+!rm -rf OCT-Analyser-Capstone && git clone -b dev --depth 1 https://github.com/Nikhil-Mundhra/OCT-Analyser-Capstone.git
+%cd OCT-Analyser-Capstone
+!pip install -q uv
+!UV_NO_PROGRESS=1 uv pip install --system -q -r image-classification-model-training/requirements.txt
+```
+
+**Cell 2: Execute DDP Training (Dual T4 GPUs, Global Batch Size 32)**
+```bash
+!PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True" \
+OCT_DATA_ROOT="/kaggle/input/datasets/nikhilmundhra/classified-oct-v2-preprocessed/Classified-preprocessed" \
+HF_TOKEN="your_hf_token_here" \
+torchrun --nproc_per_node=2 image-classification-model-training/scripts/train_convnext.py \
+    --config "image-classification-model-training/config/hierarchy.yaml" \
+    --batch-size 16 \
+    --accum-steps 1 \
+    --num-workers 2 \
+    --save-steps 2250 \
+    --epochs-warmup 3 \
+    --epochs-finetune 20 \
+    --hf-repo "NMundhra/OCT-Classification-Model"
+```
+
+---
+
+### Pipeline B: Hierarchical U-Net Classifier Fine-Tuning (`train_cls_frozen.py`)
 
 **Cell 1: Install Dependencies (Quietly)**
 ```bash
-!uv pip install --system -r image-classification-model-training/requirements.txt -q
+!uv pip install --system -r requirements.txt -q
 ```
-*(Note: `UV_NO_PROGRESS=1` is also helpful to reduce console bloat if not using `-q`)*
 
 **Cell 2: Execute Training**
 ```bash
-!PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True" \
-OCT_DATA_ROOT="/kaggle/input/datasets/nikhilmundhra/classified-oct-v2/Classified" \
-python image-classification-model-training/scripts/train_convnext.py \
-    --config "image-classification-model-training/config/hierarchy.yaml" \
+!python3 train_cls_frozen.py \
+    --cls-data "/kaggle/input/datasets/nikhilmundhra/classified-oct-v2/Classified" \
+    --cls-config "image-classification-model-training/config/hierarchy.yaml" \
+    --checkpoint "models_suite/model1_oct5k_layers/checkpoints/best_model.pth" \
+    --epochs 20 \
     --batch-size 16 \
-    --num-workers 0
+    --lr 1e-4
 ```
-- `OCT_DATA_ROOT`: Crucial for overriding the local data root defined in `hierarchy.yaml` to point to Kaggle's `/kaggle/input/...` directory structure.
-- `--batch-size 16`: `convnextv2_base` with multi-scale CBAM attention blocks is memory intensive. A batch size of 16 (8 per T4 GPU) prevents CUDA OutOfMemory errors on 15GB T4 GPUs.
-- `--num-workers 0`: Crucial to prevent DataLoader deadlocks (see section 1 and 2).
-- `--resume checkpoints/multi_head/fold0_last_model.pth`: (Optional) Seamlessly resumes training from a previous checkpoint if a Kaggle session times out.
-- Default epochs (5 warmup + 45 finetune) will be used unless overridden.
 
 ## 6. Mandatory Local Pre-Flight Checks (Smoke Testing)
-Before deploying **any** changes to the Kaggle training pipeline (even seemingly trivial changes), it is **MANDATORY** to run a full local smoke test. Kaggle "Save & Run All" commits take hours to queue and run, so catching typos, shape mismatches, or missing imports locally is strictly required.
+Before deploying **any** changes to a Kaggle training pipeline, it is **MANDATORY** to run a full local smoke test. Kaggle "Save & Run All" commits take hours to queue and run, so catching typos, shape mismatches, or missing imports locally is strictly required.
 
-Always execute the pipeline locally against the `micro_dataset` to ensure it successfully builds the models, routes tensors, evaluates metrics, and saves the `.pth` checkpoints.
+Always execute the pipeline locally against the `micro_dataset` to verify model construction, tensor routing, metric calculation, and `.pth` checkpoint generation.
 
-**Command to run the local smoke test:**
+**Command for Multi-Head ConvNeXt Smoke Test:**
 ```bash
 OCT_DATA_ROOT="image-classification-model-training/data/micro_dataset" \
 python3 image-classification-model-training/scripts/train_convnext.py \
@@ -75,7 +100,6 @@ python3 image-classification-model-training/scripts/train_convnext.py \
     --epochs-finetune 1 \
     --smoke-test
 ```
-*(Note: Ensure you are using `micro_hierarchy.yaml` locally, as the structure of `micro_dataset` does not match the full Kaggle dataset mapped in `hierarchy.yaml`).*
 
 ## 7. The Batch-Size 1 Tail Batch `.squeeze()` Trap
 When indexing multi-head targets or masks (e.g. `valid_h2_mask`), **NEVER** use unparameterized `.squeeze()` on label tensors.
@@ -90,17 +114,9 @@ When indexing multi-head targets or masks (e.g. `valid_h2_mask`), **NEVER** use 
   # GOOD (Guarantees 1D tensor [B] regardless of batch size):
   valid_h2_mask = (labels['normal_abnormal'] == 1).view(-1)
   ```
-- **Why Smoke Tests Miss It**: Local smoke tests using small sample sizes and batch size 4 process batches of shape `[4, 1]`. `.squeeze()` on `[4, 1]` only squeezes dim 1, hiding the 0D collapse that occurs when batch size is 1.
 
 ## 8. Checkpoint Saving & Resuming Across Session Timeouts
-Kaggle sessions have a strict 9-hour maximum execution limit. Long-running training pipelines (e.g. 50 epochs over 88k images) may get cut off before completing all epochs.
-
-- **Automatic Checkpoint Persistence**: Ensure the trainer saves `fold0_best_model.pth` and `fold0_last_model.pth` to `/kaggle/working/checkpoints/` after every single epoch. When a Kaggle session reaches its time limit or is stopped, Kaggle automatically saves all files in `/kaggle/working`.
-- **Seamless Resuming**: Always support a `--resume` argument pointing to `checkpoints/multi_head/fold0_last_model.pth`. When resuming:
-  1. Load the model state dictionary.
-  2. Restore the phase (`warmup` vs `finetune`) and absolute epoch index.
-  3. Restore optimizer and learning rate scheduler states (`optimizer_state_dict`, `scheduler_state_dict`).
-  4. Pass `--resume` in the Kaggle command line for subsequent runs to continue seamlessly without wasting completed epochs.
-- **Fail-Safe Real-Time Cloud Backup (HF Hub)**: To guarantee zero data loss if Kaggle hard-crashes or times out without committing output:
-  - Pass `--hf-repo username/repo_name` and set `HF_TOKEN` in the environment.
-  - The trainer automatically streams `fold0_best_model.pth` directly to Hugging Face Hub the exact second a new peak score is achieved. Even if Kaggle times out 4 hours later, the checkpoint is already safe in the cloud.
+Kaggle sessions have a strict 9-hour maximum execution limit.
+- **Automatic Checkpoint Persistence**: Ensure trainers save `fold0_best_model.pth` and `fold0_last_model.pth` to `/kaggle/working/checkpoints/` after every epoch.
+- **Seamless Resuming**: Always support a `--resume` argument pointing to `checkpoints/multi_head/fold0_last_model.pth` to restore model state, optimizer state, and epoch indices seamlessly.
+- **Fail-Safe Real-Time Cloud Backup (HF Hub)**: Pass `--hf-repo username/repo_name` and set `HF_TOKEN` in the environment to stream peak model checkpoints directly to Hugging Face Hub in real-time.
