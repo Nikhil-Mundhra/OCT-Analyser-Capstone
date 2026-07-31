@@ -58,15 +58,21 @@ def main():
     parser.add_argument("--accum-steps", type=int, default=1, help="Number of gradient accumulation steps (effective batch size = batch_size * accum_steps)")
     parser.add_argument("--save-steps", type=int, default=2250, help="Save a mid-epoch checkpoint every N batches (0 to disable)")
     parser.add_argument("--use-data-parallel", action="store_true", help="Enable PyTorch DataParallel across multi-GPU (disabled by default for single-GPU efficiency)")
+    parser.add_argument("--use-ddp", action="store_true", help="Enable PyTorch DistributedDataParallel across multi-GPU via torchrun")
     
     args = parser.parse_args()
 
-    compute_manager = ComputeManager(use_data_parallel=args.use_data_parallel)
+    is_ddp_env = ("LOCAL_RANK" in os.environ) or args.use_ddp
+    if is_ddp_env and torch.cuda.is_available() and not torch.distributed.is_initialized():
+        torch.distributed.init_process_group(backend="nccl")
+
+    compute_manager = ComputeManager(use_data_parallel=args.use_data_parallel, use_ddp=args.use_ddp)
 
     # Get class weights from full dataset for FocalLoss alpha
     full_ds = MultiHeadOCTDataset(config_path=args.config, transform=None)
     h2_alpha = full_ds.compute_class_weights("h2")
-    logger.info(f"H2 FocalLoss Alpha weights: {h2_alpha.tolist()}")
+    if compute_manager.is_main_process:
+        logger.info(f"H2 FocalLoss Alpha weights: {h2_alpha.tolist()}")
 
     criterions = {
         'h1': nn.BCEWithLogitsLoss(),
@@ -88,11 +94,15 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         train_transform=train_transforms,
-        val_transform=val_transforms
+        val_transform=val_transforms,
+        is_ddp=compute_manager.is_ddp,
+        rank=compute_manager.rank,
+        world_size=compute_manager.world_size,
     )
 
     for fold_id, (train_loader, val_loader) in enumerate(fold_loaders):
-        logger.info(f"=== Starting Fold {fold_id} ===")
+        if compute_manager.is_main_process:
+            logger.info(f"=== Starting Fold {fold_id} ===")
         
         model = build_multi_head_model(pretrained=True, warmup=True)
         
@@ -120,10 +130,14 @@ def main():
             save_steps=args.save_steps
         )
         
-        logger.info(f"Fold {fold_id} Best Metrics: {best_metrics}")
+        if compute_manager.is_main_process:
+            logger.info(f"Fold {fold_id} Best Metrics: {best_metrics}")
         
         # By default, run just 1 fold for iteration speed unless requested otherwise
         break
+
+    if torch.distributed.is_initialized():
+        torch.distributed.destroy_process_group()
 
 if __name__ == "__main__":
     main()

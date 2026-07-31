@@ -45,49 +45,80 @@ def supports_bfloat16(device: torch.device) -> bool:
 
 def get_raw_model(model: nn.Module) -> nn.Module:
     """
-    Unwraps DataParallel container to expose raw underlying PyTorch module.
-    Prevents AttributeError when calling custom model methods on DataParallel wrapped models.
+    Unwraps DataParallel or DistributedDataParallel container to expose raw underlying PyTorch module.
+    Prevents AttributeError when calling custom model methods on Parallel wrapped models.
     """
-    return model.module if isinstance(model, nn.DataParallel) else model
+    if isinstance(model, (nn.DataParallel, nn.parallel.DistributedDataParallel)):
+        return model.module
+    return model
 
 class ComputeManager:
     """
     Unified Hardware Compute Manager.
-    Encapsulates device routing, DataParallel model distribution, AMP autocasting,
+    Encapsulates device routing, DDP / DataParallel model distribution, AMP autocasting,
     and periodic memory cache flushing across MacBook (MPS), Kaggle (CUDA), and CPU.
     """
     def __init__(
         self,
         device: Optional[torch.device] = None,
         use_data_parallel: bool = False,
+        use_ddp: bool = False,
         cache_flush_interval: Optional[int] = None
     ) -> None:
-        self.device = device or get_device()
-        self.use_data_parallel = (
-            use_data_parallel and 
-            self.device.type == "cuda" and 
-            torch.cuda.device_count() > 1
-        )
+        import os
+        self.is_ddp = use_ddp or ("LOCAL_RANK" in os.environ)
+        if self.is_ddp and torch.cuda.is_available():
+            self.local_rank = int(os.environ.get("LOCAL_RANK", 0))
+            self.rank = int(os.environ.get("RANK", 0))
+            self.world_size = int(os.environ.get("WORLD_SIZE", 1))
+            self.device = torch.device(f"cuda:{self.local_rank}")
+            torch.cuda.set_device(self.device)
+            self.is_main_process = (self.rank == 0)
+            self.use_data_parallel = False
+        else:
+            self.local_rank = 0
+            self.rank = 0
+            self.world_size = 1
+            self.device = device or get_device()
+            self.is_main_process = True
+            self.use_data_parallel = (
+                use_data_parallel and 
+                self.device.type == "cuda" and 
+                torch.cuda.device_count() > 1
+            )
         self.cache_flush_interval = cache_flush_interval
 
-        logger.info(f"ComputeManager initialized on device: {self.device} (DataParallel={self.use_data_parallel})")
+        if self.is_main_process:
+            logger.info(
+                f"ComputeManager initialized | device={self.device} | DDP={self.is_ddp} (rank={self.rank}/{self.world_size}) | DataParallel={self.use_data_parallel}"
+            )
 
         # Log selected autocast preference (bfloat16 preferred when supported)
         try:
-            if self.device.type in ("cuda", "mps"):
-                if supports_bfloat16(self.device):
-                    logger.info("Autocast preference: using torch.bfloat16 on device %s", self.device)
+            if self.is_main_process:
+                if self.device.type in ("cuda", "mps"):
+                    if supports_bfloat16(self.device):
+                        logger.info("Autocast preference: using torch.bfloat16 on device %s", self.device)
+                    else:
+                        logger.info("Autocast preference: using torch.float16 on device %s", self.device)
                 else:
-                    logger.info("Autocast preference: using torch.float16 on device %s", self.device)
-            else:
-                logger.info("Autocast disabled for CPU device: %s", self.device)
+                    logger.info("Autocast disabled for CPU device: %s", self.device)
         except Exception as e:
             logger.debug("Failed to determine autocast preference: %s", e)
 
     def prepare_model(self, model: nn.Module) -> nn.Module:
-        """Move model to device and optionally wrap with DataParallel if explicitly requested."""
+        """Move model to device and optionally wrap with DDP or DataParallel if requested."""
         model = model.to(self.device)
-        if self.use_data_parallel:
+        if self.is_ddp and torch.cuda.is_available():
+            if self.is_main_process:
+                logger.info(f"Wrapping model across {self.world_size} GPUs using DistributedDataParallel (DDP).")
+            model = nn.parallel.DistributedDataParallel(
+                model,
+                device_ids=[self.local_rank],
+                output_device=self.local_rank,
+                find_unused_parameters=True
+            )
+        elif self.use_data_parallel:
             logger.info(f"Wrapping model across {torch.cuda.device_count()} GPUs using DataParallel.")
             model = nn.DataParallel(model)
         return model

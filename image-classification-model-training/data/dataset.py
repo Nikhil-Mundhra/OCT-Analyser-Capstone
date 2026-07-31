@@ -228,7 +228,10 @@ def build_kfold_dataloaders(
     train_transform = None,
     val_transform = None,
     use_weighted_sampler: bool = False,
-    seed: int = 42
+    seed: int = 42,
+    is_ddp: bool = False,
+    rank: int = 0,
+    world_size: int = 1,
 ) -> List[Tuple[DataLoader, DataLoader]]:
     dataset = MultiHeadOCTDataset(config_path=config_path)
     
@@ -243,22 +246,43 @@ def build_kfold_dataloaders(
         val_ds = MultiHeadOCTDataset(config_path=config_path, fold_indices=val_idx, transform=val_transform)
         
         _pin = torch.cuda.is_available() or torch.backends.mps.is_available()
-        train_loader = DataLoader(
-            train_ds,
-            batch_size=batch_size,
-            shuffle=True,
-            num_workers=num_workers,
-            pin_memory=_pin,
-            persistent_workers=(num_workers > 0)
-        )
-        val_loader = DataLoader(
-            val_ds,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=num_workers,
-            pin_memory=_pin,
-            persistent_workers=(num_workers > 0)
-        )
+        if is_ddp and torch.cuda.is_available():
+            from torch.utils.data.distributed import DistributedSampler
+            train_sampler = DistributedSampler(train_ds, num_replicas=world_size, rank=rank, shuffle=True)
+            val_sampler = DistributedSampler(val_ds, num_replicas=world_size, rank=rank, shuffle=False)
+            train_loader = DataLoader(
+                train_ds,
+                batch_size=batch_size,
+                sampler=train_sampler,
+                num_workers=num_workers,
+                pin_memory=_pin,
+                persistent_workers=(num_workers > 0)
+            )
+            val_loader = DataLoader(
+                val_ds,
+                batch_size=batch_size,
+                sampler=val_sampler,
+                num_workers=num_workers,
+                pin_memory=_pin,
+                persistent_workers=(num_workers > 0)
+            )
+        else:
+            train_loader = DataLoader(
+                train_ds,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=num_workers,
+                pin_memory=_pin,
+                persistent_workers=(num_workers > 0)
+            )
+            val_loader = DataLoader(
+                val_ds,
+                batch_size=batch_size,
+                shuffle=False,
+                num_workers=num_workers,
+                pin_memory=_pin,
+                persistent_workers=(num_workers > 0)
+            )
         
         fold_loaders.append((train_loader, val_loader))
         

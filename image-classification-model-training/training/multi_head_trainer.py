@@ -107,6 +107,9 @@ class MultiHeadTrainer:
         start_batch: int = 0,
     ):
         self.model.train()
+        if hasattr(loader, "sampler") and hasattr(loader.sampler, "set_epoch"):
+            loader.sampler.set_epoch(epoch)
+
         total_loss = 0.0
         processed_batches = 0
         n_batches = len(loader)
@@ -152,13 +155,13 @@ class MultiHeadTrainer:
             del logits, accum_loss
             self.compute_manager.flush_cache(batch_idx=batch_idx)
             
-            if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == n_batches:
+            if self.compute_manager.is_main_process and ((batch_idx + 1) % 100 == 0 or (batch_idx + 1) == n_batches):
                 elapsed = time.time() - start_time
                 sec_per_batch = elapsed / (batch_idx + 1)
                 logger.info(f"   [Train] Batch {batch_idx + 1}/{n_batches} | Loss: {loss.item():.4f} | Time: {elapsed:.1f}s ({sec_per_batch:.2f}s/batch)")
 
-            # Mid-Epoch Checkpoint Saving
-            if save_steps > 0 and (batch_idx + 1) % save_steps == 0 and (batch_idx + 1) < n_batches:
+            # Mid-Epoch Checkpoint Saving (Rank 0 only)
+            if self.compute_manager.is_main_process and save_steps > 0 and (batch_idx + 1) % save_steps == 0 and (batch_idx + 1) < n_batches:
                 self._save_checkpoint(
                     f"fold{fold_id}_last_model.pth",
                     optimizer=optimizer,
@@ -217,7 +220,7 @@ class MultiHeadTrainer:
                 batch_preds = self.metric_extractors['h2'](batch_logits)
                 h2_preds.extend(batch_preds.cpu().numpy().tolist())
 
-            if (batch_idx + 1) % 200 == 0 or (batch_idx + 1) == n_batches:
+            if self.compute_manager.is_main_process and ((batch_idx + 1) % 200 == 0 or (batch_idx + 1) == n_batches):
                 logger.info(f"   [Val] Batch {batch_idx + 1}/{n_batches} | Loss: {loss.item():.4f}")
                 
             if smoke_test and batch_idx >= 2:
@@ -273,11 +276,12 @@ class MultiHeadTrainer:
         ckpt = None
         
         if resume_path and os.path.exists(resume_path):
-            logger.info(f"Loading checkpoint from {resume_path}...")
+            if self.compute_manager.is_main_process:
+                logger.info(f"Loading checkpoint from {resume_path}...")
             import traceback
             try:
                 ckpt = torch.load(resume_path, map_location=self.device)
-                self.model.load_state_dict(ckpt['model_state_dict'])
+                get_raw_model(self.model).load_state_dict(ckpt['model_state_dict'])
                 phase = ckpt.get('phase', 'warmup')
                 best_val_loss = ckpt.get('best_val_loss', float('inf'))
                 best_val_macro_f1 = ckpt.get('best_val_macro_f1', 0.0)
@@ -299,15 +303,18 @@ class MultiHeadTrainer:
                         start_epoch_ft = saved_epoch - warmup_epochs
                         start_batch_ft = saved_batch_idx + 1
                     
-                logger.info(f"Resumed from {phase} at absolute epoch {saved_epoch + 1}.")
+                if self.compute_manager.is_main_process:
+                    logger.info(f"Resumed from {phase} at absolute epoch {saved_epoch + 1}.")
             except Exception as e:
-                logger.warning(f"Failed to load checkpoint: {e}")
-                traceback.print_exc()
+                if self.compute_manager.is_main_process:
+                    logger.warning(f"Failed to load checkpoint: {e}")
+                    traceback.print_exc()
 
         # ── PHASE 1: WARM-UP ──
         if phase == 'warmup' and warmup_epochs > 0:
-            logger.info(f"PHASE 1 — Warm-up | {warmup_epochs} epochs | backbone FROZEN")
-            model_to_freeze = self.model.module if hasattr(self.model, 'module') else self.model
+            if self.compute_manager.is_main_process:
+                logger.info(f"PHASE 1 — Warm-up | {warmup_epochs} epochs | backbone FROZEN")
+            model_to_freeze = get_raw_model(self.model)
             model_to_freeze.freeze_backbone()
             optimizer_warmup = torch.optim.AdamW(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -338,7 +345,8 @@ class MultiHeadTrainer:
                 global_step += 1
                 ep_duration = time.time() - ep_start
                 
-                logger.info(f"Ep {epoch:3d} [warmup|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lr {warmup_lr:.2e} | time {ep_duration:.1f}s")
+                if self.compute_manager.is_main_process:
+                    logger.info(f"Ep {epoch:3d} [warmup|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lr {warmup_lr:.2e} | time {ep_duration:.1f}s")
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
                 
@@ -349,8 +357,9 @@ class MultiHeadTrainer:
 
         # ── PHASE 2: FINE-TUNING ──
         if phase == 'finetune' and finetune_epochs > 0:
-            logger.info(f"PHASE 2 — Fine-tuning | max {finetune_epochs} epochs | backbone UNFROZEN")
-            model_to_unfreeze = self.model.module if hasattr(self.model, 'module') else self.model
+            if self.compute_manager.is_main_process:
+                logger.info(f"PHASE 2 — Fine-tuning | max {finetune_epochs} epochs | backbone UNFROZEN")
+            model_to_unfreeze = get_raw_model(self.model)
             model_to_unfreeze.unfreeze_backbone()
             optimizer_ft = torch.optim.AdamW(
                 model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr),
@@ -398,25 +407,29 @@ class MultiHeadTrainer:
                 global_step += 1
                 ep_duration = time.time() - ep_start
                 
-                self.writer.add_scalar(f"fold{fold_id}/loss/train", train_loss, global_step)
-                self.writer.add_scalar(f"fold{fold_id}/loss/val", val_loss, global_step)
-                self.writer.add_scalar(f"fold{fold_id}/metrics/h2_macro_f1", h2_f1, global_step)
+                if self.compute_manager.is_main_process:
+                    self.writer.add_scalar(f"fold{fold_id}/loss/train", train_loss, global_step)
+                    self.writer.add_scalar(f"fold{fold_id}/loss/val", val_loss, global_step)
+                    self.writer.add_scalar(f"fold{fold_id}/metrics/h2_macro_f1", h2_f1, global_step)
 
-                logger.info(f"Ep {abs_epoch:3d} [finetune|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lr {current_lr:.2e} | time {ep_duration:.1f}s")
+                    logger.info(f"Ep {abs_epoch:3d} [finetune|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lr {current_lr:.2e} | time {ep_duration:.1f}s")
 
                 if h2_f1 > best_val_macro_f1:
                     best_val_macro_f1 = h2_f1
                     best_metrics = {"val_loss": val_loss, "h2_macro_f1": h2_f1, "epoch": abs_epoch}
                     self._save_checkpoint(f"fold{fold_id}_best_model.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
-                    logger.info(f"  ✓ New best — H2 macro_f1={h2_f1:.4f}")
+                    if self.compute_manager.is_main_process:
+                        logger.info(f"  ✓ New best — H2 macro_f1={h2_f1:.4f}")
 
                 # Always save last (rolling) and a numbered epoch snapshot so no epoch is ever lost
                 self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
                 self._save_checkpoint(f"fold{fold_id}_epoch_{abs_epoch:03d}.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1)
-                logger.info(f"  Saved fold{fold_id}_epoch_{abs_epoch:03d}.pth  (f1={h2_f1:.4f})")
+                if self.compute_manager.is_main_process:
+                    logger.info(f"  Saved fold{fold_id}_epoch_{abs_epoch:03d}.pth  (f1={h2_f1:.4f})")
 
                 if early_stopper.step(val_loss):
-                    logger.info(f"Early stopping at epoch {abs_epoch}")
+                    if self.compute_manager.is_main_process:
+                        logger.info(f"Early stopping at epoch {abs_epoch}")
                     break
                     
                 if smoke_test: break
@@ -424,10 +437,12 @@ class MultiHeadTrainer:
         return best_metrics
 
     def _save_checkpoint(self, filename: str, optimizer=None, scheduler=None, scaler=None, epoch=None, phase=None, batch_idx=None, best_val_loss=None, best_val_macro_f1=None, hf_repo: str = None) -> None:
+        if not self.compute_manager.is_main_process:
+            return
         path = self.ckpt_dir / filename
         tmp_path = path.with_suffix(".pth.tmp")  # atomic write: temp → rename
         state = {
-            "model_state_dict": self.model.state_dict(),
+            "model_state_dict": get_raw_model(self.model).state_dict(),
             "mode": self.mode,
         }
         if optimizer: state["optimizer_state_dict"] = optimizer.state_dict()

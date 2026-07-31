@@ -97,6 +97,12 @@ class MultiHeadConvNeXt(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, return_probs: bool = False):
+        if x.is_cuda and not torch.is_autocast_enabled():
+            with torch.autocast(device_type="cuda", dtype=torch.float16):
+                return self._forward_impl(x, return_probs)
+        return self._forward_impl(x, return_probs)
+
+    def _forward_impl(self, x: torch.Tensor, return_probs: bool = False):
         # forward_features with features_only=True returns a list of feature maps
         features_list = self.backbone(x)
         f_s2 = features_list[0] # [B, 256, 28, 28]
