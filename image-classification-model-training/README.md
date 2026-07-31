@@ -115,19 +115,19 @@ python3 image-classification-model-training/scripts/train_convnext.py \
     --epochs-finetune 20
 ```
 
-### 2. Kaggle Dual-GPU Training (NVIDIA Dual T4)
+### 2. Kaggle Dual-GPU Training (NVIDIA Dual T4 DDP Acceleration)
 Set environment variables in Python:
 ```python
 import os
-os.environ["OCT_DATA_ROOT"] = "/kaggle/input/classified-oct-v2/Classified"
+os.environ["OCT_DATA_ROOT"] = "/kaggle/input/datasets/nikhilmundhra/classified-oct-v2-preprocessed/Classified-preprocessed"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 os.environ["HF_TOKEN"] = "your_hf_token_here"
 ```
-Run training CLI:
+Run DDP Multi-GPU training CLI (~1.9x speedup, Global Batch Size 32):
 ```bash
-!python3 image-classification-model-training/scripts/train_convnext.py \
+!torchrun --nproc_per_node=2 image-classification-model-training/scripts/train_convnext.py \
     --config "image-classification-model-training/config/hierarchy.yaml" \
-    --batch-size 32 \
+    --batch-size 16 \
     --accum-steps 1 \
     --num-workers 2 \
     --save-steps 2250 \
