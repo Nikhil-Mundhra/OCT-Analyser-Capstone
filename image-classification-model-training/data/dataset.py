@@ -37,6 +37,8 @@ class MultiHeadOCTDataset(Dataset):
         data_root: Optional[str] = None,
         fold_indices: Optional[np.ndarray] = None,
         transform = None,
+        manifest: Optional[pd.DataFrame] = None,
+        verbose: bool = True,
     ) -> None:
         super().__init__()
         self.transform = transform
@@ -51,15 +53,20 @@ class MultiHeadOCTDataset(Dataset):
         self._l3_specs  = self._cfg.get("l3_specialists", {})
         self._granular_classes = self._cfg.get("granular_classes", {})
 
-        self._manifest: pd.DataFrame = self._build_manifest()
+        if manifest is not None:
+            self._manifest = manifest.copy().reset_index(drop=True)
+        else:
+            self._manifest = self._build_manifest()
 
         if fold_indices is not None:
             self._manifest = self._manifest.iloc[fold_indices].reset_index(drop=True)
 
-        logger.info(
-            "MultiHeadOCTDataset initialized: %d samples.",
-            len(self._manifest),
-        )
+        rank = int(os.environ.get("RANK", 0))
+        if verbose and rank == 0:
+            logger.info(
+                "MultiHeadOCTDataset initialized: %d samples.",
+                len(self._manifest),
+            )
 
     def _build_manifest(self) -> pd.DataFrame:
         records = []
@@ -247,17 +254,28 @@ def build_kfold_dataloaders(
     rank: int = 0,
     world_size: int = 1,
 ) -> List[Tuple[DataLoader, DataLoader]]:
-    dataset = MultiHeadOCTDataset(config_path=config_path)
+    dataset = MultiHeadOCTDataset(config_path=config_path, verbose=(rank == 0))
+    full_manifest = dataset._manifest
     
     # Stratify by l1 for level1, l2 for level2, etc. (simplifying here to l1)
-    labels = [row["l1_idx"] for _, row in dataset._manifest.iterrows()]
+    labels = [row["l1_idx"] for _, row in full_manifest.iterrows()]
     
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
     fold_loaders = []
     
     for train_idx, val_idx in skf.split(np.zeros(len(labels)), labels):
-        train_ds = MultiHeadOCTDataset(config_path=config_path, fold_indices=train_idx, transform=train_transform)
-        val_ds = MultiHeadOCTDataset(config_path=config_path, fold_indices=val_idx, transform=val_transform)
+        train_ds = MultiHeadOCTDataset(
+            config_path=config_path,
+            manifest=full_manifest.iloc[train_idx],
+            transform=train_transform,
+            verbose=False
+        )
+        val_ds = MultiHeadOCTDataset(
+            config_path=config_path,
+            manifest=full_manifest.iloc[val_idx],
+            transform=val_transform,
+            verbose=False
+        )
         
         _pin = torch.cuda.is_available() or torch.backends.mps.is_available()
         if is_ddp and torch.cuda.is_available():
