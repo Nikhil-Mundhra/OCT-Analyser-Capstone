@@ -116,7 +116,7 @@ class ComputeManager:
                 model,
                 device_ids=[self.local_rank],
                 output_device=self.local_rank,
-                find_unused_parameters=False,
+                find_unused_parameters=True,
                 gradient_as_bucket_view=False
             )
         elif self.use_data_parallel:
