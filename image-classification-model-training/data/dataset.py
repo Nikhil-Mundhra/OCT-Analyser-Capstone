@@ -242,6 +242,35 @@ def build_dataloader(
     )
     return loader
 
+import re
+
+def extract_patient_id(image_path_str: str) -> str:
+    """Extract exact patient ID / scan group from image path string across all OCT dataset sources."""
+    stem = Path(image_path_str).stem
+    p_str = str(image_path_str)
+    
+    m = re.search(r'(?:CNV|DRUSEN|DME|NORMAL)-(\d+)-\d+', stem, re.IGNORECASE)
+    if m: return f"OCT2017_{m.group(1)}"
+        
+    m = re.search(r'(?:rvo|rao|erm|vid|dme|no)_(\d+)_\d+', stem, re.IGNORECASE)
+    if m: return f"OCTDL_{m.group(1)}"
+        
+    m = re.search(r'(Subject_\d+)', stem, re.IGNORECASE)
+    if m: return f"Chiu_{m.group(1)}"
+        
+    m = re.search(r'(?:AMRD|DR|MH|CSR|NORMAL)(\d+)', stem, re.IGNORECASE)
+    if m and not stem.startswith("Subject"): return f"OCTID_{m.group(0)}"
+
+    m = re.search(r'MH.*_(\d+)_[A-Z]', stem, re.IGNORECASE)
+    if m: return f"CHU_MH_{m.group(1)}"
+
+    if "OCT5K" in p_str:
+        m = re.search(r'(\d+)\.E2E', stem)
+        if m: return f"OCT5K_{m.group(1)}"
+        return f"OCT5K_{stem[:15]}"
+
+    return f"RAW_{Path(image_path_str).parent.name}_{stem}"
+
 def build_kfold_dataloaders(
     config_path: str,
     mode: str,
@@ -257,15 +286,16 @@ def build_kfold_dataloaders(
     world_size: int = 1,
 ) -> List[Tuple[DataLoader, DataLoader]]:
     dataset = MultiHeadOCTDataset(config_path=config_path, verbose=(rank == 0))
-    full_manifest = dataset._manifest
+    full_manifest = dataset._manifest.copy()
     
-    # Stratify by l1 for level1, l2 for level2, etc. (simplifying here to l1)
-    labels = [row["l1_idx"] for _, row in full_manifest.iterrows()]
+    # Extract patient IDs and use StratifiedGroupKFold for patient-grouped splitting
+    full_manifest["patient_id"] = full_manifest["image_path"].apply(extract_patient_id)
     
-    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
+    from sklearn.model_selection import StratifiedGroupKFold
+    sgkf = StratifiedGroupKFold(n_splits=n_splits)
     fold_loaders = []
     
-    for train_idx, val_idx in skf.split(np.zeros(len(labels)), labels):
+    for train_idx, val_idx in sgkf.split(full_manifest, full_manifest["granular_idx"], full_manifest["patient_id"]):
         train_ds = MultiHeadOCTDataset(
             config_path=config_path,
             manifest=full_manifest.iloc[train_idx],

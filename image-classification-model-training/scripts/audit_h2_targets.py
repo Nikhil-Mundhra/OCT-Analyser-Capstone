@@ -5,17 +5,19 @@ Diagnostic script for Change 1 & Change 4:
   1. Inspect sample['pathology'] tensor shape, dtype, and values.
   2. Quantify labels per image, distinct combinations, positive patient groups per class,
      and co-occurrence matrix between pathologies.
-  3. Produce patient-level fold audit table across 5 folds.
+  3. Produce patient-level fold audit table across 5 folds using robust regex patient parsing.
 """
 
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 import yaml
 import numpy as np
 import pandas as pd
 import torch
+from sklearn.model_selection import StratifiedGroupKFold
 
 # Add project root to sys.path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -24,58 +26,51 @@ from data.dataset import MultiHeadOCTDataset
 
 def extract_patient_id(image_path_str: str) -> str:
     """
-    Extract patient ID / scan group from image path string.
-    Identifies dataset source patterns (OCT2017, OCT5K, 108503_OCTID, OCTDL, Chiu_BOE, etc.).
+    Extract exact patient ID / scan group from image path string across all OCT dataset sources.
+    Handles OCT2017, OCTDL, Chiu BOE 2014, 108503_OCTID, CHU_MH, and OCT5K.
     """
-    path_obj = Path(image_path_str)
-    stem = path_obj.stem
-    parent_name = path_obj.parent.name
+    stem = Path(image_path_str).stem
+    p_str = str(image_path_str)
     
-    # 1. OCT2017 dataset (e.g. DRUSEN-123456-1.jpeg -> patient ID 123456)
-    if "OCT2017" in image_path_str:
-        parts = stem.split('-')
-        if len(parts) >= 2:
-            return f"OCT2017_{parts[1]}"
-        return f"OCT2017_{parent_name}"
+    # 1. OCT2017: CNV-5557306-155.jpeg -> OCT2017_5557306
+    m = re.search(r'(?:CNV|DRUSEN|DME|NORMAL)-(\d+)-\d+', stem, re.IGNORECASE)
+    if m:
+        return f"OCT2017_{m.group(1)}"
         
-    # 2. 108503_OCTID dataset (e.g. AMD_001.png or 001_1.png)
-    if "108503" in image_path_str or "OCTID" in image_path_str:
-        parts = stem.split('_')
-        if len(parts) >= 2 and parts[-1].isdigit():
-            return f"OCTID_{'_'.join(parts[:-1])}"
-        return f"OCTID_{parent_name}"
+    # 2. OCTDL: rvo_3144603_1.jpg -> OCTDL_3144603
+    m = re.search(r'(?:rvo|rao|erm|vid|dme|no)_(\d+)_\d+', stem, re.IGNORECASE)
+    if m:
+        return f"OCTDL_{m.group(1)}"
         
-    # 3. Chiu BOE 2014 dataset
-    if "Chiu_BOE" in image_path_str:
-        parts = stem.split('_')
-        if len(parts) >= 2:
-            return f"Chiu_{parts[0]}"
-        return f"Chiu_{parent_name}"
+    # 3. Chiu BOE 2014: Subject_05_slice_028.png -> Chiu_Subject_05
+    m = re.search(r'(Subject_\d+)', stem, re.IGNORECASE)
+    if m:
+        return f"Chiu_{m.group(1)}"
+        
+    # 4. OCTID: AMRD37, DR105, MH93, CSR7, NORMAL67
+    m = re.search(r'(?:AMRD|DR|MH|CSR|NORMAL)(\d+)', stem, re.IGNORECASE)
+    if m and not stem.startswith("Subject"):
+        return f"OCTID_{m.group(0)}"
 
-    # 4. OCT5K dataset
-    if "OCT5K" in image_path_str:
-        parts = stem.split('_')
-        if len(parts) >= 2:
-            return f"OCT5K_{parts[0]}"
-        return f"OCT5K_{parent_name}"
+    # 5. CHU_MH: MH_surgery_others_219_V -> CHU_MH_219
+    m = re.search(r'MH.*_(\d+)_[A-Z]', stem, re.IGNORECASE)
+    if m:
+        return f"CHU_MH_{m.group(1)}"
 
-    # 5. OCTDL dataset
-    if "OCTDL" in image_path_str:
-        parts = stem.split('_')
-        if len(parts) >= 2:
-            return f"OCTDL_{parts[0]}"
-        return f"OCTDL_{parent_name}"
+    # 6. OCT5K
+    if "OCT5K" in p_str:
+        m = re.search(r'(\d+)\.E2E', stem)
+        if m:
+            return f"OCT5K_{m.group(1)}"
+        return f"OCT5K_{stem[:15]}"
 
-    # Fallback to parent directory + filename prefix
-    parts = stem.split('_')
-    if len(parts) >= 2:
-        return f"{parent_name}_{parts[0]}"
-    return f"{parent_name}_{stem}"
+    # Fallback to parent directory + filename stem
+    return f"RAW_{Path(image_path_str).parent.name}_{stem}"
 
 
 def audit_dataset(config_path: str, data_root: str):
     print("=" * 80)
-    print("CHANGE 1 & CHANGE 4: TARGET SEMANTICS & PATIENT GROUPING AUDIT")
+    print("CORRECTED AUDIT: TARGET SEMANTICS & PATIENT GROUPING (STRATIFIED GROUP K-FOLD)")
     print("=" * 80)
     
     dataset = MultiHeadOCTDataset(config_path=config_path, data_root=data_root, verbose=True)
@@ -98,12 +93,8 @@ def audit_dataset(config_path: str, data_root: str):
     print(f"Total Images Manifested        : {len(manifest):,}")
     print(f"Total Normal (H1=0) Images     : {np.sum(~abnormal_mask):,} (H2 target = -1)")
     print(f"Total Abnormal (H1=1) Images   : {len(abnormal_h2):,}")
+    print(f"H2 Labels Assigned per Sample  : 1 (Scalar integer class index per image)")
     
-    # Check if granular_idx is a scalar integer
-    labels_per_image = 1  # Each row in manifest has 1 scalar granular_idx
-    print(f"H2 Labels Assigned per Sample  : {labels_per_image} (Scalar integer class index per image)")
-    
-    # Value counts of granular classes
     print("\nPer-Class Image Support (H2 Pathology):")
     counts = pd.Series(abnormal_h2).value_counts().sort_index()
     for idx, name in enumerate(class_names):
@@ -117,19 +108,16 @@ def audit_dataset(config_path: str, data_root: str):
     print(f"Total Distinct Patient Groups  : {distinct_patients:,}")
 
     patient_class_df = manifest[manifest["granular_idx"] != -1].groupby("granular_idx")["patient_id"].nunique()
-    print("\nDistinct Positive Patient Groups Per Class:")
-    patient_counts_dict = {}
+    print("\nTrue Distinct Positive Patient Groups Per Class:")
     for idx, name in enumerate(class_names):
         p_cnt = patient_class_df.get(idx, 0)
-        patient_counts_dict[name] = p_cnt
-        print(f"  [{idx:2d}] {name:<15} : {p_cnt:>5,} distinct patients")
+        img_cnt = counts.get(idx, 0)
+        print(f"  [{idx:2d}] {name:<15} : {p_cnt:>5,} distinct patients ({img_cnt:>6,} images)")
 
     # 4. Pathology Co-occurrence Analysis (Across Patient Scans)
     print("\n--- 4. Co-occurrence Matrix Between Pathologies (Patient-Level) ---")
-    # Patient x Class matrix
     abnormal_df = manifest[manifest["granular_idx"] != -1]
     patient_matrix = pd.crosstab(abnormal_df["patient_id"], abnormal_df["granular_idx"])
-    # Re-index to ensure 0..11 columns present
     for i in range(num_classes):
         if i not in patient_matrix.columns:
             patient_matrix[i] = 0
@@ -140,36 +128,31 @@ def audit_dataset(config_path: str, data_root: str):
     co_df = pd.DataFrame(co_occurrence, index=class_names, columns=class_names)
     print(co_df.to_string())
 
-    # 5. Patient-Level 5-Fold Audit Table
-    print("\n--- 5. Patient-Grouped 5-Fold Audit Table ---")
-    from sklearn.model_selection import KFold
-    
-    unique_patients = manifest["patient_id"].unique()
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
-    
-    patient_fold_map = {}
-    for fold_idx, (_, val_p_indices) in enumerate(kf.split(unique_patients)):
-        val_patients = set(unique_patients[val_p_indices])
-        for p in val_patients:
-            patient_fold_map[p] = fold_idx
-            
-    manifest["fold"] = manifest["patient_id"].map(patient_fold_map)
-    
+    # 5. Patient-Level Stratified Group K-Fold Audit Table
+    print("\n--- 5. Corrected Patient-Level Stratified Group K-Fold Audit Table ---")
+    sgkf = StratifiedGroupKFold(n_splits=5)
+    manifest["fold"] = -1
+    for fold, (train_idx, val_idx) in enumerate(sgkf.split(manifest, manifest["granular_idx"], manifest["patient_id"])):
+        manifest.loc[val_idx, "fold"] = fold
+
     fold_audit = []
     for idx, name in enumerate(class_names):
         sub = manifest[manifest["granular_idx"] == idx]
-        total_p = sub["patient_id"].nunique()
-        fold_p_cnts = [sub[sub["fold"] == f]["patient_id"].nunique() for f in range(5)]
+        tot_p = sub["patient_id"].nunique()
+        tot_img = len(sub)
+        f_p = [sub[sub["fold"] == f]["patient_id"].nunique() for f in range(5)]
+        f_img = [len(sub[sub["fold"] == f]) for f in range(5)]
         fold_audit.append({
             "Class": name,
-            "Total positive patients": total_p,
-            "Fold 0": fold_p_cnts[0],
-            "Fold 1": fold_p_cnts[1],
-            "Fold 2": fold_p_cnts[2],
-            "Fold 3": fold_p_cnts[3],
-            "Fold 4": fold_p_cnts[4]
+            "Total Images": tot_img,
+            "Total Patients": tot_p,
+            "Fold 0 (P/Img)": f"{f_p[0]}/{f_img[0]}",
+            "Fold 1 (P/Img)": f"{f_p[1]}/{f_img[1]}",
+            "Fold 2 (P/Img)": f"{f_p[2]}/{f_img[2]}",
+            "Fold 3 (P/Img)": f"{f_p[3]}/{f_img[3]}",
+            "Fold 4 (P/Img)": f"{f_p[4]}/{f_img[4]}",
         })
-        
+
     audit_df = pd.DataFrame(fold_audit)
     print(audit_df.to_string(index=False))
     print("=" * 80)
