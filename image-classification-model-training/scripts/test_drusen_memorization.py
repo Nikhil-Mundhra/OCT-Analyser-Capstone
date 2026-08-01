@@ -57,12 +57,13 @@ def run_memorization_test(config_path: str, data_root: str, epochs: int = 25, lr
     micro_ds = MultiHeadOCTDataset(config_path=config_path, manifest=micro_manifest, transform=train_transform)
     loader = torch.utils.data.DataLoader(micro_ds, batch_size=16, shuffle=True, num_workers=0)
 
-    # 4. Build Model & Optimizer
+    # 4. Build Model & Optimizer (Freeze backbone to test head learning capability without corrupting pretrained weights)
     device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     print(f"\nUsing compute device: {device}")
     
-    model = build_multi_head_model(pretrained=True, warmup=False).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    model = build_multi_head_model(pretrained=True, warmup=True).to(device)
+    model.freeze_backbone()
+    optimizer = torch.optim.AdamW(model.get_param_groups(backbone_lr=1e-5, head_lr=lr, weight_decay=1e-4))
     criterion_h2 = FocalLoss(gamma=2.0, alpha=None, label_smoothing=0.0) # Unweighted for memorization test
 
     # 5. Training Loop over Micro-Batch
