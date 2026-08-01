@@ -546,8 +546,9 @@ class MultiHeadTrainer:
                 if 'scheduler_state_dict' in ckpt:
                     scheduler.load_state_dict(ckpt['scheduler_state_dict'])
 
-            early_stopper = EarlyStopping(patience=patience, mode="min")
-            early_stopper.best_value = best_val_loss
+            # Change 3: Early stopping on macro-F1 (mode=max, patience=3) beginning after warmup
+            early_stopper = EarlyStopping(patience=patience, min_delta=1e-4, mode="max")
+            early_stopper.best_value = best_val_macro_f1 if best_val_macro_f1 > 0 else None
 
             for epoch in range(start_epoch_ft, finetune_epochs):
                 current_start_batch = start_batch_ft if epoch == start_epoch_ft else 0
@@ -579,14 +580,23 @@ class MultiHeadTrainer:
                 if self.compute_manager.is_main_process:
                     logger.info(f"Ep {abs_epoch:3d} [finetune|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lrs [{lrs_str}] | time {ep_duration:.1f}s")
 
+                # Save best macro-F1 checkpoints
                 if h2_f1 > best_val_macro_f1:
                     best_val_macro_f1 = h2_f1
                     best_metrics = {"val_loss": val_loss, "h2_macro_f1": h2_f1, "epoch": abs_epoch, "per_class": per_class_metrics}
                     self._save_checkpoint(f"fold{fold_id}_best_model.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo, per_class=per_class_metrics)
+                    self._save_checkpoint(f"fold{fold_id}_best_macro_f1.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, per_class=per_class_metrics)
                     if self.compute_manager.is_main_process:
-                        logger.info(f"  ✓ New best — H2 macro_f1={h2_f1:.4f}")
+                        logger.info(f"  ✓ New best macro-F1 — H2 macro_f1={h2_f1:.4f}")
                         self._log_per_class_breakdown(fold_id, abs_epoch, "finetune", per_class_metrics)
                     self.update_oof_summary(fold_id=fold_id, epoch=abs_epoch, best_macro_f1=h2_f1, best_per_class=per_class_metrics)
+
+                # Save best validation loss checkpoint
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    self._save_checkpoint(f"fold{fold_id}_best_val_loss.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, per_class=per_class_metrics)
+                    if self.compute_manager.is_main_process:
+                        logger.info(f"  ✓ New best val_loss — val_loss={val_loss:.4f}")
 
                 # Always save last (rolling) and a numbered epoch snapshot so no epoch is ever lost
                 self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo, per_class=per_class_metrics)
@@ -594,9 +604,9 @@ class MultiHeadTrainer:
                 if self.compute_manager.is_main_process:
                     logger.info(f"  Saved fold{fold_id}_epoch_{abs_epoch:03d}.pth  (f1={h2_f1:.4f})")
 
-                if early_stopper.step(val_loss):
+                if early_stopper.step(h2_f1):
                     if self.compute_manager.is_main_process:
-                        logger.info(f"Early stopping at epoch {abs_epoch}")
+                        logger.info(f"Early stopping triggered on macro-F1 at epoch {abs_epoch} (patience={patience})")
                     break
                     
                 if smoke_test: break

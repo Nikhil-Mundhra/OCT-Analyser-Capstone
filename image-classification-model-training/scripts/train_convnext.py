@@ -79,7 +79,11 @@ def main():
     full_ds = MultiHeadOCTDataset(config_path=args.config, transform=None)
     h2_alpha = full_ds.compute_class_weights("h2")
     if compute_manager.is_main_process:
-        logger.info(f"H2 FocalLoss Alpha weights: {h2_alpha.tolist()}")
+        class_names = full_ds.get_class_names("h2")
+        logger.info("=== H2 Normalized Bounded FocalLoss Alpha Weights ===")
+        for idx, (c_name, w_val) in enumerate(zip(class_names, h2_alpha.tolist())):
+            logger.info(f"  {c_name:<15} : {w_val:.2f}")
+        logger.info("=====================================================")
 
     criterions = {
         'h1': nn.BCEWithLogitsLoss(),

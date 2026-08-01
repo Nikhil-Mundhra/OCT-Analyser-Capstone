@@ -148,10 +148,12 @@ class MultiHeadOCTDataset(Dataset):
             for i in range(num_classes):
                 if i not in counts:
                     counts[i] = 1
-            counts = counts.sort_index()
-            weights = 1.0 / counts
-            weights = weights / weights.sum() * len(counts)
-            return torch.tensor(weights.values, dtype=torch.float32)
+            counts = counts.sort_index().values.astype(np.float32)
+            # Change 2: Inverse Square-Root Weighting, normalized to mean 1.0, clamped [0.4, 4.0]
+            weights = 1.0 / np.sqrt(counts)
+            weights = weights / np.mean(weights)
+            weights = np.clip(weights, 0.4, 4.0)
+            return torch.tensor(weights, dtype=torch.float32)
         else:
             df_spec = self._manifest[self._manifest['spec_key'] == target]
             if df_spec.empty:
