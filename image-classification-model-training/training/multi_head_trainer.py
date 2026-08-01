@@ -681,6 +681,12 @@ class MultiHeadTrainer:
 
         last_error = None
         try:
+            import logging
+            logging.getLogger("httpx").setLevel(logging.WARNING)
+            logging.getLogger("urllib3").setLevel(logging.WARNING)
+            logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
+            os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+
             from huggingface_hub import HfApi
             api = HfApi()
             for r_type in candidate_types:
@@ -695,7 +701,8 @@ class MultiHeadTrainer:
                         path_in_repo=filename,
                         repo_id=clean_repo,
                         token=hf_token,
-                        repo_type=r_type
+                        repo_type=r_type,
+                        show_progress=False
                     )
                     logger.info(f"   ☁ Checkpoint '{filename}' successfully backed up to HuggingFace ({clean_repo} | type={r_type})")
                     return

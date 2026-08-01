@@ -41,6 +41,11 @@ from utils.device import ComputeManager
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
+# Suppress verbose third-party HTTP request & progress bar logs
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+for noisy_logger in ["httpx", "urllib3", "huggingface_hub"]:
+    logging.getLogger(noisy_logger).setLevel(logging.WARNING)
+
 def main():
     parser = argparse.ArgumentParser(description="Train Multi-Head ConvNeXt")
     parser.add_argument("--config", type=str, default="config/hierarchy.yaml")
