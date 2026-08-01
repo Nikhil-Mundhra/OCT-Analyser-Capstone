@@ -94,6 +94,20 @@ class MultiHeadOCTDataset(Dataset):
             )
         return pd.DataFrame(records)
 
+    def get_class_names(self, target="h2") -> List[str]:
+        """Returns ordered list of class name strings for a target level."""
+        if target in ("h2", "l2", "pathology", "granular"):
+            if self._granular_classes:
+                sorted_classes = sorted(self._granular_classes.items(), key=lambda x: x[1])
+                return [k for k, _ in sorted_classes]
+            elif self._l2_labels:
+                sorted_l2 = sorted(self._l2_labels.items(), key=lambda x: x[1])
+                return [k for k, _ in sorted_l2]
+        elif target in ("h1", "l1", "normal_abnormal"):
+            sorted_l1 = sorted(self._l1_labels.items(), key=lambda x: x[1])
+            return [k for k, _ in sorted_l1]
+        return []
+
     def compute_class_weights(self, target="l2") -> torch.Tensor:
         """
         Computes inverse-frequency class weights for a given target level.

@@ -53,7 +53,8 @@ def main():
     parser.add_argument("--smoke-test", action="store_true", help="Run 1 epoch per phase to verify pipeline")
     parser.add_argument("--w-h1", type=float, default=1.0, help="Weight for Head 1 (Binary) loss")
     parser.add_argument("--w-h2", type=float, default=1.0, help="Weight for Head 2 (12-Class) loss")
-    parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint file to resume training from")
+    default_ckpt_dir = "/kaggle/working" if os.path.exists("/kaggle/working") else "checkpoints"
+    parser.add_argument("--checkpoint-dir", type=str, default=default_ckpt_dir, help="Directory to save checkpoints")
     parser.add_argument("--hf-repo", type=str, default=None, help="Hugging Face Hub repository ID (e.g. username/repo) for real-time cloud backup")
     parser.add_argument("--accum-steps", type=int, default=1, help="Number of gradient accumulation steps (effective batch size = batch_size * accum_steps)")
     parser.add_argument("--save-steps", type=int, default=2250, help="Save a mid-epoch checkpoint every N batches (0 to disable)")
@@ -110,6 +111,7 @@ def main():
             model=model,
             criterions=criterions,
             loss_weights=loss_weights,
+            checkpoint_dir=args.checkpoint_dir,
             compute_manager=compute_manager,
             mode="multi_head"
         )
@@ -131,7 +133,7 @@ def main():
         )
         
         if compute_manager.is_main_process:
-            logger.info(f"Fold {fold_id} Best Metrics: {best_metrics}")
+            logger.info(f"Fold {fold_id} Best-by-Macro-F1 Metrics: {best_metrics}")
         
         # By default, run just 1 fold for iteration speed unless requested otherwise
         break

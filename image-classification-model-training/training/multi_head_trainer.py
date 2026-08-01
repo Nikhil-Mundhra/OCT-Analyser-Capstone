@@ -2,27 +2,33 @@
 training/multi_head_trainer.py
 
 Trainer for the Multi-Head ConvNeXt architecture.
-Handles dictionary outputs and multi-task loss weighting.
+Handles dictionary outputs, multi-task loss weighting, per-class telemetry,
+and out-of-fold cross-validation consistency tracking.
 """
 
+import json
 import logging
 import os
 import time
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from sklearn.metrics import f1_score, accuracy_score, recall_score, precision_score
 
 from training.trainer import EarlyStopping
-from utils.device import get_device, get_raw_model, ComputeManager
-from sklearn.metrics import f1_score, roc_auc_score, accuracy_score, recall_score
+from utils.device import get_raw_model, ComputeManager
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_PATHOLOGY_CLASSES = [
+    "CNV", "DRUSEN", "AMD", "General_AMD", "DME", "DR", "MH", "RVO", "RAO", "CSR", "ERM", "VID"
+]
 
 class MultiHeadTrainer:
     def __init__(
@@ -37,6 +43,7 @@ class MultiHeadTrainer:
         compute_manager: Optional[ComputeManager] = None,
         amp_dtype: torch.dtype = torch.float16,
         metric_extractors: Optional[Dict[str, callable]] = None,
+        class_names: Optional[List[str]] = None,
     ) -> None:
         self.criterions = criterions
         self.loss_weights = loss_weights
@@ -44,6 +51,7 @@ class MultiHeadTrainer:
         self.compute_manager = compute_manager or ComputeManager(device=device)
         self.device = self.compute_manager.device
         self.model = self.compute_manager.prepare_model(model)
+        self.class_names = class_names or DEFAULT_PATHOLOGY_CLASSES
         
         # Default strategy for Multi-Class classification (H2 Pathology)
         self.metric_extractors = metric_extractors or {
@@ -66,9 +74,17 @@ class MultiHeadTrainer:
             self.device, self._amp_enabled, self._amp_dtype, self.ckpt_dir,
         )
 
+    def _move_labels_to_device(self, labels: dict) -> dict:
+        """Move label tensors (or nested dictionary of labels) to the target compute device."""
+        return {
+            k: v.to(self.device, non_blocking=True) if not isinstance(v, dict)
+            else {k2: v2.to(self.device, non_blocking=True) for k2, v2 in v.items()}
+            for k, v in labels.items()
+        }
+
     def _compute_loss(self, logits_dict: dict, labels_dict: dict):
+        """Compute multi-task weighted loss with FP32 stability casting and H2 hierarchical masking."""
         # Cast logits to float32 BEFORE loss to prevent NaN from FP16 overflow.
-        # Backbone stays in fast FP16 (Apple AMX), loss runs safely in FP32.
         logits_dict = {k: v.float() if isinstance(v, torch.Tensor) else v for k, v in logits_dict.items()}
 
         # Head 1 (Binary BCEWithLogitsLoss)
@@ -105,7 +121,8 @@ class MultiHeadTrainer:
         best_val_macro_f1: float = 0.0,
         hf_repo: Optional[str] = None,
         start_batch: int = 0,
-    ):
+    ) -> float:
+        """Run one single training epoch with gradient accumulation and AMP scaling."""
         self.model.train()
         if hasattr(loader, "sampler") and hasattr(loader.sampler, "set_epoch"):
             loader.sampler.set_epoch(epoch)
@@ -128,20 +145,17 @@ class MultiHeadTrainer:
                 continue
 
             images = images.to(self.device, non_blocking=True)
-            labels = {k: v.to(self.device, non_blocking=True) if not isinstance(v, dict) 
-                      else {k2: v2.to(self.device, non_blocking=True) for k2, v2 in v.items()}
-                      for k, v in labels.items()}
+            labels = self._move_labels_to_device(labels)
 
             with _amp_ctx:
                 logits = self.model(images)
                 loss, _, _, _ = self._compute_loss(logits, labels)
-                # Scale loss for gradient accumulation
                 accum_loss = loss / accum_steps
 
             # Backward pass
             self.scaler.scale(accum_loss).backward()
 
-            # Perform optimizer step every accum_steps or on the last batch
+            # Step optimizer every accum_steps or on the last batch
             if (batch_idx + 1) % accum_steps == 0 or (batch_idx + 1) == n_batches:
                 self.scaler.unscale_(optimizer)
                 nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=max_norm)
@@ -181,7 +195,8 @@ class MultiHeadTrainer:
         return total_loss / max(1, processed_batches if not smoke_test else min(3, processed_batches))
 
     @torch.no_grad()
-    def _val_epoch(self, loader, smoke_test: bool = False):
+    def _val_epoch(self, loader, smoke_test: bool = False) -> Tuple[float, float, float, float, dict]:
+        """Run validation loop and compute loss, macro F1, recall, accuracy, and per-class metrics."""
         self.model.eval()
         total_loss = 0.0
         h2_preds = []
@@ -196,9 +211,7 @@ class MultiHeadTrainer:
 
         for batch_idx, (images, labels) in enumerate(loader):
             images = images.to(self.device, non_blocking=True)
-            labels = {k: v.to(self.device, non_blocking=True) if not isinstance(v, dict) 
-                      else {k2: v2.to(self.device, non_blocking=True) for k2, v2 in v.items()}
-                      for k, v in labels.items()}
+            labels = self._move_labels_to_device(labels)
 
             with _amp_ctx:
                 logits = self.model(images)
@@ -213,10 +226,7 @@ class MultiHeadTrainer:
                 batch_targets = labels['pathology'][valid_h2_mask]
                 batch_logits = logits['pathology'][valid_h2_mask].float()
                 
-                # Keep targets and logits 1D/2D as they naturally are.
-                # Just flatten them into the list.
                 h2_targets.extend(batch_targets.cpu().numpy().tolist())
-                
                 batch_preds = self.metric_extractors['h2'](batch_logits)
                 h2_preds.extend(batch_preds.cpu().numpy().tolist())
 
@@ -229,21 +239,159 @@ class MultiHeadTrainer:
         mean_loss = total_loss / max(1, n_batches if not smoke_test else 3)
         
         if len(h2_targets) > 0:
-            from sklearn.metrics import recall_score
-            # Convert flat lists back to 1D numpy arrays
             h2_targets_np = np.array(h2_targets)
             h2_preds_np = np.array(h2_preds)
             
-            h2_macro_f1 = f1_score(h2_targets_np, h2_preds_np, average='macro', zero_division=0)
-            h2_recall = recall_score(h2_targets_np, h2_preds_np, average='macro', zero_division=0)
-            h2_acc = accuracy_score(h2_targets_np, h2_preds_np)
+            h2_macro_f1 = float(f1_score(h2_targets_np, h2_preds_np, average='macro', zero_division=0))
+            h2_recall = float(recall_score(h2_targets_np, h2_preds_np, average='macro', zero_division=0))
+            h2_acc = float(accuracy_score(h2_targets_np, h2_preds_np))
+            num_classes = logits['pathology'].size(-1) if 'logits' in locals() else len(self.class_names)
         else:
             h2_macro_f1, h2_recall, h2_acc = 0.0, 0.0, 0.0
+            num_classes = len(self.class_names)
             
+        per_class_metrics = self._compute_per_class_metrics(h2_targets, h2_preds, num_classes)
+
         if self.device.type == 'mps':
             torch.mps.empty_cache()
             
-        return mean_loss, h2_macro_f1, h2_recall, h2_acc
+        return mean_loss, h2_macro_f1, h2_recall, h2_acc, per_class_metrics
+
+    def _compute_per_class_metrics(self, h2_targets: list, h2_preds: list, num_classes: int) -> dict:
+        """Compute per-class F1, Precision, Recall, and Support dictionary."""
+        per_class_metrics = {}
+        if len(h2_targets) > 0:
+            h2_targets_np = np.array(h2_targets)
+            h2_preds_np = np.array(h2_preds)
+
+            c_names = self.class_names if len(self.class_names) == num_classes else [f"Class_{i}" for i in range(num_classes)]
+
+            per_class_f1 = f1_score(h2_targets_np, h2_preds_np, labels=list(range(num_classes)), average=None, zero_division=0)
+            per_class_prec = precision_score(h2_targets_np, h2_preds_np, labels=list(range(num_classes)), average=None, zero_division=0)
+            per_class_rec = recall_score(h2_targets_np, h2_preds_np, labels=list(range(num_classes)), average=None, zero_division=0)
+
+            for idx, name in enumerate(c_names):
+                supp = int(np.sum(h2_targets_np == idx))
+                per_class_metrics[name] = {
+                    "f1": float(per_class_f1[idx]),
+                    "precision": float(per_class_prec[idx]),
+                    "recall": float(per_class_rec[idx]),
+                    "support": supp,
+                }
+        else:
+            for name in self.class_names:
+                per_class_metrics[name] = {"f1": 0.0, "precision": 0.0, "recall": 0.0, "support": 0}
+        return per_class_metrics
+
+    def _record_epoch_metrics(
+        self, fold_id: int, global_step: int, train_loss: float, val_loss: float, h2_f1: float, per_class_metrics: dict
+    ) -> None:
+        """Record epoch metrics and per-class F1 scores into TensorBoard."""
+        if not self.compute_manager.is_main_process:
+            return
+        self.writer.add_scalar(f"fold{fold_id}/loss/train", train_loss, global_step)
+        self.writer.add_scalar(f"fold{fold_id}/loss/val", val_loss, global_step)
+        self.writer.add_scalar(f"fold{fold_id}/metrics/h2_macro_f1", h2_f1, global_step)
+        for c_name, m in per_class_metrics.items():
+            self.writer.add_scalar(f"fold{fold_id}/per_class_f1/{c_name}", m["f1"], global_step)
+
+    def _log_per_class_breakdown(self, fold_id: int, epoch: int, phase: str, per_class_metrics: dict) -> None:
+        """Log formatted per-class metrics breakdown table to logger."""
+        if not self.compute_manager.is_main_process or not per_class_metrics:
+            return
+        
+        dead_classes = [c for c, m in per_class_metrics.items() if m["f1"] == 0.0]
+        active_classes = [c for c, m in per_class_metrics.items() if m["f1"] > 0.0]
+
+        logger.info(f"--- Per-Class Validation Breakdown (Fold {fold_id} | Ep {epoch:3d} | {phase}) ---")
+        logger.info(f"{'Class Name':<18} | {'F1':<8} | {'Precision':<10} | {'Recall':<8} | {'Support':<8} | Status")
+        logger.info("-" * 80)
+        for c_name, m in per_class_metrics.items():
+            status = "DEAD (0 F1)" if m["f1"] == 0.0 else "Active"
+            logger.info(f"{c_name:<18} | {m['f1']:<8.4f} | {m['precision']:<10.4f} | {m['recall']:<8.4f} | {m['support']:<8d} | {status}")
+        logger.info("-" * 80)
+        dead_str = ", ".join(dead_classes) if dead_classes else "None"
+        logger.info(f"Active Classes: {len(active_classes)}/{len(per_class_metrics)} | Dead ({len(dead_classes)}): {dead_str}\n")
+
+    def update_oof_summary(self, fold_id: int, epoch: int, best_macro_f1: float, best_per_class: dict) -> None:
+        """Save best per-class metrics to oof_per_class_summary.json and trigger consistency log."""
+        oof_json = self.ckpt_dir / "oof_per_class_summary.json"
+        data = {}
+        if oof_json.exists():
+            try:
+                with open(oof_json, "r") as f:
+                    data = json.load(f)
+            except Exception:
+                data = {}
+                
+        data[f"fold_{fold_id}"] = {
+            "best_epoch": epoch,
+            "best_macro_f1": float(best_macro_f1),
+            "per_class": best_per_class
+        }
+        
+        if self.compute_manager.is_main_process:
+            with open(oof_json, "w") as f:
+                json.dump(data, f, indent=2)
+                
+            self._log_oof_consistency(data)
+
+    def _log_oof_consistency(self, data: dict) -> None:
+        """Log out-of-fold consistency comparison table across completed folds."""
+        if not self.compute_manager.is_main_process or not data:
+            return
+
+        completed_folds = sorted(data.keys())
+        sample_fold = completed_folds[0]
+        class_names = list(data[sample_fold]["per_class"].keys())
+
+        logger.info("\n==================== OUT-OF-FOLD (OOF) CLASS CONSISTENCY SUMMARY ====================")
+        fold_headers = " | ".join([f"{f.upper():<7}" for f in completed_folds])
+        header = f"{'Class Name':<18} | {fold_headers} | Mean F1  | Consistency Analysis"
+        logger.info(header)
+        logger.info("-" * len(header))
+
+        rows_df = []
+        for cname in class_names:
+            f1s = []
+            fold_str_list = []
+            row_dict = {"class_name": cname}
+            for f_key in completed_folds:
+                f1_val = data[f_key]["per_class"].get(cname, {}).get("f1", 0.0)
+                f1s.append(f1_val)
+                fold_str_list.append(f"{f1_val:<7.4f}")
+                row_dict[f_key] = f1_val
+
+            mean_f1 = float(np.mean(f1s)) if f1s else 0.0
+            row_dict["mean_f1"] = mean_f1
+
+            if len(completed_folds) == 1:
+                status = "DEAD (Fold 0)" if mean_f1 == 0.0 else f"Active (F1: {mean_f1:.4f})"
+            else:
+                if all(val == 0.0 for val in f1s):
+                    status = "CONSISTENTLY DEAD (All Folds 0.0)"
+                elif any(val == 0.0 for val in f1s) and any(val > 0.0 for val in f1s):
+                    dead_f = [f for f, v in zip(completed_folds, f1s) if v == 0.0]
+                    status = f"FOLD-SPECIFIC FAILURE (Dead in {', '.join(dead_f)})"
+                elif mean_f1 >= 0.70:
+                    status = "CONSISTENTLY HIGH (F1 >= 0.70)"
+                else:
+                    status = "MODERATE / VARIABLE"
+
+            row_dict["consistency_status"] = status
+            rows_df.append(row_dict)
+
+            fold_cols_str = " | ".join(fold_str_list)
+            logger.info(f"{cname:<18} | {fold_cols_str} | {mean_f1:<8.4f} | {status}")
+
+        logger.info("====================================================================================================\n")
+
+        try:
+            df = pd.DataFrame(rows_df)
+            csv_path = self.ckpt_dir / "oof_cross_fold_class_summary.csv"
+            df.to_csv(csv_path, index=False)
+        except Exception as e:
+            logger.debug(f"Could not write oof CSV: {e}")
 
     def train(
         self,
@@ -263,6 +411,7 @@ class MultiHeadTrainer:
         accum_steps: int = 1,
         save_steps: int = 2250
     ) -> Dict:
+        """Run full two-phase training protocol (Head Warm-up -> Backbone Fine-tuning)."""
         global_step = fold_id * 100_000
         best_val_loss = float("inf")
         best_val_macro_f1 = 0.0
@@ -317,12 +466,14 @@ class MultiHeadTrainer:
             model_to_freeze = get_raw_model(self.model)
             model_to_freeze.freeze_backbone()
             optimizer_warmup = torch.optim.AdamW(
-                filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=warmup_lr,
-                weight_decay=weight_decay,
+                model_to_freeze.get_param_groups(backbone_lr=warmup_lr, head_lr=warmup_lr, weight_decay=weight_decay),
             )
             if resume_path and 'optimizer_state_dict' in ckpt and phase == 'warmup':
-                optimizer_warmup.load_state_dict(ckpt['optimizer_state_dict'])
+                try:
+                    optimizer_warmup.load_state_dict(ckpt['optimizer_state_dict'])
+                except Exception as e:
+                    if self.compute_manager.is_main_process:
+                        logger.warning(f"Could not restore warmup optimizer state: {e}")
 
             for epoch in range(start_epoch_warmup, warmup_epochs):
                 current_start_batch = start_batch_warmup if epoch == start_epoch_warmup else 0
@@ -341,16 +492,29 @@ class MultiHeadTrainer:
                     hf_repo=hf_repo,
                     start_batch=current_start_batch,
                 )
-                val_loss, h2_f1, h2_recall, h2_acc = self._val_epoch(val_loader, smoke_test=smoke_test)
+                val_loss, h2_f1, h2_recall, h2_acc, per_class_metrics = self._val_epoch(val_loader, smoke_test=smoke_test)
                 global_step += 1
                 ep_duration = time.time() - ep_start
                 
+                group_lrs = [f"{group['lr']:.2e}" for group in optimizer_warmup.param_groups]
+                lrs_str = ", ".join(group_lrs)
+                self._record_epoch_metrics(fold_id, global_step, train_loss, val_loss, h2_f1, per_class_metrics)
                 if self.compute_manager.is_main_process:
-                    logger.info(f"Ep {epoch:3d} [warmup|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lr {warmup_lr:.2e} | time {ep_duration:.1f}s")
+                    logger.info(f"Ep {epoch:3d} [warmup|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lrs [{lrs_str}] | time {ep_duration:.1f}s")
+
+                if h2_f1 > best_val_macro_f1:
+                    best_val_macro_f1 = h2_f1
+                    best_metrics = {"val_loss": val_loss, "h2_macro_f1": h2_f1, "epoch": epoch, "per_class": per_class_metrics}
+                    self._save_checkpoint(f"fold{fold_id}_best_model.pth", optimizer=optimizer_warmup, scaler=self.scaler, epoch=epoch, phase='warmup', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo, per_class=per_class_metrics)
+                    if self.compute_manager.is_main_process:
+                        logger.info(f"  ✓ New best — H2 macro_f1={h2_f1:.4f}")
+                        self._log_per_class_breakdown(fold_id, epoch, "warmup", per_class_metrics)
+                    self.update_oof_summary(fold_id=fold_id, epoch=epoch, best_macro_f1=h2_f1, best_per_class=per_class_metrics)
+
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
                 
-                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_warmup, scaler=self.scaler, epoch=epoch, phase='warmup', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
+                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_warmup, scaler=self.scaler, epoch=epoch, phase='warmup', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo, per_class=per_class_metrics)
                 if smoke_test: break
             
             phase = 'finetune'
@@ -362,20 +526,23 @@ class MultiHeadTrainer:
             model_to_unfreeze = get_raw_model(self.model)
             model_to_unfreeze.unfreeze_backbone()
             optimizer_ft = torch.optim.AdamW(
-                model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr),
-                weight_decay=weight_decay,
+                model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr, weight_decay=weight_decay),
             )
             
-            # Port the state from optimizer_warmup to prevent Adam momentum shock on the head
+            # Port state from optimizer_warmup to prevent Adam momentum shock
             if 'optimizer_warmup' in locals():
                 for p, state in optimizer_warmup.state.items():
                     optimizer_ft.state[p] = state
                     
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-                optimizer_ft, T_0=10, T_mult=2, eta_min=1e-6,
-            )
+            import math
+            lr_lambda = lambda ep: 0.01 + (1.0 - 0.01) * 0.5 * (1.0 + math.cos(math.pi * min(ep, finetune_epochs) / max(1, finetune_epochs)))
+            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer_ft, lr_lambda=lr_lambda)
             if resume_path and 'optimizer_state_dict' in ckpt and ckpt.get('phase') == 'finetune':
-                optimizer_ft.load_state_dict(ckpt['optimizer_state_dict'])
+                try:
+                    optimizer_ft.load_state_dict(ckpt['optimizer_state_dict'])
+                except Exception as e:
+                    if self.compute_manager.is_main_process:
+                        logger.warning(f"Could not restore finetune optimizer state: {e}")
                 if 'scheduler_state_dict' in ckpt:
                     scheduler.load_state_dict(ckpt['scheduler_state_dict'])
 
@@ -400,30 +567,30 @@ class MultiHeadTrainer:
                     hf_repo=hf_repo,
                     start_batch=current_start_batch,
                 )
-                val_loss, h2_f1, h2_recall, h2_acc = self._val_epoch(val_loader, smoke_test=smoke_test)
+                val_loss, h2_f1, h2_recall, h2_acc, per_class_metrics = self._val_epoch(val_loader, smoke_test=smoke_test)
                 scheduler.step()
                 
-                current_lr = scheduler.get_last_lr()[0]
+                group_lrs = [f"{group['lr']:.2e}" for group in optimizer_ft.param_groups]
+                lrs_str = ", ".join(group_lrs)
                 global_step += 1
                 ep_duration = time.time() - ep_start
                 
+                self._record_epoch_metrics(fold_id, global_step, train_loss, val_loss, h2_f1, per_class_metrics)
                 if self.compute_manager.is_main_process:
-                    self.writer.add_scalar(f"fold{fold_id}/loss/train", train_loss, global_step)
-                    self.writer.add_scalar(f"fold{fold_id}/loss/val", val_loss, global_step)
-                    self.writer.add_scalar(f"fold{fold_id}/metrics/h2_macro_f1", h2_f1, global_step)
-
-                    logger.info(f"Ep {abs_epoch:3d} [finetune|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lr {current_lr:.2e} | time {ep_duration:.1f}s")
+                    logger.info(f"Ep {abs_epoch:3d} [finetune|fold{fold_id}] loss {train_loss:.4f}/{val_loss:.4f} | H2 F1 {h2_f1:.4f} | H2 Rec {h2_recall:.4f} | lrs [{lrs_str}] | time {ep_duration:.1f}s")
 
                 if h2_f1 > best_val_macro_f1:
                     best_val_macro_f1 = h2_f1
-                    best_metrics = {"val_loss": val_loss, "h2_macro_f1": h2_f1, "epoch": abs_epoch}
-                    self._save_checkpoint(f"fold{fold_id}_best_model.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
+                    best_metrics = {"val_loss": val_loss, "h2_macro_f1": h2_f1, "epoch": abs_epoch, "per_class": per_class_metrics}
+                    self._save_checkpoint(f"fold{fold_id}_best_model.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo, per_class=per_class_metrics)
                     if self.compute_manager.is_main_process:
                         logger.info(f"  ✓ New best — H2 macro_f1={h2_f1:.4f}")
+                        self._log_per_class_breakdown(fold_id, abs_epoch, "finetune", per_class_metrics)
+                    self.update_oof_summary(fold_id=fold_id, epoch=abs_epoch, best_macro_f1=h2_f1, best_per_class=per_class_metrics)
 
                 # Always save last (rolling) and a numbered epoch snapshot so no epoch is ever lost
-                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo)
-                self._save_checkpoint(f"fold{fold_id}_epoch_{abs_epoch:03d}.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1)
+                self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo, per_class=per_class_metrics)
+                self._save_checkpoint(f"fold{fold_id}_epoch_{abs_epoch:03d}.pth", optimizer=optimizer_ft, scheduler=scheduler, scaler=self.scaler, epoch=abs_epoch, phase='finetune', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, per_class=per_class_metrics)
                 if self.compute_manager.is_main_process:
                     logger.info(f"  Saved fold{fold_id}_epoch_{abs_epoch:03d}.pth  (f1={h2_f1:.4f})")
 
@@ -436,9 +603,24 @@ class MultiHeadTrainer:
 
         return best_metrics
 
-    def _save_checkpoint(self, filename: str, optimizer=None, scheduler=None, scaler=None, epoch=None, phase=None, batch_idx=None, best_val_loss=None, best_val_macro_f1=None, hf_repo: str = None) -> None:
+    def _save_checkpoint(
+        self,
+        filename: str,
+        optimizer=None,
+        scheduler=None,
+        scaler=None,
+        epoch=None,
+        phase=None,
+        batch_idx=None,
+        best_val_loss=None,
+        best_val_macro_f1=None,
+        hf_repo: Optional[str] = None,
+        per_class: Optional[dict] = None,
+    ) -> None:
+        """Atomically save checkpoint dictionary to disk and attempt HuggingFace backup."""
         if not self.compute_manager.is_main_process:
             return
+
         path = self.ckpt_dir / filename
         tmp_path = path.with_suffix(".pth.tmp")  # atomic write: temp → rename
         state = {
@@ -453,47 +635,73 @@ class MultiHeadTrainer:
         if batch_idx is not None: state["batch_idx"] = batch_idx
         if best_val_loss is not None: state["best_val_loss"] = best_val_loss
         if best_val_macro_f1 is not None: state["best_val_macro_f1"] = best_val_macro_f1
+        if per_class is not None: state["per_class"] = per_class
+
         torch.save(state, tmp_path)        # write to temp first
         os.replace(tmp_path, path)         # atomic rename — SIGINT during write can't corrupt final .pth
 
-        # Real-time Cloud Backup to Hugging Face Hub (prevents data loss on Kaggle/Colab timeout)
+        self._upload_checkpoint_to_hf(path, filename, hf_repo)
+
+    def _upload_checkpoint_to_hf(self, path: Path, filename: str, hf_repo: Optional[str]) -> None:
+        """Helper to upload checkpoint asynchronously to HuggingFace Hub."""
         hf_token = os.environ.get("HF_TOKEN")
         target_repo = hf_repo or os.environ.get("HF_REPO_ID")
-        if target_repo and hf_token and ("best" in filename or "last" in filename):
-            clean_repo = target_repo.replace("https://huggingface.co/", "").strip("/")
-            primary_type = "model"
-            if clean_repo.startswith("spaces/"):
-                clean_repo = clean_repo.replace("spaces/", "")
-                primary_type = "space"
-            elif clean_repo.startswith("datasets/"):
-                clean_repo = clean_repo.replace("datasets/", "")
-                primary_type = "dataset"
-            elif "dataset" in os.environ.get("HF_REPO_TYPE", "").lower():
-                primary_type = "dataset"
-            elif "space" in os.environ.get("HF_REPO_TYPE", "").lower():
-                primary_type = "space"
 
-            candidate_types = [primary_type] + [t for t in ["model", "dataset", "space"] if t != primary_type]
-            
-            uploaded = False
+        if not hf_token:
             try:
-                from huggingface_hub import HfApi
-                api = HfApi()
-                for r_type in candidate_types:
+                from kaggle_secrets import UserSecretsClient
+                hf_token = UserSecretsClient().get_secret("HF_TOKEN")
+            except Exception:
+                pass
+
+        if not target_repo:
+            try:
+                from kaggle_secrets import UserSecretsClient
+                target_repo = UserSecretsClient().get_secret("HF_REPO_ID")
+            except Exception:
+                pass
+
+        if not (target_repo and hf_token and ("best" in filename or "last" in filename)):
+            return
+
+        clean_repo = target_repo.replace("https://huggingface.co/", "").strip("/")
+        primary_type = "model"
+        if clean_repo.startswith("spaces/"):
+            clean_repo = clean_repo.replace("spaces/", "")
+            primary_type = "space"
+        elif clean_repo.startswith("datasets/"):
+            clean_repo = clean_repo.replace("datasets/", "")
+            primary_type = "dataset"
+        elif "dataset" in os.environ.get("HF_REPO_TYPE", "").lower():
+            primary_type = "dataset"
+        elif "space" in os.environ.get("HF_REPO_TYPE", "").lower():
+            primary_type = "space"
+
+        candidate_types = [primary_type] + [t for t in ["model", "dataset", "space"] if t != primary_type]
+
+        last_error = None
+        try:
+            from huggingface_hub import HfApi
+            api = HfApi()
+            for r_type in candidate_types:
+                try:
                     try:
-                        api.upload_file(
-                            path_or_fileobj=str(path),
-                            path_in_repo=filename,
-                            repo_id=clean_repo,
-                            token=hf_token,
-                            repo_type=r_type
-                        )
-                        logger.info(f"   ☁ Checkpoint '{filename}' successfully backed up to HuggingFace ({clean_repo} | type={r_type})")
-                        uploaded = True
-                        break
-                    except Exception:
-                        continue
-                if not uploaded:
-                    logger.warning(f"   ⚠ Could not upload checkpoint to HuggingFace ({clean_repo}) across model/dataset/space types.")
-            except Exception as e:
-                logger.warning(f"   ⚠ Could not initialize HuggingFace upload: {e}")
+                        api.create_repo(repo_id=clean_repo, token=hf_token, repo_type=r_type, exist_ok=True)
+                    except Exception as e_create:
+                        logger.debug(f"HF create_repo ({r_type}) note: {e_create}")
+
+                    api.upload_file(
+                        path_or_fileobj=str(path),
+                        path_in_repo=filename,
+                        repo_id=clean_repo,
+                        token=hf_token,
+                        repo_type=r_type
+                    )
+                    logger.info(f"   ☁ Checkpoint '{filename}' successfully backed up to HuggingFace ({clean_repo} | type={r_type})")
+                    return
+                except Exception as e_up:
+                    last_error = e_up
+                    continue
+            logger.warning(f"   ⚠ Could not upload checkpoint to HuggingFace ({clean_repo}): {last_error}")
+        except Exception as e:
+            logger.warning(f"   ⚠ Could not initialize HuggingFace upload: {e}")

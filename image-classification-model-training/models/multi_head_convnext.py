@@ -158,19 +158,43 @@ class MultiHeadConvNeXt(nn.Module):
         for param in self.backbone.parameters():
             param.requires_grad = True
 
-    def get_param_groups(self, backbone_lr=5e-5, head_lr=5e-4):
-        """Differential LRs: backbone at backbone_lr, all heads and attention at head_lr."""
-        backbone_params = list(self.backbone.parameters())
-        head_params = (
-            list(self.normal_abnormal_head.parameters()) +
-            list(self.cbam_s2.parameters()) +
-            list(self.cbam_s3.parameters()) +
-            list(self.cbam_s4.parameters()) +
-            list(self.granular_pathology_head.parameters())
-        )
+    def get_param_groups(self, backbone_lr=5e-5, head_lr=5e-4, weight_decay=1e-4):
+        """
+        Differential LRs & Weight Decay Splitting:
+        Excludes 1D biases and normalization parameters (LayerNorm, BatchNorm) from weight decay
+        to preserve pretrained features under regularization.
+        """
+        backbone_decay, backbone_no_decay = [], []
+        for name, param in self.backbone.named_parameters():
+            if not param.requires_grad:
+                continue
+            if param.ndim <= 1 or name.endswith('.bias') or 'norm' in name.lower() or 'ln' in name.lower():
+                backbone_no_decay.append(param)
+            else:
+                backbone_decay.append(param)
+
+        head_modules = [
+            self.normal_abnormal_head,
+            self.cbam_s2,
+            self.cbam_s3,
+            self.cbam_s4,
+            self.granular_pathology_head,
+        ]
+        head_decay, head_no_decay = [], []
+        for module in head_modules:
+            for name, param in module.named_parameters():
+                if not param.requires_grad:
+                    continue
+                if param.ndim <= 1 or name.endswith('.bias') or 'norm' in name.lower() or 'ln' in name.lower():
+                    head_no_decay.append(param)
+                else:
+                    head_decay.append(param)
+
         return [
-            {"params": backbone_params, "lr": backbone_lr},
-            {"params": head_params,     "lr": head_lr},
+            {"params": backbone_decay,    "lr": backbone_lr, "weight_decay": weight_decay},
+            {"params": backbone_no_decay, "lr": backbone_lr, "weight_decay": 0.0},
+            {"params": head_decay,        "lr": head_lr,     "weight_decay": weight_decay},
+            {"params": head_no_decay,     "lr": head_lr,     "weight_decay": 0.0},
         ]
 
 def build_multi_head_model(pretrained=True, warmup=True) -> MultiHeadConvNeXt:

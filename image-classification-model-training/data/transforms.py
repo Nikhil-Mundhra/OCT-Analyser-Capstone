@@ -157,9 +157,8 @@ def get_train_transforms():
         Ensure3Channels(),
         ScaleIntensity(), # Scale [0, 255] -> [0, 1]
         Resize(RES_H_W),
-        RandFlip(prob=0.5, spatial_axis=0), # Vertical
-        RandFlip(prob=0.5, spatial_axis=1), # Horizontal
-        RandRotate(range_x=0.26, prob=0.5, keep_size=True), # ~15 degrees
+        RandFlip(prob=0.5, spatial_axis=1), # Horizontal flip only (Preserves Vitreous -> RPE superior-inferior anatomical ordering)
+        RandRotate(range_x=0.09, prob=0.5, keep_size=True), # Small ~5 degree anatomical tilt rotation
         RandGaussianNoise(prob=0.3, std=0.05),
         NormalizeIntensity(subtrahend=IMAGENET_MEAN, divisor=IMAGENET_STD, channel_wise=True),
         RandCoarseDropout(holes=1, spatial_size=(32, 32), dropout_holes=True, fill_value=0, prob=0.2)
