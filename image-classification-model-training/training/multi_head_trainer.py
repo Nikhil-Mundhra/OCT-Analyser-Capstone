@@ -444,12 +444,30 @@ class MultiHeadTrainer:
                     logger.error(f"CRITICAL ERROR: Failed to compute fold-specific FocalLoss class weights: {exc}")
                 raise RuntimeError(f"Aborting training run due to critical loss configuration failure: {exc}") from exc
 
-        if resume_path and os.path.exists(resume_path):
+        actual_resume_path = resume_path
+        if resume_path and not os.path.exists(resume_path):
+            try:
+                from huggingface_hub import hf_hub_download
+                repo_id = hf_repo or os.environ.get("HF_REPO_ID") or "NMundhra/OCT-Classification-Model"
+                clean_repo = repo_id.replace("https://huggingface.co/", "").strip("/")
+                target_filename = os.path.basename(resume_path) if "/" in resume_path else (resume_path if resume_path.endswith(".pth") else "fold0_best_model.pth")
+                if self.compute_manager.is_main_process:
+                    logger.info(f"Downloading resume checkpoint '{target_filename}' directly from Hugging Face repository '{clean_repo}'...")
+                actual_resume_path = hf_hub_download(
+                    repo_id=clean_repo,
+                    filename=target_filename,
+                    token=os.environ.get("HF_TOKEN")
+                )
+            except Exception as e_hf:
+                if self.compute_manager.is_main_process:
+                    logger.warning(f"Could not download resume checkpoint from Hugging Face ({resume_path}): {e_hf}")
+
+        if actual_resume_path and os.path.exists(actual_resume_path):
             if self.compute_manager.is_main_process:
-                logger.info(f"Loading checkpoint from {resume_path}...")
+                logger.info(f"Loading checkpoint from {actual_resume_path}...")
             import traceback
             try:
-                ckpt = torch.load(resume_path, map_location=self.device)
+                ckpt = torch.load(actual_resume_path, map_location=self.device)
                 get_raw_model(self.model).load_state_dict(ckpt['model_state_dict'])
                 phase = ckpt.get('phase', 'warmup')
                 best_val_loss = ckpt.get('best_val_loss', float('inf'))
