@@ -147,22 +147,39 @@ class MultiHeadConvNeXt(nn.Module):
             'pathology': out_pathology
         }
 
-    def freeze_backbone(self):
-        """Freeze stem + stages 0-2. Stage 3 (last) stays trainable."""
+    def freeze_full_backbone(self):
+        """Freeze stem and ALL backbone stages (0, 1, 2, 3) completely."""
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+
+    def unfreeze_stage3_only(self):
+        """Unfreeze ONLY the deepest backbone stage (stage 3 / stage 4 bottleneck). Keep stem & stages 0-2 frozen."""
         for name, param in self.backbone.named_parameters():
-            if name.startswith(('stem.', 'stages.0.', 'stages.1.', 'stages.2.')):
+            if name.startswith('stages.3.'):
+                param.requires_grad = True
+            else:
                 param.requires_grad = False
 
     def unfreeze_backbone(self):
-        """Unfreeze the full backbone for fine-tuning."""
+        """Unfreeze the entire backbone for end-to-end fine-tuning."""
         for param in self.backbone.parameters():
             param.requires_grad = True
 
-    def get_param_groups(self, backbone_lr=5e-5, head_lr=5e-4, weight_decay=1e-4):
+    # Legacy helper alias for backward compatibility
+    def freeze_backbone(self):
+        """Freeze stem + stages 0-2 for warmup. Stage 3 stays trainable."""
+        for name, param in self.backbone.named_parameters():
+            if name.startswith(('stem.', 'stages.0.', 'stages.1.', 'stages.2.')):
+                param.requires_grad = False
+            elif name.startswith('stages.3.'):
+                param.requires_grad = True
+
+    def get_param_groups(self, backbone_lr=2e-6, head_lr=2e-5, weight_decay=1e-4, early_backbone_factor=1.0):
         """
-        Differential LRs & Weight Decay Splitting:
-        Excludes 1D biases and normalization parameters (LayerNorm, BatchNorm) from weight decay
-        to preserve pretrained features under regularization.
+        Discriminative Layer-Wise Learning Rates & Weight Decay Splitting:
+        - Backbone Decay & No Decay
+        - Head Decay & No Decay
+        Excludes 1D biases and normalization parameters from weight decay.
         """
         backbone_decay, backbone_no_decay = [], []
         for name, param in self.backbone.named_parameters():
@@ -203,5 +220,5 @@ def build_multi_head_model(pretrained=True, warmup=True) -> MultiHeadConvNeXt:
     """
     model = MultiHeadConvNeXt(num_pathology_classes=12, pretrained=pretrained)
     if warmup:
-        model.freeze_backbone()
+        model.freeze_full_backbone()
     return model

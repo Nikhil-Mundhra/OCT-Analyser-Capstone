@@ -542,11 +542,12 @@ class MultiHeadTrainer:
         # ── PHASE 2: FINE-TUNING ──
         if phase == 'finetune' and finetune_epochs > 0:
             if self.compute_manager.is_main_process:
-                logger.info(f"PHASE 2 — Fine-tuning | max {finetune_epochs} epochs | backbone UNFROZEN")
+                logger.info(f"PHASE 2 — Gradual Fine-tuning | max {finetune_epochs} epochs | Stage 3 Bottleneck -> Full Backbone")
             model_to_unfreeze = get_raw_model(self.model)
-            model_to_unfreeze.unfreeze_backbone()
+            # Stage 2A: Start by unfreezing Stage 3 (deepest bottleneck) only to preserve early edge/texture filters
+            model_to_unfreeze.unfreeze_stage3_only()
             optimizer_ft = torch.optim.AdamW(
-                model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr, weight_decay=weight_decay),
+                model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr, weight_decay=weight_decay, early_backbone_factor=0.1),
             )
             
             # Port state from optimizer_warmup to prevent Adam momentum shock
@@ -571,6 +572,16 @@ class MultiHeadTrainer:
             early_stopper.best_value = best_val_macro_f1 if best_val_macro_f1 > 0 else None
 
             for epoch in range(start_epoch_ft, finetune_epochs):
+                if epoch == 4:
+                    if self.compute_manager.is_main_process:
+                        logger.info("Unfreezing full backbone gradually (early stages stem/0/1/2 at 0.1x LR)...")
+                    model_to_unfreeze.unfreeze_full_backbone()
+                    old_state = optimizer_ft.state
+                    optimizer_ft = torch.optim.AdamW(
+                        model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr, weight_decay=weight_decay, early_backbone_factor=0.1),
+                    )
+                    optimizer_ft.state.update(old_state)
+
                 current_start_batch = start_batch_ft if epoch == start_epoch_ft else 0
                 ep_start = time.time()
                 abs_epoch = warmup_epochs + epoch
