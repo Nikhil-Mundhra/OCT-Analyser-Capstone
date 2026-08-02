@@ -1,6 +1,6 @@
 # Multi-Head ConvNeXt V2 Hierarchical OCT Classification Pipeline
 
-A state-of-the-art, multi-task deep learning pipeline for hierarchical retinal pathology classification from Optical Coherence Tomography (OCT) B-scans. Built on top of **ConvNeXt V2 Base** with **Multi-Scale Encoder Aggregation**, **CBAM Attention Modules**, **Strict Hierarchical Conditioning**, and **Focal Loss** for extreme class imbalance mitigation.
+A state-of-the-art, multi-task deep learning pipeline for hierarchical retinal pathology classification from Optical Coherence Tomography (OCT) B-scans. Built on top of **ConvNeXt V2 Base** with **Multi-Scale Encoder Aggregation**, **CBAM Attention Modules**, **Strict Hierarchical Conditioning**, **Source-Namespaced Patient Stratified Group K-Fold**, and **Unique-Patient Bounded Focal Loss**.
 
 ---
 
@@ -37,15 +37,24 @@ graph TD
   - **Head 2 (H2 Pathology Classifier)**: 12-class granular disease classification (`CNV`, `DRUSEN`, `AMD`, `General_AMD`, `DME`, `DR`, `MH`, `RVO`, `RAO`, `CSR`, `ERM`, `VID`).
 - **Strict Hierarchical Conditioning**:
   - **Feature Conditioning**: Appends H1 sigmoid probability (`torch.sigmoid(out_normal).detach()`) directly to the H2 input vector ($1792 + 1 = 1793$ input channels).
-  - **Probability Constraint**: Multiplies final H2 softmax probabilities by H1 probability ($P(H2_{\text{final}}) = P(H2 \mid H1) \times P(H1)$) to eliminate multi-head contradictions (e.g. predicting a disease when H1 probability is 0).
+  - **Probability Constraint**: Multiplies final H2 softmax probabilities by H1 probability ($P(H2_{\text{final}}) = P(H2 \mid H1) \times P(H1)$) to eliminate multi-head contradictions.
+
+---
+
+## Patient Grouping & Data Integrity
+
+- **Source & Pathology Class Namespacing**: Global patient IDs are constructed as `dataset_key::pathology_class::local_patient_id` using explicit `dataset_key` attributes in `hierarchy.yaml`. This prevents false cross-dataset or cross-class patient ID collisions during cross-validation.
+- **Zero Patient Leakage (`StratifiedGroupKFold`)**: Cross-validation uses `StratifiedGroupKFold` on namespaced patient IDs across 7,536 distinct patient groups, guaranteeing that all slices from a patient volume remain strictly in a single fold.
+- **Mutual Exclusivity Validation**: Pre-namespaced field audits verify that patient groups map to single pathology classes without cross-dataset ambiguity.
 
 ---
 
 ## Imbalance-Resilient Loss Strategy
 
-- **Focal Loss ($\gamma=2.0$)**: $\text{FL}(p_t) = -\alpha_t (1 - p_t)^\gamma \log(p_t)$ focuses gradient updates on hard minority classes (`RAO`, `CSR`, `VID`) and down-weights dominant classes (`CNV`, `DRUSEN`).
-- **Automated Class Imbalance Weighting ($\alpha_t$)**: Calculates exact per-class inverse frequency weights dynamically from the dataset.
-- **Asymmetric Hierarchical Loss Masking**: H2 pathology loss is calculated **only** on samples labeled as Abnormal ($H1 = 1$), preventing Normal scans from producing false disease gradient updates.
+- **Fold-Specific Unique-Patient Focal Loss ($\gamma=2.0$)**: $\text{FL}(p_t) = -\alpha_t (1 - p_t)^\gamma \log(p_t)$ calculated dynamically per fold from unique training patient counts in that specific fold's training set:
+  $$\alpha_t = \text{clamp}\left(\frac{1/\sqrt{\text{N\_patients}_t}}{\text{mean}(1/\sqrt{\text{N\_patients}})}, \, 0.4, \, 4.0\right)$$
+- **Patient-Level Prevalence Calibration**: Prevents slice-rich multi-volume classes (`CNV` with 47 slices/patient) from inflating weights relative to single-scan classes with similar human patient numbers (`DRUSEN`, `DME`).
+- **Asymmetric Loss Masking**: H2 pathology loss is calculated only on Abnormal samples ($H1 = 1$), preventing Normal scans from producing false disease gradient updates.
 - **Label Smoothing ($\varepsilon=0.1$)**: Applied to multi-class targets to prevent overconfidence and absorb multi-source annotation noise across datasets.
 
 ---
@@ -57,19 +66,9 @@ graph TD
   - **Phase 2 (Finetune)**: Backbone unfrozen (`unfreeze_backbone()`), performing full end-to-end fine-tuning.
 - **Differential Learning Rates**: Backbone runs at `1e-5` to preserve pretrained representations, while attention & classification heads run at `1e-4`.
 - **Adam Momentum Preservation**: Automatically ports optimizer momentum state from Phase 1 to Phase 2 to prevent Adam momentum shock when unfreezing.
-- **Cosine Annealing Warm Restarts**: $T_0=10, T_{\text{mult}}=2, \eta_{\text{min}}=1\text{e-}6$ to cycle learning rates and break out of local minima.
-- **Gradient Clipping**: `torch.nn.utils.clip_grad_norm_(max_norm=5.0)` to prevent exploding gradients.
-
----
-
-## Hardware Acceleration & Checkpointing
-
-- **Native FP16 Autocast (MPS & CUDA)**: `torch.autocast(device_type, dtype=torch.float16)` accelerates matrix multiplication on Apple Silicon M2 Pro matrix engines and NVIDIA CUDA Cores, keeping loss calculations safely in FP32.
-- **Gradient Accumulation (`--accum-steps`)**: Simulates larger effective batch sizes (e.g. `batch_size=16` $\times$ `accum_steps=2` = effective batch 32) without increasing VRAM.
-- **Atomic File Saving**: Writes checkpoints to `.pth.tmp` first and renames via atomic `os.replace()`, guaranteeing no corrupted `.pth` files on process interruptions (`Ctrl+C`, SIGINT).
-- **Mid-Epoch Checkpointing (`--save-steps 2250`)**: Periodically saves rolling checkpoint (`fold0_last_model.pth`) mid-epoch.
-- **Permanent Epoch Snapshots**: Saves `fold0_epoch_001.pth`, `fold0_epoch_002.pth`, etc. at every completed epoch alongside `fold0_best_model.pth`.
-- **Real-Time Cloud Backup (`--hf-repo`)**: Automatically pushes best & last checkpoints to HuggingFace Hub in real-time.
+- **Macro-F1 Early Stopping**: Monitors `h2_macro_f1` with `patience=3`, `mode="max"`, `min_delta=1e-4` after warmup.
+- **Dual Best Checkpointing**: Saves `fold0_best_macro_f1.pth` (main model) and `fold0_best_val_loss.pth` independently.
+- **DDP Bucket View Optimization**: `DistributedDataParallel(gradient_as_bucket_view=True)` eliminates conv stride warnings and memory copy overhead.
 
 ---
 
@@ -78,23 +77,22 @@ graph TD
 ```text
 image-classification-model-training/
 ├── config/
-│   └── hierarchy.yaml               # Single source of truth for labels & paths
+│   └── hierarchy.yaml               # Single source of truth for labels, paths, & dataset_keys
 ├── data/
-│   ├── dataset.py                   # MultiHeadOCTDataset & K-Fold builders
+│   ├── dataset.py                   # MultiHeadOCTDataset & StratifiedGroupKFold loaders
 │   ├── transforms.py                # MONAI data augmentation pipelines
-│   ├── dataset_manifest.csv         # Full dataset manifest
-│   └── micro_dataset/               # Sanity testing micro-dataset
+│   └── dataset_manifest.csv         # Full dataset manifest
 ├── models/
-│   └── multi_head_convnext.py       # MultiHeadConvNeXt architecture
+│   └── multi_head_convnext.py       # MultiHeadConvNeXt architecture & param groups
 ├── training/
-│   ├── multi_head_trainer.py        # MultiHeadTrainer with MPS FP16 & atomic saves
-│   ├── losses.py                    # FocalLoss & LabelSmoothingCrossEntropy
-│   └── trainer.py                   # Single-head legacy trainer base
+│   ├── multi_head_trainer.py        # MultiHeadTrainer with DDP, AMP, early stopping, & HF upload
+│   └── losses.py                    # FocalLoss & LabelSmoothingCrossEntropy
 ├── scripts/
 │   ├── train_convnext.py            # Main training execution CLI
-│   ├── evaluate_best_model.py       # Checkpoint evaluation script
-│   └── generate_manifest.py         # Manifest builder
-├── tests/                           # PyTorch unit test suite
+│   ├── audit_h2_targets.py          # Target semantics & patient grouping audit tool
+│   ├── test_drusen_memorization.py  # Micro-dataset memorization test script
+│   └── analyze_checkpoint_confusion.py # Checkpoint confusion matrix generator
+├── tests/                           # PyTorch unit test suite (27 tests)
 └── requirements.txt                 # Dependencies
 ```
 
@@ -102,7 +100,21 @@ image-classification-model-training/
 
 ## Execution & Usage Commands
 
-### 1. Local Training (Apple Silicon Mac - MPS)
+### 1. Target Semantics & Patient Grouping Audit
+```bash
+KMP_DUPLICATE_LIB_OK=TRUE python3 image-classification-model-training/scripts/audit_h2_targets.py \
+    --config image-classification-model-training/config/hierarchy.yaml
+```
+
+### 2. Micro-Dataset Memorization Test
+```bash
+KMP_DUPLICATE_LIB_OK=TRUE python3 image-classification-model-training/scripts/test_drusen_memorization.py \
+    --config image-classification-model-training/config/hierarchy.yaml \
+    --epochs 25 \
+    --lr 1e-3
+```
+
+### 3. Local Training (Apple Silicon Mac - MPS)
 ```bash
 OCT_DATA_ROOT="/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified" \
 python3 image-classification-model-training/scripts/train_convnext.py \
@@ -115,40 +127,33 @@ python3 image-classification-model-training/scripts/train_convnext.py \
     --epochs-finetune 20
 ```
 
-### 2. Kaggle Dual-GPU Training (NVIDIA Dual T4 DDP Acceleration)
+### 4. Kaggle Dual-GPU DDP Training (NVIDIA Dual T4)
 Set environment variables in Python:
 ```python
 import os
-os.environ["OCT_DATA_ROOT"] = "/kaggle/input/datasets/nikhilmundhra/classified-oct-v2-preprocessed/Classified-preprocessed"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["OCT_DATA_ROOT"] = "/kaggle/input/datasets/nikhilmundhra/classified-oct-v2-preprocessed/Classified-preprocessed"
 os.environ["HF_TOKEN"] = "your_hf_token_here"
+os.environ["HF_REPO_ID"] = "NMundhra/OCT-Classification-Model"
 ```
+
 Run DDP Multi-GPU training CLI (~1.9x speedup, Global Batch Size 32):
 ```bash
 !torchrun --nproc_per_node=2 image-classification-model-training/scripts/train_convnext.py \
     --config "image-classification-model-training/config/hierarchy.yaml" \
+    --checkpoint-dir "/kaggle/working" \
     --batch-size 16 \
     --accum-steps 1 \
     --num-workers 2 \
     --save-steps 2250 \
     --epochs-warmup 3 \
     --epochs-finetune 20 \
+    --use-ddp \
     --hf-repo "NMundhra/OCT-Classification-Model"
 ```
 
-### 3. Resuming Training
-To resume cleanly from any saved checkpoint:
-```bash
-OCT_DATA_ROOT="/path/to/Classified" \
-python3 image-classification-model-training/scripts/train_convnext.py \
-    --config "image-classification-model-training/config/hierarchy.yaml" \
-    --batch-size 16 \
-    --resume "image-classification-model-training/checkpoints/multi_head/fold0_last_model.pth"
-```
-
-### 4. Running Unit Tests
+### 5. Running Unit Test Suite
 ```bash
 KMP_DUPLICATE_LIB_OK=TRUE \
-PYTHONPATH=$(pwd)/image-classification-model-training \
-python3 -m unittest discover -s image-classification-model-training/tests
+python3 -m unittest discover -s image-classification-model-training/tests -p "test_*.py"
 ```
