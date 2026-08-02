@@ -103,6 +103,7 @@ class_map:
 
   # ── NORMAL (Healthy) ────────────────────────────────────────────────────────
   - path: "Normal (Healthy)/OCT2017"
+    dataset_key:  OCT2017
     fine_class:   NORMAL
     l1:           NORMAL
     l2:           null
@@ -110,6 +111,7 @@ class_map:
     l3_class:     null
 
   - path: "Normal (Healthy)/NO"
+    dataset_key:  OCTDL
     fine_class:   NORMAL
     l1:           NORMAL
     l2:           null
@@ -117,6 +119,7 @@ class_map:
     l3_class:     null
 
   - path: "Normal (Healthy)/108503_OCTID"
+    dataset_key:  OCTID
     fine_class:   NORMAL
     l1:           NORMAL
     l2:           null
@@ -124,6 +127,7 @@ class_map:
     l3_class:     null
 
   - path: "Normal (Healthy)/OCT5K_NORMAL"
+    dataset_key:  OCT5K
     fine_class:   NORMAL
     l1:           NORMAL
     l2:           null
@@ -132,6 +136,7 @@ class_map:
 
   # ── MACULAR DEGENERATION ────────────────────────────────────────────────────
   - path: "Macular Degeneration Spectrum/Choroidal Neovascularization/CNV"
+    dataset_key:  OCT2017
     fine_class:   CNV
     l1:           ABNORMAL
     l2:           Macular_Degeneration
@@ -139,6 +144,7 @@ class_map:
     l3_class:     CNV          # Wet AMD — strictly separate from DRUSEN
 
   - path: "Macular Degeneration Spectrum/DRUSEN"
+    dataset_key:  OCT2017
     fine_class:   DRUSEN
     l1:           ABNORMAL
     l2:           Macular_Degeneration
@@ -146,6 +152,7 @@ class_map:
     l3_class:     DRUSEN       # Dry AMD — strictly separate from CNV
 
   - path: "Macular Degeneration Spectrum/AMD"
+    dataset_key:  OCTDL
     fine_class:   AMD
     l1:           ABNORMAL
     l2:           Macular_Degeneration
@@ -153,6 +160,7 @@ class_map:
     l3_class:     AMD
 
   - path: "Macular Degeneration Spectrum/General/108503_OCTID_AMD"
+    dataset_key:  OCTID
     fine_class:   General_AMD
     l1:           ABNORMAL
     l2:           Macular_Degeneration
@@ -160,6 +168,7 @@ class_map:
     l3_class:     General_AMD
 
   - path: "Macular Degeneration Spectrum/AMD1"
+    dataset_key:  OCTDL
     fine_class:   AMD
     l1:           ABNORMAL
     l2:           Macular_Degeneration
@@ -167,6 +176,7 @@ class_map:
     l3_class:     AMD
 
   - path: "Macular Degeneration Spectrum/OCT5K_AMD"
+    dataset_key:  OCT5K
     fine_class:   AMD
     l1:           ABNORMAL
     l2:           Macular_Degeneration
@@ -175,6 +185,7 @@ class_map:
 
   # ── DIABETIC COMPLICATIONS ──────────────────────────────────────────────────
   - path: "Diabetic Complications/Diabetic Macular Edema (DME)/DME"
+    dataset_key:  OCT2017
     fine_class:   DME
     l1:           ABNORMAL
     l2:           Diabetic_Complications
@@ -182,6 +193,7 @@ class_map:
     l3_class:     DME
 
   - path: "Diabetic Complications/Diabetic Macular Edema (DME)/OCTDL_DME"
+    dataset_key:  OCTDL
     fine_class:   DME
     l1:           ABNORMAL
     l2:           Diabetic_Complications
@@ -189,6 +201,7 @@ class_map:
     l3_class:     DME          # Second source of DME — same class
 
   - path: "Diabetic Complications/Diabetic Macular Edema (DME)/Chiu_BOE_2014-DME"
+    dataset_key:  CHIU_BOE
     fine_class:   DME
     l1:           ABNORMAL
     l2:           Diabetic_Complications
@@ -196,6 +209,7 @@ class_map:
     l3_class:     DME          # Third source of DME
 
   - path: "Diabetic Complications/General (DR)/OCTID_DR"
+    dataset_key:  OCTID
     fine_class:   DR
     l1:           ABNORMAL
     l2:           Diabetic_Complications
@@ -206,6 +220,7 @@ class_map:
   # L2: All three map to Vascular_Occlusions (RAO+RVO aggregated)
   # L3: Each gets its own specialist class (RAO/RVO re-separated)
   - path: "Vascular Occlusions (Blockages)/Macular-Hole-Retinal-OCT-images/OCTID_MacularHole"
+    dataset_key:  OCTID
     fine_class:   MH
     l1:           ABNORMAL
     l2:           Vascular_Occlusions
@@ -213,6 +228,7 @@ class_map:
     l3_class:     MH
 
   - path: "Vascular Occlusions (Blockages)/Macular-Hole-Retinal-OCT-images/CHU_MH"
+    dataset_key:  CHU_MH
     fine_class:   MH
     l1:           ABNORMAL
     l2:           Vascular_Occlusions
@@ -220,6 +236,7 @@ class_map:
     l3_class:     MH
 
   - path: "Vascular Occlusions (Blockages)/RVO"
+    dataset_key:  OCTDL
     fine_class:   RVO
     l1:           ABNORMAL
     l2:           Vascular_Occlusions   # Aggregated with RAO at L2
@@ -227,6 +244,7 @@ class_map:
     l3_class:     RVO                   # Re-separated at L3
 
   - path: "Vascular Occlusions (Blockages)/RAO"
+    dataset_key:  OCTDL
     fine_class:   RAO
     l1:           ABNORMAL
     l2:           Vascular_Occlusions   # Aggregated with RVO at L2
@@ -235,6 +253,7 @@ class_map:
 
   # ── FLUID ACCUMULATION ──────────────────────────────────────────────────────
   - path: "Fluid Accumulation/Central Serous Retinopathy/108503_OCTID_CSR"
+    dataset_key:  OCTID
     fine_class:   CSR
     l1:           ABNORMAL
     l2:           Fluid_Accumulation
@@ -243,6 +262,7 @@ class_map:
 
   # ── VITREOMACULAR & STRUCTURAL DISORDERS ───────────────────────────────────
   - path: "Vitreomacular and Structural Disorders/ERM"
+    dataset_key:  OCTDL
     fine_class:   ERM
     l1:           ABNORMAL
     l2:           Structural_Issues
@@ -250,6 +270,7 @@ class_map:
     l3_class:     ERM
 
   - path: "Vitreomacular and Structural Disorders/VID"
+    dataset_key:  OCTDL
     fine_class:   VID
     l1:           ABNORMAL
     l2:           Structural_Issues
