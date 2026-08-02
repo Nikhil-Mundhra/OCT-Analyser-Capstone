@@ -425,9 +425,9 @@ class MultiHeadTrainer:
         phase = 'warmup'
         ckpt = None
 
-        # Compute fold-specific class weights from unique training patients in this fold
-        try:
-            if hasattr(train_loader, "dataset") and hasattr(train_loader.dataset, "compute_class_weights"):
+        # Strict Fail-Fast Validation: Compute fold-specific class weights from unique training patients
+        if hasattr(train_loader, "dataset") and hasattr(train_loader.dataset, "compute_class_weights"):
+            try:
                 fold_h2_alpha = train_loader.dataset.compute_class_weights("h2").to(self.device)
                 if isinstance(self.criterions.get('h2'), FocalLoss):
                     self.criterions['h2'].alpha = fold_h2_alpha
@@ -437,9 +437,12 @@ class MultiHeadTrainer:
                         for idx, (c_name, w_val) in enumerate(zip(class_names, fold_h2_alpha.tolist())):
                             logger.info(f"  {c_name:<15} : {w_val:.2f}")
                         logger.info("==========================================================================")
-        except Exception as exc:
-            if self.compute_manager.is_main_process:
-                logger.warning(f"Could not compute fold-specific class weights: {exc}")
+                else:
+                    raise RuntimeError(f"Strict Assertion Failure: H2 criterion is not FocalLoss (got {type(self.criterions.get('h2'))})")
+            except Exception as exc:
+                if self.compute_manager.is_main_process:
+                    logger.error(f"CRITICAL ERROR: Failed to compute fold-specific FocalLoss class weights: {exc}")
+                raise RuntimeError(f"Aborting training run due to critical loss configuration failure: {exc}") from exc
 
         if resume_path and os.path.exists(resume_path):
             if self.compute_manager.is_main_process:
