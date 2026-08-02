@@ -22,6 +22,7 @@ from torch.utils.tensorboard import SummaryWriter
 from sklearn.metrics import f1_score, accuracy_score, recall_score, precision_score
 
 from training.trainer import EarlyStopping
+from training.losses import FocalLoss
 from utils.device import get_raw_model, ComputeManager
 
 logger = logging.getLogger(__name__)
