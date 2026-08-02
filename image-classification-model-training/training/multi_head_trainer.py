@@ -426,15 +426,16 @@ class MultiHeadTrainer:
 
         # Compute fold-specific class weights from unique training patients in this fold
         try:
-            fold_h2_alpha = train_loader.dataset.compute_class_weights("h2").to(self.device)
-            if isinstance(self.criterions.get('h2'), FocalLoss):
-                self.criterions['h2'].alpha = fold_h2_alpha
-                if self.compute_manager.is_main_process:
-                    class_names = train_loader.dataset.get_class_names("h2")
-                    logger.info(f"=== Fold {fold_id} Patient-Based FocalLoss Alpha Weights (Training Set Only) ===")
-                    for idx, (c_name, w_val) in enumerate(zip(class_names, fold_h2_alpha.tolist())):
-                        logger.info(f"  {c_name:<15} : {w_val:.2f}")
-                    logger.info("==========================================================================")
+            if hasattr(train_loader, "dataset") and hasattr(train_loader.dataset, "compute_class_weights"):
+                fold_h2_alpha = train_loader.dataset.compute_class_weights("h2").to(self.device)
+                if isinstance(self.criterions.get('h2'), FocalLoss):
+                    self.criterions['h2'].alpha = fold_h2_alpha
+                    if self.compute_manager.is_main_process:
+                        class_names = train_loader.dataset.get_class_names("h2")
+                        logger.info(f"=== Fold {fold_id} Patient-Based FocalLoss Alpha Weights (Training Set Only) ===")
+                        for idx, (c_name, w_val) in enumerate(zip(class_names, fold_h2_alpha.tolist())):
+                            logger.info(f"  {c_name:<15} : {w_val:.2f}")
+                        logger.info("==========================================================================")
         except Exception as exc:
             if self.compute_manager.is_main_process:
                 logger.warning(f"Could not compute fold-specific class weights: {exc}")
