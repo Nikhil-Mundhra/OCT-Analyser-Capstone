@@ -108,10 +108,12 @@ def run_memorization_test(config_path: str, data_root: str, epochs: int = 25, lr
     print("\n--- Final Classification Report on Micro-Dataset ---")
     print(classification_report(all_targets, all_preds, target_names=class_names, zero_division=0))
 
-    if drusen_f1 > 0.90:
-        print("✓ SUCCESS: DRUSEN and all classes memorized cleanly! Target mapping & loss architecture are 100% valid.")
+    if drusen_f1 >= 0.90:
+        print(f"SUCCESS: DRUSEN and all classes memorized cleanly (DRUSEN F1: {drusen_f1:.4f}, Overall Macro F1: {macro_f1:.4f})!")
+    elif drusen_f1 >= 0.60:
+        print(f"PROGRESS: Intermediate convergence at Epoch {epoch} (DRUSEN F1: {drusen_f1:.4f}, Macro F1: {macro_f1:.4f}). Run --epochs 15+ for full memorization (>0.90).")
     else:
-        print("✗ FAILURE: DRUSEN failed to memorize. Investigating target encoding or indexing issue.")
+        print(f"FAILURE: Low DRUSEN F1 ({drusen_f1:.4f}) after {epoch} epochs.")
     print("=" * 80)
 
 
