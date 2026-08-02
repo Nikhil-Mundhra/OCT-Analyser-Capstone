@@ -691,7 +691,8 @@ class MultiHeadTrainer:
             except Exception:
                 pass
 
-        if not (target_repo and hf_token and ("best" in filename or "last" in filename)):
+        # Limit HuggingFace uploads strictly to best model checkpoints (e.g. fold0_best_model.pth)
+        if not (target_repo and hf_token and filename.endswith("_best_model.pth")):
             return
 
         clean_repo = target_repo.replace("https://huggingface.co/", "").strip("/")
