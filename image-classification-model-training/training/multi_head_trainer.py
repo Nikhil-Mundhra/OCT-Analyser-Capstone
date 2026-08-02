@@ -727,8 +727,7 @@ class MultiHeadTrainer:
                         path_in_repo=filename,
                         repo_id=clean_repo,
                         token=hf_token,
-                        repo_type=r_type,
-                        show_progress=False
+                        repo_type=r_type
                     )
                     logger.info(f"   ☁ Checkpoint '{filename}' successfully backed up to HuggingFace ({clean_repo} | type={r_type})")
                     return
