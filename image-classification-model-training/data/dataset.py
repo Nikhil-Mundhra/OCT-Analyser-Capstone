@@ -244,38 +244,43 @@ def build_dataloader(
 
 import re
 
-def extract_patient_id(image_path_str: str) -> str:
-    """Extract exact patient ID / scan group from image path string across all OCT dataset sources."""
-    stem = Path(image_path_str).stem
+def extract_patient_id(image_path_str: str, pathology_class: str = "UNKNOWN") -> str:
+    """
+    Extract exact globally-unique namespaced patient ID / scan group from image path string.
+    Format: dataset_key::pathology_class::local_patient_id
+    Prevents false cross-dataset or cross-class patient ID collisions in StratifiedGroupKFold.
+    """
+    path_obj = Path(image_path_str)
+    stem = path_obj.stem
     p_str = str(image_path_str)
     
-    # 1. OCT2017: CNV-5557306-155.jpeg -> OCT2017_5557306
+    # 1. OCT2017: CNV-5557306-155.jpeg -> OCT2017::CNV::5557306
     m = re.search(r'(?:CNV|DRUSEN|DME|NORMAL)-(\d+)-\d+', stem, re.IGNORECASE)
-    if m: return f"OCT2017_{m.group(1)}"
+    if m: return f"OCT2017::{pathology_class}::{m.group(1)}"
         
     # 2. OCTDL / OCT-datasets with <class>_<patientID>_<sliceNum>.jpg
     m = re.search(r'(?:rvo|rao|erm|vid|dme|no|amd|cnv|drusen)_(\d+)_\d+', stem, re.IGNORECASE)
-    if m: return f"OCTDL_{m.group(1)}"
+    if m: return f"OCTDL::{pathology_class}::{m.group(1)}"
 
     # 3. OCTID (108503_OCTID): AMRD37, DR105, MH93, CSR7, NORMAL67
     m = re.search(r'(?:AMRD|AMD|DR|MH|CSR|NORMAL)(\d+)', stem, re.IGNORECASE)
-    if m and not stem.startswith("Subject"): return f"OCTID_{m.group(0)}"
+    if m and not stem.startswith("Subject"): return f"OCTID::{pathology_class}::{m.group(0)}"
 
-    # 4. Chiu BOE 2014: Subject_05_slice_028.png -> Chiu_Subject_05
+    # 4. Chiu BOE 2014: Subject_05_slice_028.png -> CHIU_BOE::DME::Subject_05
     m = re.search(r'(Subject_\d+)', stem, re.IGNORECASE)
-    if m: return f"Chiu_{m.group(1)}"
+    if m: return f"CHIU_BOE::{pathology_class}::{m.group(1)}"
 
-    # 5. CHU_MH: MH_surgery_others_219_V -> CHU_MH_219
+    # 5. CHU_MH: MH_surgery_others_219_V -> CHU_MH::MH::219
     m = re.search(r'MH.*_(\d+)_[A-Z]', stem, re.IGNORECASE)
-    if m: return f"CHU_MH_{m.group(1)}"
+    if m: return f"CHU_MH::{pathology_class}::{m.group(1)}"
 
     # 6. OCT5K: e.g. Normal_Part1_Normal_26.E2E...
     if "OCT5K" in p_str:
         m = re.search(r'(\d+)\.E2E', stem)
-        if m: return f"OCT5K_{m.group(1)}"
-        return f"OCT5K_{stem[:15]}"
+        if m: return f"OCT5K::{pathology_class}::{m.group(1)}"
+        return f"OCT5K::{pathology_class}::{stem[:15]}"
 
-    return f"RAW_{Path(image_path_str).parent.name}_{stem}"
+    return f"RAW::{path_obj.parent.name}::{pathology_class}::{stem}"
 
 def build_kfold_dataloaders(
     config_path: str,
@@ -294,8 +299,14 @@ def build_kfold_dataloaders(
     dataset = MultiHeadOCTDataset(config_path=config_path, verbose=(rank == 0))
     full_manifest = dataset._manifest.copy()
     
-    # Extract patient IDs and use StratifiedGroupKFold for patient-grouped splitting
-    full_manifest["patient_id"] = full_manifest["image_path"].apply(extract_patient_id)
+    # Extract namespaced patient IDs and use StratifiedGroupKFold for patient-grouped splitting
+    class_names = dataset.get_class_names("h2")
+    def _row_patient_id(row):
+        g_idx = row["granular_idx"]
+        c_name = class_names[g_idx] if (0 <= g_idx < len(class_names)) else "NORMAL"
+        return extract_patient_id(row["image_path"], c_name)
+
+    full_manifest["patient_id"] = full_manifest.apply(_row_patient_id, axis=1)
     
     from sklearn.model_selection import StratifiedGroupKFold
     sgkf = StratifiedGroupKFold(n_splits=n_splits)
