@@ -514,6 +514,7 @@ class MultiHeadTrainer:
                     if self.compute_manager.is_main_process:
                         logger.warning(f"Could not restore warmup optimizer state: {e}")
 
+            warmup_early_stopper = EarlyStopping(patience=patience, min_delta=1e-4, mode="max")
             for epoch in range(start_epoch_warmup, warmup_epochs):
                 current_start_batch = start_batch_warmup if epoch == start_epoch_warmup else 0
                 ep_start = time.time()
@@ -555,6 +556,11 @@ class MultiHeadTrainer:
                 
                 self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_warmup, scaler=self.scaler, epoch=epoch, phase='warmup', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo, per_class=per_class_metrics)
                 if smoke_test: break
+
+                if warmup_early_stopper(epoch, h2_f1):
+                    if self.compute_manager.is_main_process:
+                        logger.info(f"Warmup early stopping triggered at epoch {epoch} (best macro F1: {best_val_macro_f1:.4f}). Transitioning to Phase 2 fine-tuning...")
+                    break
             
             phase = 'finetune'
 
@@ -563,6 +569,18 @@ class MultiHeadTrainer:
             if self.compute_manager.is_main_process:
                 logger.info(f"PHASE 2 — Gradual Fine-tuning | max {finetune_epochs} epochs | Stage 3 Bottleneck -> Full Backbone")
             model_to_unfreeze = get_raw_model(self.model)
+
+            # Reload peak warmup model weights before beginning fine-tuning
+            best_warmup_ckpt_path = self.ckpt_dir / f"fold{fold_id}_best_model.pth"
+            if best_warmup_ckpt_path.exists():
+                if self.compute_manager.is_main_process:
+                    logger.info(f"Reloading peak warmup checkpoint ({best_warmup_ckpt_path.name}) before starting Phase 2 fine-tuning...")
+                best_ckpt = torch.load(best_warmup_ckpt_path, map_location=self.device, weights_only=False)
+                model_to_unfreeze.load_state_dict(best_ckpt['model_state_dict'])
+                if 'best_val_macro_f1' in best_ckpt:
+                    best_val_macro_f1 = best_ckpt['best_val_macro_f1']
+                if 'best_val_loss' in best_ckpt:
+                    best_val_loss = best_ckpt['best_val_loss']
             # Stage 2A: Start by unfreezing Stage 3 (deepest bottleneck) only to preserve early edge/texture filters
             model_to_unfreeze.unfreeze_stage3_only()
             optimizer_ft = torch.optim.AdamW(
