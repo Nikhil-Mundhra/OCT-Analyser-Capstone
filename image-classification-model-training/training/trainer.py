@@ -123,6 +123,10 @@ class EarlyStopping:
 
         return self.should_stop
 
+    def __call__(self, value: float) -> bool:
+        """Alias for step()."""
+        return self.step(value)
+
     def reset(self) -> None:
         """Reset state — call between folds."""
         self.best_value  = None

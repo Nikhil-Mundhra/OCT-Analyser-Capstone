@@ -557,7 +557,7 @@ class MultiHeadTrainer:
                 self._save_checkpoint(f"fold{fold_id}_last_model.pth", optimizer=optimizer_warmup, scaler=self.scaler, epoch=epoch, phase='warmup', best_val_loss=best_val_loss, best_val_macro_f1=best_val_macro_f1, hf_repo=hf_repo, per_class=per_class_metrics)
                 if smoke_test: break
 
-                if warmup_early_stopper(epoch, h2_f1):
+                if warmup_early_stopper.step(h2_f1):
                     if self.compute_manager.is_main_process:
                         logger.info(f"Warmup early stopping triggered at epoch {epoch} (best macro F1: {best_val_macro_f1:.4f}). Transitioning to Phase 2 fine-tuning...")
                     break
