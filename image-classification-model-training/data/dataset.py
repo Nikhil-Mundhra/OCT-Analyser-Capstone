@@ -161,10 +161,10 @@ class MultiHeadOCTDataset(Dataset):
                 if i not in patient_counts:
                     patient_counts[i] = 1
             counts = patient_counts.sort_index().values.astype(np.float32)
-            
-            # Inverse Square-Root Weighting based on unique patients, normalized to mean 1.0, clamped [0.4, 4.0]
+            counts = np.maximum(counts, 1.0)
             weights = 1.0 / np.sqrt(counts)
-            weights = weights / np.mean(weights)
+            mean_w = float(np.mean(weights))
+            weights = weights / max(1e-8, mean_w)
             weights = np.clip(weights, 0.4, 4.0)
             return torch.tensor(weights, dtype=torch.float32)
         else:
