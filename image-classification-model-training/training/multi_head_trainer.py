@@ -6,6 +6,7 @@ Handles dictionary outputs, multi-task loss weighting, per-class telemetry,
 and out-of-fold cross-validation consistency tracking.
 """
 
+import gc
 import json
 import logging
 import os
@@ -594,11 +595,18 @@ class MultiHeadTrainer:
                     if self.compute_manager.is_main_process:
                         logger.info("Unfreezing full backbone gradually (early stages stem/0/1/2 at 0.1x LR)...")
                     model_to_unfreeze.unfreeze_full_backbone()
-                    old_state = optimizer_ft.state
+                    
+                    # Clear memory before creating new optimizer for full backbone
+                    del optimizer_ft
+                    gc.collect()
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                    elif self.device.type == 'mps':
+                        torch.mps.empty_cache()
+
                     optimizer_ft = torch.optim.AdamW(
                         model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr, weight_decay=weight_decay, early_backbone_factor=0.1),
                     )
-                    optimizer_ft.state.update(old_state)
 
                 current_start_batch = start_batch_ft if epoch == start_epoch_ft else 0
                 ep_start = time.time()
