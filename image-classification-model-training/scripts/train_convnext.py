@@ -51,7 +51,8 @@ def main():
     parser.add_argument("--config", type=str, default="config/hierarchy.yaml")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--epochs-warmup", type=int, default=10, help="Number of frozen-backbone warmup epochs for head & CBAM tuning")
-    parser.add_argument("--epochs-finetune", type=int, default=5, help="Number of gradual stage-wise fine-tuning epochs")
+    parser.add_argument("--epochs-finetune", type=int, default=10, help="Number of gradual stage-wise fine-tuning epochs")
+    parser.add_argument("--patience", type=int, default=5, help="Early stopping patience (epochs without macro-F1 improvement)")
     parser.add_argument("--lr-head", type=float, default=1e-4, help="Learning rate for classification heads & CBAM attention blocks")
     parser.add_argument("--lr-backbone", type=float, default=1e-6, help="Learning rate for deep backbone stages (early stages receive 0.1x this rate)")
     parser.add_argument("--num-workers", type=int, default=2, help="Set to 0 to bypass shared memory")
@@ -139,7 +140,8 @@ def main():
             resume_path=args.resume,
             hf_repo=args.hf_repo,
             accum_steps=args.accum_steps,
-            save_steps=args.save_steps
+            save_steps=args.save_steps,
+            patience=args.patience
         )
         
         if compute_manager.is_main_process:
