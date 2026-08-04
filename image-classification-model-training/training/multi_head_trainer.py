@@ -572,9 +572,26 @@ class MultiHeadTrainer:
 
             # Reload peak warmup model weights before beginning fine-tuning
             best_warmup_ckpt_path = self.ckpt_dir / f"fold{fold_id}_best_model.pth"
+            if not best_warmup_ckpt_path.exists():
+                try:
+                    from huggingface_hub import hf_hub_download
+                    repo_id = hf_repo or os.environ.get("HF_REPO_ID") or "NMundhra/OCT-Classification-Model"
+                    clean_repo = repo_id.replace("https://huggingface.co/", "").strip("/")
+                    if self.compute_manager.is_main_process:
+                        logger.info(f"Downloading peak warmup checkpoint 'fold{fold_id}_best_model.pth' from Hugging Face '{clean_repo}'...")
+                    downloaded_path = hf_hub_download(
+                        repo_id=clean_repo,
+                        filename=f"fold{fold_id}_best_model.pth",
+                        token=os.environ.get("HF_TOKEN")
+                    )
+                    best_warmup_ckpt_path = Path(downloaded_path)
+                except Exception as e_hf:
+                    if self.compute_manager.is_main_process:
+                        logger.warning(f"Could not fetch best warmup checkpoint from Hugging Face: {e_hf}")
+
             if best_warmup_ckpt_path.exists():
                 if self.compute_manager.is_main_process:
-                    logger.info(f"Reloading peak warmup checkpoint ({best_warmup_ckpt_path.name}) before starting Phase 2 fine-tuning...")
+                    logger.info(f"Reloading peak warmup checkpoint ({best_warmup_ckpt_path}) before starting Phase 2 fine-tuning...")
                 best_ckpt = torch.load(best_warmup_ckpt_path, map_location=self.device, weights_only=False)
                 model_to_unfreeze.load_state_dict(best_ckpt['model_state_dict'])
                 if 'best_val_macro_f1' in best_ckpt:
