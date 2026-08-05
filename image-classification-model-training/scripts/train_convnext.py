@@ -110,7 +110,7 @@ def main():
         val_transform=val_transforms,
         use_weighted_sampler=args.use_weighted_sampler,
         is_ddp=compute_manager.is_ddp,
-        rank=compute_manager.global_rank,
+        rank=compute_manager.rank,
         world_size=compute_manager.world_size
     )
 
