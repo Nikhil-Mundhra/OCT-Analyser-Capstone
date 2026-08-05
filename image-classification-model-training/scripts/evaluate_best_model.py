@@ -295,8 +295,11 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     pdf.savefig(fig1); plt.close()
     
     fig3 = plt.figure(figsize=(10, 8))
+    h2_targets_arr = np.array(h2_targets)
+    h2_probs_mat = np.array(h2_probs_arr)
     for class_idx, class_name in enumerate(PATHOLOGY_CLASSES):
-        t, p = np.array(h2_targets)[:, class_idx], np.array(h2_probs_arr)[:, class_idx]
+        t = (h2_targets_arr == class_idx).astype(int)
+        p = h2_probs_mat[:, class_idx]
         if np.sum(t) > 0:
             prec, rec, _ = precision_recall_curve(t, p)
             plt.plot(rec, prec, lw=2, label=f'{class_name} (AP = {average_precision_score(t, p):.3f})')
