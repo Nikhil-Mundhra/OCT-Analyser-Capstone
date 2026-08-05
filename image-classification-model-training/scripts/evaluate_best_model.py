@@ -142,7 +142,12 @@ def get_overlay(img_tensor, cam):
     return np.clip(overlay, 0, 1), img
 
 def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_cam, pdf):
-    img = img_tensor.unsqueeze(0)
+    if img_tensor.ndim == 3:
+        img = img_tensor.unsqueeze(0)
+    elif img_tensor.ndim == 4:
+        img = img_tensor
+    else:
+        img = img_tensor.view(1, 3, img_tensor.shape[-2], img_tensor.shape[-1])
     
     cam_h1 = grad_cam(img, class_idx=0, head='normal_abnormal')
     
