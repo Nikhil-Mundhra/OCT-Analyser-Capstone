@@ -352,14 +352,30 @@ def build_kfold_dataloaders(
                 persistent_workers=(num_workers > 0)
             )
         else:
-            train_loader = DataLoader(
-                train_ds,
-                batch_size=batch_size,
-                shuffle=True,
-                num_workers=num_workers,
-                pin_memory=_pin,
-                persistent_workers=(num_workers > 0)
-            )
+            if use_weighted_sampler:
+                from torch.utils.data import WeightedRandomSampler
+                targets = [train_ds._manifest.iloc[i]['granular_idx'] for i in range(len(train_ds))]
+                class_counts = np.bincount(targets, minlength=12)
+                class_weights = 1.0 / np.sqrt(np.maximum(class_counts, 1.0))
+                sample_weights = torch.FloatTensor([class_weights[t] for t in targets])
+                train_sampler = WeightedRandomSampler(sample_weights, num_samples=len(train_ds), replacement=True)
+                train_loader = DataLoader(
+                    train_ds,
+                    batch_size=batch_size,
+                    sampler=train_sampler,
+                    num_workers=num_workers,
+                    pin_memory=_pin,
+                    persistent_workers=(num_workers > 0)
+                )
+            else:
+                train_loader = DataLoader(
+                    train_ds,
+                    batch_size=batch_size,
+                    shuffle=True,
+                    num_workers=num_workers,
+                    pin_memory=_pin,
+                    persistent_workers=(num_workers > 0)
+                )
             val_loader = DataLoader(
                 val_ds,
                 batch_size=batch_size,

@@ -67,6 +67,7 @@ def main():
     parser.add_argument("--save-steps", type=int, default=2250, help="Save a mid-epoch checkpoint every N batches (0 to disable)")
     parser.add_argument("--use-data-parallel", action="store_true", help="Enable PyTorch DataParallel across multi-GPU (disabled by default for single-GPU efficiency)")
     parser.add_argument("--use-ddp", action="store_true", help="Enable PyTorch DistributedDataParallel across multi-GPU via torchrun")
+    parser.add_argument("--use-weighted-sampler", action="store_true", help="Enable WeightedRandomSampler for inverse class frequency oversampling")
     
     args = parser.parse_args()
 
@@ -107,9 +108,10 @@ def main():
         num_workers=args.num_workers,
         train_transform=train_transforms,
         val_transform=val_transforms,
+        use_weighted_sampler=args.use_weighted_sampler,
         is_ddp=compute_manager.is_ddp,
-        rank=compute_manager.rank,
-        world_size=compute_manager.world_size,
+        rank=compute_manager.global_rank,
+        world_size=compute_manager.world_size
     )
 
     for fold_id, (train_loader, val_loader) in enumerate(fold_loaders):
@@ -117,6 +119,7 @@ def main():
             logger.info(f"=== Starting Fold {fold_id} ===")
         
         model = build_multi_head_model(pretrained=True, warmup=True)
+        model = compute_manager.prepare_model(model)
         
         trainer = MultiHeadTrainer(
             model=model,
@@ -141,7 +144,8 @@ def main():
             hf_repo=args.hf_repo,
             accum_steps=args.accum_steps,
             save_steps=args.save_steps,
-            patience=args.patience
+            patience=args.patience,
+            use_weighted_sampler=args.use_weighted_sampler
         )
         
         if compute_manager.is_main_process:

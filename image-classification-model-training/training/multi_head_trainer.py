@@ -406,6 +406,7 @@ class MultiHeadTrainer:
         head_lr: float = 1e-3,
         weight_decay: float = 1e-4,
         patience: int = 10,
+        use_weighted_sampler: bool = False,
         fold_id: int = 0,
         smoke_test: bool = False,
         resume_path: str = None,
@@ -431,13 +432,19 @@ class MultiHeadTrainer:
             try:
                 fold_h2_alpha = train_loader.dataset.compute_class_weights("h2").to(self.device)
                 if isinstance(self.criterions.get('h2'), FocalLoss):
-                    self.criterions['h2'].alpha = fold_h2_alpha
-                    if self.compute_manager.is_main_process:
-                        class_names = train_loader.dataset.get_class_names("h2")
-                        logger.info(f"=== Fold {fold_id} Patient-Based FocalLoss Alpha Weights (Training Set Only) ===")
-                        for idx, (c_name, w_val) in enumerate(zip(class_names, fold_h2_alpha.tolist())):
-                            logger.info(f"  {c_name:<15} : {w_val:.2f}")
-                        logger.info("==========================================================================")
+                    is_ws = use_weighted_sampler or isinstance(getattr(train_loader, 'sampler', None), torch.utils.data.WeightedRandomSampler)
+                    if is_ws:
+                        self.criterions['h2'].alpha = None
+                        if self.compute_manager.is_main_process:
+                            logger.info("=== WeightedRandomSampler Active: Disabling FocalLoss Alpha Scaling (Uniform 1.0) ===")
+                    else:
+                        self.criterions['h2'].alpha = fold_h2_alpha
+                        if self.compute_manager.is_main_process:
+                            class_names = train_loader.dataset.get_class_names("h2")
+                            logger.info(f"=== Fold {fold_id} Patient-Based FocalLoss Alpha Weights (Training Set Only) ===")
+                            for idx, (c_name, w_val) in enumerate(zip(class_names, fold_h2_alpha.tolist())):
+                                logger.info(f"  {c_name:<15} : {w_val:.2f}")
+                            logger.info("==========================================================================")
                 else:
                     raise RuntimeError(f"Strict Assertion Failure: H2 criterion is not FocalLoss (got {type(self.criterions.get('h2'))})")
             except Exception as exc:
