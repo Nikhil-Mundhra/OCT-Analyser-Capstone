@@ -105,12 +105,6 @@ class TissueMaskCrop(Transform):
             mask_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
             mask_dilated = cv2.dilate(mask, mask_kernel, iterations=1)
 
-            # 2. Zero bottom 2 corners — compass/UI box sits at bottom corners
-            corner_h = int(H * 0.25)
-            corner_w = int(W * 0.20)
-            mask_dilated[H - corner_h:, :corner_w]      = 0  # Bottom-left
-            mask_dilated[H - corner_h:, W - corner_w:]  = 0  # Bottom-right
-
             if img_np.ndim == 3:
                 if img_np.shape[0] in [1, 3]:
                     out = img_np.copy()
