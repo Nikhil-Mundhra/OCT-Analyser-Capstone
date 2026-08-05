@@ -354,10 +354,12 @@ def build_kfold_dataloaders(
         else:
             if use_weighted_sampler:
                 from torch.utils.data import WeightedRandomSampler
-                targets = [train_ds._manifest.iloc[i]['granular_idx'] for i in range(len(train_ds))]
-                class_counts = np.bincount(targets, minlength=12)
+                granular_indices = train_ds._manifest['granular_idx'].values
+                # Map -1 (NORMAL) to index 12 so bincount handles 12 pathology classes + 1 NORMAL class
+                valid_indices = np.where(granular_indices >= 0, granular_indices, 12)
+                class_counts = np.bincount(valid_indices, minlength=13)
                 class_weights = 1.0 / np.sqrt(np.maximum(class_counts, 1.0))
-                sample_weights = torch.FloatTensor([class_weights[t] for t in targets])
+                sample_weights = torch.FloatTensor([class_weights[t] for t in valid_indices])
                 train_sampler = WeightedRandomSampler(sample_weights, num_samples=len(train_ds), replacement=True)
                 train_loader = DataLoader(
                     train_ds,
