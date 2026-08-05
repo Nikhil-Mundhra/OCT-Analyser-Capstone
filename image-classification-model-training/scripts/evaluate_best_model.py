@@ -72,7 +72,8 @@ class GradCAM:
             cam = cam / np.max(cam)
             
         cam_tensor = torch.from_numpy(cam).unsqueeze(0).unsqueeze(0)
-        cam_resized = F.interpolate(cam_tensor, size=(224, 224), mode='bilinear', align_corners=False)
+        h, w = x.shape[2], x.shape[3]
+        cam_resized = F.interpolate(cam_tensor, size=(h, w), mode='bilinear', align_corners=False)
         return cam_resized.squeeze().numpy()
 
 def setup_environment():
@@ -85,26 +86,29 @@ def setup_environment():
     pdf_path = 'telemetry_outputs/Full_Evaluation_Report.pdf'
     return device, pdf_path
 
-def get_data_loader(manifest_path, batch_size=32):
-    val_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "hierarchy.yaml")
+def get_data_loader(config_path="image-classification-model-training/config/hierarchy.yaml", batch_size=64):
+    from data.transforms import get_transforms
+    val_transform = get_transforms("val")
     full_dataset = MultiHeadOCTDataset(config_path=config_path, transform=val_transform)
     train_size = int(0.8 * len(full_dataset))
     np.random.seed(42)
     indices = np.random.permutation(len(full_dataset)).tolist()
     val_dataset = Subset(full_dataset, indices[train_size:])
-    return DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    return DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
 def load_model(checkpoint_path, device):
     print("Building model...")
     model = build_multi_head_model(pretrained=False, warmup=False)
     
     if not os.path.exists(checkpoint_path):
-        checkpoint_path = "hf_space/weights/multi_head_mps/fold0_best_model.pth"
+        # Fallback to local HF hub cache snapshot if available
+        hf_cache_snapshot = "/Users/nikhilmundhra/.cache/huggingface/hub/models--NMundhra--OCT-Classification-Model/snapshots/b8b2d5e7347d463a3d5f5d5c671e5e230968a7a6/fold0_best_model.pth"
+        if os.path.exists(hf_cache_snapshot):
+            checkpoint_path = hf_cache_snapshot
+        elif os.path.exists("checkpoints/multi_head/fold0_best_model.pth"):
+            checkpoint_path = "checkpoints/multi_head/fold0_best_model.pth"
+        else:
+            checkpoint_path = "hf_space/weights/multi_head_mps/fold0_best_model.pth"
         
     print(f"Loading checkpoint from {checkpoint_path}...")
     ckpt = torch.load(checkpoint_path, map_location='cpu')
@@ -115,7 +119,15 @@ def load_model(checkpoint_path, device):
     model.to(device)
     model.eval()
     
-    target_layer = model.backbone.stages[-1]
+    if hasattr(model.backbone, "stages"):
+        target_layer = model.backbone.stages[-1]
+    elif hasattr(model.backbone, "stages_3"):
+        target_layer = model.backbone.stages_3
+    elif hasattr(model.backbone, "body") and hasattr(model.backbone.body, "stages"):
+        target_layer = model.backbone.body.stages[-1]
+    else:
+        target_layer = list(model.backbone.children())[-1]
+
     grad_cam = GradCAM(model, target_layer)
     return model, grad_cam
 
@@ -192,32 +204,29 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
     h1_preds, h1_targets, h1_probs_arr = [], [], []
     all_h2_preds, all_h2_targets, all_h2_probs = [], [], []
     
-    gradcam_counts = {k: 0 for k in PATHOLOGY_CLASSES}
+    gradcam_samples = {} # Store 2 representative images per class for Phase 2
     max_cases_per_disease = 2
     
-    from utils.device import supports_bfloat16
-
-    # MPS has native FP16 (AMX) but emulates bfloat16 → prefer float16 on MPS
+    # MPS has native FP16 (AMX) but emulates bfloat16 -> prefer float16 on MPS
     _amp_dtype = torch.float16 if device.type == "mps" else (torch.bfloat16 if device.type == "cuda" else torch.float16)
-    print("Evaluating Telemetry...")
+    print("Executing Phase 1: Pure GPU Vectorized Evaluation...")
     
     for i, (images, labels) in enumerate(val_loader):
-        images = images.to(device)
+        images_dev = images.to(device)
         
         with torch.no_grad():
             with torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=device.type in ('mps', 'cuda')):
-                logits = model(images)
+                logits = model(images_dev)
 
             # Cast to float32 before sigmoid/softmax to prevent NaN from FP16 overflow
             logits = {k: v.float() if isinstance(v, torch.Tensor) else v for k, v in logits.items()}
 
             h1_prob_batch = torch.sigmoid(logits['normal_abnormal']).cpu().numpy()
-            h1_pred_batch = (h1_prob_batch > 0.5).astype(int)  # 0.5 Triage Threshold
+            h1_pred_batch = (h1_prob_batch > 0.5).astype(int)
             h1_preds.extend(h1_pred_batch)
             h1_targets.extend(labels['normal_abnormal'].numpy())
             h1_probs_arr.extend(h1_prob_batch)
             
-            # Calculate H2 metrics only for abnormal samples with valid pathology labels
             num_h2_classes = logits['pathology'].size(-1)
             valid_h2_mask = ((labels['normal_abnormal'] == 1).view(-1)) & (labels['pathology'] >= 0) & (labels['pathology'] < num_h2_classes)
             if valid_h2_mask.sum() > 0:
@@ -229,20 +238,27 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
                 all_h2_probs.extend(probs_h2)
                 all_h2_preds.extend(preds_h2)
                     
+        # Select up to 2 high-confidence sample images per class for Grad-CAM phase
         for b_idx in range(images.size(0)):
             is_abnormal = labels['normal_abnormal'][b_idx].item() == 1
             if is_abnormal:
                 class_idx = int(labels['pathology'][b_idx].item())
-                if class_idx != -1:
+                if 0 <= class_idx < len(PATHOLOGY_CLASSES):
                     class_name = PATHOLOGY_CLASSES[class_idx]
+                    current_samples = gradcam_samples.get(class_name, [])
+                    if len(current_samples) < max_cases_per_disease:
+                        current_samples.append((images[b_idx].clone(), class_idx, class_name))
+                        gradcam_samples[class_name] = current_samples
                     
-                    if gradcam_counts.get(class_name, 0) < max_cases_per_disease:
-                        generate_patient_case_study(images[b_idx], class_idx, class_name, model, grad_cam, pdf)
-                        gradcam_counts[class_name] = gradcam_counts.get(class_name, 0) + 1
-                    
-        if i % 100 == 0:
-            print(f"Batch {i}/{len(val_loader)}")
-            
+        if i % 20 == 0 or i == len(val_loader) - 1:
+            print(f"Evaluation Progress: Batch {i+1}/{len(val_loader)}")
+
+    print(f"\nPhase 1 Complete! Evaluating Phase 2: Targeted Grad-CAM Generation on {sum(len(v) for v in gradcam_samples.values())} Selected Case Studies...")
+    for class_name, samples in gradcam_samples.items():
+        for img_tensor, class_idx, c_name in samples:
+            img_input = img_tensor.unsqueeze(0).to(device)
+            generate_patient_case_study(img_input, class_idx, c_name, model, grad_cam, pdf)
+
     return h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs
 
 def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr, pdf):
@@ -285,10 +301,17 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     pdf.savefig(fig3); plt.close()
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Evaluate Best Model and Generate Grad-CAM Visualizations")
+    parser.add_argument("--checkpoint", type=str, default="/Users/nikhilmundhra/.cache/huggingface/hub/models--NMundhra--OCT-Classification-Model/snapshots/b8b2d5e7347d463a3d5f5d5c671e5e230968a7a6/fold0_best_model.pth", help="Path to checkpoint .pth file")
+    parser.add_argument("--config", type=str, default="image-classification-model-training/config/hierarchy.yaml", help="Path to config file")
+    parser.add_argument("--batch-size", type=int, default=32, help="Validation batch size")
+    args = parser.parse_args()
+
     device, pdf_path = setup_environment()
     pdf = PdfPages(pdf_path)
-    val_loader = get_data_loader("data/dataset_manifest.csv")
-    model, grad_cam = load_model("hf_space/weights/multi_head_mps/fold0_best_model.pth", device)
+    val_loader = get_data_loader(config_path=args.config, batch_size=args.batch_size)
+    model, grad_cam = load_model(args.checkpoint, device)
     
     res = run_evaluation_loop(model, val_loader, grad_cam, pdf, device)
     compile_population_metrics(*res, pdf)
