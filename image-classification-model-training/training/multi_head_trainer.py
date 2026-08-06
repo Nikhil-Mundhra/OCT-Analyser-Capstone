@@ -44,6 +44,8 @@ class MultiHeadTrainer:
         device: Optional[torch.device] = None,
         compute_manager: Optional[ComputeManager] = None,
         amp_dtype: torch.dtype = torch.float16,
+        metric_extractors: Optional[Dict[str, callable]] = None,
+        class_names: Optional[List[str]] = None,
         sub_dir: Optional[str] = None,
     ) -> None:
         self.criterions = criterions
