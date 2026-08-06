@@ -39,7 +39,7 @@ VALID_EXT = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
 # ─────────────────────────────────────────────────────────────────────────────
 # Core per-image transform
 # ─────────────────────────────────────────────────────────────────────────────
-def process_image(src_path: str, dst_path: str, quality: int = 95, frame: bool = False, frame_size: int = 224) -> bool:
+def process_image(src_path: str, dst_path: str, quality: int = 95, frame: bool = False, frame_size: int = 384) -> bool:
     try:
         img = cv2.imread(src_path, cv2.IMREAD_UNCHANGED)
         if img is None:
@@ -151,7 +151,7 @@ def main():
     parser.add_argument('--frame', dest='frame', action='store_true', help="Apply letterbox framing: pad to square with black borders and resize to --frame-size (enabled by default)")
     parser.add_argument('--no-frame', dest='frame', action='store_false', help="Disable framing (framing is enabled by default)")
     parser.set_defaults(frame=True)
-    parser.add_argument('--frame-size', type=int, default=224, help="Framing size (default: 224)")
+    parser.add_argument('--frame-size', type=int, default=384, help="Framing size (default: 384)")
     args = parser.parse_args()
 
     src_root = Path(args.src)

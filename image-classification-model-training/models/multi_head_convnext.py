@@ -97,6 +97,12 @@ class MultiHeadConvNeXt(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, return_probs: bool = False):
+        if x.is_cuda and not torch.is_autocast_enabled():
+            with torch.autocast(device_type="cuda", dtype=torch.float16):
+                return self._forward_impl(x, return_probs)
+        return self._forward_impl(x, return_probs)
+
+    def _forward_impl(self, x: torch.Tensor, return_probs: bool = False):
         # forward_features with features_only=True returns a list of feature maps
         features_list = self.backbone(x)
         f_s2 = features_list[0] # [B, 256, 28, 28]
@@ -141,30 +147,131 @@ class MultiHeadConvNeXt(nn.Module):
             'pathology': out_pathology
         }
 
-    def freeze_backbone(self):
-        """Freeze stem + stages 0-2. Stage 3 (last) stays trainable."""
+    def freeze_full_backbone(self):
+        """Freeze stem and ALL backbone stages (0, 1, 2, 3) completely."""
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+
+    def unfreeze_stage3_only(self):
+        """Unfreeze ONLY the deepest backbone stage (stage 3 / stage 4 bottleneck). Keep stem & stages 0-2 frozen."""
         for name, param in self.backbone.named_parameters():
-            if name.startswith(('stem.', 'stages.0.', 'stages.1.', 'stages.2.')):
+            if name.startswith('stages.3.'):
+                param.requires_grad = True
+            else:
                 param.requires_grad = False
 
     def unfreeze_backbone(self):
-        """Unfreeze the full backbone for fine-tuning."""
+        """Unfreeze the entire backbone for end-to-end fine-tuning."""
         for param in self.backbone.parameters():
             param.requires_grad = True
 
-    def get_param_groups(self, backbone_lr=5e-5, head_lr=5e-4):
-        """Differential LRs: backbone at backbone_lr, all heads and attention at head_lr."""
-        backbone_params = list(self.backbone.parameters())
-        head_params = (
-            list(self.normal_abnormal_head.parameters()) +
-            list(self.cbam_s2.parameters()) +
-            list(self.cbam_s3.parameters()) +
-            list(self.cbam_s4.parameters()) +
-            list(self.granular_pathology_head.parameters())
-        )
+    def unfreeze_full_backbone(self):
+        """Alias for unfreeze_backbone."""
+        self.unfreeze_backbone()
+
+    # Legacy helper alias for backward compatibility
+    def freeze_backbone(self):
+        """Freeze stem + stages 0-2 for warmup. Stage 3 stays trainable."""
+        for name, param in self.backbone.named_parameters():
+            if name.startswith(('stem.', 'stages.0.', 'stages.1.', 'stages.2.')):
+                param.requires_grad = False
+            elif name.startswith('stages.3.'):
+                param.requires_grad = True
+
+    def get_param_groups(self, backbone_lr=2e-6, head_lr=2e-5, weight_decay=1e-4, early_backbone_factor=1.0):
+        """
+        Discriminative Layer-Wise Learning Rates & Weight Decay Splitting:
+        - When early_backbone_factor < 1.0: splits early backbone (stem/stages 0-2) at early_lr (0.1x) from late backbone (stage 3).
+        - When early_backbone_factor == 1.0: returns standard 4 groups [backbone_decay, backbone_no_decay, head_decay, head_no_decay].
+        Excludes 1D biases and normalization parameters from weight decay.
+        """
+        if early_backbone_factor < 1.0:
+            early_decay, early_no_decay = [], []
+            late_decay, late_no_decay = [], []
+
+            for name, param in self.backbone.named_parameters():
+                if not param.requires_grad:
+                    continue
+                is_no_decay = param.ndim <= 1 or name.endswith('.bias') or 'norm' in name.lower() or 'ln' in name.lower()
+                is_early = name.startswith(('stem.', 'stages.0.', 'stages.1.', 'stages.2.'))
+
+                if is_early:
+                    if is_no_decay:
+                        early_no_decay.append(param)
+                    else:
+                        early_decay.append(param)
+                else:
+                    if is_no_decay:
+                        late_no_decay.append(param)
+                    else:
+                        late_decay.append(param)
+
+            head_modules = [
+                self.normal_abnormal_head,
+                self.cbam_s2,
+                self.cbam_s3,
+                self.cbam_s4,
+                self.granular_pathology_head,
+            ]
+            head_decay, head_no_decay = [], []
+            for module in head_modules:
+                for name, param in module.named_parameters():
+                    if not param.requires_grad:
+                        continue
+                    if param.ndim <= 1 or name.endswith('.bias') or 'norm' in name.lower() or 'ln' in name.lower():
+                        head_no_decay.append(param)
+                    else:
+                        head_decay.append(param)
+
+            early_lr = backbone_lr * early_backbone_factor
+
+            groups = []
+            if early_decay:
+                groups.append({"params": early_decay, "lr": early_lr, "weight_decay": weight_decay})
+            if early_no_decay:
+                groups.append({"params": early_no_decay, "lr": early_lr, "weight_decay": 0.0})
+            if late_decay:
+                groups.append({"params": late_decay, "lr": backbone_lr, "weight_decay": weight_decay})
+            if late_no_decay:
+                groups.append({"params": late_no_decay, "lr": backbone_lr, "weight_decay": 0.0})
+            if head_decay:
+                groups.append({"params": head_decay, "lr": head_lr, "weight_decay": weight_decay})
+            if head_no_decay:
+                groups.append({"params": head_no_decay, "lr": head_lr, "weight_decay": 0.0})
+
+            return groups
+
+        backbone_decay, backbone_no_decay = [], []
+        for name, param in self.backbone.named_parameters():
+            if not param.requires_grad:
+                continue
+            if param.ndim <= 1 or name.endswith('.bias') or 'norm' in name.lower() or 'ln' in name.lower():
+                backbone_no_decay.append(param)
+            else:
+                backbone_decay.append(param)
+
+        head_modules = [
+            self.normal_abnormal_head,
+            self.cbam_s2,
+            self.cbam_s3,
+            self.cbam_s4,
+            self.granular_pathology_head,
+        ]
+        head_decay, head_no_decay = [], []
+        for module in head_modules:
+            for name, param in module.named_parameters():
+                if not param.requires_grad:
+                    continue
+                if param.ndim <= 1 or name.endswith('.bias') or 'norm' in name.lower() or 'ln' in name.lower():
+                    head_no_decay.append(param)
+                else:
+                    head_decay.append(param)
+
         return [
-            {"params": backbone_params, "lr": backbone_lr},
-            {"params": head_params,     "lr": head_lr},
+            {"params": backbone_decay,    "lr": backbone_lr, "weight_decay": weight_decay},
+            {"params": backbone_no_decay, "lr": backbone_lr, "weight_decay": 0.0},
+            {"params": head_decay,        "lr": head_lr,     "weight_decay": weight_decay},
+            {"params": head_no_decay,     "lr": head_lr,     "weight_decay": 0.0},
         ]
 
 def build_multi_head_model(pretrained=True, warmup=True) -> MultiHeadConvNeXt:
@@ -173,5 +280,5 @@ def build_multi_head_model(pretrained=True, warmup=True) -> MultiHeadConvNeXt:
     """
     model = MultiHeadConvNeXt(num_pathology_classes=12, pretrained=pretrained)
     if warmup:
-        model.freeze_backbone()
+        model.freeze_full_backbone()
     return model

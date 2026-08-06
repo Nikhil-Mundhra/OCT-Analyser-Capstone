@@ -41,32 +41,51 @@ from utils.device import ComputeManager
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
+# Suppress verbose third-party HTTP request & progress bar logs
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+for noisy_logger in ["httpx", "urllib3", "huggingface_hub"]:
+    logging.getLogger(noisy_logger).setLevel(logging.WARNING)
+
 def main():
     parser = argparse.ArgumentParser(description="Train Multi-Head ConvNeXt")
     parser.add_argument("--config", type=str, default="config/hierarchy.yaml")
     parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--epochs-warmup", type=int, default=5)
-    parser.add_argument("--epochs-finetune", type=int, default=45)
-    parser.add_argument("--lr-head", type=float, default=1e-4)
-    parser.add_argument("--lr-backbone", type=float, default=1e-5)
+    parser.add_argument("--epochs-warmup", type=int, default=10, help="Number of frozen-backbone warmup epochs for head & CBAM tuning")
+    parser.add_argument("--epochs-finetune", type=int, default=10, help="Number of gradual stage-wise fine-tuning epochs")
+    parser.add_argument("--patience", type=int, default=5, help="Early stopping patience (epochs without macro-F1 improvement)")
+    parser.add_argument("--lr-head", type=float, default=1e-4, help="Learning rate for classification heads & CBAM attention blocks")
+    parser.add_argument("--lr-backbone", type=float, default=1e-6, help="Learning rate for deep backbone stages (early stages receive 0.1x this rate)")
     parser.add_argument("--num-workers", type=int, default=2, help="Set to 0 to bypass shared memory")
     parser.add_argument("--smoke-test", action="store_true", help="Run 1 epoch per phase to verify pipeline")
     parser.add_argument("--w-h1", type=float, default=1.0, help="Weight for Head 1 (Binary) loss")
     parser.add_argument("--w-h2", type=float, default=1.0, help="Weight for Head 2 (12-Class) loss")
+    default_ckpt_dir = "/kaggle/working" if os.path.exists("/kaggle/working") else "checkpoints"
+    parser.add_argument("--checkpoint-dir", type=str, default=default_ckpt_dir, help="Directory to save checkpoints")
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint file to resume training from")
     parser.add_argument("--hf-repo", type=str, default=None, help="Hugging Face Hub repository ID (e.g. username/repo) for real-time cloud backup")
     parser.add_argument("--accum-steps", type=int, default=1, help="Number of gradient accumulation steps (effective batch size = batch_size * accum_steps)")
     parser.add_argument("--save-steps", type=int, default=2250, help="Save a mid-epoch checkpoint every N batches (0 to disable)")
     parser.add_argument("--use-data-parallel", action="store_true", help="Enable PyTorch DataParallel across multi-GPU (disabled by default for single-GPU efficiency)")
+    parser.add_argument("--use-ddp", action="store_true", help="Enable PyTorch DistributedDataParallel across multi-GPU via torchrun")
+    parser.add_argument("--use-weighted-sampler", action="store_true", help="Enable WeightedRandomSampler for inverse class frequency oversampling")
     
     args = parser.parse_args()
 
-    compute_manager = ComputeManager(use_data_parallel=args.use_data_parallel)
+    is_ddp_env = ("LOCAL_RANK" in os.environ) or args.use_ddp
+    if is_ddp_env and torch.cuda.is_available() and not torch.distributed.is_initialized():
+        torch.distributed.init_process_group(backend="nccl")
+
+    compute_manager = ComputeManager(use_data_parallel=args.use_data_parallel, use_ddp=args.use_ddp)
 
     # Get class weights from full dataset for FocalLoss alpha
     full_ds = MultiHeadOCTDataset(config_path=args.config, transform=None)
     h2_alpha = full_ds.compute_class_weights("h2")
-    logger.info(f"H2 FocalLoss Alpha weights: {h2_alpha.tolist()}")
+    if compute_manager.is_main_process:
+        class_names = full_ds.get_class_names("h2")
+        logger.info("=== H2 Normalized Bounded FocalLoss Alpha Weights ===")
+        for idx, (c_name, w_val) in enumerate(zip(class_names, h2_alpha.tolist())):
+            logger.info(f"  {c_name:<15} : {w_val:.2f}")
+        logger.info("=====================================================")
 
     criterions = {
         'h1': nn.BCEWithLogitsLoss(),
@@ -88,20 +107,29 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         train_transform=train_transforms,
-        val_transform=val_transforms
+        val_transform=val_transforms,
+        use_weighted_sampler=args.use_weighted_sampler,
+        is_ddp=compute_manager.is_ddp,
+        rank=compute_manager.rank,
+        world_size=compute_manager.world_size
     )
 
     for fold_id, (train_loader, val_loader) in enumerate(fold_loaders):
-        logger.info(f"=== Starting Fold {fold_id} ===")
+        if compute_manager.is_main_process:
+            logger.info(f"=== Starting Fold {fold_id} ===")
         
         model = build_multi_head_model(pretrained=True, warmup=True)
+        model = compute_manager.prepare_model(model)
         
+        sub_dir = "WeightedRandomSampler" if args.use_weighted_sampler else None
         trainer = MultiHeadTrainer(
             model=model,
             criterions=criterions,
             loss_weights=loss_weights,
+            checkpoint_dir=args.checkpoint_dir,
             compute_manager=compute_manager,
-            mode="multi_head"
+            mode="multi_head",
+            sub_dir=sub_dir
         )
         
         best_metrics = trainer.train(
@@ -117,13 +145,21 @@ def main():
             resume_path=args.resume,
             hf_repo=args.hf_repo,
             accum_steps=args.accum_steps,
-            save_steps=args.save_steps
+            save_steps=args.save_steps,
+            patience=args.patience,
+            use_weighted_sampler=args.use_weighted_sampler
         )
         
-        logger.info(f"Fold {fold_id} Best Metrics: {best_metrics}")
+        if compute_manager.is_main_process:
+            logger.info(f"Fold {fold_id} Best-by-Macro-F1 Metrics: {best_metrics}")
         
         # By default, run just 1 fold for iteration speed unless requested otherwise
         break
 
+    if torch.distributed.is_initialized():
+        torch.distributed.destroy_process_group()
+
 if __name__ == "__main__":
-    main()
+    from utils.gpu_mutex import GPUMutex
+    with GPUMutex():
+        main()

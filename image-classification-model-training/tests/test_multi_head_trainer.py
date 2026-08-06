@@ -52,9 +52,10 @@ class TestMultiHeadTrainer(unittest.TestCase):
             def __len__(self):
                 return 1
                 
-        val_loss, h2_f1, h2_recall, h2_acc = trainer._val_epoch(MockBatchLoader(), smoke_test=True)
+        val_loss, h2_f1, h2_recall, h2_acc, per_class = trainer._val_epoch(MockBatchLoader(), smoke_test=True)
         self.assertIsInstance(val_loss, float)
         self.assertIsInstance(h2_f1, float)
+        self.assertIsInstance(per_class, dict)
 
     def test_multilabel_batch_size_1(self):
         """Verify multi-label mode (injected sigmoid extractor) works with batch size 1."""
@@ -85,9 +86,10 @@ class TestMultiHeadTrainer(unittest.TestCase):
             def __len__(self):
                 return 1
                 
-        val_loss, h2_f1, h2_recall, h2_acc = trainer._val_epoch(MockBatchLoader(), smoke_test=True)
+        val_loss, h2_f1, h2_recall, h2_acc, per_class = trainer._val_epoch(MockBatchLoader(), smoke_test=True)
         self.assertIsInstance(val_loss, float)
         self.assertIsInstance(h2_f1, float)
+        self.assertIsInstance(per_class, dict)
 
     def test_empty_h2_mask(self):
         """Verify that validation works when NO images in the batch are abnormal."""
@@ -112,8 +114,9 @@ class TestMultiHeadTrainer(unittest.TestCase):
             def __len__(self):
                 return 1
                 
-        val_loss, h2_f1, h2_recall, h2_acc = trainer._val_epoch(MockBatchLoader(), smoke_test=True)
+        val_loss, h2_f1, h2_recall, h2_acc, per_class = trainer._val_epoch(MockBatchLoader(), smoke_test=True)
         self.assertIsInstance(h2_f1, float)
+        self.assertIsInstance(per_class, dict)
 
     def test_default_metric_extractor_fallback(self):
         """Verify that default fallback is argmax for multi-class classification."""
@@ -175,7 +178,7 @@ class TestMultiHeadTrainer(unittest.TestCase):
             return 0.0
 
         def fake_val_epoch(self, loader, smoke_test=False):
-            return 0.0, 0.0, 0.0, 0.0
+            return 0.0, 0.0, 0.0, 0.0, {}
 
         resumed_trainer._train_epoch = types.MethodType(fake_train_epoch, resumed_trainer)
         resumed_trainer._val_epoch = types.MethodType(fake_val_epoch, resumed_trainer)

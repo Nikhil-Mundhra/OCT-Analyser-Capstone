@@ -105,12 +105,6 @@ class TissueMaskCrop(Transform):
             mask_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
             mask_dilated = cv2.dilate(mask, mask_kernel, iterations=1)
 
-            # 2. Zero bottom 2 corners — compass/UI box sits at bottom corners
-            corner_h = int(H * 0.25)
-            corner_w = int(W * 0.20)
-            mask_dilated[H - corner_h:, :corner_w]      = 0  # Bottom-left
-            mask_dilated[H - corner_h:, W - corner_w:]  = 0  # Bottom-right
-
             if img_np.ndim == 3:
                 if img_np.shape[0] in [1, 3]:
                     out = img_np.copy()
@@ -146,20 +140,17 @@ class Rotate90Clockwise(Transform):
 
 def get_train_transforms():
     """
-    Standard training augmentation pipeline using MONAI.
+    Standard training augmentation pipeline using MONAI for Classified-preprocessed.
     """
     return Compose([
         LoadImage(image_only=True),
         EnsureChannelFirst(),
-        Rotate90Clockwise(),
-        TissueMaskCrop(),
         CLAHETransform(),
         Ensure3Channels(),
         ScaleIntensity(), # Scale [0, 255] -> [0, 1]
         Resize(RES_H_W),
-        RandFlip(prob=0.5, spatial_axis=0), # Vertical
-        RandFlip(prob=0.5, spatial_axis=1), # Horizontal
-        RandRotate(range_x=0.26, prob=0.5, keep_size=True), # ~15 degrees
+        RandFlip(prob=0.5, spatial_axis=1), # Horizontal flip only (Preserves Vitreous -> RPE superior-inferior anatomical ordering)
+        RandRotate(range_x=0.09, prob=0.5, keep_size=True), # Small ~5 degree anatomical tilt rotation
         RandGaussianNoise(prob=0.3, std=0.05),
         NormalizeIntensity(subtrahend=IMAGENET_MEAN, divisor=IMAGENET_STD, channel_wise=True),
         RandCoarseDropout(holes=1, spatial_size=(32, 32), dropout_holes=True, fill_value=0, prob=0.2)
@@ -167,15 +158,11 @@ def get_train_transforms():
 
 def get_val_transforms():
     """
-    Deterministic validation/test pipeline using MONAI.
-    NOTE: Rotate90Clockwise is intentionally absent here — the current checkpoint
-    was trained on the original (pre-rotation) orientation. Once re-training with
-    Rotate90Clockwise in train transforms is complete, add it back here too.
+    Deterministic validation/test pipeline using MONAI for Classified-preprocessed.
     """
     return Compose([
         LoadImage(image_only=True),
         EnsureChannelFirst(),
-        TissueMaskCrop(),
         CLAHETransform(),
         Ensure3Channels(),
         ScaleIntensity(),

@@ -664,8 +664,9 @@ def test_api_upload_get_and_preview(tmp_path, monkeypatch):
 def test_api_segment_2d(tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
     import backend.oct_analyzer.api as api
-    import subprocess
-    import json
+    import hf_space.app as hf_app
+    from PIL import Image
+    import io
 
     client = TestClient(api.app)
 
@@ -673,35 +674,27 @@ def test_api_segment_2d(tmp_path, monkeypatch):
     resp = client.post("/api/segment_2d", files={"file": ("test.txt", b"dummy")})
     assert resp.status_code == 400
 
-    class MockProcess:
-        def __init__(self, *args, **kwargs):
-            self.stdout = b""
-            self.stderr = b""
-            # Create the output json
-            out_json = kwargs.get("output")
+    dummy_img = Image.new("RGB", (10, 10), color="white")
+    buf = io.BytesIO()
+    dummy_img.save(buf, format="PNG")
+    dummy_bytes = buf.getvalue()
 
-            args_list = args[0] if args else kwargs.get("args", [])
-            for i, arg in enumerate(args_list):
-                if arg == "--output":
-                    out_path = args_list[i+1]
-                    with open(out_path, "w") as f:
-                        json.dump({"segmentation": "success"}, f)
-            
-    def mock_run(*args, **kwargs):
-        return MockProcess(*args, **kwargs)
+    def mock_predict_model1(image):
+        return (dummy_img, dummy_img), "Mock segmentation complete"
 
-    monkeypatch.setattr(subprocess, "run", mock_run)
-    resp = client.post("/api/segment_2d", files={"file": ("image.png", b"dummy", "image/png")})
+    monkeypatch.setattr(hf_app, "predict_model1", mock_predict_model1)
+    resp = client.post("/api/segment_2d", files={"file": ("image.png", dummy_bytes, "image/png")})
     assert resp.status_code == 200
-    assert resp.json() == {"segmentation": "success"}
+    assert resp.json()["status"] == "success"
+    assert "overlay" in resp.json()
 
-    def mock_run_fail(*args, **kwargs):
-        raise subprocess.CalledProcessError(1, "cmd", stderr="error output")
+    def mock_predict_model1_fail(image):
+        raise RuntimeError("Segmentation engine error")
 
-    monkeypatch.setattr(subprocess, "run", mock_run_fail)
-    resp = client.post("/api/segment_2d", files={"file": ("image.png", b"dummy", "image/png")})
+    monkeypatch.setattr(hf_app, "predict_model1", mock_predict_model1_fail)
+    resp = client.post("/api/segment_2d", files={"file": ("image.png", dummy_bytes, "image/png")})
     assert resp.status_code == 500
-    assert "error output" in resp.json()["detail"]
+    assert "Segmentation failed" in resp.json()["detail"]
 
 
 def test_data_loader_single_image(tmp_path):

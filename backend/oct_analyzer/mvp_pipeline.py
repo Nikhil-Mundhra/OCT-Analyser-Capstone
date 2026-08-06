@@ -81,7 +81,6 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None, progress
     segmentation_analysis = None
     if SegmentationAnalyzer is not None:
         try:
-            model_type = os.environ.get("OCT_MODEL_TYPE", "legacy_convnext")
             if model_type == "unified_unet":
                 best_slice_idx = pipeline_results.get("best_slice_idx", 0)
                 best_mask = segmentation[best_slice_idx, :, :]
@@ -95,23 +94,16 @@ def process_scan(scan: NormalizedScan, preview_dir: Path | None = None, progress
         except Exception as e:
             print(f"Failed to run SegmentationAnalyzer: {e}")
 
-    model_type = os.environ.get("OCT_MODEL_TYPE", "legacy_convnext")
     if model_type == "unified_unet":
         diagnosis = pipeline_results.get("Final_Diagnosis", "Unknown")
         confidence = pipeline_results.get("confidence", 0.0)
     else:
-        # Run hierarchical classifier (L1/L2/L3) on the 2D flattened volume
+        # Run hierarchical classifier (L1/L2/L3) on the 2D flattened volume in-memory
         try:
             if progress_cb: progress_cb("Running Multi-Head classification model")
             from .classifier_integration import get_classifier
-            import tempfile
-            from uuid import uuid4
             classifier = get_classifier()
-            # Save flattened volume to temporary file for classifier
-            temp_img = Path(tempfile.gettempdir()) / f"flattened_{uuid4().hex}.png"
-            cv2.imwrite(str(temp_img), flattened_volume[0] * 255)
-            legacy_pipeline_results = classifier.predict(str(temp_img), gradcam=True)
-            temp_img.unlink(missing_ok=True)
+            legacy_pipeline_results = classifier.predict(flattened_volume[0], gradcam=True)
             
             # Merge results for frontend display
             pipeline_results["Level1"] = legacy_pipeline_results.get("Level1", {})

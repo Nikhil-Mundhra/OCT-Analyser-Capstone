@@ -18,8 +18,10 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
+import numpy as np
 
 from backend.core_ml.classification.models.multi_head_convnext import build_multi_head_model
+from backend.core_ml.classification.data.transforms import BlackoutCorners, LetterboxPad
 import torchvision.transforms as transforms
 from backend.core_ml.classification.utils.gradcam import MultiHeadGradCAM
 
@@ -51,40 +53,6 @@ class OCTInferencePipeline:
             
         logger.info(f"Initialising OCT Inference Pipeline on device: {self.device}")
         
-        class BlackoutCorners(object):
-            def __init__(self, fraction=0.18, x_offset_frac=0.0, y_offset_frac=0.0):
-                self.fraction = fraction
-                self.x_offset_frac = x_offset_frac
-                self.y_offset_frac = y_offset_frac
-
-            def __call__(self, img):
-                from PIL import ImageDraw
-                w, h = img.size
-                base_dim = max(w, h)
-                box_size = int(base_dim * self.fraction)
-                x_off = int(base_dim * self.x_offset_frac)
-                y_off = int(base_dim * self.y_offset_frac)
-                
-                draw = ImageDraw.Draw(img)
-                # Bottom Left
-                x1 = x_off
-                y1 = h - box_size - y_off
-                x2 = x_off + box_size
-                y2 = h - y_off
-                draw.rectangle([x1, y1, x2, y2], fill="black")
-                return img
-
-        class LetterboxPad(object):
-            def __call__(self, img):
-                from torchvision.transforms.functional import pad
-                w, h = img.size
-                max_dim = max(w, h)
-                pad_left = (max_dim - w) // 2
-                pad_right = max_dim - w - pad_left
-                pad_top = (max_dim - h) // 2
-                pad_bottom = max_dim - h - pad_top
-                return pad(img, (pad_left, pad_top, pad_right, pad_bottom), fill=0)
-                
         self.transform = transforms.Compose([
             BlackoutCorners(),
             LetterboxPad(),
@@ -146,16 +114,28 @@ class OCTInferencePipeline:
 
     def predict(
         self, 
-        image_path: str, 
+        image_input: Any, 
         gradcam: bool = False, 
         output_dir: str = "output/explanations"
     ) -> Dict[str, Any]:
-        logger.info(f"Processing image: {image_path}")
-        
-        try:
-            img = Image.open(image_path).convert("RGB")
-        except Exception as e:
-            return {"error": f"Failed to load image: {e}"}
+        if isinstance(image_input, Image.Image):
+            img = image_input.convert("RGB")
+        elif isinstance(image_input, np.ndarray):
+            arr = image_input
+            if arr.dtype != np.uint8:
+                if arr.max() <= 1.0:
+                    arr = (arr * 255.0).clip(0, 255).astype(np.uint8)
+                else:
+                    arr = arr.clip(0, 255).astype(np.uint8)
+            img = Image.fromarray(arr).convert("RGB")
+        elif isinstance(image_input, (str, Path)):
+            logger.info(f"Processing image: {image_input}")
+            try:
+                img = Image.open(image_input).convert("RGB")
+            except Exception as e:
+                return {"error": f"Failed to load image: {e}"}
+        else:
+            return {"error": f"Unsupported image input type: {type(image_input)}"}
             
         tensor = self.transform(img)
         input_tensor = tensor.unsqueeze(0).to(self.device)
