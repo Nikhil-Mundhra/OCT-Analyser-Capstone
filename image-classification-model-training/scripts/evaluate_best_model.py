@@ -137,9 +137,9 @@ def get_overlay(img_tensor, cam):
     img = img_tensor.cpu() * std + mean
     img = img.clamp(0, 1).numpy().transpose(1, 2, 0)
     
-    # Rotate image and CAM 90 degrees clockwise for upright anatomical display
-    img = np.rot90(img, -1, (0, 1))
-    cam = np.rot90(cam, -1, (0, 1))
+    # Rotate image and CAM 90 degrees to anatomical upright orientation
+    img = np.rot90(img, 1, (0, 1))
+    cam = np.rot90(cam, 1, (0, 1))
     
     heatmap = plt.cm.jet(cam)[:, :, :3]
     overlay = 0.4 * heatmap + 0.6 * img
