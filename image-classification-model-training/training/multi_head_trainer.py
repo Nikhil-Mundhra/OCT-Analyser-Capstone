@@ -44,8 +44,7 @@ class MultiHeadTrainer:
         device: Optional[torch.device] = None,
         compute_manager: Optional[ComputeManager] = None,
         amp_dtype: torch.dtype = torch.float16,
-        metric_extractors: Optional[Dict[str, callable]] = None,
-        class_names: Optional[List[str]] = None,
+        sub_dir: Optional[str] = None,
     ) -> None:
         self.criterions = criterions
         self.loss_weights = loss_weights
@@ -59,9 +58,13 @@ class MultiHeadTrainer:
         self.metric_extractors = metric_extractors or {
             'h2': lambda logits: torch.argmax(logits, dim=1)
         }
-        self.ckpt_dir = Path(checkpoint_dir) / mode
+        if sub_dir:
+            self.ckpt_dir = Path(checkpoint_dir) / mode / sub_dir
+            tb_dir = Path(log_dir) / mode / sub_dir
+        else:
+            self.ckpt_dir = Path(checkpoint_dir) / mode
+            tb_dir = Path(log_dir) / mode
         self.ckpt_dir.mkdir(parents=True, exist_ok=True)
-        tb_dir = Path(log_dir) / mode
         tb_dir.mkdir(parents=True, exist_ok=True)
         self.writer = SummaryWriter(log_dir=str(tb_dir))
 

@@ -121,13 +121,15 @@ def main():
         model = build_multi_head_model(pretrained=True, warmup=True)
         model = compute_manager.prepare_model(model)
         
+        sub_dir = "WeightedRandomSampler" if args.use_weighted_sampler else None
         trainer = MultiHeadTrainer(
             model=model,
             criterions=criterions,
             loss_weights=loss_weights,
             checkpoint_dir=args.checkpoint_dir,
             compute_manager=compute_manager,
-            mode="multi_head"
+            mode="multi_head",
+            sub_dir=sub_dir
         )
         
         best_metrics = trainer.train(
