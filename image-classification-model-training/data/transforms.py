@@ -140,13 +140,11 @@ class Rotate90Clockwise(Transform):
 
 def get_train_transforms():
     """
-    Standard training augmentation pipeline using MONAI.
+    Standard training augmentation pipeline using MONAI for Classified-preprocessed.
     """
     return Compose([
         LoadImage(image_only=True),
         EnsureChannelFirst(),
-        Rotate90Clockwise(),
-        TissueMaskCrop(),
         CLAHETransform(),
         Ensure3Channels(),
         ScaleIntensity(), # Scale [0, 255] -> [0, 1]
@@ -160,15 +158,11 @@ def get_train_transforms():
 
 def get_val_transforms():
     """
-    Deterministic validation/test pipeline using MONAI.
-    NOTE: Rotate90Clockwise is intentionally absent here — the current checkpoint
-    was trained on the original (pre-rotation) orientation. Once re-training with
-    Rotate90Clockwise in train transforms is complete, add it back here too.
+    Deterministic validation/test pipeline using MONAI for Classified-preprocessed.
     """
     return Compose([
         LoadImage(image_only=True),
         EnsureChannelFirst(),
-        TissueMaskCrop(),
         CLAHETransform(),
         Ensure3Channels(),
         ScaleIntensity(),

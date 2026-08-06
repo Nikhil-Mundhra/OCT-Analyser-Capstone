@@ -46,7 +46,7 @@ class MultiHeadOCTDataset(Dataset):
         with open(config_path, "r") as f:
             self._cfg = yaml.safe_load(f)
 
-        default_root = os.environ.get("OCT_DATA_ROOT", self._cfg.get("data_root", ""))
+        default_root = os.environ.get("OCT_DATA_ROOT", self._cfg.get("data_root", "/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified-preprocessed"))
         self._data_root = Path(data_root) if data_root else Path(default_root)
         self._l1_labels = self._cfg["l1_labels"]
         self._l2_labels = self._cfg["l2_labels"]

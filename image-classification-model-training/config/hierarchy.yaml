@@ -9,7 +9,7 @@
 #   - Validation: Stratified 5-fold CV at all levels
 #   - Resolution: L1/L2 = 224×224 | L3 = 384×384
 
-data_root: "/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified"
+data_root: "/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified-preprocessed"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # LABEL ENCODINGS
