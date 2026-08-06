@@ -332,4 +332,6 @@ def main():
     print("Telemetry generation complete! Check the telemetry_outputs/ directory.")
 
 if __name__ == "__main__":
-    main()
+    from utils.gpu_mutex import GPUMutex
+    with GPUMutex():
+        main()

@@ -160,4 +160,6 @@ def main():
         torch.distributed.destroy_process_group()
 
 if __name__ == "__main__":
-    main()
+    from utils.gpu_mutex import GPUMutex
+    with GPUMutex():
+        main()
