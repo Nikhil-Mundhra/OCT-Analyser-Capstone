@@ -359,6 +359,10 @@ def build_kfold_dataloaders(
                 valid_indices = np.where(granular_indices >= 0, granular_indices, 12)
                 class_counts = np.bincount(valid_indices, minlength=13)
                 class_weights = 1.0 / np.sqrt(np.maximum(class_counts, 1.0))
+                # Apply 1.5x Priority Multiplier for ultra-minority pathology classes (< 30 samples)
+                for c_idx in range(12):
+                    if class_counts[c_idx] < 30:
+                        class_weights[c_idx] *= 1.5
                 sample_weights = torch.FloatTensor([class_weights[t] for t in valid_indices])
                 train_sampler = WeightedRandomSampler(sample_weights, num_samples=len(train_ds), replacement=True)
                 train_loader = DataLoader(
