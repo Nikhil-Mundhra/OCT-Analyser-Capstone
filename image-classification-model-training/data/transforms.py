@@ -145,6 +145,7 @@ def get_train_transforms():
     return Compose([
         LoadImage(image_only=True),
         EnsureChannelFirst(),
+        Rotate90Clockwise(),  # Fix MONAI LoadImage PILReader 90 deg counter-clockwise axis transpose
         CLAHETransform(),
         Ensure3Channels(),
         ScaleIntensity(), # Scale [0, 255] -> [0, 1]
@@ -163,6 +164,7 @@ def get_val_transforms():
     return Compose([
         LoadImage(image_only=True),
         EnsureChannelFirst(),
+        Rotate90Clockwise(),  # Fix MONAI LoadImage PILReader 90 deg counter-clockwise axis transpose
         CLAHETransform(),
         Ensure3Channels(),
         ScaleIntensity(),
