@@ -643,8 +643,8 @@ class MultiHeadTrainer:
             for epoch in range(start_epoch_ft, finetune_epochs):
                 if epoch == 4:
                     if self.compute_manager.is_main_process:
-                        logger.info("Unfreezing full backbone gradually (early stages stem/0/1/2 at 0.1x LR)...")
-                    model_to_unfreeze.unfreeze_full_backbone()
+                        logger.info("Fine-tuning Stage 2 & Stage 3 bottleneck (keeping stem & stages 0-1 frozen for maximum speed)...")
+                    model_to_unfreeze.freeze_backbone()
                     
                     # Clear memory before creating new optimizer for full backbone
                     del optimizer_ft
