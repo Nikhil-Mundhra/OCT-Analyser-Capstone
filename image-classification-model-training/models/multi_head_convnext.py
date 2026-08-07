@@ -56,6 +56,9 @@ class MultiHeadConvNeXt(nn.Module):
         # (Resolutions for 224x224 input with convnextv2_base: Stage 1=28x28, Stage 2=14x14, Stage 3=7x7)
         self.backbone_name = backbone_name
         self.backbone = timm.create_model(backbone_name, pretrained=pretrained, features_only=True, out_indices=(1, 2, 3))
+        # Enable gradient checkpointing to reduce autograd activation memory on MPS by > 80%
+        if hasattr(self.backbone, "set_grad_checkpointing"):
+            self.backbone.set_grad_checkpointing(True)
         
         # 2. Freeze all parameters in the stem and the first three stages (stages 0, 1, 2)
         self.freeze_backbone()
