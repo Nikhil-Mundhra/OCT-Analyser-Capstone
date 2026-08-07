@@ -76,10 +76,49 @@ class MultiHeadTrainer:
         # Initialize GradScaler for mixed precision (CUDA only) to prevent FP16 gradient overflow
         self.scaler = torch.amp.GradScaler('cuda', enabled=(self.device.type == "cuda"))
 
+        # Store baseline H2 FocalLoss alpha weights for dynamic adaptive class-weight scaling
+        if 'h2' in self.criterions and hasattr(self.criterions['h2'], 'alpha') and self.criterions['h2'].alpha is not None:
+            self.base_h2_alpha = self.criterions['h2'].alpha.clone().detach()
+        else:
+            self.base_h2_alpha = None
+
         logger.info(
             "MultiHeadTrainer ready | device=%s | amp=%s (%s) | checkpoints=%s",
             self.device, self._amp_enabled, self._amp_dtype, self.ckpt_dir,
         )
+
+    def update_dynamic_class_weights(self, per_class_metrics: dict, max_boost: float = 5.0) -> None:
+        """
+        Dynamic Adaptive Class-Weight Controller:
+        Dynamically adjusts FocalLoss alpha weights at the end of each epoch based on per-class validation F1.
+        - Dead / underperforming classes (F1 -> 0.0) receive a variable multiplier capped at max_boost (e.g. 5.0x).
+        - High-performing / recovered classes (F1 -> 1.0) smoothly decay back down to 1.0x baseline weight.
+        Prevents overfitting on over-boosted rare classes while keeping dead classes active.
+        """
+        if 'h2' not in self.criterions or not hasattr(self.criterions['h2'], 'alpha') or self.base_h2_alpha is None:
+            return
+
+        base_alpha = self.base_h2_alpha.to(self.device)
+        new_alpha = base_alpha.clone()
+
+        multipliers = []
+        for idx, c_name in enumerate(self.class_names):
+            f1 = per_class_metrics.get(c_name, {}).get('f1', 0.0) if per_class_metrics else 0.0
+            # Continuous linear decay: F1=0.0 -> max_boost (5.0x), F1=1.0 -> 1.0x baseline
+            mult = 1.0 + (max_boost - 1.0) * (1.0 - min(max(f1, 0.0), 1.0))
+            multipliers.append(mult)
+            new_alpha[idx] = base_alpha[idx] * mult
+
+        # Rescale new_alpha so mean magnitude matches original base_alpha
+        new_alpha = new_alpha / new_alpha.mean() * base_alpha.mean()
+        self.criterions['h2'].alpha = new_alpha
+
+        if self.compute_manager.is_main_process:
+            logger.info("=== Dynamic Adaptive FocalLoss Alpha Weights Updated ===")
+            for idx, c_name in enumerate(self.class_names):
+                f1 = per_class_metrics.get(c_name, {}).get('f1', 0.0) if per_class_metrics else 0.0
+                logger.info(f"  {c_name:<18} | Val F1: {f1:.4f} | Dynamic Boost: {multipliers[idx]:.2f}x -> Alpha: {new_alpha[idx]:.2f}")
+            logger.info("=========================================================")
 
     def _move_labels_to_device(self, labels: dict) -> dict:
         """Move label tensors (or nested dictionary of labels) to the target compute device."""
@@ -550,6 +589,8 @@ class MultiHeadTrainer:
                     start_batch=current_start_batch,
                 )
                 val_loss, h2_f1, h2_recall, h2_acc, per_class_metrics = self._val_epoch(val_loader, smoke_test=smoke_test)
+                # Dynamic Adaptive Class-Weight Controller: adjust alpha weights based on validation per-class F1
+                self.update_dynamic_class_weights(per_class_metrics, max_boost=5.0)
                 global_step += 1
                 ep_duration = time.time() - ep_start
                 
@@ -670,6 +711,8 @@ class MultiHeadTrainer:
                     start_batch=current_start_batch,
                 )
                 val_loss, h2_f1, h2_recall, h2_acc, per_class_metrics = self._val_epoch(val_loader, smoke_test=smoke_test)
+                # Dynamic Adaptive Class-Weight Controller: adjust alpha weights based on validation per-class F1
+                self.update_dynamic_class_weights(per_class_metrics, max_boost=5.0)
                 scheduler.step()
                 
                 group_lrs = [f"{group['lr']:.2e}" for group in optimizer_ft.param_groups]
