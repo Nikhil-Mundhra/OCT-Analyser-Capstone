@@ -155,7 +155,8 @@ class MultiHeadTrainer:
             labels = self._move_labels_to_device(labels)
 
             with _amp_ctx:
-                logits = self.model(images)
+                valid_mask = labels.get('valid_mask')
+                logits = self.model(images, valid_mask=valid_mask)
                 loss, _, _, _ = self._compute_loss(logits, labels)
                 accum_loss = loss / accum_steps
 
@@ -221,7 +222,8 @@ class MultiHeadTrainer:
             labels = self._move_labels_to_device(labels)
 
             with _amp_ctx:
-                logits = self.model(images)
+                valid_mask = labels.get('valid_mask')
+                logits = self.model(images, valid_mask=valid_mask)
                 loss, _, _, _ = self._compute_loss(logits, labels)
 
             total_loss += loss.item()

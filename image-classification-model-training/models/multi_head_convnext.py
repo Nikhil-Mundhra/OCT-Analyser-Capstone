@@ -99,33 +99,42 @@ class MultiHeadConvNeXt(nn.Module):
             nn.Linear(512, num_pathology_classes)
         )
 
-    def forward(self, x: torch.Tensor, return_probs: bool = False):
+    def forward(self, x: torch.Tensor, valid_mask: Optional[torch.Tensor] = None, return_probs: bool = False):
         if x.is_cuda and not torch.is_autocast_enabled():
             with torch.autocast(device_type="cuda", dtype=torch.float16):
-                return self._forward_impl(x, return_probs)
-        return self._forward_impl(x, return_probs)
+                return self._forward_impl(x, valid_mask, return_probs)
+        return self._forward_impl(x, valid_mask, return_probs)
 
-    def _forward_impl(self, x: torch.Tensor, return_probs: bool = False):
+    def _forward_impl(self, x: torch.Tensor, valid_mask: Optional[torch.Tensor] = None, return_probs: bool = False):
         # forward_features with features_only=True returns a list of feature maps
         features_list = self.backbone(x)
         f_s2 = features_list[0] # [B, 256, 28, 28]
         f_s3 = features_list[1] # [B, 512, 14, 14]
         f_s4 = features_list[2] # [B, 1024, 7, 7]
         
-        # --- Stream 1: H1 Gatekeeper ---
-        # Un-gated Global Average Pooling on the final bottleneck
-        gap_s4 = self.gap(f_s4).flatten(1)
+        # Build or downsample valid_mask using area interpolation
+        if valid_mask is None:
+            # Fallback if valid_mask not provided: un-normalized background > 0.05
+            valid_mask = (x.mean(dim=1, keepdim=True) > -1.8).float()
+        
+        mask_s2 = F.interpolate(valid_mask, size=f_s2.shape[-2:], mode='area')
+        mask_s3 = F.interpolate(valid_mask, size=f_s3.shape[-2:], mode='area')
+        mask_s4 = F.interpolate(valid_mask, size=f_s4.shape[-2:], mode='area')
+
+        # --- Stream 1: H1 Gatekeeper (Masked GAP on Stage 4 Bottleneck) ---
+        masked_s4 = f_s4 * mask_s4
+        gap_s4 = masked_s4.sum(dim=(2, 3)) / mask_s4.sum(dim=(2, 3)).clamp_min(1.0)
         out_normal = self.normal_abnormal_head(gap_s4)
         
-        # --- Stream 2: H2 Granular Pathology (Multi-Scale) ---
-        # Apply CBAM at each scale BEFORE global pooling
-        att_s2 = self.cbam_s2(f_s2)
-        att_s3 = self.cbam_s3(f_s3)
-        att_s4 = self.cbam_s4(f_s4)
+        # --- Stream 2: H2 Granular Pathology (Multi-Scale Masked GAP) ---
+        # Apply CBAM and valid_mask at each scale BEFORE global pooling
+        att_s2 = self.cbam_s2(f_s2) * mask_s2
+        att_s3 = self.cbam_s3(f_s3) * mask_s3
+        att_s4 = self.cbam_s4(f_s4) * mask_s4
         
-        gap_att_s2 = self.gap(att_s2).flatten(1)
-        gap_att_s3 = self.gap(att_s3).flatten(1)
-        gap_att_s4 = self.gap(att_s4).flatten(1)
+        gap_att_s2 = att_s2.sum(dim=(2, 3)) / mask_s2.sum(dim=(2, 3)).clamp_min(1.0)
+        gap_att_s3 = att_s3.sum(dim=(2, 3)) / mask_s3.sum(dim=(2, 3)).clamp_min(1.0)
+        gap_att_s4 = att_s4.sum(dim=(2, 3)) / mask_s4.sum(dim=(2, 3)).clamp_min(1.0)
         
         multi_scale_features = torch.cat([gap_att_s2, gap_att_s3, gap_att_s4], dim=1)
         

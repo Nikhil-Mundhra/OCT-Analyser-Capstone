@@ -222,10 +222,13 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
     
     for i, (images, labels) in enumerate(val_loader):
         images_dev = images.to(device)
+        valid_mask_dev = labels.get('valid_mask')
+        if valid_mask_dev is not None:
+            valid_mask_dev = valid_mask_dev.to(device)
         
         with torch.no_grad():
             with torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=device.type in ('mps', 'cuda')):
-                logits = model(images_dev)
+                logits = model(images_dev, valid_mask=valid_mask_dev)
 
             # Cast to float32 before sigmoid/softmax to prevent NaN from FP16 overflow
             logits = {k: v.float() if isinstance(v, torch.Tensor) else v for k, v in logits.items()}
