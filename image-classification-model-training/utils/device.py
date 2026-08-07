@@ -63,7 +63,7 @@ class ComputeManager:
         device: Optional[torch.device] = None,
         use_data_parallel: bool = False,
         use_ddp: bool = False,
-        cache_flush_interval: Optional[int] = None
+        cache_flush_interval: Optional[int] = 50
     ) -> None:
         import os
         self.is_ddp = use_ddp or ("LOCAL_RANK" in os.environ)
@@ -138,6 +138,8 @@ class ComputeManager:
         if not should_flush:
             return
 
+        import gc
+        gc.collect()
         if self.device.type == "mps" and hasattr(torch.mps, "empty_cache"):
             torch.mps.empty_cache()
         elif self.device.type == "cuda":
