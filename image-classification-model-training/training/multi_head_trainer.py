@@ -439,9 +439,12 @@ class MultiHeadTrainer:
                 if isinstance(self.criterions.get('h2'), FocalLoss):
                     is_ws = use_weighted_sampler or isinstance(getattr(train_loader, 'sampler', None), torch.utils.data.WeightedRandomSampler)
                     if is_ws:
-                        self.criterions['h2'].alpha = None
+                        num_classes = len(train_loader.dataset.get_class_names("h2"))
+                        rao_alpha = torch.ones(num_classes, device=self.device)
+                        rao_alpha[8] = 5.0  # 5.0x targeted loss multiplier for RAO
+                        self.criterions['h2'].alpha = rao_alpha
                         if self.compute_manager.is_main_process:
-                            logger.info("=== WeightedRandomSampler Active: Disabling FocalLoss Alpha Scaling (Uniform 1.0) ===")
+                            logger.info("=== WeightedRandomSampler Active: Applied 5.0x Targeted FocalLoss Alpha Boost for RAO ===")
                     else:
                         self.criterions['h2'].alpha = fold_h2_alpha
                         if self.compute_manager.is_main_process:
