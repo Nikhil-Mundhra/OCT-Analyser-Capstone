@@ -642,24 +642,16 @@ class MultiHeadTrainer:
             early_stopper = EarlyStopping(patience=patience, min_delta=1e-4, mode="max")
             early_stopper.best_value = best_val_macro_f1 if best_val_macro_f1 > 0 else None
 
+            # Unfreeze full backbone for Phase 2 fine-tuning to allow early spatial layers to adapt to Masked GAP
+            model_to_unfreeze.unfreeze_backbone()
+            if self.compute_manager.is_main_process:
+                logger.info("Unfreezing full backbone for end-to-end Masked-GAP fine-tuning...")
+
+            optimizer_ft = torch.optim.AdamW(
+                model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr, weight_decay=weight_decay, early_backbone_factor=0.1),
+            )
+
             for epoch in range(start_epoch_ft, finetune_epochs):
-                if epoch == 4:
-                    if self.compute_manager.is_main_process:
-                        logger.info("Fine-tuning Stage 2 & Stage 3 bottleneck (keeping stem & stages 0-1 frozen for maximum speed)...")
-                    model_to_unfreeze.freeze_backbone()
-                    
-                    # Clear memory before creating new optimizer for full backbone
-                    del optimizer_ft
-                    gc.collect()
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                    elif self.device.type == 'mps':
-                        torch.mps.empty_cache()
-
-                    optimizer_ft = torch.optim.AdamW(
-                        model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr, weight_decay=weight_decay, early_backbone_factor=0.1),
-                    )
-
                 current_start_batch = start_batch_ft if epoch == start_epoch_ft else 0
                 ep_start = time.time()
                 abs_epoch = warmup_epochs + epoch
