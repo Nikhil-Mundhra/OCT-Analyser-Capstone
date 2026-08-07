@@ -14,6 +14,7 @@ from monai.transforms import (
     ScaleIntensity,
     Resize,
     RandRotate,
+    RandAffine,
     RandFlip,
     RandGaussianNoise,
     RandCoarseDropout,
