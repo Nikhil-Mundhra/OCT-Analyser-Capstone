@@ -514,7 +514,7 @@ class MultiHeadTrainer:
                     traceback.print_exc()
 
         # ── PHASE 1: WARM-UP ──
-        if phase == 'warmup' and warmup_epochs > 0:
+        if phase == 'warmup' and warmup_epochs > 0 and start_epoch_warmup < warmup_epochs:
             if self.compute_manager.is_main_process:
                 logger.info(f"PHASE 1 — Warm-up | {warmup_epochs} epochs | backbone FROZEN")
             model_to_freeze = get_raw_model(self.model)
