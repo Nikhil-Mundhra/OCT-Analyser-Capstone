@@ -642,10 +642,10 @@ class MultiHeadTrainer:
             early_stopper = EarlyStopping(patience=patience, min_delta=1e-4, mode="max")
             early_stopper.best_value = best_val_macro_f1 if best_val_macro_f1 > 0 else None
 
-            # Unfreeze full backbone for Phase 2 fine-tuning to allow early spatial layers to adapt to Masked GAP
-            model_to_unfreeze.unfreeze_backbone()
+            # Unfreeze Stages 2 & 3 (all multi-scale feature maps S2, S3, S4) for Phase 2 fine-tuning
+            model_to_unfreeze.unfreeze_stage2_and_3()
             if self.compute_manager.is_main_process:
-                logger.info("Unfreezing full backbone for end-to-end Masked-GAP fine-tuning...")
+                logger.info("Unfreezing Stages 2 & 3 bottleneck feature maps for Masked-GAP fine-tuning...")
 
             optimizer_ft = torch.optim.AdamW(
                 model_to_unfreeze.get_param_groups(backbone_lr=backbone_lr, head_lr=head_lr, weight_decay=weight_decay, early_backbone_factor=0.1),

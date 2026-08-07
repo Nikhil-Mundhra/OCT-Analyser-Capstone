@@ -173,6 +173,14 @@ class MultiHeadConvNeXt(nn.Module):
             else:
                 param.requires_grad = False
 
+    def unfreeze_stage2_and_3(self):
+        """Unfreeze Stages 2 and 3 (containing all feature maps feeding multi-scale heads S2, S3, S4) while keeping stem & stage 0 frozen for 3.5s/batch throughput."""
+        for name, param in self.backbone.named_parameters():
+            if name.startswith(('stages.2.', 'stages.3.')):
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
+
     def unfreeze_backbone(self):
         """Unfreeze the entire backbone for end-to-end fine-tuning."""
         for param in self.backbone.parameters():
