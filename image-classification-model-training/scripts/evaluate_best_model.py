@@ -9,6 +9,7 @@ EXPECTED RUNTIME: Takes over 500s (~8-10 minutes) to execute on Apple Silicon MP
 
 import os
 import sys
+import json
 import torch
 import numpy as np
 import pandas as pd
@@ -16,8 +17,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from torch.utils.data import DataLoader, Subset
 from torchvision import transforms
-from sklearn.metrics import f1_score, accuracy_score, classification_report, confusion_matrix
-from sklearn.metrics import precision_recall_curve, average_precision_score
+from sklearn.metrics import (
+    f1_score, accuracy_score, classification_report, confusion_matrix,
+    precision_recall_curve, average_precision_score, roc_curve, roc_auc_score,
+    precision_score, recall_score
+)
 from matplotlib.backends.backend_pdf import PdfPages
 import torch.nn.functional as F
 
@@ -105,12 +109,21 @@ def get_data_loader(config_path="image-classification-model-training/config/hier
     val_dataset = Subset(full_dataset, indices[train_size:])
     return DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
+def _resolve_target_layer(model):
+    if hasattr(model.backbone, "stages"):
+        return model.backbone.stages[-1]
+    elif hasattr(model.backbone, "stages_3"):
+        return model.backbone.stages_3
+    elif hasattr(model.backbone, "body") and hasattr(model.backbone.body, "stages"):
+        return model.backbone.body.stages[-1]
+    else:
+        return list(model.backbone.children())[-1]
+
 def load_model(checkpoint_path, device):
     print("Building model...")
     model = build_multi_head_model(pretrained=False, warmup=False)
     
     if not os.path.exists(checkpoint_path):
-        # Fallback to local HF hub cache snapshot if available
         hf_cache_snapshot = "/Users/nikhilmundhra/.cache/huggingface/hub/models--NMundhra--OCT-Classification-Model/snapshots/b8b2d5e7347d463a3d5f5d5c671e5e230968a7a6/fold0_best_model.pth"
         if os.path.exists(hf_cache_snapshot):
             checkpoint_path = hf_cache_snapshot
@@ -128,15 +141,7 @@ def load_model(checkpoint_path, device):
     model.to(device)
     model.eval()
     
-    if hasattr(model.backbone, "stages"):
-        target_layer = model.backbone.stages[-1]
-    elif hasattr(model.backbone, "stages_3"):
-        target_layer = model.backbone.stages_3
-    elif hasattr(model.backbone, "body") and hasattr(model.backbone.body, "stages"):
-        target_layer = model.backbone.body.stages[-1]
-    else:
-        target_layer = list(model.backbone.children())[-1]
-
+    target_layer = _resolve_target_layer(model)
     grad_cam = GradCAM(model, target_layer)
     return model, grad_cam
 
@@ -146,7 +151,6 @@ def get_overlay(img_tensor, cam):
     img = img_tensor.cpu() * std + mean
     img = img.clamp(0, 1).numpy().transpose(1, 2, 0)
     
-    # Rotate image and CAM 90 degrees clockwise so PDF report displays anatomical upright orientation
     img = np.rot90(img, -1, (0, 1))
     cam = np.rot90(cam, -1, (0, 1))
     
@@ -178,29 +182,23 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
         top2_class_name = PATHOLOGY_CLASSES[top2_idx]
         top2_prob = p_h2_probs[top2_idx]
     
-    # 1. H1 Grad-CAM (Triage)
     cam_h1 = grad_cam(img, class_idx=0, head='normal_abnormal')
     overlay_h1, orig_img = get_overlay(img[0], cam_h1)
 
-    # 2. Top-1 H2 Grad-CAM (Primary Pathology)
     cam_h2_top1 = grad_cam(img, class_idx=top1_idx, head='pathology')
     overlay_h2_top1, _ = get_overlay(img[0], cam_h2_top1)
 
-    # 3. Top-2 H2 Grad-CAM (Secondary / Differential Pathology)
     cam_h2_top2 = grad_cam(img, class_idx=top2_idx, head='pathology')
     overlay_h2_top2, _ = get_overlay(img[0], cam_h2_top2)
 
-    # Create 5-panel wide figure for complete clinical inspection
     fig = plt.figure(figsize=(19, 5.5), facecolor='#ffffff')
     gs = fig.add_gridspec(1, 5, width_ratios=[1.0, 1.2, 1.0, 1.0, 1.0])
     
-    # Panel 1: Original B-Scan
     ax1 = fig.add_subplot(gs[0, 0])
     ax1.imshow(orig_img)
     ax1.set_title(f"Original OCT Scan\nTrue: {class_name}", fontsize=11, fontweight='bold', pad=8)
     ax1.axis('off')
     
-    # Panel 2: Formatted Patient Case Notes Card
     ax2 = fig.add_subplot(gs[0, 1])
     ax2.axis('off')
     
@@ -211,7 +209,6 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     probs_str = "\n".join([f"   - {c:<12} : {p*100:5.1f}%" for c, p in significant_probs[:4]])
     
     match_status = "CORRECT" if top1_class_name == class_name else "MISMATCH"
-    status_color = "#27ae60" if match_status == "CORRECT" else "#e74c3c"
 
     text_str = (
         f"PATIENT CASE STUDY REPORT\n"
@@ -232,19 +229,16 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     
     ax2.text(0.02, 0.98, text_str, fontsize=9.5, family='monospace', va='top', bbox=dict(boxstyle='round,pad=0.5', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.9))
     
-    # Panel 3: H1 Triage Grad-CAM
     ax3 = fig.add_subplot(gs[0, 2])
     ax3.imshow(overlay_h1)
     ax3.set_title("H1 Grad-CAM\n(Triage)", fontsize=11, fontweight='bold', pad=8)
     ax3.axis('off')
     
-    # Panel 4: Top-1 H2 Pathology Grad-CAM
     ax4 = fig.add_subplot(gs[0, 3])
     ax4.imshow(overlay_h2_top1)
     ax4.set_title(f"H2 Grad-CAM\n{top1_class_name} ({top1_prob*100:.1f}%)", fontsize=11, fontweight='bold', color='#2c3e50', pad=8)
     ax4.axis('off')
     
-    # Panel 5: Top-2 H2 Pathology Grad-CAM
     ax5 = fig.add_subplot(gs[0, 4])
     ax5.imshow(overlay_h2_top2)
     ax5.set_title(f"H2 Grad-CAM\n{top2_class_name} ({top2_prob*100:.1f}%)", fontsize=11, fontweight='bold', color='#7f8c8d', pad=8)
@@ -258,10 +252,9 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
     h1_preds, h1_targets, h1_probs_arr = [], [], []
     all_h2_preds, all_h2_targets, all_h2_probs = [], [], []
     
-    gradcam_samples = {} # Store 2 representative images per class for Phase 2
+    gradcam_samples = {}
     max_cases_per_disease = 2
     
-    # MPS has native FP16 (AMX) but emulates bfloat16 -> prefer float16 on MPS
     _amp_dtype = torch.float16 if device.type == "mps" else (torch.bfloat16 if device.type == "cuda" else torch.float16)
     print("Executing Phase 1: Pure GPU Vectorized Evaluation...")
     
@@ -275,7 +268,6 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
             with torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=device.type in ('mps', 'cuda')):
                 logits = model(images_dev, valid_mask=valid_mask_dev)
 
-            # Cast to float32 before sigmoid/softmax to prevent NaN from FP16 overflow
             logits = {k: v.float() if isinstance(v, torch.Tensor) else v for k, v in logits.items()}
 
             h1_prob_batch = torch.sigmoid(logits['normal_abnormal']).cpu().numpy()
@@ -295,7 +287,6 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
                 all_h2_probs.extend(probs_h2)
                 all_h2_preds.extend(preds_h2)
                     
-        # Select up to 2 high-confidence sample images per class for Grad-CAM phase
         for b_idx in range(images.size(0)):
             is_abnormal = labels['normal_abnormal'][b_idx].item() == 1
             if is_abnormal:
@@ -318,64 +309,18 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
 
     return h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs
 
-def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr, pdf):
-    import json
-    from sklearn.metrics import roc_curve, roc_auc_score, precision_score, recall_score
+# ── Extracted Modular Plotting & Export Functions ───────────────────────────
 
-    print("\n" + "="*60)
-    print("  OCT MODEL FULL TELEMETRY REPORT EVALUATION")
-    print("="*60)
-    
-    h1_acc = accuracy_score(h1_targets, h1_preds)
-    h1_f1 = f1_score(h1_targets, h1_preds, average='macro')
-    h2_acc = accuracy_score(h2_targets, h2_preds)
-    h2_f1 = f1_score(h2_targets, h2_preds, average='macro', zero_division=0)
-    
-    print(f"H1 Accuracy: {h1_acc:.4f} | H1 Macro F1: {h1_f1:.4f}")
-    print(classification_report(h1_targets, h1_preds, target_names=["Normal", "Abnormal"]))
-    
-    print("\n" + "-"*60)
-    print(f"H2 Accuracy: {h2_acc:.4f} | H2 Macro F1: {h2_f1:.4f}")
-    print(classification_report(h2_targets, h2_preds, target_names=PATHOLOGY_CLASSES, zero_division=0))
-
-    # Calculate per-class metrics dictionary
-    per_class_metrics = {}
-    h2_targets_arr = np.array(h2_targets)
-    h2_preds_arr = np.array(h2_preds)
-    h2_probs_mat = np.array(h2_probs_arr)
-
-    for class_idx, class_name in enumerate(PATHOLOGY_CLASSES):
-        t_cls = (h2_targets_arr == class_idx).astype(int)
-        p_cls = h2_probs_mat[:, class_idx]
-        pred_cls = (h2_preds_arr == class_idx).astype(int)
-
-        prec = float(precision_score(t_cls, pred_cls, zero_division=0))
-        rec = float(recall_score(t_cls, pred_cls, zero_division=0))
-        f1_c = float(f1_score(t_cls, pred_cls, zero_division=0))
-        auc_c = float(roc_auc_score(t_cls, p_cls)) if np.sum(t_cls) > 0 else 0.0
-        ap_c = float(average_precision_score(t_cls, p_cls)) if np.sum(t_cls) > 0 else 0.0
-
-        per_class_metrics[class_name] = {
-            "f1": f1_c,
-            "precision": prec,
-            "recall": rec,
-            "auc": auc_c,
-            "ap": ap_c,
-            "support": int(np.sum(t_cls))
-        }
-
-    # Save structured JSON telemetry file
+def export_telemetry_json(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics, output_path="telemetry_outputs/telemetry_summary.json"):
     telemetry_json = {
         "h1_metrics": {"accuracy": float(h1_acc), "macro_f1": float(h1_f1)},
         "h2_metrics": {"accuracy": float(h2_acc), "macro_f1": float(h2_f1)},
         "per_class_metrics": per_class_metrics
     }
-    with open("telemetry_outputs/telemetry_summary.json", "w") as f_json:
+    with open(output_path, "w") as f_json:
         json.dump(telemetry_json, f_json, indent=2)
 
-    print("\nGenerating Telemetry PDF Dashboard Pages...")
-
-    # ── Page 1: Executive Dashboard Summary ─────────────────────────────────
+def render_executive_cover_page(pdf, h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics):
     fig_cover = plt.figure(figsize=(12, 8))
     plt.axis('off')
     title_text = (
@@ -400,7 +345,7 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     plt.text(0.05, 0.95, title_text, fontsize=10.5, family='monospace', va='top')
     pdf.savefig(fig_cover); plt.close()
 
-    # ── Page 2: H2 Normalized Confusion Matrix Heatmap ─────────────────────
+def render_confusion_matrix_page(pdf, h2_targets_arr, h2_preds_arr):
     cm_h2 = confusion_matrix(h2_targets_arr, h2_preds_arr, labels=list(range(len(PATHOLOGY_CLASSES))))
     cm_norm = cm_h2.astype('float') / np.maximum(cm_h2.sum(axis=1, keepdims=True), 1.0)
     
@@ -414,7 +359,7 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     plt.tight_layout()
     pdf.savefig(fig_cm); plt.close()
 
-    # ── Page 3: Per-Class Precision, Recall & F1 Bar Chart ──────────────────
+def render_per_class_bar_chart(pdf, per_class_metrics):
     fig_bar = plt.figure(figsize=(12, 6))
     x_indices = np.arange(len(PATHOLOGY_CLASSES))
     width = 0.25
@@ -437,7 +382,7 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     plt.tight_layout()
     pdf.savefig(fig_bar); plt.close()
 
-    # ── Page 4: H1 & H2 Precision-Recall (PR) Curves ────────────────────────
+def render_precision_recall_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_probs_mat, per_class_metrics):
     h1_targets_flat, h1_probs_flat = np.array(h1_targets).flatten(), np.array(h1_probs_arr).flatten()
     precision_h1, recall_h1, thresholds_h1 = precision_recall_curve(h1_targets_flat, h1_probs_flat)
     
@@ -464,7 +409,8 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     plt.tight_layout()
     pdf.savefig(fig_pr); plt.close()
 
-    # ── Page 5: H1 & H2 ROC-AUC Curves ───────────────────────────────────────
+def render_roc_auc_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_probs_mat, per_class_metrics):
+    h1_targets_flat, h1_probs_flat = np.array(h1_targets).flatten(), np.array(h1_probs_arr).flatten()
     fig_roc = plt.figure(figsize=(12, 5))
     fpr_h1, tpr_h1, _ = roc_curve(h1_targets_flat, h1_probs_flat)
     auc_h1 = roc_auc_score(h1_targets_flat, h1_probs_flat)
@@ -488,6 +434,56 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     plt.tight_layout()
     pdf.savefig(fig_roc); plt.close()
 
+def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr, pdf):
+    print("\n" + "="*60)
+    print("  OCT MODEL FULL TELEMETRY REPORT EVALUATION")
+    print("="*60)
+    
+    h1_acc = accuracy_score(h1_targets, h1_preds)
+    h1_f1 = f1_score(h1_targets, h1_preds, average='macro')
+    h2_acc = accuracy_score(h2_targets, h2_preds)
+    h2_f1 = f1_score(h2_targets, h2_preds, average='macro', zero_division=0)
+    
+    print(f"H1 Accuracy: {h1_acc:.4f} | H1 Macro F1: {h1_f1:.4f}")
+    print(classification_report(h1_targets, h1_preds, target_names=["Normal", "Abnormal"]))
+    
+    print("\n" + "-"*60)
+    print(f"H2 Accuracy: {h2_acc:.4f} | H2 Macro F1: {h2_f1:.4f}")
+    print(classification_report(h2_targets, h2_preds, target_names=PATHOLOGY_CLASSES, zero_division=0))
+
+    per_class_metrics = {}
+    h2_targets_arr = np.array(h2_targets)
+    h2_preds_arr = np.array(h2_preds)
+    h2_probs_mat = np.array(h2_probs_arr)
+
+    for class_idx, class_name in enumerate(PATHOLOGY_CLASSES):
+        t_cls = (h2_targets_arr == class_idx).astype(int)
+        p_cls = h2_probs_mat[:, class_idx]
+        pred_cls = (h2_preds_arr == class_idx).astype(int)
+
+        prec = float(precision_score(t_cls, pred_cls, zero_division=0))
+        rec = float(recall_score(t_cls, pred_cls, zero_division=0))
+        f1_c = float(f1_score(t_cls, pred_cls, zero_division=0))
+        auc_c = float(roc_auc_score(t_cls, p_cls)) if np.sum(t_cls) > 0 else 0.0
+        ap_c = float(average_precision_score(t_cls, p_cls)) if np.sum(t_cls) > 0 else 0.0
+
+        per_class_metrics[class_name] = {
+            "f1": f1_c,
+            "precision": prec,
+            "recall": rec,
+            "auc": auc_c,
+            "ap": ap_c,
+            "support": int(np.sum(t_cls))
+        }
+
+    export_telemetry_json(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics)
+
+    print("\nGenerating Telemetry PDF Dashboard Pages...")
+    render_executive_cover_page(pdf, h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics)
+    render_confusion_matrix_page(pdf, h2_targets_arr, h2_preds_arr)
+    render_per_class_bar_chart(pdf, per_class_metrics)
+    render_precision_recall_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_probs_mat, per_class_metrics)
+    render_roc_auc_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_probs_mat, per_class_metrics)
 
 def main():
     import argparse
