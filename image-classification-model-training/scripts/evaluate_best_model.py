@@ -327,8 +327,8 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
                             if len(mismatch_samples.get(c_name, [])) < 1:
                                 mismatch_samples.setdefault(c_name, []).append((img_copy, c_idx, c_name))
                     
-        if i % 20 == 0 or i == len(val_loader) - 1:
-            print(f"Evaluation Progress: Batch {i+1}/{len(val_loader)}")
+        if i % 10 == 0 or i == len(val_loader) - 1:
+            print(f"Evaluation Progress: Batch {i+1}/{len(val_loader)}", flush=True)
 
     return h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples
 
