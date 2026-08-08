@@ -357,14 +357,18 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
 
 # ── Extracted Modular Plotting & Export Functions ───────────────────────────
 
-def export_telemetry_json(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics, output_path="telemetry_outputs/telemetry_summary.json"):
+def export_telemetry_json(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics, output_path="telemetry_outputs/telemetry_summary.json", ckpt_dir=None):
     telemetry_json = {
         "h1_metrics": {"accuracy": float(h1_acc), "macro_f1": float(h1_f1)},
         "h2_metrics": {"accuracy": float(h2_acc), "macro_f1": float(h2_f1)},
         "per_class_metrics": per_class_metrics
     }
-    with open(output_path, "w") as f_json:
-        json.dump(telemetry_json, f_json, indent=2)
+    paths = [output_path]
+    if ckpt_dir:
+        paths.append(str(Path(ckpt_dir) / "telemetry_summary.json"))
+    for p in paths:
+        with open(p, "w") as f_json:
+            json.dump(telemetry_json, f_json, indent=2)
 
 def render_executive_cover_page(pdf, h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics):
     fig_cover = plt.figure(figsize=(12, 8))
