@@ -191,14 +191,17 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     cam_h2_top2 = grad_cam(img, class_idx=top2_idx, head='pathology')
     overlay_h2_top2, _ = get_overlay(img[0], cam_h2_top2)
 
-    fig = plt.figure(figsize=(19, 5.5), facecolor='#ffffff')
-    gs = fig.add_gridspec(1, 5, width_ratios=[1.0, 1.2, 1.0, 1.0, 1.0])
+    # 5-Panel balanced clinical inspection layout
+    fig = plt.figure(figsize=(18, 5.2), facecolor='#ffffff')
+    gs = fig.add_gridspec(1, 5, width_ratios=[1.0, 1.15, 1.0, 1.0, 1.0], wspace=0.18)
     
+    # Panel 1: Original B-Scan
     ax1 = fig.add_subplot(gs[0, 0])
     ax1.imshow(orig_img)
-    ax1.set_title(f"Original OCT Scan\nTrue: {class_name}", fontsize=11, fontweight='bold', pad=8)
+    ax1.set_title(f"Original OCT Scan\nTrue: {class_name}", fontsize=11, fontweight='bold', color='#1a252f', pad=8)
     ax1.axis('off')
     
+    # Panel 2: Clean Formatted Patient Case Notes Card
     ax2 = fig.add_subplot(gs[0, 1])
     ax2.axis('off')
     
@@ -207,14 +210,10 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
         significant_probs = [(top1_class_name, top1_prob), (top2_class_name, top2_prob)]
 
     probs_str = "\n".join([f"   - {c:<12} : {p*100:5.1f}%" for c, p in significant_probs[:4]])
-    
     match_status = "CORRECT" if top1_class_name == class_name else "MISMATCH"
 
     text_str = (
         f"PATIENT CASE STUDY REPORT\n"
-        f"===================================\n"
-        f"Authored by ML Developer:\n"
-        f"Nikhil Mundhra (NYU Abu Dhabi '2027)\n"
         f"===================================\n\n"
         f"[ H1 - Gatekeeper Triage ]\n"
         f"  Status   : {pred_h1} ({p_h1*100:.1f}%)\n"
@@ -227,24 +226,30 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
         f"Pathology Probabilities (>5%):\n{probs_str}"
     )
     
-    ax2.text(0.02, 0.98, text_str, fontsize=9.5, family='monospace', va='top', bbox=dict(boxstyle='round,pad=0.5', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.9))
+    ax2.text(0.02, 0.98, text_str, fontsize=9.5, family='monospace', va='top', bbox=dict(boxstyle='round,pad=0.6', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.95))
     
+    # Panel 3: H1 Triage Grad-CAM
     ax3 = fig.add_subplot(gs[0, 2])
     ax3.imshow(overlay_h1)
-    ax3.set_title("H1 Grad-CAM\n(Triage)", fontsize=11, fontweight='bold', pad=8)
+    ax3.set_title("H1 Grad-CAM\n(Triage)", fontsize=11, fontweight='bold', color='#1a252f', pad=8)
     ax3.axis('off')
     
+    # Panel 4: Top-1 H2 Pathology Grad-CAM
     ax4 = fig.add_subplot(gs[0, 3])
     ax4.imshow(overlay_h2_top1)
     ax4.set_title(f"H2 Grad-CAM\n{top1_class_name} ({top1_prob*100:.1f}%)", fontsize=11, fontweight='bold', color='#2c3e50', pad=8)
     ax4.axis('off')
     
+    # Panel 5: Top-2 H2 Pathology Grad-CAM
     ax5 = fig.add_subplot(gs[0, 4])
     ax5.imshow(overlay_h2_top2)
     ax5.set_title(f"H2 Grad-CAM\n{top2_class_name} ({top2_prob*100:.1f}%)", fontsize=11, fontweight='bold', color='#7f8c8d', pad=8)
     ax5.axis('off')
 
-    plt.tight_layout()
+    # Running Footer on Every Page
+    fig.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.98])
     pdf.savefig(fig, dpi=300)
     plt.close(fig)
 
