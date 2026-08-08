@@ -488,7 +488,7 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Evaluate Best Model and Generate Grad-CAM Visualizations")
-    parser.add_argument("--checkpoint", type=str, default="checkpoints/multi_head/WeightedRandomSampler/fold0_best_val_loss.pth", help="Path to checkpoint .pth file")
+    parser.add_argument("--checkpoint", type=str, default="checkpoints/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth", help="Path to checkpoint .pth file")
     parser.add_argument("--config", type=str, default="image-classification-model-training/config/hierarchy.yaml", help="Path to config file")
     parser.add_argument("--batch-size", type=int, default=32, help="Validation batch size")
     args = parser.parse_args()

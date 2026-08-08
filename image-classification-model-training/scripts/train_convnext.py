@@ -68,6 +68,7 @@ def main():
     parser.add_argument("--use-data-parallel", action="store_true", help="Enable PyTorch DataParallel across multi-GPU (disabled by default for single-GPU efficiency)")
     parser.add_argument("--use-ddp", action="store_true", help="Enable PyTorch DistributedDataParallel across multi-GPU via torchrun")
     parser.add_argument("--use-weighted-sampler", action="store_true", help="Enable WeightedRandomSampler for inverse class frequency oversampling")
+    parser.add_argument("--version", type=str, default="auto", help="Strict model weight version tag (e.g. 'v1', 'v2', or 'auto' to auto-increment)")
     
     args = parser.parse_args()
 
@@ -138,7 +139,9 @@ def main():
             checkpoint_dir=args.checkpoint_dir,
             compute_manager=compute_manager,
             mode="multi_head",
-            sub_dir=sub_dir
+            sub_dir=sub_dir,
+            version=args.version,
+            args_dict=vars(args)
         )
         
         best_metrics = trainer.train(
