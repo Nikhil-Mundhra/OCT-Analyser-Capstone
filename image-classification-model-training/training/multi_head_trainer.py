@@ -481,11 +481,11 @@ class MultiHeadTrainer:
                     is_ws = use_weighted_sampler or isinstance(getattr(train_loader, 'sampler', None), torch.utils.data.WeightedRandomSampler)
                     if is_ws:
                         num_classes = len(train_loader.dataset.get_class_names("h2"))
-                        rao_alpha = torch.ones(num_classes, device=self.device)
-                        rao_alpha[8] = 5.0  # 5.0x targeted loss multiplier for RAO
-                        self.criterions['h2'].alpha = rao_alpha
+                        # Uniform 1.0 baseline alpha for WeightedRandomSampler (Dynamic Adaptive Controller updates this per epoch)
+                        uniform_alpha = torch.ones(num_classes, device=self.device)
+                        self.criterions['h2'].alpha = uniform_alpha
                         if self.compute_manager.is_main_process:
-                            logger.info("=== WeightedRandomSampler Active: Applied 5.0x Targeted FocalLoss Alpha Boost for RAO ===")
+                            logger.info("=== WeightedRandomSampler Active: Initial FocalLoss Alpha set to Uniform 1.0 (Dynamic Adaptive Controller Active) ===")
                     else:
                         self.criterions['h2'].alpha = fold_h2_alpha
                         if self.compute_manager.is_main_process:
