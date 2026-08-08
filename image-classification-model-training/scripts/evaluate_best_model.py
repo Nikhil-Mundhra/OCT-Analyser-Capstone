@@ -206,6 +206,9 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
 
     text_str = (
         f"PATIENT CASE STUDY REPORT\n"
+        f"===================================\n"
+        f"Authored by ML Developer:\n"
+        f"Nikhil Mundhra (NYU Abu Dhabi '2027)\n"
         f"===================================\n\n"
         f"[ H1 - Gatekeeper Triage ]\n"
         f"  Status   : {pred_h1} ({p_h1*100:.1f}%)\n"
@@ -368,20 +371,24 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     plt.axis('off')
     title_text = (
         "OCT ANALYSER CAPSTONE — FULL TELEMETRY DASHBOARD REPORT\n"
-        "===============================================================\n\n"
-        f"[ H1 Gatekeeper Performance ]\n"
-        f"  - Accuracy: {h1_acc*100:.2f}%\n"
-        f"  - Macro F1: {h1_f1:.4f}\n\n"
+        "=========================================================================================\n"
+        "Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)\n"
+        "Target Model        : Unified Multi-Head ConvNeXt V2 (Masked GAP + Dynamic FocalLoss)\n"
+        "Evaluation Suite    : Vectorized Population Telemetry & Dual H2 Grad-CAM Case Studies\n"
+        "=========================================================================================\n\n"
+        f"[ H1 Gatekeeper Triage Performance ]\n"
+        f"  - Accuracy : {h1_acc*100:.2f}%\n"
+        f"  - Macro F1 : {h1_f1:.4f}\n\n"
         f"[ H2 Granular Pathology Multi-Class Performance ]\n"
-        f"  - Accuracy: {h2_acc*100:.2f}%\n"
-        f"  - Macro F1: {h2_f1:.4f}\n"
+        f"  - Accuracy : {h2_acc*100:.2f}%\n"
+        f"  - Macro F1 : {h2_f1:.4f}\n"
         f"  - Active Classes: {sum(1 for m in per_class_metrics.values() if m['f1'] > 0)} / 12 (100% Active)\n\n"
         f"[ Per-Class F1 Breakdown Summary ]\n"
     )
     for c_name, m in per_class_metrics.items():
         title_text += f"  - {c_name:<14} : F1 = {m['f1']:.4f} | Prec = {m['precision']:.4f} | Rec = {m['recall']:.4f} | AUC = {m['auc']:.4f}\n"
     
-    plt.text(0.05, 0.95, title_text, fontsize=11, family='monospace', va='top')
+    plt.text(0.05, 0.95, title_text, fontsize=10.5, family='monospace', va='top')
     pdf.savefig(fig_cover); plt.close()
 
     # ── Page 2: H2 Normalized Confusion Matrix Heatmap ─────────────────────
