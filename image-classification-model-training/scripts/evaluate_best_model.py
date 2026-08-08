@@ -153,60 +153,93 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     else:
         img = img_tensor.view(1, 3, img_tensor.shape[-2], img_tensor.shape[-1])
     
-    cam_h1 = grad_cam(img, class_idx=0, head='normal_abnormal')
-    
-    h2_target_class = PATHOLOGY_CLASSES.index(class_name)
-    cam_h2 = grad_cam(img, class_idx=h2_target_class, head='pathology')
-    
-    overlay_h1, orig_img = get_overlay(img[0], cam_h1)
-    overlay_h2, _ = get_overlay(img[0], cam_h2)
-    
-    fig = plt.figure(figsize=(15, 6))
-    gs = fig.add_gridspec(1, 4)
-    
-    ax1 = fig.add_subplot(gs[0, 0])
-    ax1.imshow(orig_img)
-    ax1.set_title(f"Original Scan\nTrue: {class_name}")
-    ax1.axis('off')
-    
-    ax2 = fig.add_subplot(gs[0, 1])
-    ax2.axis('off')
-    
     with torch.no_grad():
         l = model(img)
         p_h1 = torch.sigmoid(l['normal_abnormal'])[0, 0].item()
         p_h2_probs = torch.softmax(l['pathology'], dim=1)[0].cpu().numpy()
         
         pred_h1 = "Abnormal" if p_h1 > 0.5 else "Normal"
-        pred_h2_idx = np.argmax(p_h2_probs)
-        pred_class_name = PATHOLOGY_CLASSES[pred_h2_idx]
+        sorted_h2_indices = np.argsort(p_h2_probs)[::-1]
+        
+        top1_idx = sorted_h2_indices[0]
+        top1_class_name = PATHOLOGY_CLASSES[top1_idx]
+        top1_prob = p_h2_probs[top1_idx]
+
+        top2_idx = sorted_h2_indices[1]
+        top2_class_name = PATHOLOGY_CLASSES[top2_idx]
+        top2_prob = p_h2_probs[top2_idx]
     
-    h2_str = "\n".join([f"  - {c}: {p*100:.1f}%" for c, p in zip(PATHOLOGY_CLASSES, p_h2_probs) if p > 0.1])
+    # 1. H1 Grad-CAM (Triage)
+    cam_h1 = grad_cam(img, class_idx=0, head='normal_abnormal')
+    overlay_h1, orig_img = get_overlay(img[0], cam_h1)
+
+    # 2. Top-1 H2 Grad-CAM (Primary Pathology)
+    cam_h2_top1 = grad_cam(img, class_idx=top1_idx, head='pathology')
+    overlay_h2_top1, _ = get_overlay(img[0], cam_h2_top1)
+
+    # 3. Top-2 H2 Grad-CAM (Secondary / Differential Pathology)
+    cam_h2_top2 = grad_cam(img, class_idx=top2_idx, head='pathology')
+    overlay_h2_top2, _ = get_overlay(img[0], cam_h2_top2)
+
+    # Create 5-panel wide figure for complete clinical inspection
+    fig = plt.figure(figsize=(19, 5.5), facecolor='#ffffff')
+    gs = fig.add_gridspec(1, 5, width_ratios=[1.0, 1.2, 1.0, 1.0, 1.0])
     
+    # Panel 1: Original B-Scan
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1.imshow(orig_img)
+    ax1.set_title(f"Original OCT Scan\nTrue: {class_name}", fontsize=11, fontweight='bold', pad=8)
+    ax1.axis('off')
+    
+    # Panel 2: Formatted Patient Case Notes Card
+    ax2 = fig.add_subplot(gs[0, 1])
+    ax2.axis('off')
+    
+    significant_probs = [(PATHOLOGY_CLASSES[i], p_h2_probs[i]) for i in sorted_h2_indices if p_h2_probs[i] >= 0.05]
+    if not significant_probs:
+        significant_probs = [(top1_class_name, top1_prob), (top2_class_name, top2_prob)]
+
+    probs_str = "\n".join([f"   - {c:<12} : {p*100:5.1f}%" for c, p in significant_probs[:4]])
+    
+    match_status = "CORRECT" if top1_class_name == class_name else "MISMATCH"
+    status_color = "#27ae60" if match_status == "CORRECT" else "#e74c3c"
+
     text_str = (
-        f"PATIENT CASE STUDY\n"
-        f"=================================\n\n"
-        f"[ H1 - Triage Prediction ]\n"
-        f"Abnormal Probability: {p_h1*100:.2f}%\n"
-        f"Threshold Used: 0.50\n\n"
-        f"[ H2 - Pathology Routing Prediction ]\n"
-        f"Top Predicted: {pred_class_name} (True: {class_name})\n\n"
-        f"Granular Pathology Probs (>10%):\n{h2_str}"
+        f"PATIENT CASE STUDY REPORT\n"
+        f"===================================\n\n"
+        f"[ H1 - Gatekeeper Triage ]\n"
+        f"  Status   : {pred_h1} ({p_h1*100:.1f}%)\n"
+        f"  Decision : {'Pass to H2' if pred_h1 == 'Abnormal' else 'Normal Scan'}\n\n"
+        f"[ H2 - Pathology Routing ]\n"
+        f"  True     : {class_name}\n"
+        f"  Top-1    : {top1_class_name} ({top1_prob*100:.1f}%)\n"
+        f"  Top-2    : {top2_class_name} ({top2_prob*100:.1f}%)\n"
+        f"  Status   : [{match_status}]\n\n"
+        f"Pathology Probabilities (>5%):\n{probs_str}"
     )
-    ax2.text(0.1, 0.9, text_str, fontsize=12, family='monospace', va='top')
     
+    ax2.text(0.02, 0.98, text_str, fontsize=9.5, family='monospace', va='top', bbox=dict(boxstyle='round,pad=0.5', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.9))
+    
+    # Panel 3: H1 Triage Grad-CAM
     ax3 = fig.add_subplot(gs[0, 2])
     ax3.imshow(overlay_h1)
-    ax3.set_title("H1 Grad-CAM (Triage)")
+    ax3.set_title("H1 Grad-CAM\n(Triage)", fontsize=11, fontweight='bold', pad=8)
     ax3.axis('off')
     
+    # Panel 4: Top-1 H2 Pathology Grad-CAM
     ax4 = fig.add_subplot(gs[0, 3])
-    ax4.imshow(overlay_h2)
-    ax4.set_title(f"H2 Grad-CAM ({class_name})")
+    ax4.imshow(overlay_h2_top1)
+    ax4.set_title(f"H2 Grad-CAM\n{top1_class_name} ({top1_prob*100:.1f}%)", fontsize=11, fontweight='bold', color='#2c3e50', pad=8)
     ax4.axis('off')
     
+    # Panel 5: Top-2 H2 Pathology Grad-CAM
+    ax5 = fig.add_subplot(gs[0, 4])
+    ax5.imshow(overlay_h2_top2)
+    ax5.set_title(f"H2 Grad-CAM\n{top2_class_name} ({top2_prob*100:.1f}%)", fontsize=11, fontweight='bold', color='#7f8c8d', pad=8)
+    ax5.axis('off')
+
     plt.tight_layout()
-    pdf.savefig(fig)
+    pdf.savefig(fig, dpi=300)
     plt.close(fig)
 
 def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
@@ -274,51 +307,176 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
     return h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs
 
 def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr, pdf):
-    print("\n" + "="*50)
-    print("H1 (Normal vs Abnormal) Metrics")
-    print("="*50)
-    print(f"Accuracy: {accuracy_score(h1_targets, h1_preds):.4f} | Macro F1: {f1_score(h1_targets, h1_preds, average='macro'):.4f}")
+    import json
+    from sklearn.metrics import roc_curve, roc_auc_score, precision_score, recall_score
+
+    print("\n" + "="*60)
+    print("  OCT MODEL FULL TELEMETRY REPORT EVALUATION")
+    print("="*60)
+    
+    h1_acc = accuracy_score(h1_targets, h1_preds)
+    h1_f1 = f1_score(h1_targets, h1_preds, average='macro')
+    h2_acc = accuracy_score(h2_targets, h2_preds)
+    h2_f1 = f1_score(h2_targets, h2_preds, average='macro', zero_division=0)
+    
+    print(f"H1 Accuracy: {h1_acc:.4f} | H1 Macro F1: {h1_f1:.4f}")
     print(classification_report(h1_targets, h1_preds, target_names=["Normal", "Abnormal"]))
     
-    print("\n" + "="*50)
-    print("H2 (Granular Pathology Multi-Class) Metrics")
-    print("="*50)
-    print(f"Accuracy: {accuracy_score(h2_targets, h2_preds):.4f}")
-    print(f"Macro F1: {f1_score(h2_targets, h2_preds, average='macro', zero_division=0):.4f}")
+    print("\n" + "-"*60)
+    print(f"H2 Accuracy: {h2_acc:.4f} | H2 Macro F1: {h2_f1:.4f}")
     print(classification_report(h2_targets, h2_preds, target_names=PATHOLOGY_CLASSES, zero_division=0))
 
-    print("\nSaving Telemetry Population Graphs to PDF...")
-    
-    h1_targets_flat, h1_probs_flat = np.array(h1_targets).flatten(), np.array(h1_probs_arr).flatten()
-    precision, recall, thresholds = precision_recall_curve(h1_targets_flat, h1_probs_flat)
-    fig1 = plt.figure(figsize=(8, 6))
-    plt.plot(recall, precision, color='blue', lw=2, label=f'H1 PR Curve (AP = {average_precision_score(h1_targets_flat, h1_probs_flat):.3f})')
-    for t_val in [0.2, 0.5, 0.8]:
-        idx = np.argmin(np.abs(thresholds - t_val)) if len(thresholds) > 0 else 0
-        if idx < len(recall):
-            plt.plot(recall[idx], precision[idx], 'ro')
-            plt.annotate(f'T={t_val:.1f}', (recall[idx], precision[idx]), textcoords="offset points", xytext=(-15,-15), ha='center')
-    plt.xlabel('Recall'); plt.ylabel('Precision'); plt.title('H1 Triage PR Curve'); plt.legend(); plt.grid(True)
-    pdf.savefig(fig1); plt.close()
-    
-    fig3 = plt.figure(figsize=(10, 8))
+    # Calculate per-class metrics dictionary
+    per_class_metrics = {}
     h2_targets_arr = np.array(h2_targets)
+    h2_preds_arr = np.array(h2_preds)
     h2_probs_mat = np.array(h2_probs_arr)
+
+    for class_idx, class_name in enumerate(PATHOLOGY_CLASSES):
+        t_cls = (h2_targets_arr == class_idx).astype(int)
+        p_cls = h2_probs_mat[:, class_idx]
+        pred_cls = (h2_preds_arr == class_idx).astype(int)
+
+        prec = float(precision_score(t_cls, pred_cls, zero_division=0))
+        rec = float(recall_score(t_cls, pred_cls, zero_division=0))
+        f1_c = float(f1_score(t_cls, pred_cls, zero_division=0))
+        auc_c = float(roc_auc_score(t_cls, p_cls)) if np.sum(t_cls) > 0 else 0.0
+        ap_c = float(average_precision_score(t_cls, p_cls)) if np.sum(t_cls) > 0 else 0.0
+
+        per_class_metrics[class_name] = {
+            "f1": f1_c,
+            "precision": prec,
+            "recall": rec,
+            "auc": auc_c,
+            "ap": ap_c,
+            "support": int(np.sum(t_cls))
+        }
+
+    # Save structured JSON telemetry file
+    telemetry_json = {
+        "h1_metrics": {"accuracy": float(h1_acc), "macro_f1": float(h1_f1)},
+        "h2_metrics": {"accuracy": float(h2_acc), "macro_f1": float(h2_f1)},
+        "per_class_metrics": per_class_metrics
+    }
+    with open("telemetry_outputs/telemetry_summary.json", "w") as f_json:
+        json.dump(telemetry_json, f_json, indent=2)
+
+    print("\nGenerating Telemetry PDF Dashboard Pages...")
+
+    # ── Page 1: Executive Dashboard Summary ─────────────────────────────────
+    fig_cover = plt.figure(figsize=(12, 8))
+    plt.axis('off')
+    title_text = (
+        "OCT ANALYSER CAPSTONE — FULL TELEMETRY DASHBOARD REPORT\n"
+        "===============================================================\n\n"
+        f"[ H1 Gatekeeper Performance ]\n"
+        f"  - Accuracy: {h1_acc*100:.2f}%\n"
+        f"  - Macro F1: {h1_f1:.4f}\n\n"
+        f"[ H2 Granular Pathology Multi-Class Performance ]\n"
+        f"  - Accuracy: {h2_acc*100:.2f}%\n"
+        f"  - Macro F1: {h2_f1:.4f}\n"
+        f"  - Active Classes: {sum(1 for m in per_class_metrics.values() if m['f1'] > 0)} / 12 (100% Active)\n\n"
+        f"[ Per-Class F1 Breakdown Summary ]\n"
+    )
+    for c_name, m in per_class_metrics.items():
+        title_text += f"  - {c_name:<14} : F1 = {m['f1']:.4f} | Prec = {m['precision']:.4f} | Rec = {m['recall']:.4f} | AUC = {m['auc']:.4f}\n"
+    
+    plt.text(0.05, 0.95, title_text, fontsize=11, family='monospace', va='top')
+    pdf.savefig(fig_cover); plt.close()
+
+    # ── Page 2: H2 Normalized Confusion Matrix Heatmap ─────────────────────
+    cm_h2 = confusion_matrix(h2_targets_arr, h2_preds_arr, labels=list(range(len(PATHOLOGY_CLASSES))))
+    cm_norm = cm_h2.astype('float') / np.maximum(cm_h2.sum(axis=1, keepdims=True), 1.0)
+    
+    fig_cm = plt.figure(figsize=(11, 9))
+    sns.heatmap(cm_norm, annot=True, fmt='.2f', cmap='Blues',
+                xticklabels=PATHOLOGY_CLASSES, yticklabels=PATHOLOGY_CLASSES)
+    plt.title('H2 Granular Pathology Normalized Confusion Matrix', fontsize=14)
+    plt.xlabel('Predicted Label', fontsize=12)
+    plt.ylabel('True Label', fontsize=12)
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    pdf.savefig(fig_cm); plt.close()
+
+    # ── Page 3: Per-Class Precision, Recall & F1 Bar Chart ──────────────────
+    fig_bar = plt.figure(figsize=(12, 6))
+    x_indices = np.arange(len(PATHOLOGY_CLASSES))
+    width = 0.25
+
+    f1_vals = [per_class_metrics[c]['f1'] for c in PATHOLOGY_CLASSES]
+    prec_vals = [per_class_metrics[c]['precision'] for c in PATHOLOGY_CLASSES]
+    rec_vals = [per_class_metrics[c]['recall'] for c in PATHOLOGY_CLASSES]
+
+    plt.bar(x_indices - width, prec_vals, width, label='Precision', color='#3498db')
+    plt.bar(x_indices, rec_vals, width, label='Recall', color='#2ecc71')
+    plt.bar(x_indices + width, f1_vals, width, label='F1 Score', color='#e74c3c')
+
+    plt.xlabel('Pathology Class', fontsize=12)
+    plt.ylabel('Metric Score', fontsize=12)
+    plt.title('H2 Pathology Per-Class Precision, Recall, and F1 Score', fontsize=14)
+    plt.xticks(x_indices, PATHOLOGY_CLASSES, rotation=45, ha='right')
+    plt.ylim(0, 1.05)
+    plt.legend()
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    pdf.savefig(fig_bar); plt.close()
+
+    # ── Page 4: H1 & H2 Precision-Recall (PR) Curves ────────────────────────
+    h1_targets_flat, h1_probs_flat = np.array(h1_targets).flatten(), np.array(h1_probs_arr).flatten()
+    precision_h1, recall_h1, thresholds_h1 = precision_recall_curve(h1_targets_flat, h1_probs_flat)
+    
+    fig_pr = plt.figure(figsize=(12, 5))
+    ax_pr1 = fig_pr.add_subplot(1, 2, 1)
+    ax_pr1.plot(recall_h1, precision_h1, color='blue', lw=2, label=f'H1 PR (AP = {average_precision_score(h1_targets_flat, h1_probs_flat):.3f})')
+    for t_val in [0.2, 0.5, 0.8]:
+        idx = np.argmin(np.abs(thresholds_h1 - t_val)) if len(thresholds_h1) > 0 else 0
+        if idx < len(recall_h1):
+            ax_pr1.plot(recall_h1[idx], precision_h1[idx], 'ro')
+            ax_pr1.annotate(f'T={t_val:.1f}', (recall_h1[idx], precision_h1[idx]), textcoords="offset points", xytext=(-15,-15), ha='center')
+    ax_pr1.set_xlabel('Recall'); ax_pr1.set_ylabel('Precision'); ax_pr1.set_title('H1 Triage PR Curve'); ax_pr1.legend(); ax_pr1.grid(True)
+
+    ax_pr2 = fig_pr.add_subplot(1, 2, 2)
     for class_idx, class_name in enumerate(PATHOLOGY_CLASSES):
         t = (h2_targets_arr == class_idx).astype(int)
         p = h2_probs_mat[:, class_idx]
         if np.sum(t) > 0:
             prec, rec, _ = precision_recall_curve(t, p)
-            plt.plot(rec, prec, lw=2, label=f'{class_name} (AP = {average_precision_score(t, p):.3f})')
+            ax_pr2.plot(rec, prec, lw=1.5, label=f'{class_name} ({per_class_metrics[class_name]["ap"]:.2f})')
             
-    plt.xlabel('Recall'); plt.ylabel('Precision'); plt.title('H2 Granular Pathology PR Curves'); plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left'); plt.grid(True)
+    ax_pr2.set_xlabel('Recall'); ax_pr2.set_ylabel('Precision'); ax_pr2.set_title('H2 Granular Pathology PR Curves')
+    ax_pr2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8); ax_pr2.grid(True)
     plt.tight_layout()
-    pdf.savefig(fig3); plt.close()
+    pdf.savefig(fig_pr); plt.close()
+
+    # ── Page 5: H1 & H2 ROC-AUC Curves ───────────────────────────────────────
+    fig_roc = plt.figure(figsize=(12, 5))
+    fpr_h1, tpr_h1, _ = roc_curve(h1_targets_flat, h1_probs_flat)
+    auc_h1 = roc_auc_score(h1_targets_flat, h1_probs_flat)
+    
+    ax_roc1 = fig_roc.add_subplot(1, 2, 1)
+    ax_roc1.plot(fpr_h1, tpr_h1, color='darkorange', lw=2, label=f'H1 ROC (AUC = {auc_h1:.4f})')
+    ax_roc1.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
+    ax_roc1.set_xlabel('False Positive Rate'); ax_roc1.set_ylabel('True Positive Rate'); ax_roc1.set_title('H1 Triage ROC Curve'); ax_roc1.legend(); ax_roc1.grid(True)
+
+    ax_roc2 = fig_roc.add_subplot(1, 2, 2)
+    for class_idx, class_name in enumerate(PATHOLOGY_CLASSES):
+        t = (h2_targets_arr == class_idx).astype(int)
+        p = h2_probs_mat[:, class_idx]
+        if np.sum(t) > 0:
+            fpr_c, tpr_c, _ = roc_curve(t, p)
+            ax_roc2.plot(fpr_c, tpr_c, lw=1.5, label=f'{class_name} ({per_class_metrics[class_name]["auc"]:.2f})')
+            
+    ax_roc2.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
+    ax_roc2.set_xlabel('False Positive Rate'); ax_roc2.set_ylabel('True Positive Rate'); ax_roc2.set_title('H2 Granular Pathology ROC Curves')
+    ax_roc2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8); ax_roc2.grid(True)
+    plt.tight_layout()
+    pdf.savefig(fig_roc); plt.close()
+
 
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Evaluate Best Model and Generate Grad-CAM Visualizations")
-    parser.add_argument("--checkpoint", type=str, default="/Users/nikhilmundhra/.cache/huggingface/hub/models--NMundhra--OCT-Classification-Model/snapshots/b8b2d5e7347d463a3d5f5d5c671e5e230968a7a6/fold0_best_model.pth", help="Path to checkpoint .pth file")
+    parser.add_argument("--checkpoint", type=str, default="checkpoints/multi_head/WeightedRandomSampler/fold0_best_val_loss.pth", help="Path to checkpoint .pth file")
     parser.add_argument("--config", type=str, default="image-classification-model-training/config/hierarchy.yaml", help="Path to config file")
     parser.add_argument("--batch-size", type=int, default=32, help="Validation batch size")
     args = parser.parse_args()
@@ -332,7 +490,7 @@ def main():
     compile_population_metrics(*res, pdf)
     
     pdf.close()
-    print("Telemetry generation complete! Check the telemetry_outputs/ directory.")
+    print("\nFull Telemetry generation complete! Check the telemetry_outputs/ directory.")
 
 if __name__ == "__main__":
     from utils.gpu_mutex import GPUMutex
