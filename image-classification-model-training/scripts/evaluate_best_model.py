@@ -270,7 +270,7 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     fig.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.98])
-    pdf.savefig(fig, dpi=300)
+    pdf.savefig(fig, dpi=120)
     plt.close(fig)
 
 def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
@@ -397,7 +397,7 @@ def render_executive_cover_page(pdf, h1_acc, h1_f1, h2_acc, h2_f1, per_class_met
     
     fig_cover.text(0.08, 0.76, cover_summary, ha='left', va='top', fontsize=9.5, family='monospace', bbox=dict(boxstyle='round,pad=0.8', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.95))
     fig_cover.text(0.5, 0.02, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
-    pdf.savefig(fig_cover)
+    pdf.savefig(fig_cover, dpi=150)
     plt.close(fig_cover)
 
 def render_confusion_matrix_page(pdf, h2_targets_arr, h2_preds_arr):
@@ -413,7 +413,7 @@ def render_confusion_matrix_page(pdf, h2_targets_arr, h2_preds_arr):
     plt.xticks(rotation=45, ha='right')
     fig_cm.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
     plt.tight_layout(rect=[0, 0.03, 1, 0.98])
-    pdf.savefig(fig_cm); plt.close(fig_cm)
+    pdf.savefig(fig_cm, dpi=150); plt.close(fig_cm)
 
 def render_per_class_bar_chart(pdf, per_class_metrics):
     fig_bar = plt.figure(figsize=(12, 6))
@@ -437,7 +437,7 @@ def render_per_class_bar_chart(pdf, per_class_metrics):
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     fig_bar.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
     plt.tight_layout(rect=[0, 0.03, 1, 0.98])
-    pdf.savefig(fig_bar); plt.close(fig_bar)
+    pdf.savefig(fig_bar, dpi=150); plt.close(fig_bar)
 
 def render_precision_recall_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_probs_mat, per_class_metrics):
     h1_targets_flat, h1_probs_flat = np.array(h1_targets).flatten(), np.array(h1_probs_arr).flatten()
@@ -465,7 +465,7 @@ def render_precision_recall_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr
     ax_pr2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8); ax_pr2.grid(True)
     fig_pr.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
     plt.tight_layout(rect=[0, 0.03, 1, 0.98])
-    pdf.savefig(fig_pr); plt.close(fig_pr)
+    pdf.savefig(fig_pr, dpi=150); plt.close(fig_pr)
 
 def render_roc_auc_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_probs_mat, per_class_metrics):
     h1_targets_flat, h1_probs_flat = np.array(h1_targets).flatten(), np.array(h1_probs_arr).flatten()
@@ -491,7 +491,7 @@ def render_roc_auc_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_prob
     ax_roc2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8); ax_roc2.grid(True)
     fig_roc.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
     plt.tight_layout(rect=[0, 0.03, 1, 0.98])
-    pdf.savefig(fig_roc); plt.close(fig_roc)
+    pdf.savefig(fig_roc, dpi=150); plt.close(fig_roc)
 
 def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr, pdf, ckpt_dir=None):
     print("\n" + "="*60)
