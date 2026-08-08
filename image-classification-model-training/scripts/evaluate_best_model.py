@@ -226,7 +226,7 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
         f"Pathology Probabilities (>5%):\n{probs_str}"
     )
     
-    ax2.text(0.02, 0.98, text_str, fontsize=9.5, family='monospace', va='top', bbox=dict(boxstyle='round,pad=0.6', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.95))
+    ax2.text(0.02, 0.5, text_str, fontsize=9.5, family='monospace', va='center', bbox=dict(boxstyle='round,pad=0.6', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.95))
     
     # Panel 3: H1 Triage Grad-CAM
     ax3 = fig.add_subplot(gs[0, 2])
