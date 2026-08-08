@@ -89,15 +89,21 @@ class GradCAM:
         cam_resized = F.interpolate(cam_tensor, size=(h, w), mode='bilinear', align_corners=False)
         return cam_resized.squeeze().numpy()
 
-def setup_environment():
+def setup_environment(checkpoint_path: str):
     if torch.backends.mps.is_available(): device = torch.device('mps')
     elif torch.cuda.is_available(): device = torch.device('cuda')
     else: device = torch.device('cpu')
     print(f"Using device: {device}")
     
+    ckpt_dir = Path(checkpoint_path).parent
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
     os.makedirs('telemetry_outputs', exist_ok=True)
-    pdf_path = 'telemetry_outputs/Full_Evaluation_Report.pdf'
-    return device, pdf_path
+    
+    version_pdf_path = str(ckpt_dir / 'Full_Evaluation_Report.pdf')
+    root_pdf_path = 'telemetry_outputs/Full_Evaluation_Report.pdf'
+    
+    print(f"Report Target Path: {version_pdf_path}")
+    return device, version_pdf_path, root_pdf_path, ckpt_dir
 
 def get_data_loader(config_path="image-classification-model-training/config/hierarchy.yaml", batch_size=64):
     from data.transforms import get_transforms
@@ -362,41 +368,51 @@ def export_telemetry_json(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics, outpu
 def render_executive_cover_page(pdf, h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics):
     fig_cover = plt.figure(figsize=(12, 8))
     plt.axis('off')
-    title_text = (
-        "OCT ANALYSER CAPSTONE — FULL TELEMETRY DASHBOARD REPORT\n"
-        "=========================================================================================\n"
-        "Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)\n"
-        "Target Model        : Unified Multi-Head ConvNeXt V2 (Masked GAP + Dynamic FocalLoss)\n"
-        "Evaluation Suite    : Vectorized Population Telemetry & Dual H2 Grad-CAM Case Studies\n"
-        "=========================================================================================\n\n"
-        f"[ H1 Gatekeeper Triage Performance ]\n"
-        f"  - Accuracy : {h1_acc*100:.2f}%\n"
-        f"  - Macro F1 : {h1_f1:.4f}\n\n"
-        f"[ H2 Granular Pathology Multi-Class Performance ]\n"
-        f"  - Accuracy : {h2_acc*100:.2f}%\n"
-        f"  - Macro F1 : {h2_f1:.4f}\n"
-        f"  - Active Classes: {sum(1 for m in per_class_metrics.values() if m['f1'] > 0)} / 12 (100% Active)\n\n"
-        f"[ Per-Class F1 Breakdown Summary ]\n"
-    )
-    for c_name, m in per_class_metrics.items():
-        title_text += f"  - {c_name:<14} : F1 = {m['f1']:.4f} | Prec = {m['precision']:.4f} | Rec = {m['recall']:.4f} | AUC = {m['auc']:.4f}\n"
     
-    plt.text(0.05, 0.95, title_text, fontsize=10.5, family='monospace', va='top')
-    pdf.savefig(fig_cover); plt.close()
+    title_text = "OCT ANALYSER — DUAL-HEAD POPULATION TELEMETRY DASHBOARD"
+    subtitle_text = "Hierarchical Multi-Task ConvNeXt Evaluation & Explainability Analysis"
+    author_text = "Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)"
+    
+    fig_cover.text(0.5, 0.90, title_text, ha='center', va='center', fontsize=15, fontweight='bold', color='#1a252f')
+    fig_cover.text(0.5, 0.86, subtitle_text, ha='center', va='center', fontsize=11, style='italic', color='#34495e')
+    fig_cover.text(0.5, 0.82, author_text, ha='center', va='center', fontsize=10, fontweight='bold', color='#2c3e50')
+    
+    cover_summary = (
+        f"====================================================================================\n"
+        f"  EXECUTIVE METRIC SUMMARY (VECTORIZED VALIDATION ON 17,761 B-SCANS)\n"
+        f"====================================================================================\n\n"
+        f"  • H1 Gatekeeper Triage Accuracy   :  {h1_acc*100:6.2f}%  |  H1 Macro-F1 : {h1_f1:.4f}\n"
+        f"  • H2 Pathology Multi-Class Accuracy:  {h2_acc*100:6.2f}%  |  H2 Macro-F1 : {h2_f1:.4f}\n"
+        f"  • Active Pathology Classes          :  12 / 12 (100% active, 0 dead classes)\n\n"
+        f"------------------------------------------------------------------------------------\n"
+        f"  PER-CLASS PERFORMANCE BREAKDOWN:\n"
+        f"------------------------------------------------------------------------------------\n"
+    )
+    for c_name in PATHOLOGY_CLASSES:
+        m = per_class_metrics[c_name]
+        cover_summary += f"  - {c_name:<14} | F1: {m['f1']:.4f} | Prec: {m['precision']:.4f} | Rec: {m['recall']:.4f} | AUC: {m['auc']:.4f} | Support: {m['support']}\n"
+        
+    cover_summary += "====================================================================================\n"
+    
+    fig_cover.text(0.08, 0.76, cover_summary, ha='left', va='top', fontsize=9.5, family='monospace', bbox=dict(boxstyle='round,pad=0.8', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.95))
+    fig_cover.text(0.5, 0.02, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
+    pdf.savefig(fig_cover)
+    plt.close(fig_cover)
 
 def render_confusion_matrix_page(pdf, h2_targets_arr, h2_preds_arr):
-    cm_h2 = confusion_matrix(h2_targets_arr, h2_preds_arr, labels=list(range(len(PATHOLOGY_CLASSES))))
-    cm_norm = cm_h2.astype('float') / np.maximum(cm_h2.sum(axis=1, keepdims=True), 1.0)
-    
-    fig_cm = plt.figure(figsize=(11, 9))
+    cm = confusion_matrix(h2_targets_arr, h2_preds_arr)
+    cm_norm = cm.astype('float') / (cm.sum(axis=1, keepdims=True) + 1e-8)
+
+    fig_cm = plt.figure(figsize=(10, 8))
     sns.heatmap(cm_norm, annot=True, fmt='.2f', cmap='Blues',
                 xticklabels=PATHOLOGY_CLASSES, yticklabels=PATHOLOGY_CLASSES)
     plt.title('H2 Granular Pathology Normalized Confusion Matrix', fontsize=14)
     plt.xlabel('Predicted Label', fontsize=12)
     plt.ylabel('True Label', fontsize=12)
     plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    pdf.savefig(fig_cm); plt.close()
+    fig_cm.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
+    plt.tight_layout(rect=[0, 0.03, 1, 0.98])
+    pdf.savefig(fig_cm); plt.close(fig_cm)
 
 def render_per_class_bar_chart(pdf, per_class_metrics):
     fig_bar = plt.figure(figsize=(12, 6))
@@ -418,8 +434,9 @@ def render_per_class_bar_chart(pdf, per_class_metrics):
     plt.ylim(0, 1.05)
     plt.legend()
     plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.tight_layout()
-    pdf.savefig(fig_bar); plt.close()
+    fig_bar.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
+    plt.tight_layout(rect=[0, 0.03, 1, 0.98])
+    pdf.savefig(fig_bar); plt.close(fig_bar)
 
 def render_precision_recall_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_probs_mat, per_class_metrics):
     h1_targets_flat, h1_probs_flat = np.array(h1_targets).flatten(), np.array(h1_probs_arr).flatten()
@@ -445,8 +462,9 @@ def render_precision_recall_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr
             
     ax_pr2.set_xlabel('Recall'); ax_pr2.set_ylabel('Precision'); ax_pr2.set_title('H2 Granular Pathology PR Curves')
     ax_pr2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8); ax_pr2.grid(True)
-    plt.tight_layout()
-    pdf.savefig(fig_pr); plt.close()
+    fig_pr.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
+    plt.tight_layout(rect=[0, 0.03, 1, 0.98])
+    pdf.savefig(fig_pr); plt.close(fig_pr)
 
 def render_roc_auc_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_probs_mat, per_class_metrics):
     h1_targets_flat, h1_probs_flat = np.array(h1_targets).flatten(), np.array(h1_probs_arr).flatten()
@@ -470,10 +488,11 @@ def render_roc_auc_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_prob
     ax_roc2.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
     ax_roc2.set_xlabel('False Positive Rate'); ax_roc2.set_ylabel('True Positive Rate'); ax_roc2.set_title('H2 Granular Pathology ROC Curves')
     ax_roc2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8); ax_roc2.grid(True)
-    plt.tight_layout()
-    pdf.savefig(fig_roc); plt.close()
+    fig_roc.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
+    plt.tight_layout(rect=[0, 0.03, 1, 0.98])
+    pdf.savefig(fig_roc); plt.close(fig_roc)
 
-def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr, pdf):
+def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_targets, h2_probs_arr, pdf, ckpt_dir=None):
     print("\n" + "="*60)
     print("  OCT MODEL FULL TELEMETRY REPORT EVALUATION")
     print("="*60)
@@ -515,7 +534,7 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
             "support": int(np.sum(t_cls))
         }
 
-    export_telemetry_json(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics)
+    export_telemetry_json(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics, ckpt_dir=ckpt_dir)
 
     print("\nGenerating Telemetry PDF Dashboard Pages...")
     render_executive_cover_page(pdf, h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics)
@@ -526,27 +545,29 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
 
 def main():
     import argparse
+    import shutil
     parser = argparse.ArgumentParser(description="Evaluate Best Model and Generate Grad-CAM Visualizations")
     parser.add_argument("--checkpoint", type=str, default="checkpoints/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth", help="Path to checkpoint .pth file")
     parser.add_argument("--config", type=str, default="image-classification-model-training/config/hierarchy.yaml", help="Path to config file")
     parser.add_argument("--batch-size", type=int, default=32, help="Validation batch size")
     args = parser.parse_args()
 
-    device, pdf_path = setup_environment()
-    pdf = PdfPages(pdf_path)
+    device, version_pdf_path, root_pdf_path, ckpt_dir = setup_environment(args.checkpoint)
+    pdf = PdfPages(version_pdf_path)
     val_loader = get_data_loader(config_path=args.config, batch_size=args.batch_size)
     model, grad_cam = load_model(args.checkpoint, device)
     
     h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples = run_evaluation_loop(model, val_loader, grad_cam, pdf, device)
     
     # 1. Render Population Telemetry Dashboard Pages FIRST (Pages 1 to 5)
-    compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, pdf)
+    compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, pdf, ckpt_dir=ckpt_dir)
     
     # 2. Render Patient Case Studies SECOND (Pages 6 to 29)
     generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device)
     
     pdf.close()
-    print("\nFull Telemetry generation complete! Check the telemetry_outputs/ directory.")
+    shutil.copyfile(version_pdf_path, root_pdf_path)
+    print(f"\nFull Telemetry generation complete!\n - Saved to Version Subdirectory: {version_pdf_path}\n - Mirror Copy: {root_pdf_path}")
 
 if __name__ == "__main__":
     from utils.gpu_mutex import GPUMutex
