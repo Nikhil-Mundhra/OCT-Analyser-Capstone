@@ -77,15 +77,24 @@ def main():
 
     compute_manager = ComputeManager(use_data_parallel=args.use_data_parallel, use_ddp=args.use_ddp)
 
-    # Get class weights from full dataset for FocalLoss alpha
+    # Initialize H2 FocalLoss alpha weights
     full_ds = MultiHeadOCTDataset(config_path=args.config, transform=None)
-    h2_alpha = full_ds.compute_class_weights("h2")
-    if compute_manager.is_main_process:
-        class_names = full_ds.get_class_names("h2")
-        logger.info("=== H2 Normalized Bounded FocalLoss Alpha Weights ===")
-        for idx, (c_name, w_val) in enumerate(zip(class_names, h2_alpha.tolist())):
-            logger.info(f"  {c_name:<15} : {w_val:.2f}")
-        logger.info("=====================================================")
+    class_names = full_ds.get_class_names("h2")
+
+    if args.use_weighted_sampler:
+        # WeightedRandomSampler already equalizes batch presentation at the input layer.
+        # Setting initial alpha to uniform 1.0 prevents double-counting class imbalance,
+        # letting the Dynamic Adaptive Class-Weight Controller adjust loss weights purely based on validation F1.
+        h2_alpha = torch.ones(len(class_names), dtype=torch.float32)
+        if compute_manager.is_main_process:
+            logger.info("=== WeightedRandomSampler Active: Initial FocalLoss Alpha set to Uniform 1.0 (Dynamic Controller Active) ===")
+    else:
+        h2_alpha = full_ds.compute_class_weights("h2")
+        if compute_manager.is_main_process:
+            logger.info("=== H2 Normalized Bounded FocalLoss Alpha Weights (Inverse Class Frequency) ===")
+            for idx, (c_name, w_val) in enumerate(zip(class_names, h2_alpha.tolist())):
+                logger.info(f"  {c_name:<15} : {w_val:.2f}")
+            logger.info("=================================================================================")
 
     criterions = {
         'h1': nn.BCEWithLogitsLoss(),
