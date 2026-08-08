@@ -191,6 +191,16 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     cam_h2_top2 = grad_cam(img, class_idx=top2_idx, head='pathology')
     overlay_h2_top2, _ = get_overlay(img[0], cam_h2_top2)
 
+    # Compute CAM Cosine Similarity & Binarized IoU between Top-1 and Top-2 CAMs
+    c1_flat, c2_flat = cam_h2_top1.flatten(), cam_h2_top2.flatten()
+    n1, n2 = np.linalg.norm(c1_flat), np.linalg.norm(c2_flat)
+    cos_sim = float(np.dot(c1_flat, c2_flat) / (n1 * n2 + 1e-8)) if (n1 > 0 and n2 > 0) else 0.0
+
+    b1, b2 = cam_h2_top1 > 0.5, cam_h2_top2 > 0.5
+    intersection = np.logical_and(b1, b2).sum()
+    union = np.logical_or(b1, b2).sum()
+    iou = float(intersection / max(union, 1))
+
     # 5-Panel balanced clinical inspection layout
     fig = plt.figure(figsize=(18, 5.2), facecolor='#ffffff')
     gs = fig.add_gridspec(1, 5, width_ratios=[1.0, 1.15, 1.0, 1.0, 1.0], wspace=0.18)
@@ -223,10 +233,13 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
         f"  Top-1    : {top1_class_name} ({top1_prob*100:.1f}%)\n"
         f"  Top-2    : {top2_class_name} ({top2_prob*100:.1f}%)\n"
         f"  Status   : [{match_status}]\n\n"
+        f"[ CAM Ambiguity Quantification ]\n"
+        f"  Cosine Sim  : {cos_sim:.3f}\n"
+        f"  Overlap IoU : {iou:.3f}\n\n"
         f"Pathology Probabilities (>5%):\n{probs_str}"
     )
     
-    ax2.text(0.02, 0.5, text_str, fontsize=9.5, family='monospace', va='center', bbox=dict(boxstyle='round,pad=0.6', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.95))
+    ax2.text(0.02, 0.5, text_str, fontsize=9.2, family='monospace', va='center', bbox=dict(boxstyle='round,pad=0.6', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.95))
     
     # Panel 3: H1 Triage Grad-CAM
     ax3 = fig.add_subplot(gs[0, 2])
@@ -257,8 +270,8 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
     h1_preds, h1_targets, h1_probs_arr = [], [], []
     all_h2_preds, all_h2_targets, all_h2_probs = [], [], []
     
-    gradcam_samples = {}
-    max_cases_per_disease = 2
+    correct_samples = {}
+    mismatch_samples = {}
     
     _amp_dtype = torch.float16 if device.type == "mps" else (torch.bfloat16 if device.type == "cuda" else torch.float16)
     print("Executing Phase 1: Pure GPU Vectorized Evaluation...")
@@ -286,33 +299,54 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
             if valid_h2_mask.sum() > 0:
                 probs_h2 = torch.softmax(logits['pathology'][valid_h2_mask], dim=1).cpu().numpy()
                 preds_h2 = np.argmax(probs_h2, axis=1)
-                
                 targets_h2 = labels['pathology'][valid_h2_mask].numpy()
+                
                 all_h2_targets.extend(targets_h2)
                 all_h2_probs.extend(probs_h2)
                 all_h2_preds.extend(preds_h2)
-                    
-        for b_idx in range(images.size(0)):
-            is_abnormal = labels['normal_abnormal'][b_idx].item() == 1
-            if is_abnormal:
-                class_idx = int(labels['pathology'][b_idx].item())
-                if 0 <= class_idx < len(PATHOLOGY_CLASSES):
-                    class_name = PATHOLOGY_CLASSES[class_idx]
-                    current_samples = gradcam_samples.get(class_name, [])
-                    if len(current_samples) < max_cases_per_disease:
-                        current_samples.append((images[b_idx].clone(), class_idx, class_name))
-                        gradcam_samples[class_name] = current_samples
+
+                # Store representative correct and mismatched sample images for Phase 2
+                valid_indices = torch.where(valid_h2_mask)[0]
+                for idx_in_batch, val_idx in enumerate(valid_indices):
+                    c_idx = int(targets_h2[idx_in_batch])
+                    p_idx = int(preds_h2[idx_in_batch])
+                    if 0 <= c_idx < len(PATHOLOGY_CLASSES):
+                        c_name = PATHOLOGY_CLASSES[c_idx]
+                        img_copy = images[val_idx].clone()
+                        if c_idx == p_idx:
+                            if len(correct_samples.get(c_name, [])) < 2:
+                                correct_samples.setdefault(c_name, []).append((img_copy, c_idx, c_name))
+                        else:
+                            if len(mismatch_samples.get(c_name, [])) < 1:
+                                mismatch_samples.setdefault(c_name, []).append((img_copy, c_idx, c_name))
                     
         if i % 20 == 0 or i == len(val_loader) - 1:
             print(f"Evaluation Progress: Batch {i+1}/{len(val_loader)}")
 
-    print(f"\nPhase 1 Complete! Evaluating Phase 2: Targeted Grad-CAM Generation on {sum(len(v) for v in gradcam_samples.values())} Selected Case Studies...")
-    for class_name, samples in gradcam_samples.items():
-        for img_tensor, class_idx, c_name in samples:
+    return h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples
+
+def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device):
+    total_cases = 0
+    print("\nPhase 2: Generating Representative Patient Case Studies (1 Correct High-Confidence + 1 Confused Case per class)...")
+    for class_name in PATHOLOGY_CLASSES:
+        samples_to_render = []
+        # 1. Correct sample
+        corr = correct_samples.get(class_name, [])
+        if corr:
+            samples_to_render.append(corr[0])
+        # 2. Mismatch sample (if available), otherwise 2nd correct sample
+        mism = mismatch_samples.get(class_name, [])
+        if mism:
+            samples_to_render.append(mism[0])
+        elif len(corr) > 1:
+            samples_to_render.append(corr[1])
+
+        for img_tensor, class_idx, c_name in samples_to_render:
             img_input = img_tensor.unsqueeze(0).to(device)
             generate_patient_case_study(img_input, class_idx, c_name, model, grad_cam, pdf)
-
-    return h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs
+            total_cases += 1
+            
+    print(f"Phase 2 Complete! Successfully rendered {total_cases} Patient Case Study PDF pages.")
 
 # ── Extracted Modular Plotting & Export Functions ───────────────────────────
 
@@ -503,8 +537,13 @@ def main():
     val_loader = get_data_loader(config_path=args.config, batch_size=args.batch_size)
     model, grad_cam = load_model(args.checkpoint, device)
     
-    res = run_evaluation_loop(model, val_loader, grad_cam, pdf, device)
-    compile_population_metrics(*res, pdf)
+    h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples = run_evaluation_loop(model, val_loader, grad_cam, pdf, device)
+    
+    # 1. Render Population Telemetry Dashboard Pages FIRST (Pages 1 to 5)
+    compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, pdf)
+    
+    # 2. Render Patient Case Studies SECOND (Pages 6 to 29)
+    generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device)
     
     pdf.close()
     print("\nFull Telemetry generation complete! Check the telemetry_outputs/ directory.")
