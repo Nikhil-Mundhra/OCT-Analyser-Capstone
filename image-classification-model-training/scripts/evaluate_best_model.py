@@ -1,3 +1,12 @@
+"""
+OCT Model Full Telemetry Evaluation & PDF Dashboard Generator
+Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)
+
+NOTE: This script performs full vectorized evaluation across all 17,761 validation scans
+followed by 24 5-panel Dual H2 Grad-CAM case studies and multi-page PDF rendering.
+EXPECTED RUNTIME: Takes over 500s (~8-10 minutes) to execute on Apple Silicon MPS / CUDA.
+"""
+
 import os
 import sys
 import torch
