@@ -20,8 +20,9 @@ from sklearn.metrics import confusion_matrix, classification_report, f1_score, p
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from models.multi_head_convnext import MultiHeadConvNeXt, build_multi_head_model
-from data.dataset import build_kfold_dataloaders, MultiHeadOCTDataset, DEFAULT_PATHOLOGY_CLASSES
-from transforms import get_transforms
+from training.multi_head_trainer import DEFAULT_PATHOLOGY_CLASSES
+from data.dataset import build_kfold_dataloaders, MultiHeadOCTDataset
+from data.transforms import get_transforms
 from utils.device import get_raw_model
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -66,9 +67,9 @@ def analyze_checkpoint(checkpoint_path: str, config_path: str, fold_id: int = 0)
     logger.info(f"Evaluating validation dataset for Fold {fold_id} ({len(dataset)} samples)...")
     
     with torch.no_grad():
-        for i, batch in enumerate(val_loader):
-            images = batch["image"].to(device)
-            targets = batch["h2"].to(device) # One-hot target [B, 12]
+        for i, (images, targets) in enumerate(val_loader):
+            images = images.to(device)
+            target_indices = targets["pathology"].numpy() # [B]
             
             outputs = model(images)
             out_h2 = outputs["pathology"] # Logits [B, 12]
@@ -76,18 +77,11 @@ def analyze_checkpoint(checkpoint_path: str, config_path: str, fold_id: int = 0)
 
             all_logits.append(out_h2.cpu().numpy())
             all_probs.append(probs_h2.cpu().numpy())
-            all_targets.append(targets.cpu().numpy())
-
-            if "patient_id" in batch:
-                all_patient_ids.extend(batch["patient_id"])
-            if "dataset_key" in batch:
-                all_source_keys.extend(batch["dataset_key"])
+            all_targets.append(target_indices)
 
     logits = np.concatenate(all_logits, axis=0) # [N, 12]
     probs = np.concatenate(all_probs, axis=0)   # [N, 12]
-    targets = np.concatenate(all_targets, axis=0) # [N, 12]
-    
-    true_labels = np.argmax(targets, axis=1)
+    true_labels = np.concatenate(all_targets, axis=0) # [N]
     pred_labels = np.argmax(logits, axis=1)
 
     print("\n==========================================================================")

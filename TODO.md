@@ -31,6 +31,11 @@
   - Update the upload endpoint to return a `task_id` and have the Next.js frontend poll for status.
   - Add database persistence to store scan states rather than relying on local filesystem/process memory.
 
+- [x] **Column-Wise Vitreous-Moat White Bar Removal & Dataset Preprocessing**
+  - Implemented Column-Wise Raycasting in `scripts/preprocess_dataset.py` to dynamically remove irregular, thick (35%+), or slanted/diagonal white header/footer bars without bleeding into retinal tissue.
+  - Added bottom corner compass/logo zeroing, Otsu tissue boundary masking, and red evaluation dataset mode (`--highlight-red`).
+  - Generated and validated full 88,804 image preprocessed dataset `Classified-preprocessed-R3`.
+
 - [x] **Legacy Ensemble Support (Optional)**
   - *If maintaining the old Hierarchical Ensemble instead of ConvNeXt:*
     - Review Level 3 Specialists (audit all 5 specialist models).

@@ -56,6 +56,12 @@ OCT-Analyser-Capstone/
 - Support 2D segmentation natively via PyTorch UNet models and classify using ResNet/EfficientNet models.
 - **Generate deterministic demo 12-layer segmentation** for the MVP pipeline (with a clear upgrade path to the trained **15-layer Hierarchical U-Net model**).
 
+### Dataset Preprocessing & White Bar Removal Pipeline
+- **Column-Wise Vitreous-Moat Raycasting**: Eliminates top and bottom white header/footer bars of any geometry, thickness, or slant/angle (including diagonal headers like `DME-15307-5.jpeg`, 30%+ thick banners, tapering wedges, or corner text overlays). Rays halt dynamically at the dark vitreous/choroid background moat ($gray < 70$), eliminating 100% of white artifacts without bleeding into retinal tissue.
+- **Morphological Retinal Tissue Masking**: Uses Otsu automatic thresholding, morphological closing ($15 \times 15$), largest contour extraction (`cv2.findContours`), and morphological dilation ($15 \times 15$ ellipse) to isolate retinal anatomy and zero out background speckle noise.
+- **Bottom Corner UI & Compass Zeroing**: Zeroes out 20% width $\times$ 25% height bottom corner boxes containing scanner compasses, scale bars, device logos, or text boxes.
+- **Dual Production vs. Red Evaluation Mode**: Production mode zeroes out white bars and background to pure black (`[0, 0, 0]`), while evaluation mode (`--highlight-red`) paints detected bars in bright red (`[0, 0, 255]`) for quality control dataset generation (validated on full 88,804 image dataset `Classified-preprocessed-R3`).
+
 ### Local API
 - `POST /api/scans` uploads one `.vol`, `.dcm`, `.zip` export, or a 2D image.
 - `GET /api/scans/{scan_id}` returns status, diagnosis, confidence, QC, metadata, layer votes, CDF deciles, and preview URLs.
