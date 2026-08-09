@@ -16,7 +16,7 @@ import json
 import time
 from pathlib import Path
 import torch
-torch.set_num_threads(1)
+torch.set_num_threads(4)
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
