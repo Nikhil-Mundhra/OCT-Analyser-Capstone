@@ -171,7 +171,7 @@ def get_overlay(img_tensor, cam):
     overlay = 0.4 * heatmap + 0.6 * img
     return np.clip(overlay, 0, 1), img
 
-def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_cam, pdf):
+def compute_patient_case_study(img_tensor, class_idx, class_name, model, grad_cam):
     if img_tensor.ndim == 3:
         img = img_tensor.unsqueeze(0)
     elif img_tensor.ndim == 4:
@@ -189,11 +189,11 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
         
         top1_idx = sorted_h2_indices[0]
         top1_class_name = PATHOLOGY_CLASSES[top1_idx]
-        top1_prob = p_h2_probs[top1_idx]
+        top1_prob = float(p_h2_probs[top1_idx])
 
         top2_idx = sorted_h2_indices[1]
         top2_class_name = PATHOLOGY_CLASSES[top2_idx]
-        top2_prob = p_h2_probs[top2_idx]
+        top2_prob = float(p_h2_probs[top2_idx])
     
     cam_h1 = grad_cam(img, class_idx=0, head='normal_abnormal')
     overlay_h1, orig_img = get_overlay(img[0], cam_h1)
@@ -204,7 +204,6 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     cam_h2_top2 = grad_cam(img, class_idx=top2_idx, head='pathology')
     overlay_h2_top2, _ = get_overlay(img[0], cam_h2_top2)
 
-    # Compute CAM Cosine Similarity & Binarized IoU between Top-1 and Top-2 CAMs
     c1_flat, c2_flat = cam_h2_top1.flatten(), cam_h2_top2.flatten()
     n1, n2 = np.linalg.norm(c1_flat), np.linalg.norm(c2_flat)
     cos_sim = float(np.dot(c1_flat, c2_flat) / (n1 * n2 + 1e-8)) if (n1 > 0 and n2 > 0) else 0.0
@@ -214,17 +213,49 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     union = np.logical_or(b1, b2).sum()
     iou = float(intersection / max(union, 1))
 
-    # 5-Panel balanced clinical inspection layout
+    return {
+        'orig_img': orig_img,
+        'overlay_h1': overlay_h1,
+        'overlay_h2_top1': overlay_h2_top1,
+        'overlay_h2_top2': overlay_h2_top2,
+        'class_name': class_name,
+        'pred_h1': pred_h1,
+        'p_h1': p_h1,
+        'top1_class_name': top1_class_name,
+        'top1_prob': top1_prob,
+        'top2_class_name': top2_class_name,
+        'top2_prob': top2_prob,
+        'cos_sim': cos_sim,
+        'iou': iou,
+        'sorted_h2_indices': sorted_h2_indices,
+        'p_h2_probs': p_h2_probs,
+    }
+
+def render_patient_case_study_page(case_data, pdf):
+    orig_img = case_data['orig_img']
+    overlay_h1 = case_data['overlay_h1']
+    overlay_h2_top1 = case_data['overlay_h2_top1']
+    overlay_h2_top2 = case_data['overlay_h2_top2']
+    class_name = case_data['class_name']
+    pred_h1 = case_data['pred_h1']
+    p_h1 = case_data['p_h1']
+    top1_class_name = case_data['top1_class_name']
+    top1_prob = case_data['top1_prob']
+    top2_class_name = case_data['top2_class_name']
+    top2_prob = case_data['top2_prob']
+    cos_sim = case_data['cos_sim']
+    iou = case_data['iou']
+    sorted_h2_indices = case_data['sorted_h2_indices']
+    p_h2_probs = case_data['p_h2_probs']
+
     fig = plt.figure(figsize=(18, 5.2), facecolor='#ffffff')
     gs = fig.add_gridspec(1, 5, width_ratios=[1.0, 1.15, 1.0, 1.0, 1.0], wspace=0.18)
     
-    # Panel 1: Original B-Scan
     ax1 = fig.add_subplot(gs[0, 0])
     ax1.imshow(orig_img)
     ax1.set_title(f"Original OCT Scan\nTrue: {class_name}", fontsize=11, fontweight='bold', color='#1a252f', pad=8)
     ax1.axis('off')
     
-    # Panel 2: Clean Formatted Patient Case Notes Card
     ax2 = fig.add_subplot(gs[0, 1])
     ax2.axis('off')
     
@@ -254,25 +285,21 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     
     ax2.text(0.02, 0.5, text_str, fontsize=9.2, family='monospace', va='center', bbox=dict(boxstyle='round,pad=0.6', facecolor='#f8f9fa', edgecolor='#bdc3c7', alpha=0.95))
     
-    # Panel 3: H1 Triage Grad-CAM
     ax3 = fig.add_subplot(gs[0, 2])
     ax3.imshow(overlay_h1)
     ax3.set_title("H1 Grad-CAM\n(Triage)", fontsize=11, fontweight='bold', color='#1a252f', pad=8)
     ax3.axis('off')
     
-    # Panel 4: Top-1 H2 Pathology Grad-CAM
     ax4 = fig.add_subplot(gs[0, 3])
     ax4.imshow(overlay_h2_top1)
     ax4.set_title(f"H2 Grad-CAM\n{top1_class_name} ({top1_prob*100:.1f}%)", fontsize=11, fontweight='bold', color='#2c3e50', pad=8)
     ax4.axis('off')
     
-    # Panel 5: Top-2 H2 Pathology Grad-CAM
     ax5 = fig.add_subplot(gs[0, 4])
     ax5.imshow(overlay_h2_top2)
     ax5.set_title(f"H2 Grad-CAM\n{top2_class_name} ({top2_prob*100:.1f}%)", fontsize=11, fontweight='bold', color='#7f8c8d', pad=8)
     ax5.axis('off')
 
-    # Running Footer on Every Page
     fig.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
 
     fig.subplots_adjust(left=0.02, right=0.98, top=0.95, bottom=0.06, wspace=0.18)
@@ -348,7 +375,6 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
     total_cases = 0
     print("\nPhase 2: Generating Representative Patient Case Studies (1 Correct High-Confidence + 1 Confused Case per class)...", flush=True)
     
-    # Run Grad-CAM backward passes on CPU to prevent Apple Silicon MPS Metal driver SegFault 11
     cpu_device = torch.device('cpu')
     src_model = model.module if hasattr(model, 'module') else model
     raw_model = build_multi_head_model(pretrained=False, warmup=False).to(cpu_device)
@@ -357,13 +383,14 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
     target_layer_cpu = _resolve_target_layer(raw_model)
     grad_cam_cpu = GradCAM(raw_model, target_layer_cpu)
 
+    all_case_data = []
+
+    # Step 1: Pre-compute all Grad-CAM metrics & overlays using PyTorch CPU
     for class_name in PATHOLOGY_CLASSES:
         samples_to_render = []
-        # 1. Correct sample
         corr = correct_samples.get(class_name, [])
         if corr:
             samples_to_render.append(corr[0])
-        # 2. Mismatch sample (if available), otherwise 2nd correct sample
         mism = mismatch_samples.get(class_name, [])
         if mism:
             samples_to_render.append(mism[0])
@@ -372,8 +399,13 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
 
         for img_tensor, class_idx, c_name in samples_to_render:
             img_input = img_tensor.unsqueeze(0).to(cpu_device)
-            generate_patient_case_study(img_input, class_idx, c_name, raw_model, grad_cam_cpu, pdf)
-            total_cases += 1
+            case_data = compute_patient_case_study(img_input, class_idx, c_name, raw_model, grad_cam_cpu)
+            all_case_data.append(case_data)
+
+    # Step 2: Render PDF pages using Matplotlib Agg backend
+    for case_data in all_case_data:
+        render_patient_case_study_page(case_data, pdf)
+        total_cases += 1
             
     print(f"Phase 2 Complete! Successfully rendered {total_cases} Patient Case Study PDF pages.", flush=True)
 
