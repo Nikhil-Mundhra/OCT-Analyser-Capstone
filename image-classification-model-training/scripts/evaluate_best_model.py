@@ -273,7 +273,7 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     pdf.savefig(fig, dpi=120)
     plt.close(fig)
 
-def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
+def run_evaluation_loop(model, val_loader, grad_cam, pdf, device, max_batches=None):
     h1_preds, h1_targets, h1_probs_arr = [], [], []
     all_h2_preds, all_h2_targets, all_h2_probs = [], [], []
     
@@ -284,6 +284,8 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
     print("Executing Phase 1: Pure GPU Vectorized Evaluation...")
     
     for i, (images, labels) in enumerate(val_loader):
+        if max_batches is not None and i >= max_batches:
+            break
         images_dev = images.to(device)
         valid_mask_dev = labels.get('valid_mask')
         if valid_mask_dev is not None:
@@ -334,7 +336,15 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device):
 
 def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device):
     total_cases = 0
-    print("\nPhase 2: Generating Representative Patient Case Studies (1 Correct High-Confidence + 1 Confused Case per class)...")
+    print("\nPhase 2: Generating Representative Patient Case Studies (1 Correct High-Confidence + 1 Confused Case per class)...", flush=True)
+    
+    # Run Grad-CAM backward passes on CPU to prevent Apple Silicon MPS Metal driver SegFault 11
+    cpu_device = torch.device('cpu')
+    raw_model = get_raw_model(model).to(cpu_device)
+    raw_model.eval()
+    target_layer_cpu = _resolve_target_layer(raw_model)
+    grad_cam_cpu = GradCAM(raw_model, target_layer_cpu)
+
     for class_name in PATHOLOGY_CLASSES:
         samples_to_render = []
         # 1. Correct sample
@@ -349,11 +359,11 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
             samples_to_render.append(corr[1])
 
         for img_tensor, class_idx, c_name in samples_to_render:
-            img_input = img_tensor.unsqueeze(0).to(device)
-            generate_patient_case_study(img_input, class_idx, c_name, model, grad_cam, pdf)
+            img_input = img_tensor.unsqueeze(0).to(cpu_device)
+            generate_patient_case_study(img_input, class_idx, c_name, raw_model, grad_cam_cpu, pdf)
             total_cases += 1
             
-    print(f"Phase 2 Complete! Successfully rendered {total_cases} Patient Case Study PDF pages.")
+    print(f"Phase 2 Complete! Successfully rendered {total_cases} Patient Case Study PDF pages.", flush=True)
 
 # ── Extracted Modular Plotting & Export Functions ───────────────────────────
 
@@ -461,7 +471,7 @@ def render_precision_recall_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr
     for class_idx, class_name in enumerate(PATHOLOGY_CLASSES):
         t = (h2_targets_arr == class_idx).astype(int)
         p = h2_probs_mat[:, class_idx]
-        if np.sum(t) > 0:
+        if len(np.unique(t)) > 1:
             prec, rec, _ = precision_recall_curve(t, p)
             ax_pr2.plot(rec, prec, lw=1.5, label=f'{class_name} ({per_class_metrics[class_name]["ap"]:.2f})')
             
@@ -486,7 +496,7 @@ def render_roc_auc_curves(pdf, h1_targets, h1_probs_arr, h2_targets_arr, h2_prob
     for class_idx, class_name in enumerate(PATHOLOGY_CLASSES):
         t = (h2_targets_arr == class_idx).astype(int)
         p = h2_probs_mat[:, class_idx]
-        if np.sum(t) > 0:
+        if len(np.unique(t)) > 1:
             fpr_c, tpr_c, _ = roc_curve(t, p)
             ax_roc2.plot(fpr_c, tpr_c, lw=1.5, label=f'{class_name} ({per_class_metrics[class_name]["auc"]:.2f})')
             
@@ -512,7 +522,7 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
     
     print("\n" + "-"*60)
     print(f"H2 Accuracy: {h2_acc:.4f} | H2 Macro F1: {h2_f1:.4f}")
-    print(classification_report(h2_targets, h2_preds, target_names=PATHOLOGY_CLASSES, zero_division=0))
+    print(classification_report(h2_targets, h2_preds, labels=list(range(len(PATHOLOGY_CLASSES))), target_names=PATHOLOGY_CLASSES, zero_division=0))
 
     per_class_metrics = {}
     h2_targets_arr = np.array(h2_targets)
@@ -527,8 +537,8 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
         prec = float(precision_score(t_cls, pred_cls, zero_division=0))
         rec = float(recall_score(t_cls, pred_cls, zero_division=0))
         f1_c = float(f1_score(t_cls, pred_cls, zero_division=0))
-        auc_c = float(roc_auc_score(t_cls, p_cls)) if np.sum(t_cls) > 0 else 0.0
-        ap_c = float(average_precision_score(t_cls, p_cls)) if np.sum(t_cls) > 0 else 0.0
+        auc_c = float(roc_auc_score(t_cls, p_cls)) if len(np.unique(t_cls)) > 1 else 0.0
+        ap_c = float(average_precision_score(t_cls, p_cls)) if len(np.unique(t_cls)) > 1 else 0.0
 
         per_class_metrics[class_name] = {
             "f1": f1_c,
