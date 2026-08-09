@@ -61,13 +61,14 @@ class GradCAM:
         self.target_layer.register_full_backward_hook(self.save_gradient)
         
     def save_activation(self, module, input, output):
-        self.activations = output
+        self.activations = output.detach().cpu().clone()
         
     def save_gradient(self, module, grad_input, grad_output):
-        self.gradients = grad_output[0]
+        if grad_output[0] is not None:
+            self.gradients = grad_output[0].detach().cpu().clone()
         
     def __call__(self, x, class_idx, head='pathology'):
-        self.model.zero_grad()
+        self.model.zero_grad(set_to_none=True)
         logits = self.model(x)
         
         if head == 'pathology':
@@ -76,10 +77,10 @@ class GradCAM:
             score = logits[head][0, 0]
             
         score.backward()
-        self.model.zero_grad(set_to_none=True)
         
-        gradients = self.gradients.cpu().data.numpy()[0]
-        activations = self.activations.cpu().data.numpy()[0]
+        gradients = self.gradients.numpy()[0]
+        activations = self.activations.numpy()[0]
+        self.model.zero_grad(set_to_none=True)
         
         weights = np.mean(gradients, axis=(1, 2))
         cam = np.zeros(activations.shape[1:], dtype=np.float32)
