@@ -8,6 +8,7 @@ EXPECTED RUNTIME: Takes over 500s (~8-10 minutes) to execute on Apple Silicon MP
 """
 
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 import sys
 import json
 import time
@@ -71,7 +72,8 @@ class GradCAM:
         elif head == 'normal_abnormal':
             score = logits[head][0, 0]
             
-        score.backward(retain_graph=True)
+        score.backward()
+        self.model.zero_grad(set_to_none=True)
         
         gradients = self.gradients.cpu().data.numpy()[0]
         activations = self.activations.cpu().data.numpy()[0]
@@ -345,7 +347,9 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
     
     # Run Grad-CAM backward passes on CPU to prevent Apple Silicon MPS Metal driver SegFault 11
     cpu_device = torch.device('cpu')
-    raw_model = (model.module if hasattr(model, 'module') else model).to(cpu_device)
+    src_model = model.module if hasattr(model, 'module') else model
+    raw_model = build_multi_head_model(pretrained=False, warmup=False).to(cpu_device)
+    raw_model.load_state_dict(src_model.state_dict())
     raw_model.eval()
     target_layer_cpu = _resolve_target_layer(raw_model)
     grad_cam_cpu = GradCAM(raw_model, target_layer_cpu)
@@ -375,7 +379,7 @@ def get_or_run_evaluation_cache(ckpt_dir, model, val_loader, grad_cam, device, f
     if not force_rerun and cache_path.exists():
         print(f"\nFound cached evaluation results at: {cache_path}", flush=True)
         print("Loading cached evaluation predictions & representative samples (instant 0.1s recovery)...", flush=True)
-        data = torch.load(cache_path, map_location='cpu')
+        data = torch.load(cache_path, map_location='cpu', weights_only=False)
         return (
             data['h1_preds'],
             data['h1_targets'],
