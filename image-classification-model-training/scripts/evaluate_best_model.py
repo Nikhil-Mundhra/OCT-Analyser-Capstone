@@ -340,7 +340,7 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
     
     # Run Grad-CAM backward passes on CPU to prevent Apple Silicon MPS Metal driver SegFault 11
     cpu_device = torch.device('cpu')
-    raw_model = get_raw_model(model).to(cpu_device)
+    raw_model = (model.module if hasattr(model, 'module') else model).to(cpu_device)
     raw_model.eval()
     target_layer_cpu = _resolve_target_layer(raw_model)
     grad_cam_cpu = GradCAM(raw_model, target_layer_cpu)
