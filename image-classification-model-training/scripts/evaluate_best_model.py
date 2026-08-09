@@ -9,11 +9,14 @@ EXPECTED RUNTIME: Takes over 500s (~8-10 minutes) to execute on Apple Silicon MP
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+import matplotlib
+matplotlib.use('Agg')
 import sys
 import json
 import time
 from pathlib import Path
 import torch
+torch.set_num_threads(1)
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -272,7 +275,7 @@ def generate_patient_case_study(img_tensor, class_idx, class_name, model, grad_c
     # Running Footer on Every Page
     fig.text(0.5, 0.01, "OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)", ha='center', fontsize=9, color='#7f8c8d', style='italic')
 
-    plt.tight_layout(rect=[0, 0.03, 1, 0.98])
+    fig.subplots_adjust(left=0.02, right=0.98, top=0.95, bottom=0.06, wspace=0.18)
     pdf.savefig(fig, dpi=120)
     plt.close(fig)
 
