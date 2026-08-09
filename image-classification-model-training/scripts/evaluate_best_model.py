@@ -283,6 +283,7 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device, max_batches=No
     _amp_dtype = torch.float16 if device.type == "mps" else (torch.bfloat16 if device.type == "cuda" else torch.float16)
     print("Executing Phase 1: Pure GPU Vectorized Evaluation...")
     
+    start_time = time.time()
     for i, (images, labels) in enumerate(val_loader):
         if max_batches is not None and i >= max_batches:
             break
@@ -330,7 +331,10 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device, max_batches=No
                                 mismatch_samples.setdefault(c_name, []).append((img_copy, c_idx, c_name))
                     
         if i % 10 == 0 or i == len(val_loader) - 1:
-            print(f"Evaluation Progress: Batch {i+1}/{len(val_loader)}", flush=True)
+            elapsed = time.time() - start_time
+            sec_per_batch = elapsed / (i + 1)
+            eta = sec_per_batch * (len(val_loader) - (i + 1))
+            print(f"Evaluation Progress: Batch {i+1}/{len(val_loader)} | Elapsed: {elapsed:.1f}s ({sec_per_batch:.2f}s/batch) | ETA: {eta:.1f}s", flush=True)
 
     return h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples
 
@@ -365,6 +369,40 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
             
     print(f"Phase 2 Complete! Successfully rendered {total_cases} Patient Case Study PDF pages.", flush=True)
 
+def get_or_run_evaluation_cache(ckpt_dir, model, val_loader, grad_cam, device, force_rerun=False):
+    cache_path = Path(ckpt_dir) / "eval_cache.pth"
+    if not force_rerun and cache_path.exists():
+        print(f"\nFound cached evaluation results at: {cache_path}", flush=True)
+        print("Loading cached evaluation predictions & representative samples (instant 0.1s recovery)...", flush=True)
+        data = torch.load(cache_path, map_location='cpu')
+        return (
+            data['h1_preds'],
+            data['h1_targets'],
+            data['h1_probs_arr'],
+            data['all_h2_preds'],
+            data['all_h2_targets'],
+            data['all_h2_probs'],
+            data['correct_samples'],
+            data['mismatch_samples']
+        )
+    
+    res = run_evaluation_loop(model, val_loader, grad_cam, None, device)
+    h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples = res
+    
+    cache_dict = {
+        'h1_preds': h1_preds,
+        'h1_targets': h1_targets,
+        'h1_probs_arr': h1_probs_arr,
+        'all_h2_preds': all_h2_preds,
+        'all_h2_targets': all_h2_targets,
+        'all_h2_probs': all_h2_probs,
+        'correct_samples': correct_samples,
+        'mismatch_samples': mismatch_samples
+    }
+    torch.save(cache_dict, cache_path)
+    print(f"Successfully cached evaluation results to: {cache_path}", flush=True)
+    return res
+
 # ── Extracted Modular Plotting & Export Functions ───────────────────────────
 
 def export_telemetry_json(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics, output_path="telemetry_outputs/telemetry_summary.json", ckpt_dir=None):
@@ -379,6 +417,168 @@ def export_telemetry_json(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics, outpu
     for p in paths:
         with open(p, "w") as f_json:
             json.dump(telemetry_json, f_json, indent=2)
+
+def generate_html_report(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics, ckpt_dir=None):
+    version_html_path = str(Path(ckpt_dir) / "Full_Evaluation_Report.html") if ckpt_dir else "Full_Evaluation_Report.html"
+    root_html_path = "telemetry_outputs/Full_Evaluation_Report.html"
+    
+    rows_html = ""
+    for c_name, m in per_class_metrics.items():
+        rows_html += f"""
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">{c_name}</td>
+            <td>{m['precision']:.4f}</td>
+            <td>{m['recall']:.4f}</td>
+            <td>{m['f1']:.4f}</td>
+            <td>{m['auc']:.4f}</td>
+            <td>{m['ap']:.4f}</td>
+            <td>{m['support']}</td>
+        </tr>
+        """
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCT Model Telemetry Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 30px;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+        }}
+        .header {{
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }}
+        .title {{
+            font-size: 24px;
+            font-weight: 700;
+            color: #38bdf8;
+            margin: 0 0 8px 0;
+        }}
+        .subtitle {{
+            font-size: 14px;
+            color: #94a3b8;
+            margin: 0;
+        }}
+        .metrics-grid {{
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }}
+        .card {{
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }}
+        .card-val {{
+            font-size: 28px;
+            font-weight: 700;
+            color: #34d399;
+            margin: 8px 0;
+        }}
+        .card-lbl {{
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            background: #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }}
+        th, td {{
+            padding: 12px 16px;
+            text-align: left;
+        }}
+        th {{
+            background: #0f172a;
+            color: #94a3b8;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }}
+        tr:nth-child(even) {{
+            background: #162032;
+        }}
+        .footer {{
+            margin-top: 30px;
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">OCT ANALYSER — POPULATION TELEMETRY DASHBOARD</h1>
+            <p class="subtitle">Hierarchical Multi-Task ConvNeXt Evaluation & Explainability Analysis</p>
+        </div>
+        <div class="metrics-grid">
+            <div class="card">
+                <div class="card-lbl">H1 Triage Accuracy</div>
+                <div class="card-val">{h1_acc*100:.2f}%</div>
+            </div>
+            <div class="card">
+                <div class="card-lbl">H1 Macro F1</div>
+                <div class="card-val">{h1_f1*100:.2f}%</div>
+            </div>
+            <div class="card">
+                <div class="card-lbl">H2 Pathology Accuracy</div>
+                <div class="card-val">{h2_acc*100:.2f}%</div>
+            </div>
+            <div class="card">
+                <div class="card-lbl">H2 Macro F1</div>
+                <div class="card-val">{h2_f1*100:.2f}%</div>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Pathology Class</th>
+                    <th>Precision</th>
+                    <th>Recall</th>
+                    <th>F1 Score</th>
+                    <th>ROC AUC</th>
+                    <th>Avg Precision</th>
+                    <th>Support</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows_html}
+            </tbody>
+        </table>
+        <div class="footer">
+            OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)
+        </div>
+    </div>
+</body>
+</html>"""
+    
+    for p in [version_html_path, root_html_path]:
+        with open(p, "w") as f_html:
+            f_html.write(html_content)
+    print(f"HTML Telemetry Report saved to:\n - {version_html_path}\n - {root_html_path}", flush=True)
 
 def render_executive_cover_page(pdf, h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics):
     fig_cover = plt.figure(figsize=(12, 8))
@@ -550,6 +750,7 @@ def compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, h2_preds, h2_
         }
 
     export_telemetry_json(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics, ckpt_dir=ckpt_dir)
+    generate_html_report(h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics, ckpt_dir=ckpt_dir)
 
     print("\nGenerating Telemetry PDF Dashboard Pages...")
     render_executive_cover_page(pdf, h1_acc, h1_f1, h2_acc, h2_f1, per_class_metrics)
@@ -565,13 +766,15 @@ def main():
     parser.add_argument("--checkpoint", type=str, default="checkpoints/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth", help="Path to checkpoint .pth file")
     parser.add_argument("--config", type=str, default="image-classification-model-training/config/hierarchy.yaml", help="Path to config file")
     parser.add_argument("--batch-size", type=int, default=64, help="Validation batch size")
+    parser.add_argument("--force-rerun", action="store_true", help="Force re-running Phase 1 evaluation instead of using cached results")
     args = parser.parse_args()
 
     device, version_pdf_path, root_pdf_path, ckpt_dir = setup_environment(args.checkpoint)
     val_loader = get_data_loader(config_path=args.config, batch_size=args.batch_size)
     model, grad_cam = load_model(args.checkpoint, device)
     
-    h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples = run_evaluation_loop(model, val_loader, grad_cam, None, device)
+    res = get_or_run_evaluation_cache(ckpt_dir, model, val_loader, grad_cam, device, force_rerun=args.force_rerun)
+    h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples = res
     
     with PdfPages(version_pdf_path) as pdf:
         # 1. Render Population Telemetry Dashboard Pages FIRST (Pages 1 to 5)
@@ -581,7 +784,7 @@ def main():
         generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device)
     
     shutil.copyfile(version_pdf_path, root_pdf_path)
-    print(f"\nFull Telemetry generation complete!\n - Saved to Version Subdirectory: {version_pdf_path}\n - Mirror Copy: {root_pdf_path}")
+    print(f"\nFull Telemetry generation complete!\n - Saved PDF to Version Subdirectory: {version_pdf_path}\n - Mirror PDF Copy: {root_pdf_path}")
 
 if __name__ == "__main__":
     from utils.gpu_mutex import GPUMutex
