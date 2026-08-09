@@ -568,19 +568,18 @@ def main():
     args = parser.parse_args()
 
     device, version_pdf_path, root_pdf_path, ckpt_dir = setup_environment(args.checkpoint)
-    pdf = PdfPages(version_pdf_path)
     val_loader = get_data_loader(config_path=args.config, batch_size=args.batch_size)
     model, grad_cam = load_model(args.checkpoint, device)
     
-    h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples = run_evaluation_loop(model, val_loader, grad_cam, pdf, device)
+    h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples = run_evaluation_loop(model, val_loader, grad_cam, None, device)
     
-    # 1. Render Population Telemetry Dashboard Pages FIRST (Pages 1 to 5)
-    compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, pdf, ckpt_dir=ckpt_dir)
+    with PdfPages(version_pdf_path) as pdf:
+        # 1. Render Population Telemetry Dashboard Pages FIRST (Pages 1 to 5)
+        compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, pdf, ckpt_dir=ckpt_dir)
+        
+        # 2. Render Patient Case Studies SECOND (Pages 6 to 29)
+        generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device)
     
-    # 2. Render Patient Case Studies SECOND (Pages 6 to 29)
-    generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device)
-    
-    pdf.close()
     shutil.copyfile(version_pdf_path, root_pdf_path)
     print(f"\nFull Telemetry generation complete!\n - Saved to Version Subdirectory: {version_pdf_path}\n - Mirror Copy: {root_pdf_path}")
 
