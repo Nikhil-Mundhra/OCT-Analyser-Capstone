@@ -379,22 +379,25 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device, max_batches=No
     return h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples
 
 def _compute_case_study_worker(task_item):
-    state_dict, img_tensor, class_idx, c_name = task_item
+    ckpt_path, img_np, class_idx, c_name = task_item
     cpu_device = torch.device('cpu')
     model = build_multi_head_model(pretrained=False, warmup=False).to(cpu_device)
-    model.load_state_dict(state_dict)
+    if os.path.exists(ckpt_path):
+        ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=False)
+        state = ckpt['model_state_dict'] if isinstance(ckpt, dict) and 'model_state_dict' in ckpt else ckpt
+        model.load_state_dict(state)
     model.eval()
     target_layer = _resolve_target_layer(model)
     grad_cam = GradCAM(model, target_layer)
-    img_input = img_tensor.unsqueeze(0).to(cpu_device)
+    img_input = torch.from_numpy(img_np).unsqueeze(0).to(cpu_device)
     return compute_patient_case_study(img_input, class_idx, c_name, model, grad_cam)
 
-def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device):
+def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device, checkpoint_path=None):
     total_cases = 0
     print("\nPhase 2: Generating Representative Patient Case Studies in Parallel (ProcessPoolExecutor)...", flush=True)
     
-    src_model = model.module if hasattr(model, 'module') else model
-    state_dict = {k: v.cpu() for k, v in src_model.state_dict().items()}
+    if checkpoint_path is None:
+        checkpoint_path = "checkpoints/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth"
 
     tasks = []
     for class_name in PATHOLOGY_CLASSES:
@@ -409,7 +412,7 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
             samples_to_render.append(corr[1])
 
         for img_tensor, class_idx, c_name in samples_to_render:
-            tasks.append((state_dict, img_tensor.cpu(), class_idx, c_name))
+            tasks.append((checkpoint_path, img_tensor.cpu().numpy(), class_idx, c_name))
 
     print(f"Dispatching {len(tasks)} Grad-CAM patient case studies to 4 CPU worker processes...", flush=True)
     all_case_data = []
@@ -836,7 +839,7 @@ def main():
         compile_population_metrics(h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, pdf, ckpt_dir=ckpt_dir)
         
         # 2. Render Patient Case Studies SECOND (Pages 6 to 29)
-        generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device)
+        generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device, checkpoint_path=args.checkpoint)
     
     shutil.copyfile(version_pdf_path, root_pdf_path)
     print(f"\nFull Telemetry generation complete!\n - Saved PDF to Version Subdirectory: {version_pdf_path}\n - Mirror PDF Copy: {root_pdf_path}")
