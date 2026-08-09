@@ -11,14 +11,18 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
 import matplotlib
 matplotlib.use('Agg')
 import sys
 import json
 import time
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor
 import torch
-torch.set_num_threads(4)
+torch.set_num_threads(1)
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -374,21 +378,25 @@ def run_evaluation_loop(model, val_loader, grad_cam, pdf, device, max_batches=No
 
     return h1_preds, h1_targets, h1_probs_arr, all_h2_preds, all_h2_targets, all_h2_probs, correct_samples, mismatch_samples
 
+def _compute_case_study_worker(task_item):
+    state_dict, img_tensor, class_idx, c_name = task_item
+    cpu_device = torch.device('cpu')
+    model = build_multi_head_model(pretrained=False, warmup=False).to(cpu_device)
+    model.load_state_dict(state_dict)
+    model.eval()
+    target_layer = _resolve_target_layer(model)
+    grad_cam = GradCAM(model, target_layer)
+    img_input = img_tensor.unsqueeze(0).to(cpu_device)
+    return compute_patient_case_study(img_input, class_idx, c_name, model, grad_cam)
+
 def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_cam, pdf, device):
     total_cases = 0
-    print("\nPhase 2: Generating Representative Patient Case Studies (1 Correct High-Confidence + 1 Confused Case per class)...", flush=True)
+    print("\nPhase 2: Generating Representative Patient Case Studies in Parallel (ProcessPoolExecutor)...", flush=True)
     
-    cpu_device = torch.device('cpu')
     src_model = model.module if hasattr(model, 'module') else model
-    raw_model = build_multi_head_model(pretrained=False, warmup=False).to(cpu_device)
-    raw_model.load_state_dict(src_model.state_dict())
-    raw_model.eval()
-    target_layer_cpu = _resolve_target_layer(raw_model)
-    grad_cam_cpu = GradCAM(raw_model, target_layer_cpu)
+    state_dict = {k: v.cpu() for k, v in src_model.state_dict().items()}
 
-    all_case_data = []
-
-    # Step 1: Pre-compute all Grad-CAM metrics & overlays using PyTorch CPU
+    tasks = []
     for class_name in PATHOLOGY_CLASSES:
         samples_to_render = []
         corr = correct_samples.get(class_name, [])
@@ -401,16 +409,20 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
             samples_to_render.append(corr[1])
 
         for img_tensor, class_idx, c_name in samples_to_render:
-            img_input = img_tensor.unsqueeze(0).to(cpu_device)
-            case_data = compute_patient_case_study(img_input, class_idx, c_name, raw_model, grad_cam_cpu)
-            all_case_data.append(case_data)
+            tasks.append((state_dict, img_tensor.cpu(), class_idx, c_name))
 
-    # Step 2: Render PDF pages using Matplotlib Agg backend
+    print(f"Dispatching {len(tasks)} Grad-CAM patient case studies to 4 CPU worker processes...", flush=True)
+    all_case_data = []
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(_compute_case_study_worker, tasks))
+        all_case_data.extend(results)
+
+    # Step 2: Render PDF pages sequentially into PdfPages
     for case_data in all_case_data:
         render_patient_case_study_page(case_data, pdf)
         total_cases += 1
             
-    print(f"Phase 2 Complete! Successfully rendered {total_cases} Patient Case Study PDF pages.", flush=True)
+    print(f"Phase 2 Complete! Successfully rendered {total_cases} Patient Case Study PDF pages in parallel.", flush=True)
 
 def get_or_run_evaluation_cache(ckpt_dir, model, val_loader, grad_cam, device, force_rerun=False):
     cache_path = Path(ckpt_dir) / "eval_cache.pth"
