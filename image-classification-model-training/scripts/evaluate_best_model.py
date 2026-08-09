@@ -9,6 +9,8 @@ EXPECTED RUNTIME: Takes over 500s (~8-10 minutes) to execute on Apple Silicon MP
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
 import matplotlib
 matplotlib.use('Agg')
 import sys
