@@ -10,6 +10,7 @@ EXPECTED RUNTIME: Takes over 500s (~8-10 minutes) to execute on Apple Silicon MP
 import os
 import sys
 import json
+import time
 from pathlib import Path
 import torch
 import numpy as np
