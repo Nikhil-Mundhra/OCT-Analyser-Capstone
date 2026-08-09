@@ -26,6 +26,8 @@ When assigned multiple features or bugs in a single request, you MUST decide bet
 
 **Script File Execution (Do Not Write Inline Python in Terminal):** NEVER execute Python logic inline via terminal commands (e.g., `python3 -c "..."` or bash heredocs). Inline terminal Python commands cause string escaping errors, IO buffering deadlocks, and truncated stack traces. ALWAYS write a dedicated Python script file (or scratch script) using `write_to_file` and execute the script file directly (e.g., `python3 test_script.py`).
 
+**Optimal DataLoader & Batch Size Config:** ALWAYS default to `batch_size = 64` and `num_workers = 4` (`pin_memory = False`) for evaluation and training pipelines on Apple Silicon Macbooks. This configuration provides the sweet spot for maximum throughput while remaining safely within Unified Memory limits.
+
 
 ## Architectural Goals
 

@@ -114,7 +114,7 @@ def get_data_loader(config_path="image-classification-model-training/config/hier
     np.random.seed(42)
     indices = np.random.permutation(len(full_dataset)).tolist()
     val_dataset = Subset(full_dataset, indices[train_size:])
-    return DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+    return DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=False)
 
 def _resolve_target_layer(model):
     if hasattr(model.backbone, "stages"):
@@ -564,7 +564,7 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate Best Model and Generate Grad-CAM Visualizations")
     parser.add_argument("--checkpoint", type=str, default="checkpoints/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth", help="Path to checkpoint .pth file")
     parser.add_argument("--config", type=str, default="image-classification-model-training/config/hierarchy.yaml", help="Path to config file")
-    parser.add_argument("--batch-size", type=int, default=32, help="Validation batch size")
+    parser.add_argument("--batch-size", type=int, default=64, help="Validation batch size")
     args = parser.parse_args()
 
     device, version_pdf_path, root_pdf_path, ckpt_dir = setup_environment(args.checkpoint)
