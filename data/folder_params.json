@@ -1,0 +1,18 @@
+{
+  "108503_OCTID": {
+    "top_noise_mult": 1.5,
+    "bot_noise_mult": 3,
+    "shadow_bridge_pct": 20,
+    "gaussian_sigma": 15,
+    "margin": 15,
+    "compass_ui_enabled": false
+  },
+  "108503_OCTID_AMD": {
+    "top_noise_mult": 1.5,
+    "bot_noise_mult": 3,
+    "shadow_bridge_pct": 20,
+    "gaussian_sigma": 15,
+    "margin": 15,
+    "compass_ui_enabled": false
+  }
+}

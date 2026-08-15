@@ -14,6 +14,7 @@ if str(TRAINING_ROOT) not in sys.path:
     sys.path.insert(0, str(TRAINING_ROOT))
 
 from train_cleanup import enforce_single_instance_and_clean_memory, clean_gpu_memory
+from backend.oct_analyzer.checkpoint_versioning import resolve_and_create_version_dir, update_version_metadata_metrics
 
 import torch
 from torch.utils.data import DataLoader, random_split
@@ -48,7 +49,17 @@ def train():
     detector = OCTPathologyDetector(num_classes=config.NUM_CLASSES).to(device)
     optimizer = torch.optim.AdamW(detector.parameters(), lr=config.LEARNING_RATE)
 
-    os.makedirs(config.CHECKPOINT_DIR, exist_ok=True)
+    version_base_dir = WORKSPACE_ROOT / "checkpoints" / "detection" / "model5_oct5k_detection"
+    version_dir, version_tag = resolve_and_create_version_dir(
+        base_dir=version_base_dir,
+        requested_version=getattr(config, "VERSION", "auto"),
+        args_dict={
+            "epochs": config.EPOCHS,
+            "batch_size": config.BATCH_SIZE,
+            "learning_rate": config.LEARNING_RATE,
+            "num_classes": config.NUM_CLASSES
+        }
+    )
     suite_ckpt_dir = WORKSPACE_ROOT / "models_suite" / "model5_oct5k_detection" / "checkpoints"
     os.makedirs(suite_ckpt_dir, exist_ok=True)
 
@@ -95,12 +106,16 @@ def train():
                 'optimizer_state_dict': optimizer.state_dict(),
                 'train_loss': train_loss
             }
-            local_ckpt = Path(config.CHECKPOINT_DIR) / "model5_detection_best.pth"
+            version_ckpt = version_dir / "best_model.pth"
             suite_ckpt = suite_ckpt_dir / "best_model.pth"
             
-            torch.save(ckpt_data, local_ckpt)
+            torch.save(ckpt_data, version_ckpt)
             torch.save(ckpt_data, suite_ckpt)
-            print(f" -> Saved new best detector checkpoint to {suite_ckpt}", flush=True)
+            update_version_metadata_metrics(version_dir, {
+                "Best Epoch": epoch,
+                "Detector Training Loss": f"{train_loss:.4f}"
+            })
+            print(f" -> Saved new best detector checkpoint to {version_ckpt} and {suite_ckpt}", flush=True)
 
         clean_gpu_memory()
 

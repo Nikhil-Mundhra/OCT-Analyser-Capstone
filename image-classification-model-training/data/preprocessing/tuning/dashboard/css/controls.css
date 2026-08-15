@@ -1,0 +1,317 @@
+/* Parameter Control Cards */
+.control-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+/* Parameter Title & Info Tooltip */
+.param-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: var(--text-muted);
+  font-size: 9.5px;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  cursor: help;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+  outline: none;
+}
+
+.info-btn:hover,
+.info-btn:focus-visible {
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  color: #0b0f19;
+  box-shadow: 0 0 8px rgba(0, 242, 254, 0.5);
+}
+
+.info-btn.val-otsu:hover,
+.info-btn.val-otsu:focus-visible {
+  background: #ff007f;
+  border-color: #ff007f;
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 0, 127, 0.5);
+}
+
+.info-btn.val-sfcm:hover,
+.info-btn.val-sfcm:focus-visible {
+  background: #ff9100;
+  border-color: #ff9100;
+  color: #0b0f19;
+  box-shadow: 0 0 8px rgba(255, 145, 0, 0.5);
+}
+
+.info-btn .tooltip-text {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  transform: translateX(-10px) translateY(4px);
+  background: #111726;
+  color: #e6edf3;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 242, 254, 0.35);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 0 12px rgba(0, 242, 254, 0.15);
+  width: 250px;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  z-index: 9999;
+  text-align: left;
+  white-space: normal;
+}
+
+.info-btn .tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 14px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #111726 transparent transparent transparent;
+}
+
+.info-btn:hover .tooltip-text,
+.info-btn:focus-visible .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-10px) translateY(0);
+}
+
+/* Slider Values & Range Inputs */
+.slider-value {
+  font-weight: 700;
+  color: var(--accent-cyan);
+  font-size: 0.85rem;
+}
+
+.slider-value.val-sfcm {
+  color: var(--accent-sfcm) !important;
+}
+
+.slider-value.val-otsu {
+  color: var(--accent-magenta) !important;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--accent-cyan);
+  cursor: pointer;
+}
+
+input[type="range"].slider-sfcm {
+  accent-color: var(--accent-sfcm) !important;
+}
+
+input[type="range"].slider-otsu {
+  accent-color: var(--accent-magenta) !important;
+}
+
+/* Collapsible Parameter Groups */
+.param-group {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.param-group[open] {
+  overflow: visible;
+}
+
+.param-group summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  list-style: none;
+  transition: background 0.15s;
+}
+
+.param-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.param-group.top-group summary {
+  color: var(--accent-cyan);
+  background: rgba(0, 242, 254, 0.07);
+}
+
+.param-group.top-group summary:hover {
+  background: rgba(0, 242, 254, 0.13);
+}
+
+.param-group.bot-group summary {
+  color: #ff7eb3;
+  background: rgba(255, 0, 127, 0.07);
+}
+
+.param-group.bot-group summary:hover {
+  background: rgba(255, 0, 127, 0.13);
+}
+
+.param-group.compass-group summary {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.param-group.compass-group summary:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.param-group-chevron {
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+}
+
+.param-group[open] .param-group-chevron {
+  transform: rotate(180deg);
+}
+
+.param-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 14px 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Custom Switches */
+.toggle-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.toggle-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 22px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider-round {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border-color);
+  transition: 0.3s;
+  border-radius: 22px;
+}
+
+.slider-round:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider-round {
+  background-color: var(--accent-cyan);
+}
+
+input:checked + .slider-round:before {
+  transform: translateX(22px);
+}
+
+/* Raw JSON Editor */
+textarea.json-textarea {
+  width: 100%;
+  height: 320px;
+  background: #0d1117;
+  color: var(--accent-cyan);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.85rem;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  outline: none;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+textarea.json-textarea:focus {
+  border-color: var(--accent-cyan);
+}
+
+.error-text {
+  color: #f85149;
+  font-size: 0.78rem;
+  display: none;
+}
+
+.error-text.active {
+  display: block;
+}

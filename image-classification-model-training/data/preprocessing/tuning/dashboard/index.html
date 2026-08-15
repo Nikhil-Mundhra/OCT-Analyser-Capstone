@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCT Preprocessing Folder Fine-Tuning Dashboard</title>
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/controls.css">
+  <link rel="stylesheet" href="/css/overlays.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-title">
+      <h1>OCT Preprocessing Tuning Dashboard</h1>
+      <span class="badge">Adaptive Segmentation</span>
+    </div>
+    <div class="header-actions">
+      <span id="status-msg" class="status-badge">Live Parameters Updated</span>
+      <button id="btn-toggle-vectors">Hide Boundary Lines</button>
+      <button id="btn-refresh-samples" class="btn-secondary">Refresh Random Images</button>
+      <button id="btn-reset" class="btn-secondary">Reset to Defaults</button>
+      <button id="btn-save" class="btn-primary">Save Parameters for this Folder</button>
+    </div>
+  </header>
+
+  <div class="app-container">
+
+    <div class="sidebar">
+
+      <div class="folder-select-wrap">
+        <span class="section-title">Select Dataset Subfolder</span>
+        <select id="folder-select"></select>
+      </div>
+
+      <div class="mode-switch-wrap">
+        <span class="section-title">Editor Mode</span>
+        <div class="mode-switcher">
+          <button id="btn-mode-slider" class="mode-btn active">Sliders</button>
+          <button id="btn-mode-json" class="mode-btn">Raw JSON</button>
+        </div>
+      </div>
+
+      <!-- Panel 1: Slider Controls -->
+      <div id="panel-sliders" class="control-card" style="display:flex;flex-direction:column;gap:10px;">
+
+        <!-- SHARED SETTINGS -->
+        <div class="slider-group" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 4px;">
+          <div class="slider-header">
+            <span class="param-title-wrap">
+              <span>Gaussian Smoothness (&#963;) &mdash; shared</span>
+              <span class="info-btn" tabindex="0">i<span class="tooltip-text">Standard deviation (&#963;) for 1D Gaussian boundary smoothing. Higher values create smooth, organic anatomical curves and eliminate high-frequency stair-step noise.</span></span>
+            </span>
+            <span class="slider-value" id="val-gaussian_sigma">15</span>
+          </div>
+          <input type="range" id="param-gaussian_sigma" min="5" max="30" step="1" value="15">
+        </div>
+
+        <!-- TOP VECTOR GROUP -->
+        <details class="param-group top-group">
+          <summary>
+            <span>&#9650; Top Vector (ILM)</span>
+            <span class="param-group-chevron">&#9660;</span>
+          </summary>
+          <div class="param-group-body">
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Noise Cutoff (&#956;<sub>bg</sub> + k&#183;&#963;)</span>
+                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Pass 1 threshold multiplier (k) above background noise floor. Isolates the upper Inner Limiting Membrane (ILM) surface while filtering out vitreous haze.</span></span>
+                </span>
+                <span class="slider-value" id="val-top_noise_mult">1.5</span>
+              </div>
+              <input type="range" id="param-top_noise_mult" min="0.5" max="8.0" step="0.1" value="1.5">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Shadow Bridge Width (% image width)</span>
+                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Horizontal closing kernel width as a % of scan width. Bridges dark vertical blood vessel shadow gaps across the top ILM boundary.</span></span>
+                </span>
+                <span class="slider-value" id="val-shadow_bridge_top_pct">20%</span>
+              </div>
+              <input type="range" id="param-shadow_bridge_top_pct" min="5" max="40" step="1" value="20">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Spike Suppressor &uarr; (px above rolling median)</span>
+                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Detects and eliminates sharp upward artifact spikes on the top boundary by interpolating any point that deviates above the rolling median window.</span></span>
+                </span>
+                <span class="slider-value" id="val-top_spike_suppress_px">0px</span>
+              </div>
+              <input type="range" id="param-top_spike_suppress_px" min="0" max="120" step="2" value="0">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Spike Window (rolling median width)</span>
+                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Window width in pixels used to calculate the local baseline for upward spike detection. Larger windows preserve broad natural foveal curvature.</span></span>
+                </span>
+                <span class="slider-value" id="val-top_spike_window_px">80px</span>
+              </div>
+              <input type="range" id="param-top_spike_window_px" min="10" max="200" step="5" value="80">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Dip Suppressor &darr; (px below rolling median)</span>
+                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Detects and eliminates sharp downward dip spikes on the top boundary by interpolating points falling below the rolling median window.</span></span>
+                </span>
+                <span class="slider-value" id="val-top_dip_suppress_px">0px</span>
+              </div>
+              <input type="range" id="param-top_dip_suppress_px" min="0" max="120" step="2" value="0">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Dip Window (rolling median width)</span>
+                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Window width in pixels used to calculate the local baseline for downward dip detection.</span></span>
+                </span>
+                <span class="slider-value" id="val-top_dip_window_px">80px</span>
+              </div>
+              <input type="range" id="param-top_dip_window_px" min="10" max="200" step="5" value="80">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>ILM Inward Margin (px)</span>
+                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Top padding margin in pixels above the ILM surface. Ensures epiretinal membranes, vitreous adhesions, and fine surface contours are not clipped.</span></span>
+                </span>
+                <span class="slider-value" id="val-margin_top">15px</span>
+              </div>
+              <input type="range" id="param-margin_top" min="5" max="30" step="1" value="15">
+            </div>
+
+          </div>
+        </details>
+
+        <!-- BOTTOM VECTOR GROUP -->
+        <details class="param-group bot-group">
+          <summary>
+            <span>&#9660; Bottom Vector (Choroid)</span>
+            <span class="param-group-chevron">&#9660;</span>
+          </summary>
+          <div class="param-group-body">
+
+            <!-- MODE TOGGLES -->
+            <div class="toggle-group">
+              <span class="param-title-wrap">
+                <span class="toggle-label">Otsu Mode (Bottom Vector)</span>
+                <span class="info-btn val-otsu" tabindex="0">i<span class="tooltip-text">Enables dual-pass Otsu binarization to calculate the lower choroidal boundary using morphology and background noise-floor estimation.</span></span>
+              </span>
+              <label class="switch">
+                <input type="checkbox" id="param-use_otsu_bottom" checked>
+                <span class="slider-round"></span>
+              </label>
+            </div>
+
+            <div class="toggle-group">
+              <span class="param-title-wrap">
+                <span class="toggle-label">Spatial Fuzzy C-Means (SFCM) Mode</span>
+                <span class="info-btn val-sfcm" tabindex="0">i<span class="tooltip-text">Enables Dijkstra Dynamic Programming RPE path detection and Spatial Fuzzy C-Means clustering to isolate the deep vascular choroid stroma.</span></span>
+              </span>
+              <label class="switch">
+                <input type="checkbox" id="param-use_sfcm">
+                <span class="slider-round"></span>
+              </label>
+            </div>
+
+            <!-- OTSU BOTTOM PARAMETERS SUBGROUP -->
+            <div id="group-otsu-bottom-params" style="display: flex; flex-direction: column; gap: 20px;">
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>Noise Floor (&#956;<sub>bg</sub> + k&#183;&#963;)</span>
+                    <span class="info-btn val-otsu" tabindex="0">i<span class="tooltip-text">Pass 2 bottom multiplier (k) above background noise. Captures low-reflectivity deep choroidal tissue down to the sclera while rejecting background noise.</span></span>
+                  </span>
+                  <span class="slider-value val-otsu" id="val-bot_noise_mult">3.0</span>
+                </div>
+                <input type="range" class="slider-otsu" id="param-bot_noise_mult" min="1.5" max="5.0" step="0.1" value="3.0">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>Shadow Bridge Width (% image width)</span>
+                    <span class="info-btn val-otsu" tabindex="0">i<span class="tooltip-text">Horizontal morphological closing width for the choroid. Spans wide vessel attenuation beams and pathological fluid cyst shadow columns.</span></span>
+                  </span>
+                  <span class="slider-value val-otsu" id="val-shadow_bridge_bot_pct">20%</span>
+                </div>
+                <input type="range" class="slider-otsu" id="param-shadow_bridge_bot_pct" min="5" max="40" step="1" value="20">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>Otsu Inward Margin (px)</span>
+                    <span class="info-btn val-otsu" tabindex="0">i<span class="tooltip-text">Bottom padding margin in pixels added below the Otsu choroid floor boundary to prevent cutting off deep vascular structures.</span></span>
+                  </span>
+                  <span class="slider-value val-otsu" id="val-margin_bottom">15px</span>
+                </div>
+                <input type="range" class="slider-otsu" id="param-margin_bottom" min="0" max="80" step="2" value="15">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>Gaussian Smoothness (&#963;)</span>
+                    <span class="info-btn val-otsu" tabindex="0">i<span class="tooltip-text">Standard deviation (&#963;) for 1D Gaussian smoothing of the Otsu bottom boundary vector.</span></span>
+                  </span>
+                  <span class="slider-value val-otsu" id="val-gaussian_sigma">15</span>
+                </div>
+                <input type="range" class="slider-otsu" id="param-gaussian_sigma" min="1" max="40" step="1" value="15">
+              </div>
+            </div>
+
+            <!-- SFCM INDEPENDENT PARAMETERS SUBGROUP -->
+            <div id="group-sfcm-params" style="display: flex; flex-direction: column; gap: 20px;">
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>SFCM Choroid Margin (px)</span>
+                    <span class="info-btn val-sfcm" tabindex="0">i<span class="tooltip-text">Padding margin in pixels added below the SFCM choroid-sclera boundary to guarantee full capture of deep choroidal vessels.</span></span>
+                  </span>
+                  <span class="slider-value val-sfcm" id="val-sfcm_margin_bottom">15px</span>
+                </div>
+                <input type="range" class="slider-sfcm" id="param-sfcm_margin_bottom" min="0" max="80" step="2" value="15">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>SFCM Smoothness (&#963;)</span>
+                    <span class="info-btn val-sfcm" tabindex="0">i<span class="tooltip-text">Standard deviation (&#963;) for 1D Gaussian boundary smoothing applied specifically to the SFCM choroidal stroma curve.</span></span>
+                  </span>
+                  <span class="slider-value val-sfcm" id="val-sfcm_gaussian_sigma">15</span>
+                </div>
+                <input type="range" class="slider-sfcm" id="param-sfcm_gaussian_sigma" min="1" max="40" step="1" value="15">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>SFCM Intensity Clusters (C)</span>
+                    <span class="info-btn val-sfcm" tabindex="0">i<span class="tooltip-text">Number of intensity clusters (C) for Fuzzy C-Means. Cluster 1 isolates the intermediate-reflectivity vascular choroid stroma from darker background and bright RPE.</span></span>
+                  </span>
+                  <span class="slider-value val-sfcm" id="val-sfcm_n_clusters">3</span>
+                </div>
+                <input type="range" class="slider-sfcm" id="param-sfcm_n_clusters" min="2" max="5" step="1" value="3">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>SFCM Fuzziness Exponent (m)</span>
+                    <span class="info-btn val-sfcm" tabindex="0">i<span class="tooltip-text">Fuzziness weighting exponent (m). Controls cluster softness; m=2.0 provides optimal boundary transition for speckle-noisy OCT scans.</span></span>
+                  </span>
+                  <span class="slider-value val-sfcm" id="val-sfcm_fuzziness_m">2.0</span>
+                </div>
+                <input type="range" class="slider-sfcm" id="param-sfcm_fuzziness_m" min="1.1" max="3.5" step="0.1" value="2.0">
+              </div>
+            </div>
+
+          </div>
+        </details>
+
+        <!-- COMPASS GROUP -->
+        <details class="param-group compass-group">
+          <summary>
+            <span>&#10022; Compass Removal</span>
+            <span class="param-group-chevron">&#9660;</span>
+          </summary>
+          <div class="param-group-body">
+
+            <div class="toggle-group">
+              <span class="param-title-wrap">
+                <span class="toggle-label">Enable Compass UI Removal</span>
+                <span class="info-btn" tabindex="0">i<span class="tooltip-text">Automatically detects and zero-erases Heidelberg Spectralis orientation compass wireframe boxes ('S', 'I', 'N', 'T') and arrows from scan corners.</span></span>
+              </span>
+              <label class="switch">
+                <input type="checkbox" id="param-compass_ui_enabled">
+                <span class="slider-round"></span>
+              </label>
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Compass Search Mode</span>
+                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Region to search for compass boxes: 'auto' scans both bottom corners dynamically, while forced modes restrict scanning to specific quadrants.</span></span>
+                </span>
+              </div>
+              <select id="param-compass_location">
+                <option value="auto">Dynamic Auto-Detect (Both Bottom Corners)</option>
+                <option value="bottom_left">Force Bottom-Left Only</option>
+                <option value="bottom_right">Force Bottom-Right Only</option>
+              </select>
+            </div>
+
+          </div>
+        </details>
+
+      </div>
+
+      <!-- Panel 2: Raw JSON Editor -->
+      <div id="panel-json" class="control-card" style="display: none;">
+        <div class="slider-header">
+          <span>Edit Folder Configuration JSON</span>
+        </div>
+        <textarea id="json-editor" class="json-textarea"></textarea>
+        <span id="json-error" class="error-text"></span>
+        <button id="btn-apply-json" class="btn-primary" style="margin-top: 10px;">Apply JSON to Sliders</button>
+      </div>
+
+    </div>
+
+    <!-- Main Gallery -->
+    <div class="main-view">
+      <div class="gallery-toolbar">
+        <span class="section-title">Sample Slice Previews (Click & Drag Vector Handles to Adjust Bounds)</span>
+      </div>
+      <div id="gallery-grid" class="gallery-grid"></div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/state.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/vector_overlay.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

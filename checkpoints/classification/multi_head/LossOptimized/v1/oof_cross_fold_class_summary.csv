@@ -1,0 +1,13 @@
+class_name,fold_0,mean_f1,consistency_status
+CNV,0.0,0.0,DEAD (Fold 0)
+DRUSEN,0.6666666666666666,0.6666666666666666,Active (F1: 0.6667)
+AMD,0.0,0.0,DEAD (Fold 0)
+General_AMD,0.0,0.0,DEAD (Fold 0)
+DME,1.0,1.0,Active (F1: 1.0000)
+DR,0.0,0.0,DEAD (Fold 0)
+MH,0.0,0.0,DEAD (Fold 0)
+RVO,0.0,0.0,DEAD (Fold 0)
+RAO,0.0,0.0,DEAD (Fold 0)
+CSR,0.0,0.0,DEAD (Fold 0)
+ERM,0.0,0.0,DEAD (Fold 0)
+VID,0.0,0.0,DEAD (Fold 0)

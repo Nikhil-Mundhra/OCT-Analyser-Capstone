@@ -33,7 +33,10 @@ UNET_CHECKPOINT_PATH = Path(
     os.getenv("UNET_CHECKPOINT_PATH", PROJECT_ROOT / "models_suite" / "model1_oct5k_layers" / "checkpoints" / "best_model.pth")
 )
 CLASSIFIER_WEIGHTS_PATH = Path(
-    os.getenv("CLASSIFIER_WEIGHTS_PATH", PROJECT_ROOT / "checkpoints" / "multi_head" / "fold0_best_model.pth")
+    os.getenv(
+        "CLASSIFIER_WEIGHTS_PATH",
+        PROJECT_ROOT / "checkpoints" / "classification" / "multi_head" / "WeightedRandomSampler" / "v1" / "fold0_best_val_loss.pth"
+    )
 )
 
 # Global Compute Device Switch

@@ -147,8 +147,10 @@ def load_model(checkpoint_path, device):
         hf_cache_snapshot = "/Users/nikhilmundhra/.cache/huggingface/hub/models--NMundhra--OCT-Classification-Model/snapshots/b8b2d5e7347d463a3d5f5d5c671e5e230968a7a6/fold0_best_model.pth"
         if os.path.exists(hf_cache_snapshot):
             checkpoint_path = hf_cache_snapshot
-        elif os.path.exists("checkpoints/multi_head/fold0_best_model.pth"):
-            checkpoint_path = "checkpoints/multi_head/fold0_best_model.pth"
+        elif os.path.exists("checkpoints/classification/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth"):
+            checkpoint_path = "checkpoints/classification/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth"
+        elif os.path.exists("checkpoints/classification/multi_head/LossOptimized/v1/fold0_best_model.pth"):
+            checkpoint_path = "checkpoints/classification/multi_head/LossOptimized/v1/fold0_best_model.pth"
         else:
             checkpoint_path = "hf_space/weights/multi_head_mps/fold0_best_model.pth"
         
@@ -397,7 +399,7 @@ def generate_phase2_case_studies(correct_samples, mismatch_samples, model, grad_
     print("\nPhase 2: Generating Representative Patient Case Studies in Parallel (ProcessPoolExecutor)...", flush=True)
     
     if checkpoint_path is None:
-        checkpoint_path = "checkpoints/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth"
+        checkpoint_path = "checkpoints/classification/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth"
 
     tasks = []
     for class_name in PATHOLOGY_CLASSES:
@@ -821,7 +823,7 @@ def main():
     import argparse
     import shutil
     parser = argparse.ArgumentParser(description="Evaluate Best Model and Generate Grad-CAM Visualizations")
-    parser.add_argument("--checkpoint", type=str, default="checkpoints/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth", help="Path to checkpoint .pth file")
+    parser.add_argument("--checkpoint", type=str, default="checkpoints/classification/multi_head/WeightedRandomSampler/v1/fold0_best_val_loss.pth", help="Path to checkpoint .pth file")
     parser.add_argument("--config", type=str, default="image-classification-model-training/config/hierarchy.yaml", help="Path to config file")
     parser.add_argument("--batch-size", type=int, default=64, help="Validation batch size")
     parser.add_argument("--force-rerun", action="store_true", help="Force re-running Phase 1 evaluation instead of using cached results")

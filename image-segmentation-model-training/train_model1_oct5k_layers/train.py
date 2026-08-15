@@ -14,6 +14,7 @@ if str(TRAINING_ROOT) not in sys.path:
     sys.path.insert(0, str(TRAINING_ROOT))
 
 from train_cleanup import enforce_single_instance_and_clean_memory, clean_gpu_memory
+from backend.oct_analyzer.checkpoint_versioning import resolve_and_create_version_dir, update_version_metadata_metrics
 
 import torch
 import torch.nn as nn
@@ -46,7 +47,18 @@ def train():
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.LEARNING_RATE, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.EPOCHS)
 
-    os.makedirs(config.CHECKPOINT_DIR, exist_ok=True)
+    version_base_dir = WORKSPACE_ROOT / "checkpoints" / "segmentation" / "model1_oct5k_layers"
+    version_dir, version_tag = resolve_and_create_version_dir(
+        base_dir=version_base_dir,
+        requested_version=getattr(config, "VERSION", "auto"),
+        args_dict={
+            "epochs": config.EPOCHS,
+            "batch_size": config.BATCH_SIZE,
+            "learning_rate": config.LEARNING_RATE,
+            "num_classes": config.NUM_CLASSES,
+            "image_size": str(config.IMAGE_SIZE)
+        }
+    )
     suite_ckpt_dir = WORKSPACE_ROOT / "models_suite" / "model1_oct5k_layers" / "checkpoints"
     os.makedirs(suite_ckpt_dir, exist_ok=True)
 
@@ -107,12 +119,17 @@ def train():
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_loss': val_loss
             }
-            local_ckpt = Path(config.CHECKPOINT_DIR) / "model1_oct5k_layers_best.pth"
+            version_ckpt = version_dir / "best_model.pth"
             suite_ckpt = suite_ckpt_dir / "best_model.pth"
             
-            torch.save(ckpt_data, local_ckpt)
+            torch.save(ckpt_data, version_ckpt)
             torch.save(ckpt_data, suite_ckpt)
-            print(f" -> Saved new best checkpoint to {suite_ckpt}", flush=True)
+            update_version_metadata_metrics(version_dir, {
+                "Best Epoch": epoch,
+                "Validation Loss": f"{val_loss:.4f}",
+                "Train Loss": f"{train_loss:.4f}"
+            })
+            print(f" -> Saved new best checkpoint to {version_ckpt} and {suite_ckpt}", flush=True)
 
         # HARDWIRED END-OF-EPOCH MEMORY FLUSH
         clean_gpu_memory()

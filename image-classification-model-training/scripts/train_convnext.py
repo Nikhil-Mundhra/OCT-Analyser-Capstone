@@ -59,7 +59,7 @@ def main():
     parser.add_argument("--smoke-test", action="store_true", help="Run 1 epoch per phase to verify pipeline")
     parser.add_argument("--w-h1", type=float, default=1.0, help="Weight for Head 1 (Binary) loss")
     parser.add_argument("--w-h2", type=float, default=1.0, help="Weight for Head 2 (12-Class) loss")
-    default_ckpt_dir = "/kaggle/working" if os.path.exists("/kaggle/working") else "checkpoints"
+    default_ckpt_dir = "/kaggle/working" if os.path.exists("/kaggle/working") else "checkpoints/classification"
     parser.add_argument("--checkpoint-dir", type=str, default=default_ckpt_dir, help="Directory to save checkpoints")
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint file to resume training from")
     parser.add_argument("--hf-repo", type=str, default=None, help="Hugging Face Hub repository ID (e.g. username/repo) for real-time cloud backup")
@@ -131,7 +131,7 @@ def main():
         model = build_multi_head_model(pretrained=True, warmup=True)
         model = compute_manager.prepare_model(model)
         
-        sub_dir = "WeightedRandomSampler" if args.use_weighted_sampler else None
+        sub_dir = "WeightedRandomSampler" if args.use_weighted_sampler else "Baseline"
         trainer = MultiHeadTrainer(
             model=model,
             criterions=criterions,

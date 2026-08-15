@@ -1,0 +1,116 @@
+/* Comparison Cards & Gallery */
+.image-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header-bar {
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-refresh-single,
+.btn-copy-config {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  border-radius: 4px;
+}
+
+.btn-refresh-single:hover,
+.btn-copy-config:hover {
+  background: var(--card-bg);
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.image-comparison-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #000000;
+}
+
+.img-wrap {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: #050505;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.img-wrap:last-child {
+  border-right: none;
+}
+
+.img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.img-tag {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  color: #c9d1d9;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+/* SVG Vector Overlays */
+.vector-svg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: all;
+}
+
+.vector-handle {
+  cursor: ns-resize;
+  pointer-events: all;
+  transition: r 0.12s ease;
+}
+
+.vector-handle:hover {
+  r: 5;
+}
+
+.vector-handle.active {
+  r: 6;
+  stroke: #ffffff;
+  stroke-width: 2px;
+}
+
+.top-handle {
+  fill: #00f2fe;
+}
+
+.bot-handle {
+  fill: #ff007f;
+}
+
+.sfcm-handle {
+  fill: #ff9100;
+}

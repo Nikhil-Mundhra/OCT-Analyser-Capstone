@@ -210,16 +210,33 @@ class MultiHeadOCTDataset(Dataset):
             pil_img = Image.open(image_path).convert("RGB")
             image = torch.from_numpy(np.array(pil_img)).permute(2, 0, 1).float() / 255.0
 
-        # Extract pre-normalization valid_mask (1.0 for genuine OCT acquisition region, 0.0 for zero padding & blackout corners)
-        try:
-            pil_raw = Image.open(image_path).convert("RGB")
-            raw_np = np.array(pil_raw).astype(np.float32) / 255.0
-            vm_np = (raw_np.sum(axis=2, keepdims=True) > 0.05).astype(np.float32)
-            valid_mask = torch.from_numpy(vm_np).permute(2, 0, 1) # [1, H, W]
-            if valid_mask.shape[-2:] != (384, 384):
-                valid_mask = torch.nn.functional.interpolate(valid_mask.unsqueeze(0), size=(384, 384), mode="nearest")[0]
-        except Exception:
-            valid_mask = torch.ones(1, 384, 384, dtype=torch.float32)
+        # Extract valid_mask (1.0 for genuine OCT retinal tissue, 0.0 for zero padding & background)
+        # 1. Check if offline binary tissue mask exists (*_mask.png)
+        img_p = Path(image_path)
+        mask_path = img_p.parent / f"{img_p.stem}_mask.png"
+        mask_loaded = False
+        if mask_path.exists():
+            try:
+                pil_mask = Image.open(mask_path).convert("L")
+                mask_np = (np.array(pil_mask).astype(np.float32) / 255.0 > 0.5).astype(np.float32)
+                valid_mask = torch.from_numpy(mask_np).unsqueeze(0)  # [1, H, W]
+                if valid_mask.shape[-2:] != (384, 384):
+                    valid_mask = torch.nn.functional.interpolate(valid_mask.unsqueeze(0), size=(384, 384), mode="nearest")[0]
+                mask_loaded = True
+            except Exception as exc_m:
+                logger.warning("Failed to load binary tissue mask %s: %s", mask_path, exc_m)
+
+        # 2. Fallback if offline mask is absent or unreadable
+        if not mask_loaded:
+            try:
+                pil_raw = Image.open(image_path).convert("RGB")
+                raw_np = np.array(pil_raw).astype(np.float32) / 255.0
+                vm_np = (raw_np.sum(axis=2, keepdims=True) > 0.05).astype(np.float32)
+                valid_mask = torch.from_numpy(vm_np).permute(2, 0, 1) # [1, H, W]
+                if valid_mask.shape[-2:] != (384, 384):
+                    valid_mask = torch.nn.functional.interpolate(valid_mask.unsqueeze(0), size=(384, 384), mode="nearest")[0]
+            except Exception:
+                valid_mask = torch.ones(1, 384, 384, dtype=torch.float32)
 
         targets = {
             "normal_abnormal": torch.tensor([float(row["l1_idx"])], dtype=torch.float32),

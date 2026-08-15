@@ -201,7 +201,7 @@ def get_validation_loader(batch_size=32, num_samples=1000):
     return DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
 
 def run_telemetry_eval():
-    checkpoint_path = "/Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone/checkpoints/multi_head/fold0_epoch_004.pth"
+    checkpoint_path = "/Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone/checkpoints/classification/multi_head/Baseline/v1/fold0_epoch_004.pth"
     
     # Touch checkpoint to update timestamp to today
     touch_checkpoint(checkpoint_path)

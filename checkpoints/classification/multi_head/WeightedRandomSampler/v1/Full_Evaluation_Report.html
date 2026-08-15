@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCT Model Telemetry Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 30px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #38bdf8;
+            margin: 0 0 8px 0;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #94a3b8;
+            margin: 0;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        .card-val {
+            font-size: 28px;
+            font-weight: 700;
+            color: #34d399;
+            margin: 8px 0;
+        }
+        .card-lbl {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+        }
+        th {
+            background: #0f172a;
+            color: #94a3b8;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        tr:nth-child(even) {
+            background: #162032;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">OCT ANALYSER — POPULATION TELEMETRY DASHBOARD</h1>
+            <p class="subtitle">Hierarchical Multi-Task ConvNeXt Evaluation & Explainability Analysis</p>
+        </div>
+        <div class="metrics-grid">
+            <div class="card">
+                <div class="card-lbl">H1 Triage Accuracy</div>
+                <div class="card-val">96.60%</div>
+            </div>
+            <div class="card">
+                <div class="card-lbl">H1 Macro F1</div>
+                <div class="card-val">96.09%</div>
+            </div>
+            <div class="card">
+                <div class="card-lbl">H2 Pathology Accuracy</div>
+                <div class="card-val">93.30%</div>
+            </div>
+            <div class="card">
+                <div class="card-lbl">H2 Macro F1</div>
+                <div class="card-val">94.89%</div>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Pathology Class</th>
+                    <th>Precision</th>
+                    <th>Recall</th>
+                    <th>F1 Score</th>
+                    <th>ROC AUC</th>
+                    <th>Avg Precision</th>
+                    <th>Support</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">CNV</td>
+            <td>0.9652</td>
+            <td>0.9363</td>
+            <td>0.9505</td>
+            <td>0.9880</td>
+            <td>0.9920</td>
+            <td>7314</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">DRUSEN</td>
+            <td>0.7669</td>
+            <td>0.9007</td>
+            <td>0.8284</td>
+            <td>0.9861</td>
+            <td>0.9186</td>
+            <td>1651</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">AMD</td>
+            <td>0.9900</td>
+            <td>0.9822</td>
+            <td>0.9861</td>
+            <td>0.9997</td>
+            <td>0.9965</td>
+            <td>505</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">General_AMD</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>9</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">DME</td>
+            <td>0.9569</td>
+            <td>0.9280</td>
+            <td>0.9422</td>
+            <td>0.9958</td>
+            <td>0.9856</td>
+            <td>2319</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">DR</td>
+            <td>0.9200</td>
+            <td>1.0000</td>
+            <td>0.9583</td>
+            <td>1.0000</td>
+            <td>0.9982</td>
+            <td>23</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">MH</td>
+            <td>1.0000</td>
+            <td>0.9862</td>
+            <td>0.9930</td>
+            <td>1.0000</td>
+            <td>0.9999</td>
+            <td>217</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">RVO</td>
+            <td>0.8696</td>
+            <td>0.9091</td>
+            <td>0.8889</td>
+            <td>0.9998</td>
+            <td>0.9288</td>
+            <td>22</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">RAO</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>3</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">CSR</td>
+            <td>0.9565</td>
+            <td>1.0000</td>
+            <td>0.9778</td>
+            <td>1.0000</td>
+            <td>0.9960</td>
+            <td>22</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">ERM</td>
+            <td>0.8667</td>
+            <td>1.0000</td>
+            <td>0.9286</td>
+            <td>1.0000</td>
+            <td>0.9897</td>
+            <td>26</td>
+        </tr>
+        
+        <tr>
+            <td style="font-weight: 600; color: #e2e8f0;">VID</td>
+            <td>0.9333</td>
+            <td>0.9333</td>
+            <td>0.9333</td>
+            <td>0.9999</td>
+            <td>0.9619</td>
+            <td>15</td>
+        </tr>
+        
+            </tbody>
+        </table>
+        <div class="footer">
+            OCT Analyser Capstone | Authored by ML Developer — Nikhil Mundhra (NYU Abu Dhabi '2027)
+        </div>
+    </div>
+</body>
+</html>
