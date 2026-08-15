@@ -57,7 +57,10 @@ build: install
 	@npm --prefix web-app/frontend run build
 
 test: install
-	@PYTHONPATH=web-app $(PYTEST) -c web-app/backend/pytest.ini web-app/backend/tests
+	@$(VENV_PYTHON) scripts/run_all_tests.py
+
+test-frontend:
+	@npm --prefix web-app/frontend test
 
 run: build
 	@set -e; \
