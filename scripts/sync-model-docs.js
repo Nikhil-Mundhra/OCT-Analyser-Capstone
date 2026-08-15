@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.join(__dirname, '..');
-const FRONTEND_PUBLIC_DOCS = path.join(ROOT_DIR, 'frontend', 'public', 'docs_content', 'models');
-const FRONTEND_SRC_DOCS = path.join(ROOT_DIR, 'frontend', 'src', 'docs');
+const FRONTEND_PUBLIC_DOCS = path.join(ROOT_DIR, 'web-app', 'frontend', 'public', 'docs_content', 'models');
+const FRONTEND_SRC_DOCS = path.join(ROOT_DIR, 'web-app', 'frontend', 'src', 'docs');
 
 const SOURCES = [
   {
@@ -11,7 +11,7 @@ const SOURCES = [
     sidebarTitle: "Classification",
     id: "classification",
     color: "purple",
-    sourceDir: path.join(ROOT_DIR, 'image-classification-model-training', 'Documentation'),
+    sourceDir: path.join(ROOT_DIR, 'training', 'classification', 'Documentation'),
     destDir: path.join(FRONTEND_PUBLIC_DOCS, 'classification')
   },
   {
@@ -19,7 +19,7 @@ const SOURCES = [
     sidebarTitle: "Segmentation",
     id: "segmentation",
     color: "emerald",
-    sourceDir: path.join(ROOT_DIR, 'image-segmentation-model-training', 'Documentation'),
+    sourceDir: path.join(ROOT_DIR, 'training', 'segmentation', 'Documentation'),
     destDir: path.join(FRONTEND_PUBLIC_DOCS, 'segmentation')
   }
 ];

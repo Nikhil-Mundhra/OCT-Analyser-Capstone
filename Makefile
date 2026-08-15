@@ -50,14 +50,14 @@ venv:
 	fi
 
 install: venv
-	@$(PIP) install -r backend/requirements.txt
-	@npm --prefix frontend install
+	@$(PIP) install -r web-app/backend/requirements.txt
+	@npm --prefix web-app/frontend install
 
 build: install
-	@npm --prefix frontend run build
+	@npm --prefix web-app/frontend run build
 
 test: install
-	@$(PYTEST) -c backend/pytest.ini backend/tests
+	@PYTHONPATH=web-app $(PYTEST) -c web-app/backend/pytest.ini web-app/backend/tests
 
 run: build
 	@set -e; \
@@ -89,14 +89,14 @@ run: build
 		wait $$API_PID $$WEB_PID 2>/dev/null || true; \
 	}; \
 	trap cleanup INT TERM EXIT; \
-	$(UVICORN) backend.oct_analyzer.api:app --host $(HOST) --port $$RESOLVED_API_PORT & \
+	PYTHONPATH=web-app $(UVICORN) backend.oct_analyzer.api:app --host $(HOST) --port $$RESOLVED_API_PORT & \
 	API_PID=$$!; \
 	sleep 1; \
 	if ! kill -0 $$API_PID 2>/dev/null; then \
 		wait $$API_PID; \
 		exit $$?; \
 	fi; \
-	cd frontend && npm start -- -p $$RESOLVED_WEB_PORT & \
+	cd web-app/frontend && npm start -- -p $$RESOLVED_WEB_PORT & \
 	WEB_PID=$$!; \
 	sleep 1; \
 	if ! kill -0 $$WEB_PID 2>/dev/null; then \
@@ -107,7 +107,7 @@ run: build
 	wait $$API_PID $$WEB_PID
 
 clean:
-	@rm -rf .coverage __pycache__ backend/oct_analyzer/__pycache__ backend/tests/__pycache__ runtime_uploads frontend/dist frontend/.next
+	@rm -rf .coverage __pycache__ web-app/backend/oct_analyzer/__pycache__ web-app/backend/tests/__pycache__ runtime_uploads web-app/frontend/dist web-app/frontend/.next
 
 # ---------------------------------------------------------------------------
 # Local HF Space mirror targets
@@ -122,10 +122,10 @@ run-hf-local:
 	@echo "Set OCT_LOCAL_DEVICE=cpu|mps|cuda to control the device (default: cpu)."
 	docker build \
 		-t oct-hf-space-local \
-		image-classification-model-training/hf_space
+		hf_space
 	docker run --rm \
 		-p 7860:7860 \
-		-v "$(PWD)/image-classification-model-training/hf_space/weights:/app/weights" \
+		-v "$(PWD)/hf_space/weights:/app/weights" \
 		-e OCT_LOCAL_DEVICE=$${OCT_LOCAL_DEVICE:-cpu} \
 		-e KMP_DUPLICATE_LIB_OK=TRUE \
 		oct-hf-space-local
@@ -144,14 +144,14 @@ docker-down:
 
 train-convnext:
 	@echo "Training Multi-Head ConvNeXt model..."
-	export PYTHONPATH=$$(pwd)/image-classification-model-training:$$PYTHONPATH && \
-	KMP_DUPLICATE_LIB_OK=TRUE $(VENV_PYTHON) image-classification-model-training/scripts/train_convnext.py \
-		--config image-classification-model-training/config/hierarchy.yaml
+	export PYTHONPATH=$$(pwd)/training/classification:$$PYTHONPATH && \
+	KMP_DUPLICATE_LIB_OK=TRUE $(VENV_PYTHON) training/classification/scripts/train_convnext.py \
+		--config training/classification/config/hierarchy.yaml
 
 smoke-test:
 	@echo "Running smoke test on Multi-Head ConvNeXt pipeline..."
-	export PYTHONPATH=$$(pwd)/image-classification-model-training:$$PYTHONPATH && \
-	KMP_DUPLICATE_LIB_OK=TRUE $(VENV_PYTHON) image-classification-model-training/scripts/train_convnext.py \
-		--config image-classification-model-training/config/hierarchy.yaml \
+	export PYTHONPATH=$$(pwd)/training/classification:$$PYTHONPATH && \
+	KMP_DUPLICATE_LIB_OK=TRUE $(VENV_PYTHON) training/classification/scripts/train_convnext.py \
+		--config training/classification/config/hierarchy.yaml \
 		--smoke-test --epochs-warmup 1 --epochs-finetune 1 --batch-size 8
 

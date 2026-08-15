@@ -9,7 +9,7 @@ PID_FILE="logs/start_services.pid"
 if [ -f "$PID_FILE" ]; then
     OLD_PID=$(cat "$PID_FILE")
     if [ -n "$OLD_PID" ] && kill -0 "$OLD_PID" 2>/dev/null; then
-        echo "🛑 Previous start.sh instance (PID $OLD_PID) detected. Terminating..."
+        echo "Previous start.sh instance (PID $OLD_PID) detected. Terminating..."
         kill -9 "$OLD_PID" 2>/dev/null
     fi
     rm -f "$PID_FILE"
@@ -19,7 +19,7 @@ fi
 mkdir -p logs
 echo $$ > "$PID_FILE"
 
-echo "🧹 Pre-flight cleanup: clearing old backend & frontend processes..."
+echo "Pre-flight cleanup: clearing old backend and frontend processes..."
 pkill -9 -f "uvicorn backend.oct_analyzer.api:app" 2>/dev/null || true
 pkill -9 -f "celery -A backend.oct_analyzer.celery_app" 2>/dev/null || true
 pkill -9 -f "next-dev" 2>/dev/null || true
@@ -56,29 +56,29 @@ brew services start redis > /dev/null 2>&1 || /opt/homebrew/bin/redis-server --d
 sleep 1
 
 echo "1. Starting Celery Worker..."
-PYTHONPATH=. uv run celery -A backend.oct_analyzer.celery_app worker --loglevel=info --pool=solo > logs/celery.log 2>&1 &
+PYTHONPATH=web-app uv run celery -A backend.oct_analyzer.celery_app worker --loglevel=info --pool=solo > logs/celery.log 2>&1 &
 CELERY_PID=$!
 
 echo "2. Starting FastAPI Backend..."
-PYTHONPATH=. uv run python -m uvicorn backend.oct_analyzer.api:app --reload --port 8000 > logs/backend.log 2>&1 &
+PYTHONPATH=web-app uv run python -m uvicorn backend.oct_analyzer.api:app --reload --port 8000 > logs/backend.log 2>&1 &
 BACKEND_PID=$!
 
 echo "3. Starting React Frontend..."
-cd frontend
-npm run dev > ../logs/frontend.log 2>&1 &
+cd web-app/frontend
+npm run dev > ../../logs/frontend.log 2>&1 &
 FRONTEND_PID=$!
-cd ..
+cd ../..
 
 echo "----------------------------------------"
-echo "✅ All services are booting up in the background!"
-echo "🌐 Frontend: http://localhost:3000"
-echo "⚙️  Backend:  http://127.0.0.1:8000"
-echo "📄 Logs are written to 'logs/'"
+echo "All services are booting up in the background."
+echo "Frontend: http://localhost:3000"
+echo "Backend:  http://127.0.0.1:8000"
+echo "Logs are written to 'logs/'"
 echo "----------------------------------------"
 
 cleanup() {
     echo ""
-    echo "🛑 Shutting down services..."
+    echo "Shutting down services..."
     kill $CELERY_PID $BACKEND_PID $FRONTEND_PID 2>/dev/null
     rm -f "$PID_FILE"
 }

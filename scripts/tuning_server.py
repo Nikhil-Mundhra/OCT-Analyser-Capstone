@@ -11,8 +11,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-if str(PROJECT_ROOT / "image-classification-model-training") not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT / "image-classification-model-training"))
+if str(PROJECT_ROOT / "training" / "classification") not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT / "training" / "classification"))
 
 import data.preprocessing.tuning.server as _server
 

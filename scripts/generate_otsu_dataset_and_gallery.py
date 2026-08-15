@@ -26,7 +26,7 @@ import multiprocessing as mp
 from pathlib import Path
 from collections import defaultdict
 
-sys.path.append(str(Path(__file__).resolve().parent.parent / "image-classification-model-training"))
+sys.path.append(str(Path(__file__).resolve().parent.parent / "training" / "classification"))
 
 from data.preprocessing import process_image, VALID_EXT
 

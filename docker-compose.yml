@@ -22,15 +22,15 @@ services:
   backend:
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: web-app/backend/Dockerfile
     ports:
       - "8000:8000"
     volumes:
       # Mount the model weights and HF space code so you don't need to rebuild
       # the image every time you change Python source files.
-      - ./backend:/app/backend
-      - ./image-classification-model-training:/app/image-classification-model-training
-      - ./OCT-Segmentation-Model:/app/OCT-Segmentation-Model
+      - ./web-app/backend:/app/web-app/backend
+      - ./training/classification:/app/training/classification
+      - ./models_suite:/app/models_suite
     environment:
       # Force CPU on machines without a GPU inside Docker.
       # Change to 'mps' or 'cuda' if your Docker runtime supports it.
@@ -50,13 +50,13 @@ services:
   # ---------------------------------------------------------------------------
   hf-space:
     build:
-      context: ./image-classification-model-training/hf_space
+      context: ./hf_space
       dockerfile: Dockerfile
     ports:
       - "7860:7860"
     volumes:
       # Mount weights directory so you can swap checkpoints without rebuilding.
-      - ./image-classification-model-training/hf_space/weights:/app/weights
+      - ./hf_space/weights:/app/weights
     environment:
       - OCT_LOCAL_DEVICE=${OCT_LOCAL_DEVICE:-cpu}
       - KMP_DUPLICATE_LIB_OK=TRUE

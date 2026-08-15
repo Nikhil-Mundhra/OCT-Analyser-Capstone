@@ -1,57 +1,90 @@
+# Operating System & IDE Artifacts
 .DS_Store
+.vscode/
+.idea/
+
+# Python & Testing Artifacts
 .pytest_cache/
-.venv/
-node_modules/
+.coverage
+.coveragerc
 __pycache__/
 *.pyc
-runtime_uploads/
-
-# Ignore SQLite DBs and coverage
-backend/oct_analyzer.db
-.coverage
+*.pyo
+*.pyd
 *.tmp
 *.pth.tmp
+*.lock
+logs_test/
+**/logs/**
+**/*.log
+audit.log
 
-# Ignore model checkpoints
+# Virtual Environments & Dependencies
+.venv/
+node_modules/
+venv/
+**/venv/
+image-classification-model-training/venv/
+training/**/venv/
+
+# Uploads & Ephemeral Storage
+runtime_uploads/
+
+# Databases
+*.db
+*.sqlite3
+backend/oct_analyzer.db
+web-app/backend/oct_analyzer.db
+
+# Model Checkpoints, Archives & Weights
+*.pth
+checkpoints/
+models_suite/**/checkpoints/*.pth
 image-classification-model-training/checkpoints/
 image-segmentation-model-training/checkpoints/
 image-segmentation-model-training/models_suite/
-*.pth
+training/**/checkpoints/
+archive/
 
-# Ignore training logs and TensorBoard artifacts
-**/logs/**
-**/*.log
+# Training Logs & TensorBoard Artifacts
 **/events.out.tfevents.*
 **/tfevents.*
-logs_test/
 
-# Environment variables
+# Binary Archives & Large Reports
+*.zip
+*.tar.gz
+*.pdf
+
+# Environment Variables
 .env
-# .env.local is developer-specific and must NOT be committed.
-# .env.production IS committed so CI/CD uses the correct HF Space URL.
 frontend/.env.local
+web-app/frontend/.env.local
 
-# Docker local overrides (optional per-developer customisations)
+# Docker Local Overrides
 docker-compose.override.yml
 
-# agents
+# Agents & Knowledge Graph Cache
 .agents
 graphify-out/
 
-# Ignore image assets
-**/*.png
-*.png
-*jpeg
-*.jpg
-*.zip
-
-# Next.js build output
+# Frontend Build Output
+.next/
+.next
 frontend/.next/
-models_suite/model3_hrf_dme/results/Unet/MobaXterm_172.18.186.773_20260214_114324.rtf
-models_suite/model3_hrf_dme/results/Attention-Unet/MobaXterm_172.18.186.773_20260214_125108.rtf
-image-classification-model-training/hf_space
-models_suite/model3_hrf_dme/HRF-HPC/AUNET/MobaXterm_172.18.186.773_20260214_125108.rtf
 frontend/.next
-image-segmentation-model-training/models_suite/model2_choroidalyzer
-image-segmentation-model-training/models_suite/model3_hrf_dme
+web-app/frontend/.next/
+web-app/frontend/.next
+
+# Generated Telemetry & Test Debug Outputs
+telemetry_outputs/debug_*.png
+telemetry_outputs/test_*.png
+telemetry_outputs/pdf_page.png
+telemetry_outputs/seg_smoke_test.png
+
+# External / Space Deployments
+image-classification-model-training/hf_space
+models_suite/**/results/**/*.png
+models_suite/**/HRF-HPC/**/*.png
+models_suite/model3_hrf_dme/results/**/MobaXterm*.rtf
+models_suite/model3_hrf_dme/HRF-HPC/**/MobaXterm*.rtf
 scripts/hpc-nyuad.txt

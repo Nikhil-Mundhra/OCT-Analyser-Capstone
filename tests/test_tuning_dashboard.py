@@ -42,7 +42,7 @@ class ElementIdExtractor(HTMLParser):
 
 @pytest.fixture
 def dashboard_parser():
-    html_path = PROJECT_ROOT / 'image-classification-model-training' / 'data' / 'preprocessing' / 'tuning' / 'dashboard' / 'index.html'
+    html_path = PROJECT_ROOT / 'training' / 'classification' / 'data' / 'preprocessing' / 'tuning' / 'dashboard' / 'index.html'
     if not html_path.exists():
         html_path = PROJECT_ROOT / 'scripts' / 'tuning_dashboard.html'
     assert html_path.exists(), f"Dashboard HTML file not found at {html_path}"
@@ -110,7 +110,7 @@ def test_compass_controls_exist(dashboard_parser):
     assert 'value="bottom_right"' in content
 
 def test_js_script_methods_present():
-    js_dir = PROJECT_ROOT / 'image-classification-model-training' / 'data' / 'preprocessing' / 'tuning' / 'dashboard' / 'js'
+    js_dir = PROJECT_ROOT / 'training' / 'classification' / 'data' / 'preprocessing' / 'tuning' / 'dashboard' / 'js'
     all_js_content = ""
     if js_dir.exists():
         for js_file in js_dir.glob("*.js"):

@@ -29,7 +29,7 @@ Comprehensive technical documentation explaining the end-to-end architecture, co
                                v
 +-------------------------------------------------------------+
 |            Production Batch Preprocessing Engine            |
-|   (image-classification-model-training/data/preprocessing/) |
+|   (training/classification/data/preprocessing/)             |
 |     1. Circular compass detection & zero-erasure            |
 |     2. Scanner white annotation bar removal                 |
 |     3. Dual-pass Otsu ILM top boundary                      |
@@ -77,9 +77,9 @@ All 20 subfolders in the dataset have dedicated parameter maps stored in [`data/
 
 ## 3. Interactive Tuning Dashboard (`data.preprocessing.tuning`)
 
-The tuning sub-system is organized as a dedicated domain package within `image-classification-model-training/data/preprocessing/tuning/`:
-- **Server:** [`data/preprocessing/tuning/server.py`](file:///Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone/image-classification-model-training/data/preprocessing/tuning/server.py)
-- **Web UI:** [`data/preprocessing/tuning/dashboard/`](file:///Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone/image-classification-model-training/data/preprocessing/tuning/dashboard/) (`index.html`, `css/`, `js/`)
+The tuning sub-system is organized as a dedicated domain package within `training/classification/data/preprocessing/tuning/`:
+- **Server:** [`data/preprocessing/tuning/server.py`](file:///Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone/training/classification/data/preprocessing/tuning/server.py)
+- **Web UI:** [`data/preprocessing/tuning/dashboard/`](file:///Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone/training/classification/data/preprocessing/tuning/dashboard/) (`index.html`, `css/`, `js/`)
 - **Forwarding Script:** [`scripts/tuning_server.py`](file:///Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone/scripts/tuning_server.py)
 
 ### Launching the Tuning Server
