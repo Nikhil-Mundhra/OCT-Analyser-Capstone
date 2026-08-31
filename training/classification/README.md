@@ -72,40 +72,41 @@ graph TD
 
 ---
 
-## Dataset Preprocessing Pipeline (`scripts/preprocess_dataset.py`)
+## Dataset Preprocessing Pipeline (`scripts/preprocess_dataset.py` & `data/preprocessing/`)
 
-The offline preprocessing pipeline in [`scripts/preprocess_dataset.py`](file:///Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone/image-classification-model-training/scripts/preprocess_dataset.py) features a comprehensive 8-part cleaning and standardization suite designed for raw multi-source OCT datasets (such as `Classified`):
+The preprocessing pipeline features a comprehensive cleaning and standardization suite designed for raw multi-source OCT datasets (such as `Classified`):
 
-1. **Column-Wise Vitreous-Moat Raycasting (White Bar Removal)**:
-   - Eliminates top and bottom white header/footer bars of **any geometry, thickness, or slant/angle** (including diagonal headers like `DME-15307-5.jpeg`, thick 30%+ banners, tapering wedges, or corner text overlays).
+1. **Simultaneous Coupled Multi-Surface Optimization**:
+   - Solves for $\text{ILM}(x)$, $\text{RPE}(x)$, and $\text{Choroid}(x)$ simultaneously in a joint optimization pass with strict physical inter-layer distance constraints ($\Delta_{\text{min}} \le y_{\text{RPE}} - y_{\text{ILM}} \le \Delta_{\text{max}}$).
+   - Prevents error cascading, layer misidentifications, and edge dropoffs.
+
+2. **Continuous B-Spline Regularization**:
+   - Parameterizes boundary curves over a cubic B-spline basis ($C^2$ continuous), eliminating sharp step-edge gradient spikes and aliasing for deep CNN training.
+
+3. **Column-Wise Vitreous-Moat Raycasting (White Bar Removal)**:
+   - Eliminates top and bottom white header/footer bars of **any geometry, thickness, or slant/angle** (including diagonal headers, thick 30%+ banners, tapering wedges, or corner text overlays).
    - Performs top-down and bottom-up vertical raycasting per column $x \in [0, W-1]$.
    - Halts each column ray at the **dark vitreous/choroid background moat** ($gray < 70$), capturing 100% of the white bar without ever bleeding into internal retinal layers.
 
-2. **Morphological Tissue Boundary Masking (Otsu + Contours)**:
-   - Converts the scan to grayscale and applies Otsu automatic intensity thresholding to separate tissue structure from background noise.
-   - Applies morphological closing (`MORPH_CLOSE` with $15 \times 15$ kernel) to bridge intra-retinal gaps.
-   - Extracts the largest external contour (`cv2.findContours`) corresponding strictly to the continuous retinal tissue anatomy.
-   - Applies morphological dilation (`MORPH_ELLIPSE` with $15 \times 15$ kernel) to ensure 100% of peripheral biological markers (such as outer RPE layers, ELM, and peripheral cysts) are preserved.
+4. **Background Zeroing & Letterbox Framing ($384 \times 384$)**:
+   - Multiplies image channels by the organic tissue mask, converting non-tissue vitreous and corner background regions to pure black (`RGB: [0, 0, 0]`).
+   - Symmetrically pads scans to square aspect ratio and standardizes resolution to $384 \times 384$ without geometrical distortion.
 
-3. **Bottom Corner UI & Compass Artifact Zeroing**:
-   - Zeroes out bottom-left and bottom-right corner margins (20% width $\times$ 25% height corner boxes) where device orientation compasses, scale bars, device logos, or scanner UI text boxes typically sit.
-
-4. **Background Zeroing (Pure Black Padding)**:
-   - Multiplies image channels by the binary tissue mask, converting all non-tissue vitreous, choroidal, and corner background regions to pure black (`RGB: [0, 0, 0]`).
-   - Eliminates background speckle noise and spurious background gradients during CNN feature extraction.
-
-5. **Letterbox Pad to Square & Resizing (Framing)**:
-   - When framing is enabled (`--frame`), calculates aspect ratio differences and applies equal symmetric zero-padding (`cv2.copyMakeBorder` with `BORDER_CONSTANT`) to convert non-square rectangular scans into a perfect square aspect ratio without stretching or distorting the retinal tissue anatomy.
-   - Resizes framed square images to the target input resolution (default: $384 \times 384$) using area interpolation (`cv2.INTER_AREA`), producing consistent spatial inputs for ConvNeXt V2.
+5. **Deep Learning Segmenter Roadmap (Plan 2)**:
+   - For the upcoming zero-parameter U-Net segmenter on `OCT5K`, see [`PLAN_2_NEURAL_SEGMENTATION.md`](file:///Users/nikhilmundhra/Documents/Github/OCT-Analyser-Capstone/training/classification/data/preprocessing/PLAN_2_NEURAL_SEGMENTATION.md).
 
 6. **Native Orientation Loading (MONAI Transpose Correction)**:
    - Uses native `cv2.imread(src, cv2.IMREAD_UNCHANGED)` for disk operations, avoiding the 90-degree axis transpose artifact introduced by MONAI's internal ITK/PIL image reader.
 
 7. **Dual Mode Operation (Production vs. Red Evaluation)**:
    - **Production Mode** (default): Zeroes out white bars and background to pure black (`[0, 0, 0]`) for high-performance model training and inference.
-   - **Red Evaluation Mode** (`--highlight-red`): Colors all detected white bars in bright red (`[0, 0, 255]`) to allow fast visual quality control and dataset validation (as generated in `Classified-preprocessed-R3`).
+   - **Evaluation Mode** (`--highlight-red`): Converts detected white bars to bright red (`[0, 0, 255]`) for manual visual audit and quality control without modifying the underlying scans.
 
-8. **High-Speed CPU Parallel Multiprocessing**:
+8. **Organic Boundary Smoothing ($C^\infty$ Continuous 1D Gaussian Curves)**:
+   - Eliminates grainy, jagged 1-pixel staircase teeth and sharp discrete step boundaries.
+   - Prevents artificial high-frequency Dirac/step edge gradients ($\Delta I \gg 0$) from hijacking early convolutional stem kernels ($7 \times 7$ ConvNeXt / $3 \times 3$ ResNet) or causing false Grad-CAM border activations.
+
+9. **High-Speed CPU Parallel Multiprocessing**:
    - Parallelized across all available CPU worker processes (`mp.Pool`), processing 88,800+ high-resolution medical images in under 1 minute.
 
 ---

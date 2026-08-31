@@ -455,11 +455,239 @@ def test_static_asset_serving(monkeypatch):
     assert "init" in response
 
 
+def test_api_health_endpoint(tmp_path, monkeypatch):
+    import tuning_server
+
+    src_dir = tmp_path / "Classified"
+    folder = src_dir / "Folder1"
+    folder.mkdir(parents=True)
+    (folder / "img.jpg").touch()
+
+    out_dir = tmp_path / "Output"
+    monkeypatch.setattr(tuning_server, "SOURCE_DIR", src_dir)
+    monkeypatch.setattr(tuning_server, "OUTPUT_DIR", out_dir)
+
+    class MockSocket:
+        def __init__(self, request_bytes):
+            self._rfile = io.BytesIO(request_bytes)
+            self.wfile = io.BytesIO()
+        def makefile(self, mode, *args, **kwargs):
+            if 'r' in mode:
+                return self._rfile
+            return self.wfile
+        def sendall(self, data):
+            self.wfile.write(data)
+
+    mock_sock = MockSocket(b"GET /api/health HTTP/1.1\r\nHost: localhost\r\n\r\n")
+    handler = tuning_server.FineTuningRequestHandler(mock_sock, ("127.0.0.1", 8000), None)
+    response = mock_sock.wfile.getvalue().decode("utf-8")
+    assert "200 OK" in response
+    assert "application/json" in response
+    assert '"status": "healthy"' in response
+    assert '"filesystem"' in response
+    assert '"source_readable": true' in response
 
 
+def test_http_error_handling_and_boundaries():
+    import tuning_server
+
+    class MockSocket:
+        def __init__(self, request_bytes):
+            self._rfile = io.BytesIO(request_bytes)
+            self.wfile = io.BytesIO()
+        def makefile(self, mode, *args, **kwargs):
+            if 'r' in mode:
+                return self._rfile
+            return self.wfile
+        def sendall(self, data):
+            self.wfile.write(data)
+
+    # 1. Unknown GET endpoint
+    mock_sock = MockSocket(b"GET /api/unknown_endpoint HTTP/1.1\r\nHost: localhost\r\n\r\n")
+    handler = tuning_server.FineTuningRequestHandler(mock_sock, ("127.0.0.1", 8000), None)
+    response = mock_sock.wfile.getvalue().decode("utf-8")
+    assert "404" in response
+
+    # 2. Unknown POST endpoint
+    mock_sock = MockSocket(b"POST /api/unknown_post HTTP/1.1\r\nHost: localhost\r\nContent-Length: 2\r\n\r\n{}")
+    handler = tuning_server.FineTuningRequestHandler(mock_sock, ("127.0.0.1", 8000), None)
+    response = mock_sock.wfile.getvalue().decode("utf-8")
+    assert "404" in response
+
+    # 3. POST missing Content-Length
+    mock_sock = MockSocket(b"POST /api/reprocess HTTP/1.1\r\nHost: localhost\r\n\r\n{}")
+    handler = tuning_server.FineTuningRequestHandler(mock_sock, ("127.0.0.1", 8000), None)
+    response = mock_sock.wfile.getvalue().decode("utf-8")
+    assert "400" in response
 
 
+def test_perform_preflight_checks():
+    import tuning_server
+    preflight = tuning_server.perform_preflight_checks()
+    assert isinstance(preflight, dict)
+    assert "dashboard_assets_ok" in preflight
+    assert "params_loaded" in preflight
+    assert "source_dir" in preflight
+    assert "output_dir" in preflight
+    assert preflight["dashboard_assets_ok"] is True
+    assert preflight["params_loaded"] is True
 
 
+def test_verify_server_endpoints_and_self_tests():
+    import tuning_server
+    # Run the standalone diagnostic test runner
+    ret_code = tuning_server.run_standalone_self_tests()
+    assert ret_code == 0
 
 
+def test_rpe_detection_parameterization():
+    import numpy as np
+    from data.preprocessing.tuning.boundaries import detect_rpe_band
+
+    img = np.zeros((100, 100), dtype=np.uint8)
+    img[50:60, :] = 200  # Fake RPE band
+    y_top = np.full(100, 20.0)
+
+    # Default parameters
+    rpe_default = detect_rpe_band(img, y_top)
+    assert len(rpe_default) == 100
+    assert np.all(rpe_default >= 20.0)
+
+    # Custom RPE parameters
+    custom_params = {
+        "rpe_smooth_weight": 0.80,
+        "rpe_depth_weight": 0.10,
+        "rpe_gradient_weight": 0.50,
+        "rpe_bottom_env_size": 5
+    }
+    rpe_custom = detect_rpe_band(img, y_top, params=custom_params)
+    assert len(rpe_custom) == 100
+    assert np.all(rpe_custom >= 20.0)
+
+
+def test_sfcm_cache_key_with_rpe_params():
+    from data.preprocessing.tuning.boundaries import get_sfcm_cache_key
+
+    p1 = {"sfcm_margin_bottom": 15, "rpe_smooth_weight": 0.20, "sfcm_slack_bottom_px": 20}
+    p2 = {"sfcm_margin_bottom": 15, "rpe_smooth_weight": 0.20, "sfcm_slack_bottom_px": 40}
+
+    key1 = get_sfcm_cache_key("test.jpg", (100, 100), p1)
+    key2 = get_sfcm_cache_key("test.jpg", (100, 100), p2)
+
+    assert key1 != key2
+
+
+def test_detect_choroidal_caverns():
+    import cv2
+    import numpy as np
+    from data.preprocessing.tuning.boundaries import detect_choroidal_caverns
+
+    # Create synthetic OCT image with stroma (intensity ~70)
+    img = np.full((120, 120), 70, dtype=np.uint8)
+    
+    # Draw dark empty cavern void at center (intensity ~5, circular)
+    cv2.circle(img, (60, 60), 8, 5, -1)
+    
+    # Draw posterior hypertransmission zone directly beneath the cavern (intensity ~120)
+    img[70:95, 52:68] = 120
+
+    y_rpe = np.full(120, 40.0)
+    y_bottom_sfcm = np.full(120, 80.0)
+
+    caverns = detect_choroidal_caverns(
+        img,
+        y_rpe=y_rpe,
+        y_bottom_sfcm=y_bottom_sfcm,
+        params={
+            "cavern_min_area": 10,
+            "cavern_max_area": 500,
+            "cavern_transmission_threshold": 1.20,
+            "sfcm_slack_bottom_px": 25
+        }
+    )
+
+    assert isinstance(caverns, list)
+    assert len(caverns) >= 1
+    c = caverns[0]
+    assert c["transmission_ratio"] >= 1.20
+    assert c["circularity"] > 0.50
+
+
+def test_sfcm_slack_bottom_buffer():
+    import numpy as np
+    from data.preprocessing.tuning.boundaries import compute_sfcm_choroid_boundary
+
+    img = np.full((100, 100), 50, dtype=np.uint8)
+    img[20:30, :] = 200  # RPE band
+    y_top = np.full(100, 10.0)
+
+    # With 0 slack
+    _, bot_0 = compute_sfcm_choroid_boundary(img, y_top, {"sfcm_slack_bottom_px": 0})
+    # With 30px slack
+    _, bot_30 = compute_sfcm_choroid_boundary(img, y_top, {"sfcm_slack_bottom_px": 30})
+
+    assert np.all(bot_30 >= bot_0)
+    assert np.mean(bot_30 - bot_0) >= 25.0
+
+
+def test_cli_single_image_and_folder_processing(tmp_path, monkeypatch):
+    import cv2
+    import numpy as np
+    import tuning_server
+    from pathlib import Path
+    from data.preprocessing.tuning.processor import (
+        process_single_image_cli,
+        process_folder_cli,
+        render_boundary_overlay,
+    )
+
+    src_dir = tmp_path / "Classified"
+    folder = src_dir / "TestFolder"
+    folder.mkdir(parents=True)
+
+    img = np.full((120, 120, 3), 40, dtype=np.uint8)
+    img[30:50, :, :] = 160  # tissue band
+    img[60:75, :, :] = 220  # RPE band
+    img_path = folder / "test_scan.png"
+    cv2.imwrite(str(img_path), img)
+
+    out_dir = tmp_path / "Output"
+    monkeypatch.setattr(tuning_server, "SOURCE_DIR", src_dir)
+    monkeypatch.setattr(tuning_server, "OUTPUT_DIR", out_dir)
+
+    # 1. Single Image CLI processing
+    res = process_single_image_cli(
+        image_path_or_filename=img_path,
+        folder_name="TestFolder",
+        params={"auto_mode": True},
+        out_dir=out_dir / "TestFolder",
+        save_overlay=True,
+        save_mask=True,
+    )
+
+    assert res["status"] == "success"
+    assert res["filename"] == "test_scan.png"
+    assert "metrics" in res
+    assert "ilm_y" in res["metrics"]
+    assert "retinal_thickness_px" in res["metrics"]
+    assert Path(res["saved_files"]["processed"]).exists()
+    assert Path(res["saved_files"]["raw"]).exists()
+    assert Path(res["saved_files"]["overlay"]).exists()
+    assert Path(res["saved_files"]["mask"]).exists()
+
+    # 2. Folder Batch CLI processing
+    batch_res = process_folder_cli(
+        folder_name="TestFolder",
+        sample_count=1,
+        out_dir=out_dir / "TestFolder",
+    )
+    assert len(batch_res) == 1
+    assert batch_res[0]["filename"] == "test_scan.png"
+
+    # 3. Render Boundary Overlay
+    y_top = np.full(120, 35.0)
+    y_rpe = np.full(120, 65.0)
+    y_sfcm = np.full(120, 95.0)
+    overlay = render_boundary_overlay(img, y_top, y_rpe, y_sfcm)
+    assert overlay.shape == img.shape
+    assert not np.array_equal(overlay, img)

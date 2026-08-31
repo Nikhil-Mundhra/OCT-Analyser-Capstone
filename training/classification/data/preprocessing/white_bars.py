@@ -180,10 +180,12 @@ def detect_and_process_white_bars(
     if top_row_white_pct > 0.15:
         for x in range(W):
             dark_count = 0
+            last_white_y = -1
             for y in range(H):
                 val = gray[y, x]
                 if val >= white_thresh:
                     bar_mask[y, x] = 255
+                    last_white_y = y
                     dark_count = 0
                 elif val < dark_bg_thresh:
                     dark_count += 1
@@ -191,16 +193,21 @@ def detect_and_process_white_bars(
                         break
                 else:
                     break
+            if last_white_y >= 0:
+                pad_end = min(H, last_white_y + 15)
+                bar_mask[:pad_end, x] = 255
 
     # 2. Bottom-Up Column Raycasting
     bottom_row_white_pct = np.mean(gray[H - 1, :] > white_thresh)
     if bottom_row_white_pct > 0.15:
         for x in range(W):
             dark_count = 0
+            first_white_y = H
             for y in range(H - 1, -1, -1):
                 val = gray[y, x]
                 if val >= white_thresh:
                     bar_mask[y, x] = 255
+                    first_white_y = y
                     dark_count = 0
                 elif val < dark_bg_thresh:
                     dark_count += 1
@@ -208,6 +215,9 @@ def detect_and_process_white_bars(
                         break
                 else:
                     break
+            if first_white_y < H:
+                pad_start = max(0, first_white_y - 15)
+                bar_mask[pad_start:, x] = 255
 
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     bar_mask = cv2.morphologyEx(bar_mask, cv2.MORPH_CLOSE, kernel)

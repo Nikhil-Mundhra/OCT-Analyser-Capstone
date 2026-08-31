@@ -30,6 +30,31 @@ function updateOtsuSfcmVisibility() {
   }
 }
 
+function updateAutoModeVisibility() {
+  const isAutoOn = getParamEl('auto_mode') ? getParamEl('auto_mode').checked : false;
+  const manualContainer = document.getElementById('manual-controls-container');
+  const autoStatusCard = document.getElementById('auto-mode-status-card');
+  if (manualContainer) manualContainer.style.display = isAutoOn ? 'none' : 'flex';
+  if (autoStatusCard) autoStatusCard.style.display = isAutoOn ? 'flex' : 'none';
+}
+
+function updateHolesVisibility() {
+  const toggle = getParamEl('holes_enabled');
+  const body = document.getElementById('holes-param-body');
+  if (!body) return;
+  const enabled = toggle ? toggle.checked : true;
+  body.style.opacity = enabled ? '1' : '0.38';
+  body.style.pointerEvents = enabled ? '' : 'none';
+}
+
+function updateIlmVisibility() {
+  const isDpOn = getParamEl('use_dp_ilm') ? getParamEl('use_dp_ilm').checked : false;
+  const otsuGroup = document.getElementById('group-otsu-ilm-params');
+  const dpGroup   = document.getElementById('group-dp-ilm-params');
+  if (otsuGroup) otsuGroup.style.display = isDpOn ? 'none' : 'flex';
+  if (dpGroup)   dpGroup.style.display   = isDpOn ? 'flex' : 'none';
+}
+
 function loadFolderParams(folder) {
   currentFolder = folder;
   const params = currentData.saved_params[folder] || currentData.default_params;
@@ -51,7 +76,10 @@ function loadFolderParams(folder) {
     }
   });
 
+  updateAutoModeVisibility();
   updateOtsuSfcmVisibility();
+  updateIlmVisibility();
+  updateHolesVisibility();
   updateJsonEditorFromUI();
 }
 
@@ -106,7 +134,10 @@ function applyJsonToUI() {
       }
     });
 
+    updateAutoModeVisibility();
     updateOtsuSfcmVisibility();
+    updateIlmVisibility();
+    updateHolesVisibility();
     triggerReprocess(false, false);
     switchPanel('slider');
   } catch (err) {
@@ -225,7 +256,11 @@ function renderGallery(samples) {
     const padT = s.pad_t || 0;
 
     let tagText = 'Otsu (Top Only)';
-    if (isOtsuBottomActive && hasSfcm) {
+    if (isOtsuBottomActive && hasSfcm && (s.holes && s.holes.length > 0)) {
+      tagText = `Otsu + SFCM Choroid + ${s.holes.length} Holes (Pink)`;
+    } else if (hasSfcm && (s.holes && s.holes.length > 0)) {
+      tagText = `SFCM Choroid + ${s.holes.length} Holes (Pink)`;
+    } else if (isOtsuBottomActive && hasSfcm) {
       tagText = 'Otsu + SFCM Choroid (Orange)';
     } else if (hasSfcm) {
       tagText = 'Otsu Top + SFCM Choroid (Orange)';
@@ -248,14 +283,15 @@ function renderGallery(samples) {
           <span class="img-tag">Raw Classified Scan</span>
         </div>
         <div class="img-wrap" id="wrap-${safeId}">
-          <img src="${s.proc_url}?t=${Date.now()}" alt="Preprocessed">
+          <img src="${s.proc_url || s.processed_url}?t=${Date.now()}" alt="Preprocessed">
           <svg class="vector-svg-overlay" viewBox="0 0 384 384"
                data-img-scale="${imgScale}" data-pad-t="${padT}"
                style="display: ${drawVectorsEnabled ? 'block' : 'none'}; user-select:none;">
-            ${hasSfcm ? `<path d="${sfcmMaskD}" fill="rgba(255, 145, 0, 0.35)" stroke="none" style="pointer-events:none;"/>` : ''}
+            ${hasSfcm ? `<path d="${sfcmMaskD}" fill="rgba(255, 145, 0, 0.22)" stroke="none" style="pointer-events:none;"/>` : ''}
             <path d="${topPathD}" stroke="#00f2fe" stroke-width="2" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 3px #00f2fe)" style="pointer-events:none;"/>
             ${isOtsuBottomActive ? `<path d="${botPathD}" stroke="#ff007f" stroke-width="2" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 3px #ff007f)" style="pointer-events:none;"/>` : ''}
             ${hasSfcm ? `<path d="${sfcmPathD}" stroke="#ff9100" stroke-width="2.5" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 4px #ff9100)" style="pointer-events:none;"/>` : ''}
+            ${(s.holes || []).map(h => `<path d="${h.path_d}" fill="rgba(255, 20, 147, 0.65)" stroke="#ff007f" stroke-width="1.5" filter="drop-shadow(0 0 3px rgba(255, 0, 127, 0.8))" style="pointer-events:none;"/>`).join('')}
             ${topHandlesHtml}
             ${botHandlesHtml}
             ${sfcmHandlesHtml}
@@ -315,7 +351,11 @@ async function refreshSingleCard(btn) {
         const padT = s.pad_t || 0;
 
         let tagText = 'Otsu (Top Only)';
-        if (isOtsuBottomActive && hasSfcm) {
+        if (isOtsuBottomActive && hasSfcm && (s.holes && s.holes.length > 0)) {
+          tagText = `Otsu + SFCM Choroid + ${s.holes.length} Holes (Pink)`;
+        } else if (hasSfcm && (s.holes && s.holes.length > 0)) {
+          tagText = `SFCM Choroid + ${s.holes.length} Holes (Pink)`;
+        } else if (isOtsuBottomActive && hasSfcm) {
           tagText = 'Otsu + SFCM Choroid (Orange)';
         } else if (hasSfcm) {
           tagText = 'Otsu Top + SFCM Choroid (Orange)';
@@ -324,14 +364,15 @@ async function refreshSingleCard(btn) {
         }
 
         wrap.innerHTML = `
-          <img src="${s.proc_url}?t=${Date.now()}" alt="Preprocessed">
+          <img src="${s.proc_url || s.processed_url}?t=${Date.now()}" alt="Preprocessed">
           <svg class="vector-svg-overlay" viewBox="0 0 384 384"
                data-img-scale="${imgScale}" data-pad-t="${padT}"
                style="display: ${drawVectorsEnabled ? 'block' : 'none'}; user-select:none;">
-            ${hasSfcm ? `<path d="${sfcmMaskD}" fill="rgba(255, 145, 0, 0.35)" stroke="none" style="pointer-events:none;"/>` : ''}
+            ${hasSfcm ? `<path d="${sfcmMaskD}" fill="rgba(255, 145, 0, 0.22)" stroke="none" style="pointer-events:none;"/>` : ''}
             <path d="${topPathD}" stroke="#00f2fe" stroke-width="2" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 3px #00f2fe)" style="pointer-events:none;"/>
             ${isOtsuBottomActive ? `<path d="${botPathD}" stroke="#ff007f" stroke-width="2" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 3px #ff007f)" style="pointer-events:none;"/>` : ''}
             ${hasSfcm ? `<path d="${sfcmPathD}" stroke="#ff9100" stroke-width="2.5" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 4px #ff9100)" style="pointer-events:none;"/>` : ''}
+            ${(s.holes || []).map(h => `<path d="${h.path_d}" fill="rgba(255, 20, 147, 0.65)" stroke="#ff007f" stroke-width="1.5" filter="drop-shadow(0 0 3px rgba(255, 0, 127, 0.8))" style="pointer-events:none;"/>`).join('')}
             ${topHandlesHtml}
             ${botHandlesHtml}
             ${sfcmHandlesHtml}
@@ -362,16 +403,49 @@ async function refreshSingleCard(btn) {
   }
 }
 
-function initParamGroups() {
-  document.querySelectorAll('.param-group').forEach(group => {
-    group.addEventListener('toggle', () => {
-      if (group.open) {
-        group.setAttribute('data-pinned', 'true');
+function initParamGroupInteractions() {
+  const groups = document.querySelectorAll('.param-group');
+
+  groups.forEach(group => {
+    const summary = group.querySelector('summary');
+    if (!summary) return;
+
+    // Expand temporarily on hover if not pinned
+    group.addEventListener('mouseenter', () => {
+      if (group.dataset.pinned !== 'true') {
+        group.open = true;
+        group.dataset.hovered = 'true';
+      }
+    });
+
+    // Collapse when cursor leaves if not pinned
+    group.addEventListener('mouseleave', () => {
+      if (group.dataset.pinned !== 'true') {
+        group.open = false;
+        group.dataset.hovered = 'false';
+      }
+    });
+
+    // Click header to toggle persistent pinning
+    summary.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isPinned = group.dataset.pinned === 'true';
+
+      if (isPinned) {
+        group.dataset.pinned = 'false';
+        group.dataset.hovered = 'false';
+        group.open = false;
       } else {
-        group.removeAttribute('data-pinned');
+        group.dataset.pinned = 'true';
+        group.dataset.hovered = 'false';
+        group.open = true;
       }
     });
   });
+}
+
+function initParamGroups() {
+  initParamGroupInteractions();
 }
 
 async function init() {
@@ -402,7 +476,10 @@ async function init() {
       const eventName = (field.type === 'bool' || field.type === 'str') ? 'change' : 'input';
       el.addEventListener(eventName, e => {
         if (field.type === 'bool') {
+          updateAutoModeVisibility();
           updateOtsuSfcmVisibility();
+          updateIlmVisibility();
+          updateHolesVisibility();
         } else if (field.type !== 'str') {
           const unit = (field.key.includes('pct') ? '%' : (field.key.includes('margin') || field.key.includes('px') ? 'px' : ''));
           updateSliderLabel(field.key, e.target.value + unit);

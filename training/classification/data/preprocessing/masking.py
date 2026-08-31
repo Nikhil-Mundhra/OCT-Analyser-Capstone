@@ -172,11 +172,12 @@ def generate_tissue_mask(
     y_top_final = gaussian_filter1d(y_top_clean, sigma=sigma_val)
     y_bottom_final = gaussian_filter1d(y_bottom_clean, sigma=sigma_val)
 
-def detect_rpe_band(gray_u8: np.ndarray, y_top_outer: np.ndarray) -> np.ndarray:
+def detect_rpe_band(gray_u8: np.ndarray, y_top_outer: np.ndarray, params: dict = None) -> np.ndarray:
     """
     SOTA Dynamic Programming / Graph-Search RPE Detection Algorithm (Chiu et al. framework).
     When RPE splits into 2 hyper-reflective bands (elevated RPE + Bruch's Membrane),
     this algorithm locks onto the LOWER/BOTTOM band (Bruch's Membrane) where the choroid starts.
+    Supports folder-specific tuning parameters when SFCM is active.
     Combines:
     1. Positive vertical intensity gradient (IS/OS / RPE transition).
     2. Peak absolute reflectivity of the RPE hyper-reflective complex.
@@ -185,6 +186,15 @@ def detect_rpe_band(gray_u8: np.ndarray, y_top_outer: np.ndarray) -> np.ndarray:
     5. Savitzky-Golay global ocular curvature fitting.
     """
     H, W = gray_u8.shape
+    params = params or {}
+
+    smooth_weight = float(params.get("rpe_smooth_weight", 0.20))
+    depth_weight = float(params.get("rpe_depth_weight", 0.40))
+    gradient_weight = float(params.get("rpe_gradient_weight", 0.30))
+    reflectivity_weight = float(params.get("rpe_reflectivity_weight", 0.30))
+    bottom_env_size = int(params.get("rpe_bottom_env_size", 15))
+    depth_exponent = float(params.get("rpe_depth_exponent", 1.8))
+    max_step = int(params.get("rpe_max_step", 3))
 
     grad_y = cv2.Sobel(gray_u8.astype(float), cv2.CV_64F, 0, 1, ksize=3)
 
@@ -199,7 +209,7 @@ def detect_rpe_band(gray_u8: np.ndarray, y_top_outer: np.ndarray) -> np.ndarray:
     y_rel = np.clip(y_rel, 0.0, 1.0)
 
     # Combined RPE Energy Field (lower cost = higher likelihood of bottom RPE/Bruch's)
-    rpe_cost_field = 1.0 - (0.30 * norm_img + 0.30 * norm_grad + 0.40 * (y_rel ** 1.8))
+    rpe_cost_field = 1.0 - (reflectivity_weight * norm_img + gradient_weight * norm_grad + depth_weight * (y_rel ** depth_exponent))
 
     for x in range(W):
         min_y = search_min_y[x]
@@ -214,9 +224,6 @@ def detect_rpe_band(gray_u8: np.ndarray, y_top_outer: np.ndarray) -> np.ndarray:
     min_y_0, max_y_0 = search_min_y[0], search_max_y[0]
     if max_y_0 > min_y_0:
         dp_cost[min_y_0:max_y_0, 0] = rpe_cost_field[min_y_0:max_y_0, 0]
-
-    max_step = 3
-    smooth_weight = 0.20
 
     for x in range(1, W):
         y_min_curr, y_max_curr = search_min_y[x], search_max_y[x]
@@ -248,7 +255,7 @@ def detect_rpe_band(gray_u8: np.ndarray, y_top_outer: np.ndarray) -> np.ndarray:
         curr_y = backtrack[curr_y, x]
         rpe_path[x - 1] = float(curr_y)
 
-    rpe_bottom_env = maximum_filter1d(rpe_path, size=15)
+    rpe_bottom_env = maximum_filter1d(rpe_path, size=max(1, bottom_env_size))
 
     win_len = 31 if W >= 31 else (W - 1 if W % 2 == 0 else W)
     if win_len >= 5:
@@ -267,7 +274,8 @@ def compute_sfcm_choroid_boundary(
     gaussian_sigma: float,
     n_clusters: int = 3,
     max_iter: int = 10,
-    m: float = 2.0
+    m: float = 2.0,
+    params: dict = None
 ) -> np.ndarray:
     """
     Smart Spatial Fuzzy C-Means (SFCM) clustering algorithm.
@@ -276,7 +284,7 @@ def compute_sfcm_choroid_boundary(
     3. Returns y_bottom_sfcm.
     """
     H, W = gray_u8.shape
-    y_rpe = detect_rpe_band(gray_u8, y_top_outer)
+    y_rpe = detect_rpe_band(gray_u8, y_top_outer, params=params)
     y_bottom_sfcm = np.zeros(W, dtype=float)
 
     sub_pixels = []
@@ -333,7 +341,96 @@ def compute_sfcm_choroid_boundary(
             y_bottom_sfcm[x] = y_start + 40.0 + margin_bottom
 
     y_bottom_sfcm = gaussian_filter1d(y_bottom_sfcm, sigma=float(gaussian_sigma))
+
+    # Apply customizable downward trust buffer / slack margin
+    params = params or {}
+    slack_bottom_px = float(params.get("sfcm_slack_bottom_px", 20))
+    y_bottom_sfcm = np.minimum(H - 1, y_bottom_sfcm + slack_bottom_px)
+
     return y_bottom_sfcm
+
+
+def detect_choroidal_caverns(
+    gray_u8: np.ndarray,
+    y_rpe: np.ndarray,
+    y_bottom_sfcm: np.ndarray,
+    params: dict = None
+) -> list[dict]:
+    """
+    Detects pathological choroidal caverns / cavitations using multi-feature morphology,
+    absence of hyperreflective vessel sheaths, and posterior hypertransmission analysis.
+    """
+    H, W = gray_u8.shape
+    params = params or {}
+
+    min_area = int(params.get("cavern_min_area", 15))
+    max_area = int(params.get("cavern_max_area", 900))
+    dark_thresh = int(params.get("cavern_dark_threshold", 45))
+    trans_thresh = float(params.get("cavern_transmission_threshold", 1.30))
+    min_circ = float(params.get("cavern_min_circularity", 0.60))
+    slack_px = int(params.get("sfcm_slack_bottom_px", 20))
+
+    choroid_mask = np.zeros((H, W), dtype=np.uint8)
+    for x in range(W):
+        top_y = min(H - 1, max(0, int(y_rpe[x]) + 2))
+        bot_y = min(H, max(top_y + 1, int(y_bottom_sfcm[x]) + slack_px))
+        choroid_mask[top_y:bot_y, x] = 1
+
+    core_voids = (gray_u8 < dark_thresh) & (choroid_mask == 1)
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(core_voids.astype(np.uint8), connectivity=8)
+
+    caverns = []
+    for i in range(1, num_labels):
+        area = stats[i, cv2.CC_STAT_AREA]
+        if not (min_area <= area <= max_area):
+            continue
+
+        rx = stats[i, cv2.CC_STAT_LEFT]
+        ry = stats[i, cv2.CC_STAT_TOP]
+        rw = stats[i, cv2.CC_STAT_WIDTH]
+        rh = stats[i, cv2.CC_STAT_HEIGHT]
+
+        blob_mask = (labels[ry:ry + rh, rx:rx + rw] == i).astype(np.uint8)
+        cnts, _ = cv2.findContours(blob_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not cnts:
+            continue
+        perimeter = cv2.arcLength(cnts[0], True)
+        if perimeter <= 0:
+            continue
+        circularity = 4.0 * np.pi * (area / (perimeter ** 2))
+
+        if circularity < min_circ:
+            continue
+
+        sub_y_start = min(H - 1, ry + rh)
+        sub_y_end = min(H, sub_y_start + max(15, slack_px))
+
+        if sub_y_end > sub_y_start:
+            sub_signal = float(np.mean(gray_u8[sub_y_start:sub_y_end, rx:rx + rw]))
+
+            left_w = max(0, rx - rw)
+            right_w = min(W, rx + 2 * rw)
+            lateral_samples = []
+            if rx > left_w:
+                lateral_samples.append(np.mean(gray_u8[ry:ry + rh, left_w:rx]))
+            if right_w > rx + rw:
+                lateral_samples.append(np.mean(gray_u8[ry:ry + rh, rx + rw:right_w]))
+
+            ref_bg = float(np.mean(lateral_samples)) if lateral_samples else max(1.0, sub_signal)
+            ref_bg = max(1.0, ref_bg)
+
+            trans_ratio = sub_signal / ref_bg
+
+            if trans_ratio >= trans_thresh:
+                caverns.append({
+                    "bbox": [int(rx), int(ry), int(rw), int(rh)],
+                    "area": int(area),
+                    "circularity": round(float(circularity), 3),
+                    "transmission_ratio": round(float(trans_ratio), 3),
+                    "centroid": [round(float(centroids[i][0]), 1), round(float(centroids[i][1]), 1)]
+                })
+
+    return caverns
 
 
 def generate_tissue_mask(

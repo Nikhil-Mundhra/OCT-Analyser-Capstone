@@ -43,8 +43,9 @@ models_suite/**/checkpoints/*.pth
 image-classification-model-training/checkpoints/
 image-segmentation-model-training/checkpoints/
 image-segmentation-model-training/models_suite/
-training/**/checkpoints/
 archive/
+!archive/experiments/
+!archive/experiments/**
 
 # Training Logs & TensorBoard Artifacts
 **/events.out.tfevents.*

@@ -20,7 +20,6 @@
       <button id="btn-toggle-vectors">Hide Boundary Lines</button>
       <button id="btn-refresh-samples" class="btn-secondary">Refresh Random Images</button>
       <button id="btn-reset" class="btn-secondary">Reset to Defaults</button>
-      <button id="btn-save" class="btn-primary">Save Parameters for this Folder</button>
     </div>
   </header>
 
@@ -34,15 +33,60 @@
       </div>
 
       <div class="mode-switch-wrap">
-        <span class="section-title">Editor Mode</span>
+        <span class="section-title">Folder Calibration Controls</span>
         <div class="mode-switcher">
           <button id="btn-mode-slider" class="mode-btn active">Sliders</button>
           <button id="btn-mode-json" class="mode-btn">Raw JSON</button>
         </div>
+        <button id="btn-save" class="btn-primary btn-save-sidebar">Save Parameters for this Folder</button>
       </div>
 
       <!-- Panel 1: Slider Controls -->
       <div id="panel-sliders" class="control-card" style="display:flex;flex-direction:column;gap:10px;">
+
+        <!-- MASTER INTELLIGENT AUTO OPTIMIZATION CARD -->
+        <div class="toggle-group" style="padding: 12px 14px; background: rgba(0, 229, 255, 0.06); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 8px; margin-bottom: 6px;">
+          <span class="param-title-wrap">
+            <span class="toggle-label" style="font-weight: 700; color: #00e5ff; letter-spacing: 0.03em;">Intelligent Auto Mode</span>
+            <span class="info-btn" tabindex="0">i<span class="tooltip-text">Activates autonomous, zero-parameter multi-surface tissue segmentation. Automatically cleans scanner banners, estimates SNR, runs coupled Gradient DP ILM + Chiu DP RPE + SFCM Choroid, and enforces 5-point anatomical invariants.</span></span>
+          </span>
+          <label class="switch">
+            <input type="checkbox" id="param-auto_mode" checked>
+            <span class="slider-round"></span>
+          </label>
+        </div>
+
+        <!-- AUTO MODE TELEMETRY STATUS CARD (shown when Auto Mode is ON) -->
+        <div id="auto-mode-status-card" style="display: none; flex-direction: column; gap: 10px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: #00e5ff; text-transform: uppercase; letter-spacing: 0.05em;">Autonomous Neural-Symbolic Engine</span>
+            <span style="font-size: 0.72rem; padding: 2px 8px; background: rgba(0, 229, 255, 0.15); color: #00e5ff; border-radius: 12px; font-weight: 600;">ACTIVE</span>
+          </div>
+          <div style="font-size: 0.80rem; color: #94a3b8; line-height: 1.45;">
+            Autonomous per-image optical decomposition and joint multi-surface graph optimization is active. All thresholds, noise floors, and smoothness penalties are self-calibrating.
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+            <div style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border-left: 2px solid #00e5ff;">
+              <div style="font-size: 0.68rem; color: #64748b; text-transform: uppercase;">Top Surface</div>
+              <div style="font-size: 0.78rem; font-weight: 600; color: #e2e8f0;">Gradient DP (ILM)</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border-left: 2px solid #a3e635;">
+              <div style="font-size: 0.68rem; color: #64748b; text-transform: uppercase;">Base Floor</div>
+              <div style="font-size: 0.78rem; font-weight: 600; color: #e2e8f0;">Chiu DP (RPE)</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border-left: 2px solid #f97316;">
+              <div style="font-size: 0.68rem; color: #64748b; text-transform: uppercase;">Choroid CSI</div>
+              <div style="font-size: 0.78rem; font-weight: 600; color: #e2e8f0;">SFCM Stroma</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border-left: 2px solid #ec4899;">
+              <div style="font-size: 0.68rem; color: #64748b; text-transform: uppercase;">Anatomical Safety</div>
+              <div style="font-size: 0.78rem; font-weight: 600; color: #e2e8f0;">5 Invariants Active</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MANUAL CONTROLS CONTAINER (hidden when Auto Mode is ON) -->
+        <div id="manual-controls-container" style="display: flex; flex-direction: column; gap: 10px;">
 
         <!-- SHARED SETTINGS -->
         <div class="slider-group" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 4px;">
@@ -60,76 +104,118 @@
         <details class="param-group top-group">
           <summary>
             <span>&#9650; Top Vector (ILM)</span>
+            <span class="param-group-pin-indicator">Pinned</span>
             <span class="param-group-chevron">&#9660;</span>
           </summary>
           <div class="param-group-body">
 
-            <div class="slider-group">
-              <div class="slider-header">
-                <span class="param-title-wrap">
-                  <span>Noise Cutoff (&#956;<sub>bg</sub> + k&#183;&#963;)</span>
-                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Pass 1 threshold multiplier (k) above background noise floor. Isolates the upper Inner Limiting Membrane (ILM) surface while filtering out vitreous haze.</span></span>
-                </span>
-                <span class="slider-value" id="val-top_noise_mult">1.5</span>
-              </div>
-              <input type="range" id="param-top_noise_mult" min="0.5" max="8.0" step="0.1" value="1.5">
+            <!-- MODE TOGGLES -->
+            <div class="toggle-group">
+              <span class="param-title-wrap">
+                <span class="toggle-label">Gradient DP Mode (ILM)</span>
+                <span class="info-btn" tabindex="0">i<span class="tooltip-text">Replaces global Otsu thresholding with a Dynamic Programming dark-to-bright gradient path — the same Chiu et al. framework used for RPE detection. Immune to vitreous floaters, intraretinal fluid cysts, and scan-to-scan histogram variation.</span></span>
+              </span>
+              <label class="switch">
+                <input type="checkbox" id="param-use_dp_ilm">
+                <span class="slider-round"></span>
+              </label>
             </div>
 
-            <div class="slider-group">
-              <div class="slider-header">
-                <span class="param-title-wrap">
-                  <span>Shadow Bridge Width (% image width)</span>
-                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Horizontal closing kernel width as a % of scan width. Bridges dark vertical blood vessel shadow gaps across the top ILM boundary.</span></span>
-                </span>
-                <span class="slider-value" id="val-shadow_bridge_top_pct">20%</span>
+            <!-- OTSU TOP PARAMETERS SUBGROUP -->
+            <div id="group-otsu-ilm-params" style="display: flex; flex-direction: column; gap: 20px;">
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>Noise Cutoff (&#956;<sub>bg</sub> + k&#183;&#963;)</span>
+                    <span class="info-btn" tabindex="0">i<span class="tooltip-text">Pass 1 threshold multiplier (k) above background noise floor. Isolates the upper Inner Limiting Membrane (ILM) surface while filtering out vitreous haze.</span></span>
+                  </span>
+                  <span class="slider-value" id="val-top_noise_mult">1.5</span>
+                </div>
+                <input type="range" id="param-top_noise_mult" min="0.5" max="8.0" step="0.1" value="1.5">
               </div>
-              <input type="range" id="param-shadow_bridge_top_pct" min="5" max="40" step="1" value="20">
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>Shadow Bridge Width (% image width)</span>
+                    <span class="info-btn" tabindex="0">i<span class="tooltip-text">Horizontal closing kernel width as a % of scan width. Bridges dark vertical blood vessel shadow gaps across the top ILM boundary.</span></span>
+                  </span>
+                  <span class="slider-value" id="val-shadow_bridge_top_pct">20%</span>
+                </div>
+                <input type="range" id="param-shadow_bridge_top_pct" min="5" max="40" step="1" value="20">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>Spike Suppressor &uarr; (px above rolling median)</span>
+                    <span class="info-btn" tabindex="0">i<span class="tooltip-text">Detects and eliminates sharp upward artifact spikes on the top boundary by interpolating any point that deviates above the rolling median window.</span></span>
+                  </span>
+                  <span class="slider-value" id="val-top_spike_suppress_px">0px</span>
+                </div>
+                <input type="range" id="param-top_spike_suppress_px" min="0" max="120" step="2" value="0">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>Spike Window (rolling median width)</span>
+                    <span class="info-btn" tabindex="0">i<span class="tooltip-text">Window width in pixels used to calculate the local baseline for upward spike detection. Larger windows preserve broad natural foveal curvature.</span></span>
+                  </span>
+                  <span class="slider-value" id="val-top_spike_window_px">80px</span>
+                </div>
+                <input type="range" id="param-top_spike_window_px" min="10" max="200" step="5" value="80">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>Dip Suppressor &darr; (px below rolling median)</span>
+                    <span class="info-btn" tabindex="0">i<span class="tooltip-text">Detects and eliminates sharp downward dip spikes on the top boundary by interpolating points falling below the rolling median window.</span></span>
+                  </span>
+                  <span class="slider-value" id="val-top_dip_suppress_px">0px</span>
+                </div>
+                <input type="range" id="param-top_dip_suppress_px" min="0" max="120" step="2" value="0">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>Dip Window (rolling median width)</span>
+                    <span class="info-btn" tabindex="0">i<span class="tooltip-text">Window width in pixels used to calculate the local baseline for downward dip detection.</span></span>
+                  </span>
+                  <span class="slider-value" id="val-top_dip_window_px">80px</span>
+                </div>
+                <input type="range" id="param-top_dip_window_px" min="10" max="200" step="5" value="80">
+              </div>
             </div>
 
-            <div class="slider-group">
-              <div class="slider-header">
-                <span class="param-title-wrap">
-                  <span>Spike Suppressor &uarr; (px above rolling median)</span>
-                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Detects and eliminates sharp upward artifact spikes on the top boundary by interpolating any point that deviates above the rolling median window.</span></span>
-                </span>
-                <span class="slider-value" id="val-top_spike_suppress_px">0px</span>
+            <!-- GRADIENT DP ILM PARAMETERS SUBGROUP -->
+            <div id="group-dp-ilm-params" style="display: none; flex-direction: column; gap: 20px;">
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>ILM Gradient Sensitivity</span>
+                    <span class="info-btn" tabindex="0">i<span class="tooltip-text">Weight given to the dark-to-bright gradient signal vs. raw reflectivity in the DP cost field. Higher values demand a sharper brightness transition to define the ILM boundary.</span></span>
+                  </span>
+                  <span class="slider-value" id="val-ilm_gradient_weight">0.7</span>
+                </div>
+                <input type="range" id="param-ilm_gradient_weight" min="0.3" max="1.0" step="0.05" value="0.7">
               </div>
-              <input type="range" id="param-top_spike_suppress_px" min="0" max="120" step="2" value="0">
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
+                    <span>ILM Path Smoothness</span>
+                    <span class="info-btn" tabindex="0">i<span class="tooltip-text">DP horizontal continuity penalty. Higher values produce a smoother ILM path that resists sudden jumps toward floaters or shadow edges, but may under-follow steep foveal curvature.</span></span>
+                  </span>
+                  <span class="slider-value" id="val-ilm_smooth_weight">0.25</span>
+                </div>
+                <input type="range" id="param-ilm_smooth_weight" min="0.05" max="1.0" step="0.05" value="0.25">
+              </div>
             </div>
 
-            <div class="slider-group">
-              <div class="slider-header">
-                <span class="param-title-wrap">
-                  <span>Spike Window (rolling median width)</span>
-                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Window width in pixels used to calculate the local baseline for upward spike detection. Larger windows preserve broad natural foveal curvature.</span></span>
-                </span>
-                <span class="slider-value" id="val-top_spike_window_px">80px</span>
-              </div>
-              <input type="range" id="param-top_spike_window_px" min="10" max="200" step="5" value="80">
-            </div>
-
-            <div class="slider-group">
-              <div class="slider-header">
-                <span class="param-title-wrap">
-                  <span>Dip Suppressor &darr; (px below rolling median)</span>
-                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Detects and eliminates sharp downward dip spikes on the top boundary by interpolating points falling below the rolling median window.</span></span>
-                </span>
-                <span class="slider-value" id="val-top_dip_suppress_px">0px</span>
-              </div>
-              <input type="range" id="param-top_dip_suppress_px" min="0" max="120" step="2" value="0">
-            </div>
-
-            <div class="slider-group">
-              <div class="slider-header">
-                <span class="param-title-wrap">
-                  <span>Dip Window (rolling median width)</span>
-                  <span class="info-btn" tabindex="0">i<span class="tooltip-text">Window width in pixels used to calculate the local baseline for downward dip detection.</span></span>
-                </span>
-                <span class="slider-value" id="val-top_dip_window_px">80px</span>
-              </div>
-              <input type="range" id="param-top_dip_window_px" min="10" max="200" step="5" value="80">
-            </div>
-
+            <!-- COMMON CROP MARGIN (active for both Otsu and DP) -->
             <div class="slider-group">
               <div class="slider-header">
                 <span class="param-title-wrap">
@@ -144,10 +230,12 @@
           </div>
         </details>
 
+
         <!-- BOTTOM VECTOR GROUP -->
         <details class="param-group bot-group">
           <summary>
             <span>&#9660; Bottom Vector (Choroid)</span>
+            <span class="param-group-pin-indicator">Pinned</span>
             <span class="param-group-chevron">&#9660;</span>
           </summary>
           <div class="param-group-body">
@@ -238,6 +326,17 @@
               <div class="slider-group">
                 <div class="slider-header">
                   <span class="param-title-wrap">
+                    <span>Choroid Slack Buffer (px)</span>
+                    <span class="info-btn val-sfcm" tabindex="0">i<span class="tooltip-text">Downward safety trust buffer extending the choroidal search and preservation floor. Prevents losing deep choroidal caverns or truncating sub-lesional transmission beams when SFCM cuts prematurely.</span></span>
+                  </span>
+                  <span class="slider-value val-sfcm" id="val-sfcm_slack_bottom_px">20px</span>
+                </div>
+                <input type="range" class="slider-sfcm" id="param-sfcm_slack_bottom_px" min="0" max="60" step="2" value="20">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="param-title-wrap">
                     <span>SFCM Smoothness (&#963;)</span>
                     <span class="info-btn val-sfcm" tabindex="0">i<span class="tooltip-text">Standard deviation (&#963;) for 1D Gaussian boundary smoothing applied specifically to the SFCM choroidal stroma curve.</span></span>
                   </span>
@@ -267,7 +366,140 @@
                 </div>
                 <input type="range" class="slider-sfcm" id="param-sfcm_fuzziness_m" min="1.1" max="3.5" step="0.1" value="2.0">
               </div>
+
+              <!-- RPE DETECTION SUB-SECTION -->
+              <div style="border-top: 1px solid rgba(255, 145, 0, 0.2); padding-top: 12px; margin-top: 4px; display: flex; flex-direction: column; gap: 16px;">
+                <div style="font-size: 0.76rem; font-weight: 700; color: #ff9100; letter-spacing: 0.05em; text-transform: uppercase;">
+                  RPE Band Detection (Chiu DP)
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="param-title-wrap">
+                      <span>RPE Path Smoothness Penalty</span>
+                      <span class="info-btn val-rpe" tabindex="0">i<span class="tooltip-text">Dynamic Programming quadratic step penalty weight for RPE contour transitions. Lower values track sharp drusen/elevations; higher values enforce smooth global curvature.</span></span>
+                    </span>
+                    <span class="slider-value val-rpe" id="val-rpe_smooth_weight">0.20</span>
+                  </div>
+                  <input type="range" class="slider-rpe" id="param-rpe_smooth_weight" min="0.02" max="1.0" step="0.02" value="0.20">
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="param-title-wrap">
+                      <span>RPE Lower Band / Depth Bias</span>
+                      <span class="info-btn val-rpe" tabindex="0">i<span class="tooltip-text">Depth prior weight favoring the lower Bruch's Membrane boundary when RPE splits or detaches (e.g. PEDs, DME, AMD drusen).</span></span>
+                    </span>
+                    <span class="slider-value val-rpe" id="val-rpe_depth_weight">0.40</span>
+                  </div>
+                  <input type="range" class="slider-rpe" id="param-rpe_depth_weight" min="0.0" max="1.0" step="0.05" value="0.40">
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="param-title-wrap">
+                      <span>RPE Gradient Sensitivity</span>
+                      <span class="info-btn val-rpe" tabindex="0">i<span class="tooltip-text">Sensitivity weight to vertical intensity gradient (Sobel dI/dy) capturing dark-to-bright optical layer transitions.</span></span>
+                    </span>
+                    <span class="slider-value val-rpe" id="val-rpe_gradient_weight">0.30</span>
+                  </div>
+                  <input type="range" class="slider-rpe" id="param-rpe_gradient_weight" min="0.0" max="1.0" step="0.05" value="0.30">
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="param-title-wrap">
+                      <span>RPE Bottom Envelope (px)</span>
+                      <span class="info-btn val-rpe" tabindex="0">i<span class="tooltip-text">Window size in pixels for morphological lower envelope tracking along the hyper-reflective RPE band.</span></span>
+                    </span>
+                    <span class="slider-value val-rpe" id="val-rpe_bottom_env_size">15px</span>
+                  </div>
+                  <input type="range" class="slider-rpe" id="param-rpe_bottom_env_size" min="1" max="35" step="2" value="15">
+                </div>
+              </div>
             </div>
+
+          </div>
+        </details>
+
+        <!-- CHOROID HOLES DETECTOR GROUP -->
+        <details class="param-group holes-group">
+          <summary>
+            <span>&#9679; Choroid Holes Detector</span>
+            <span class="param-group-pin-indicator">Pinned</span>
+            <span class="param-group-chevron">&#9660;</span>
+          </summary>
+          <div class="param-group-body">
+
+            <div class="toggle-group">
+              <span class="param-title-wrap">
+                <span class="toggle-label">Enable Choroid Holes Detector</span>
+                <span class="info-btn val-holes" tabindex="0">i<span class="tooltip-text">Master toggle for the choroidal hole and vascular lumen detector. When disabled, no pink lumen masks are rendered and all hole parameters are ignored.</span></span>
+              </span>
+              <label class="switch">
+                <input type="checkbox" id="param-holes_enabled" checked>
+                <span class="slider-round"></span>
+              </label>
+            </div>
+
+            <div id="holes-param-body" style="display:flex;flex-direction:column;gap:20px;">
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Min Hole Area (px)</span>
+                  <span class="info-btn val-holes" tabindex="0">i<span class="tooltip-text">Minimum area in pixels for a void to be recognized as a valid vascular lumen, filtering out micro-speckle artifacts.</span></span>
+                </span>
+                <span class="slider-value val-holes" id="val-hole_min_area">25px</span>
+              </div>
+              <input type="range" class="slider-holes" id="param-hole_min_area" min="5" max="200" step="5" value="25">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Max Hole Area (px)</span>
+                  <span class="info-btn val-holes" tabindex="0">i<span class="tooltip-text">Maximum area in pixels for a candidate hole or fused macro-lumen cluster.</span></span>
+                </span>
+                <span class="slider-value val-holes" id="val-hole_max_area">15000px</span>
+              </div>
+              <input type="range" class="slider-holes" id="param-hole_max_area" min="500" max="25000" step="500" value="15000">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Lumen Contrast Threshold (offset)</span>
+                  <span class="info-btn val-holes" tabindex="0">i<span class="tooltip-text">Adaptive local contrast cutoff. Higher values require deeper darkness relative to surrounding stroma to register as a hole.</span></span>
+                </span>
+                <span class="slider-value val-holes" id="val-hole_contrast_offset">8</span>
+              </div>
+              <input type="range" class="slider-holes" id="param-hole_contrast_offset" min="2" max="25" step="1" value="8">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Local Context Window (px)</span>
+                  <span class="info-btn val-holes" tabindex="0">i<span class="tooltip-text">Local stroma neighborhood window size used to calculate the dynamic baseline mean.</span></span>
+                </span>
+                <span class="slider-value val-holes" id="val-hole_local_window">15px</span>
+              </div>
+              <input type="range" class="slider-holes" id="param-hole_local_window" min="5" max="61" step="2" value="15">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="param-title-wrap">
+                  <span>Max Aspect Ratio (W/H)</span>
+                  <span class="info-btn val-holes" tabindex="0">i<span class="tooltip-text">Maximum permissible width-to-height ratio for choroidal holes. Rejects abnormally elongated or horizontally wide ribbons, enforcing round/oval lumen shapes.</span></span>
+                </span>
+                <span class="slider-value val-holes" id="val-hole_max_aspect_ratio">2.8</span>
+              </div>
+              <input type="range" class="slider-holes" id="param-hole_max_aspect_ratio" min="1.2" max="5.0" step="0.1" value="2.8">
+            </div>
+
+            </div><!-- end holes-param-body -->
 
           </div>
         </details>
@@ -276,6 +508,7 @@
         <details class="param-group compass-group">
           <summary>
             <span>&#10022; Compass Removal</span>
+            <span class="param-group-pin-indicator">Pinned</span>
             <span class="param-group-chevron">&#9660;</span>
           </summary>
           <div class="param-group-body">
@@ -307,6 +540,8 @@
 
           </div>
         </details>
+
+        </div> <!-- /#manual-controls-container -->
 
       </div>
 

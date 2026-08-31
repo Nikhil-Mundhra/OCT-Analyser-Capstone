@@ -22,7 +22,29 @@ DEFAULT_PARAMS = {
     "margin_top": 15,
     "margin_bottom": 15,
     "compass_ui_enabled": False,
-    "compass_location": "auto"
+    "compass_location": "auto",
+    "use_sfcm": False,
+    "sfcm_margin_bottom": 15,
+    "sfcm_gaussian_sigma": 15,
+    "sfcm_n_clusters": 3,
+    "sfcm_fuzziness_m": 2.0,
+    "rpe_smooth_weight": 0.20,
+    "rpe_depth_weight": 0.40,
+    "rpe_gradient_weight": 0.30,
+    "rpe_bottom_env_size": 15,
+    "sfcm_slack_bottom_px": 20,
+    "detect_caverns": False,
+    "cavern_transmission_threshold": 1.35,
+    "holes_enabled": True,
+    "hole_min_area": 25,
+    "hole_max_area": 15000,
+    "hole_contrast_offset": 8,
+    "hole_local_window": 15,
+    "hole_max_aspect_ratio": 2.8,
+    "use_dp_ilm": True,
+    "ilm_gradient_weight": 0.70,
+    "ilm_smooth_weight": 0.25,
+    "auto_mode": True
 }
 
 
