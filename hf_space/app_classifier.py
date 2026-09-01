@@ -36,7 +36,7 @@ print("=====================================================================")
 # Model weights are loaded globally onto CPU memory during Space startup phase.
 print("1. Loading ConvNeXt V2 Multi-Head Model onto CPU memory...", flush=True)
 pipeline = OCTInferencePipeline(device="cpu")
-print("✅ ConvNeXt V2 Model loaded into CPU memory!", flush=True)
+print("ConvNeXt V2 Model loaded into CPU memory.", flush=True)
 
 
 # Inference function wrapped in ZeroGPU decorator
@@ -92,9 +92,9 @@ else:
         return _run_classification(image, generate_gradcam=gradcam)
 
 if HAS_GRADIO:
-    with gr.Blocks(title="ConvNeXt V2 Multi-Head OCT Classifier (ZeroGPU)") as demo:
-        gr.Markdown("# 👁️ ConvNeXt V2 Multi-Head OCT Pathology Classifier")
-        gr.Markdown("ZeroGPU-accelerated hierarchical disease classification (15 pathology classes) with Grad-CAM explainability.")
+    with gr.Blocks(title="ConvNeXt V2 Multi-Head OCT Classifier (Tri-State Triage)") as demo:
+        gr.Markdown("# ConvNeXt V2 Multi-Head OCT Pathology Classifier")
+        gr.Markdown("Hierarchical OCT disease classification with Calibrated Tri-State Clinical Triage (Normal, Known Pathology, Review Required) and Grad-CAM explainability.")
 
         with gr.Row():
             with gr.Column():
@@ -102,31 +102,47 @@ if HAS_GRADIO:
                 chk_gradcam = gr.Checkbox(value=True, label="Generate Grad-CAM Heatmaps")
                 btn_run = gr.Button("Classify Scan", variant="primary")
             with gr.Column():
-                out_json = gr.JSON(label="Hierarchical Diagnosis Result")
+                out_triage_banner = gr.Markdown("### Triage Status: Awaiting Scan")
+                out_json = gr.JSON(label="Hierarchical Diagnosis & Triage Result")
                 out_cam = gr.Image(type="pil", label="Grad-CAM Pathology Attention Overlay")
 
         def gradio_adapter(img, use_cam):
             res = predict_multi_head(img, gradcam=use_cam)
             if isinstance(res, dict) and "error" in res:
-                return res, None
+                return "### Error Processing Scan", res, None
+
+            # Generate formatted triage status markdown banner
+            triage_info = res.get("Triage", {})
+            triage_state = triage_info.get("triage_state", res.get("Final_Diagnosis", "UNKNOWN"))
+            review_reason = triage_info.get("review_reason", "NONE")
+            clinical_action = triage_info.get("clinical_action", "")
+            pred_candidate = triage_info.get("predicted_pathology_candidate", "")
+
+            if triage_state == "NORMAL":
+                banner = f"### Triage: NORMAL RETINA\n**Action:** {clinical_action}"
+            elif triage_state == "KNOWN_PATHOLOGY":
+                banner = f"### Triage: KNOWN PATHOLOGY PATTERN DETECTED ({pred_candidate})\n**Action:** {clinical_action}\n*Note: AI decision support output. Clinical confirmation required.*"
+            elif triage_state == "REVIEW_REQUIRED":
+                banner = f"### Triage: CLINICIAN REVIEW REQUIRED [{review_reason}]\n**Action:** {clinical_action}"
+            else:
+                banner = f"### Diagnosis: {res.get('Final_Diagnosis', 'UNKNOWN')}"
 
             cam_img = None
             if use_cam and isinstance(res, dict) and "gradcams" in res:
-                cam_data = res["gradcams"].get("L2") or res["gradcams"].get("L1")
+                cam_data = res["gradcams"].get("L2") or res["gradcams"].get("L1") or res["gradcams"].get("L2_Candidate_Unconfirmed")
                 if cam_data and isinstance(cam_data, str) and cam_data.startswith("data:image"):
                     import base64, io
                     base64_data = cam_data.split(",")[1]
                     cam_bytes = base64.b64decode(base64_data)
                     cam_img = Image.open(io.BytesIO(cam_bytes))
 
-            return res, cam_img
+            return banner, res, cam_img
 
         # UI route — for browser usage via the Gradio web interface
-        btn_run.click(gradio_adapter, inputs=[inp_img, chk_gradcam], outputs=[out_json, out_cam], api_name="predict_multi_head")
+        btn_run.click(gradio_adapter, inputs=[inp_img, chk_gradcam], outputs=[out_triage_banner, out_json, out_cam], api_name="predict_multi_head")
 
     demo.queue()
 
 if __name__ == "__main__":
     if HAS_GRADIO:
         demo.launch(show_error=True)
-

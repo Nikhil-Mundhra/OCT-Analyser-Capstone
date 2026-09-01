@@ -1,9 +1,16 @@
 """
 scripts/inference_pipeline.py
 
-End-to-End Inference Pipeline for Multi-Head ConvNeXt OCT Classification.
-Flattened architecture (H1 = Triage, H2 = Granular Multi-Label Pathology).
-Maintains L1/L2/L3 result dict structure for backend API compatibility.
+End-to-End Inference Pipeline for Multi-Head ConvNeXt OCT Classification with Calibrated Tri-State Clinical Triage.
+Architecture:
+- H1: Screening Gatekeeper P(Abnormal) with Dual Thresholds (tau_n, tau_a).
+- H2: Granular Multi-Class Pathology Head with Raw Logits Free Energy and Entropy OOD Scoring.
+- Tri-State Triage:
+    1. NORMAL (P(Abnormal) <= tau_n)
+    2. REVIEW_REQUIRED (tau_n < P(Abnormal) < tau_a OR OOD / Low Confidence)
+    3. KNOWN_PATHOLOGY (P(Abnormal) >= tau_a AND In-Distribution Known Disease)
+- State-dependent Grad-CAM interpretability.
+- Fully backwards-compatible with Level1, Level2, Level3, Final_Diagnosis schema.
 """
 
 import sys
@@ -12,23 +19,26 @@ import tempfile
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
-import numpy as np
+import torchvision.transforms as transforms
 
 from backend.core_ml.classification.models.multi_head_convnext import build_multi_head_model
 from backend.core_ml.classification.data.transforms import BlackoutCorners, LetterboxPad
-import torchvision.transforms as transforms
 from backend.core_ml.classification.utils.gradcam import MultiHeadGradCAM
+from backend.core_ml.classification.utils.calibration import (
+    CalibrationConfig,
+    TriageCalibrationEngine,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-PATHOLOGY_CLASSES = [
+DEFAULT_PATHOLOGY_CLASSES = [
     'CNV', 'DRUSEN', 'AMD', 'General_AMD', 
     'DME', 'DR', 'MH', 'RVO', 'RAO', 
     'CSR', 'ERM', 'VID'
@@ -39,6 +49,9 @@ class OCTInferencePipeline:
         self,
         *args,
         device: str = "auto",
+        calibration_config: Optional[CalibrationConfig] = None,
+        calibration_path: Optional[Path | str] = None,
+        class_names: Optional[List[str]] = None,
         **kwargs
     ):
         if device == "auto":
@@ -103,6 +116,23 @@ class OCTInferencePipeline:
         self.model.eval()
         self.l1_mapping = {0: "NORMAL", 1: "ABNORMAL"}
 
+        # Dynamic class names resolution
+        self.class_names = class_names or DEFAULT_PATHOLOGY_CLASSES
+
+        # Initialize Calibration Engine
+        if calibration_path is None:
+            default_calib = weights_dir / "calibration_config.json"
+            if default_calib.exists():
+                calibration_path = default_calib
+            elif (weights_dir / "multi_head_mps" / "calibration_config.json").exists():
+                calibration_path = weights_dir / "multi_head_mps" / "calibration_config.json"
+
+        self.calibration_engine = TriageCalibrationEngine(
+            config=calibration_config,
+            config_path=calibration_path
+        )
+        logger.info(f"  -> Triage Calibration Engine ready (tau_n={self.calibration_engine.config.tau_n}, tau_a={self.calibration_engine.config.tau_a})")
+
     def _get_heatmap_base64(self, img_pil, cam_array):
         import base64
         import io
@@ -145,6 +175,7 @@ class OCTInferencePipeline:
             "Level2": {},
             "Level3": {},
             "Final_Diagnosis": None,
+            "Triage": {},
             "Path": [],
             "gradcams": {}
         }
@@ -168,64 +199,90 @@ class OCTInferencePipeline:
             
             outputs = self.model(input_tensor)
             out1 = outputs['normal_abnormal']
-            out2 = outputs['pathology']
+            out2 = outputs['pathology']  # Raw H2 Logits before activation
             
-            # --- LEVEL 1: Gatekeeper ---
-            prob1 = torch.sigmoid(out1[0, 0]).item()
-            pred_l1_idx = 1 if prob1 > 0.5 else 0
-            pred_l1_label = self.l1_mapping[pred_l1_idx]
-            conf_l1 = prob1 if prob1 > 0.5 else 1.0 - prob1
-            
+            # --- Probability Extraction ---
+            prob_abnormal = torch.sigmoid(out1[0, 0]).item()
+            num_h2_classes = out2.size(-1)
+            active_class_names = self.class_names[:num_h2_classes] if len(self.class_names) >= num_h2_classes else [f"Class_{i}" for i in range(num_h2_classes)]
+
+            # --- Calibrated Tri-State Triage & OOD Evaluation ---
+            raw_h2_logits_np = out2[0].detach().cpu().numpy()
+            triage_eval = self.calibration_engine.evaluate_triage(
+                prob_abnormal=prob_abnormal,
+                raw_h2_logits=raw_h2_logits_np,
+                class_names=active_class_names
+            )
+
+            triage_state = triage_eval["triage_state"]
+            review_reason = triage_eval["review_reason"]
+            final_diagnosis = triage_eval["final_diagnosis"]
+            pred_candidate = triage_eval["predicted_pathology_candidate"]
+            pred_candidate_idx = triage_eval["predicted_pathology_idx"]
+
+            # --- Populating Standard Hierarchical Output Schema ---
+            # Level 1: Gatekeeper
+            pred_l1_label = "NORMAL" if prob_abnormal <= 0.50 else "ABNORMAL"
+            conf_l1 = prob_abnormal if prob_abnormal > 0.50 else 1.0 - prob_abnormal
             results["Level1"] = {
                 "prediction": pred_l1_label,
-                "confidence": conf_l1,
-                "probs": {"NORMAL": 1.0 - prob1, "ABNORMAL": prob1}
+                "confidence": float(conf_l1),
+                "probs": {"NORMAL": float(1.0 - prob_abnormal), "ABNORMAL": float(prob_abnormal)},
+                "screening_boundary": "NORMAL" if prob_abnormal <= self.calibration_engine.config.tau_n else ("ABNORMAL" if prob_abnormal >= self.calibration_engine.config.tau_a else "AMBIGUOUS")
             }
-            results["Path"].append(f"L1: {pred_l1_label}")
-            
-            if gradcam:
-                heatmap = cam_generator.generate_cam(input_tensor, target_head=1)
-                results["gradcams"]["L1"] = self._get_heatmap_base64(img, heatmap)
+            results["Path"].append(f"L1: {pred_l1_label} (P(A)={prob_abnormal:.3f})")
 
-            if pred_l1_label == "NORMAL":
-                results["Final_Diagnosis"] = "NORMAL"
-                logger.info("Pipeline terminated at Level 1 (NORMAL)")
-                return results
-                
-            # --- LEVEL 2 & 3: Granular Pathology (Multi-Label Flat) ---
-            # Using Sigmoid for multi-label probabilities
-            probs_h2 = torch.sigmoid(out2[0]).detach().cpu().numpy()
-            pred_l2_idx = np.argmax(probs_h2)
-            pred_l2_label = PATHOLOGY_CLASSES[pred_l2_idx]
-            conf_l2 = probs_h2[pred_l2_idx].item()
-            
-            # We mock Level 2 and Level 3 to be the same to maintain API compatibility
+            # Level 2 & 3: Pathology Profile
+            h2_conditional_probs = triage_eval["conditional_probabilities"]
+            h2_joint_probs = triage_eval["joint_probabilities"]
+            conf_l2 = h2_conditional_probs[pred_candidate]
+
             results["Level2"] = {
-                "prediction": pred_l2_label,
-                "confidence": conf_l2,
-                "probs": {PATHOLOGY_CLASSES[i]: probs_h2[i].item() for i in range(len(PATHOLOGY_CLASSES))}
+                "prediction": pred_candidate if triage_state == "KNOWN_PATHOLOGY" else final_diagnosis,
+                "candidate": pred_candidate,
+                "confidence": float(conf_l2),
+                "probs": h2_conditional_probs,
+                "joint_probs": h2_joint_probs,
             }
             results["Level3"] = results["Level2"]
-            results["Path"].append(f"L2: {pred_l2_label}")
-            
+            results["Path"].append(f"Triage: {triage_state} [{review_reason}]")
+
+            results["Final_Diagnosis"] = final_diagnosis
+            results["Triage"] = triage_eval
+
+            # --- State-Dependent Grad-CAM Generation ---
             if gradcam:
-                heatmap = cam_generator.generate_cam(input_tensor, target_head=2, target_class=pred_l2_idx)
-                results["gradcams"]["L2"] = self._get_heatmap_base64(img, heatmap)
-            
-            results["Final_Diagnosis"] = pred_l2_label
-            
+                if triage_state == "NORMAL":
+                    # Level 1 Healthy context
+                    heatmap_l1 = cam_generator.generate_cam(input_tensor, target_head=1)
+                    results["gradcams"]["L1"] = self._get_heatmap_base64(img, heatmap_l1)
+                elif triage_state == "KNOWN_PATHOLOGY":
+                    # Level 1 abnormality evidence + Level 2 specific disease activation
+                    heatmap_l1 = cam_generator.generate_cam(input_tensor, target_head=1)
+                    results["gradcams"]["L1"] = self._get_heatmap_base64(img, heatmap_l1)
+                    heatmap_l2 = cam_generator.generate_cam(input_tensor, target_head=2, target_class=pred_candidate_idx)
+                    results["gradcams"]["L2"] = self._get_heatmap_base64(img, heatmap_l2)
+                elif triage_state == "REVIEW_REQUIRED":
+                    # For Review Required cases, prominently render H1 Abnormality evidence
+                    heatmap_l1 = cam_generator.generate_cam(input_tensor, target_head=1)
+                    results["gradcams"]["L1"] = self._get_heatmap_base64(img, heatmap_l1)
+                    # When reason is OOD/Low confidence, we avoid anchoring the clinician on the unconfirmed class,
+                    # but provide candidate heatmap under an explicit unconfirmed key if requested
+                    if review_reason in ("H2_OOD_UNRECOGNIZED", "H2_LOW_CONFIDENCE"):
+                        heatmap_l2_candidate = cam_generator.generate_cam(input_tensor, target_head=2, target_class=pred_candidate_idx)
+                        results["gradcams"]["L2_Candidate_Unconfirmed"] = self._get_heatmap_base64(img, heatmap_l2_candidate)
+
         return results
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Run OCT Multi-Head Inference")
+    parser = argparse.ArgumentParser(description="Run OCT Multi-Head Inference with Tri-State Triage")
     parser.add_argument("--image", type=str, required=True, help="Path to raw OCT image")
     parser.add_argument("--gradcam", action="store_true", help="Generate Grad-CAM heatmaps")
     parser.add_argument("--output-dir", type=str, default="output/explanations", help="Output directory for heatmaps")
     args = parser.parse_args()
     
     pipeline = OCTInferencePipeline()
-    
     res = pipeline.predict(args.image, gradcam=args.gradcam, output_dir=args.output_dir)
-    print("\n--- INFERENCE RESULTS ---")
+    print("\n--- INFERENCE RESULTS WITH TRI-STATE TRIAGE ---")
     print(json.dumps(res, indent=4))

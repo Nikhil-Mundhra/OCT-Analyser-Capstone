@@ -49,8 +49,9 @@ class MultiHeadConvNeXt(nn.Module):
     """
     Multi-Head ConvNeXt V2 Model with Multi-Scale Aggregation and Strict Hierarchical Conditioning
     """
-    def __init__(self, num_pathology_classes: int = 12, pretrained: bool = True):
+    def __init__(self, num_pathology_classes: int = 12, pretrained: bool = True, condition_h2_on_h1: bool = True):
         super().__init__()
+        self.condition_h2_on_h1 = condition_h2_on_h1
         
         # 1. Initialize pre-trained convnextv2_base, extracting features from stages 1, 2, 3
         # (Resolutions for 224x224 input: Stage 1=28x28, Stage 2=14x14, Stage 3=7x7)
@@ -81,11 +82,12 @@ class MultiHeadConvNeXt(nn.Module):
         self.cbam_s4 = CBAMBlock(in_planes=dim_s4)
         
         multi_scale_dim = dim_s2 + dim_s3 + dim_s4
+        h2_in_dim = multi_scale_dim + 1 if condition_h2_on_h1 else multi_scale_dim
         
-        # granular_pathology_head (multi-label)
-        # Input dim is multi_scale_dim + 1 (for H1 probability concatenation)
+        # granular_pathology_head (multi-label / multi-class)
+        # Input dim is multi_scale_dim + 1 if condition_h2_on_h1 else multi_scale_dim
         self.granular_pathology_head = nn.Sequential(
-            nn.Linear(multi_scale_dim + 1, 512),
+            nn.Linear(h2_in_dim, 512),
             nn.GELU(),
             nn.Dropout(p=0.2),
             nn.Linear(512, num_pathology_classes)
@@ -115,16 +117,19 @@ class MultiHeadConvNeXt(nn.Module):
         
         multi_scale_features = torch.cat([gap_att_s2, gap_att_s3, gap_att_s4], dim=1)
         
-        # Hierarchical Feature Conditioning: Append H1 Probability (Soft constraint for the Linear layer)
-        h1_prob = torch.sigmoid(out_normal).detach()
-        h2_input = torch.cat([multi_scale_features, h1_prob], dim=1)
+        # Hierarchical Feature Conditioning: Append H1 Probability if enabled
+        if self.condition_h2_on_h1:
+            h1_prob = torch.sigmoid(out_normal).detach()
+            h2_input = torch.cat([multi_scale_features, h1_prob], dim=1)
+        else:
+            h2_input = multi_scale_features
         
         out_pathology = self.granular_pathology_head(h2_input)
         
         if return_probs:
             # Strict Hierarchical Classification Conditioning (Mathematical Constraint)
             p_h1 = torch.sigmoid(out_normal)
-            p_h2_given_h1 = torch.sigmoid(out_pathology)
+            p_h2_given_h1 = torch.softmax(out_pathology, dim=1)
             final_h2_prob = p_h2_given_h1 * p_h1
             return {
                 'normal_abnormal': p_h1,
@@ -162,11 +167,15 @@ class MultiHeadConvNeXt(nn.Module):
             {"params": head_params,     "lr": head_lr},
         ]
 
-def build_multi_head_model(pretrained=True, warmup=True) -> MultiHeadConvNeXt:
+def build_multi_head_model(pretrained=True, warmup=True, condition_h2_on_h1=True, num_pathology_classes=12) -> MultiHeadConvNeXt:
     """
     Factory function for creating the Multi-Head ConvNeXt model.
     """
-    model = MultiHeadConvNeXt(num_pathology_classes=12, pretrained=pretrained)
+    model = MultiHeadConvNeXt(
+        num_pathology_classes=num_pathology_classes,
+        pretrained=pretrained,
+        condition_h2_on_h1=condition_h2_on_h1
+    )
     if warmup:
         model.freeze_backbone()
     return model

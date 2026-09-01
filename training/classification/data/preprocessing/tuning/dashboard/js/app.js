@@ -450,11 +450,11 @@ function renderGallery(samples) {
     const safeId = s.filename.replace(/[^a-zA-Z0-9]/g, '-');
     card.innerHTML = `
       <div class="card-header-bar">
-        <span>${s.filename}</span>
-        <div style="display: flex; align-items: center; gap: 6px;">
+        <span title="${s.filename}">${s.filename}</span>
+        <div class="card-header-actions">
           <button class="btn-pick ${isPicked ? 'picked' : ''}" data-filename="${s.filename}" data-folder="${folder}" onclick="togglePickCard(this)">${isPicked ? '&#10003; Picked' : '+ Pick for U-Net'}</button>
-          <button class="btn-refresh-single" data-filename="${s.filename}" data-filepath="${s.filepath || ''}" onclick="refreshSingleCard(this)">Refresh Image</button>
-          <button class="btn-copy-config" data-filename="${s.filename}" data-filepath="${s.filepath || ''}" onclick="copyImageConfig(this)">Copy Config</button>
+          <button class="btn-refresh-single" data-filename="${s.filename}" data-filepath="${s.filepath || ''}" onclick="refreshSingleCard(this)" title="Reload this single scan">Refresh</button>
+          <button class="btn-copy-config" data-filename="${s.filename}" data-filepath="${s.filepath || ''}" onclick="copyImageConfig(this)" title="Copy JSON parameters to clipboard">Copy Config</button>
         </div>
       </div>
       <div class="image-comparison-row">

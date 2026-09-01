@@ -10,16 +10,37 @@
 
 .card-header-bar {
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.35);
   border-bottom: 1px solid var(--border-color);
   font-size: 0.78rem;
   color: var(--text-muted);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.card-header-bar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  min-width: 0;
+}
+
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .image-card.card-curated {
-  border-color: rgba(16, 185, 129, 0.55);
-  box-shadow: 0 0 14px rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.65);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
 }
 
 .btn-refresh-single,
