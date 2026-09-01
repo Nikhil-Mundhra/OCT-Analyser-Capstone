@@ -51,3 +51,11 @@ let debounceTimer = null;
 let drawVectorsEnabled = true;
 let activeHandle = null;
 let draggingHandle = null;
+
+let curatedSet = new Set();
+let curatedManifest = {
+  total_count: 0,
+  samples: []
+};
+let currentVisibleSamples = [];
+

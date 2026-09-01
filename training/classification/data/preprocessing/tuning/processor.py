@@ -1,81 +1,113 @@
 """
 data/preprocessing/tuning/processor.py
 
-Dataset subfolder discovery, sample caching, and scan image preprocessing pipelines.
+Dataset subfolder discovery, sample caching, scan image preprocessing,
+and interactive dataset curation / export pipeline for U-Net training.
 """
 
+import csv
+import json
 import os
 from pathlib import Path
 import random
 import sys
+import time
 from typing import Optional
 import cv2
 import numpy as np
 
-from data.preprocessing.tuning.boundaries import (
+from data.preprocessing.masking import (
+    generate_tissue_mask,
     generate_tissue_mask_custom,
-    letterbox_pad_and_resize,
-    project_and_downsample_vectors,
+)
+from data.preprocessing.choroid import (
     detect_choroidal_caverns,
     detect_choroidal_holes,
+)
+from data.preprocessing.geometry import (
+    letterbox_pad_and_resize,
+    project_and_downsample_vectors,
+    render_boundary_overlay,
 )
 from data.preprocessing.white_bars import (
     detect_and_process_white_bars,
     detect_and_remove_compass_artifacts,
 )
 
-SOURCE_DIR = Path(
-    os.environ.get("SOURCE_DIR", "/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified")
-)
-OUTPUT_DIR = Path(
-    os.environ.get(
-        "OUTPUT_DIR", "/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified-preprocessed-Otsu"
-    )
-)
+# Project root resolution
+_REPO_ROOT = Path(__file__).resolve().parents[5]
+_LOCAL_SRC = Path("/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified")
+_LOCAL_OUT = Path("/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified-preprocessed-Otsu")
+_LOCAL_MASKED = Path("/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified-masked")
+
+SOURCE_DIR = Path(os.environ.get("SOURCE_DIR", str(_LOCAL_SRC if _LOCAL_SRC.exists() else _REPO_ROOT / "data" / "Classified")))
+OUTPUT_DIR = Path(os.environ.get("OUTPUT_DIR", str(_LOCAL_OUT if _LOCAL_OUT.exists() else _REPO_ROOT / "data" / "Classified-preprocessed-Otsu")))
+MASKED_DATASET_DIR = Path(os.environ.get("MASKED_DATASET_DIR", str(_LOCAL_MASKED if _LOCAL_MASKED.exists() else _REPO_ROOT / "data" / "Classified-masked")))
 
 SFCM_CACHE: dict[tuple, tuple[np.ndarray, np.ndarray]] = {}
 FOLDER_SAMPLES_CACHE: dict[str, list[Path]] = {}
 
 
 def get_source_dir() -> Path:
-    """Dynamically resolves SOURCE_DIR, respecting runtime/test monkeypatching."""
-    for mod_name in ("tuning_server", "data.preprocessing.tuning.server", "data.preprocessing.tuning.processor"):
+    """Resolves SOURCE_DIR, respecting runtime/test attribute overrides."""
+    this_mod = sys.modules.get("data.preprocessing.tuning.processor")
+    if this_mod is not None:
+        val = getattr(this_mod, "SOURCE_DIR", None)
+        if val is not None:
+            return Path(val)
+    for mod_name in ("tuning_server", "data.preprocessing.tuning.server"):
         if mod_name in sys.modules:
-            mod = sys.modules[mod_name]
-            val = getattr(mod, "SOURCE_DIR", None)
-            if val is not None and val != SOURCE_DIR:
+            val = getattr(sys.modules[mod_name], "SOURCE_DIR", None)
+            if val is not None:
                 return Path(val)
     return SOURCE_DIR
 
 
 def get_output_dir() -> Path:
-    """Dynamically resolves OUTPUT_DIR, respecting runtime/test monkeypatching."""
-    for mod_name in ("tuning_server", "data.preprocessing.tuning.server", "data.preprocessing.tuning.processor"):
+    """Resolves OUTPUT_DIR, respecting runtime/test attribute overrides."""
+    this_mod = sys.modules.get("data.preprocessing.tuning.processor")
+    if this_mod is not None:
+        val = getattr(this_mod, "OUTPUT_DIR", None)
+        if val is not None:
+            return Path(val)
+    for mod_name in ("tuning_server", "data.preprocessing.tuning.server"):
         if mod_name in sys.modules:
-            mod = sys.modules[mod_name]
-            val = getattr(mod, "OUTPUT_DIR", None)
-            if val is not None and val != OUTPUT_DIR:
+            val = getattr(sys.modules[mod_name], "OUTPUT_DIR", None)
+            if val is not None:
                 return Path(val)
     return OUTPUT_DIR
 
 
+def get_masked_dataset_dir() -> Path:
+    """Resolves MASKED_DATASET_DIR, respecting runtime/test attribute overrides."""
+    this_mod = sys.modules.get("data.preprocessing.tuning.processor")
+    if this_mod is not None:
+        val = getattr(this_mod, "MASKED_DATASET_DIR", None)
+        if val is not None:
+            return Path(val)
+    for mod_name in ("tuning_server", "data.preprocessing.tuning.server"):
+        if mod_name in sys.modules:
+            val = getattr(sys.modules[mod_name], "MASKED_DATASET_DIR", None)
+            if val is not None:
+                return Path(val)
+    return MASKED_DATASET_DIR
+
+
 def get_folder_samples_cache() -> dict[str, list[Path]]:
-    """Dynamically resolves FOLDER_SAMPLES_CACHE, respecting runtime/test monkeypatching."""
+    """Resolves FOLDER_SAMPLES_CACHE, respecting runtime/test attribute overrides."""
     for mod_name in ("tuning_server", "data.preprocessing.tuning.server", "data.preprocessing.tuning.processor"):
         if mod_name in sys.modules:
-            mod = sys.modules[mod_name]
-            val = getattr(mod, "FOLDER_SAMPLES_CACHE", None)
+            val = getattr(sys.modules[mod_name], "FOLDER_SAMPLES_CACHE", None)
             if val is not None and isinstance(val, dict) and val is not FOLDER_SAMPLES_CACHE:
                 return val
     return FOLDER_SAMPLES_CACHE
 
 
 def get_sfcm_cache() -> dict[tuple, tuple[np.ndarray, np.ndarray]]:
-    """Dynamically resolves SFCM_CACHE, respecting runtime/test monkeypatching."""
+    """Resolves SFCM_CACHE, respecting runtime/test attribute overrides."""
     for mod_name in ("tuning_server", "data.preprocessing.tuning.server", "data.preprocessing.tuning.processor"):
         if mod_name in sys.modules:
-            mod = sys.modules[mod_name]
-            val = getattr(mod, "SFCM_CACHE", None)
+            val = getattr(sys.modules[mod_name], "SFCM_CACHE", None)
             if val is not None and isinstance(val, dict) and val is not SFCM_CACHE:
                 return val
     return SFCM_CACHE
@@ -88,23 +120,20 @@ def find_folder_path(folder_name: str | Path, source_dir: Optional[Path] = None)
             return folder_name
         folder_name = folder_name.name
 
-    active_source = source_dir or get_source_dir()
+    active_source = Path(source_dir) if source_dir else get_source_dir()
     if not active_source.exists():
         return None
 
-    # Check direct child first if it contains images
     direct = active_source / folder_name
     if direct.is_dir():
         direct_files = list(direct.glob("*.jp*g")) + list(direct.glob("*.png"))
         if direct_files:
             return direct
 
-    # Search all matching directories across source hierarchy
     matches = [d for d in active_source.rglob(folder_name) if d.is_dir() and not d.name.startswith(".")]
     if not matches:
         return None
 
-    # Prioritize matching directories that actually contain valid scan images
     matches_with_counts = []
     for d in matches:
         count = len(list(d.glob("*.jp*g")) + list(d.glob("*.png")))
@@ -116,9 +145,9 @@ def find_folder_path(folder_name: str | Path, source_dir: Optional[Path] = None)
     return matches_with_counts[0][0]
 
 
-def find_image_path(folder_name: str | Path, filename: str) -> Path | None:
+def find_image_path(folder_name: str | Path, filename: str, source_dir: Optional[Path] = None) -> Path | None:
     """Finds the path of a specific image by filename inside a folder."""
-    folder_path = find_folder_path(folder_name)
+    folder_path = find_folder_path(folder_name, source_dir=source_dir)
     if folder_path:
         direct = folder_path / filename
         if direct.exists():
@@ -130,7 +159,7 @@ def find_image_path(folder_name: str | Path, filename: str) -> Path | None:
 
 def get_available_subfolders(source_dir: Optional[Path] = None) -> list[str]:
     """Finds all leaf directories containing valid scan images."""
-    active_source = source_dir or get_source_dir()
+    active_source = Path(source_dir) if source_dir else get_source_dir()
     if not active_source.exists():
         return []
     subfolders = []
@@ -261,7 +290,7 @@ def process_and_save_image(src_p: Path, out_folder: Path, folder_name: str, para
 
 
 def reprocess_folder_sample(folder_name: str, params: dict, random_sample: bool = False) -> list:
-    """Reprocesses a 4-image batch sample for a given folder and returns JSON payload."""
+    """Reprocesses a sample batch for a given folder and returns JSON payload."""
     folder_path = find_folder_path(folder_name)
     if not folder_path:
         return []
@@ -317,52 +346,6 @@ def reprocess_single_image(folder_name: str, filename: str, params: dict) -> dic
     return process_and_save_image(img_path, out_folder, folder_name, params)
 
 
-def render_boundary_overlay(
-    image_bgr: np.ndarray,
-    y_top: np.ndarray,
-    y_rpe: np.ndarray,
-    y_sfcm: np.ndarray,
-    holes: Optional[list] = None,
-    caverns: Optional[list] = None,
-) -> np.ndarray:
-    """
-    Renders an anatomical multi-surface diagnostic overlay on an RGB/BGR OCT scan.
-    - Cyan (#00FFFF): Inner Limiting Membrane (ILM)
-    - Green (#00FF00): Retinal Pigment Epithelium (RPE)
-    - Orange (#FFA500): Choroid Scleral Interface (SFCM Floor)
-    - Pink (#FF1493): Choroidal Holes
-    - Purple (#8A2BE2): Choroidal Caverns
-    """
-    overlay = image_bgr.copy()
-    if len(overlay.shape) == 2:
-        overlay = cv2.cvtColor(overlay, cv2.COLOR_GRAY2BGR)
-
-    h, w = overlay.shape[:2]
-    for x in range(w):
-        if y_top is not None and 0 <= int(y_top[x]) < h:
-            cv2.circle(overlay, (x, int(y_top[x])), 1, (255, 255, 0), -1)   # Cyan: ILM
-        if y_rpe is not None and 0 <= int(y_rpe[x]) < h:
-            cv2.circle(overlay, (x, int(y_rpe[x])), 1, (0, 255, 0), -1)     # Green: RPE
-        if y_sfcm is not None and 0 <= int(y_sfcm[x]) < h:
-            cv2.circle(overlay, (x, int(y_sfcm[x])), 1, (0, 165, 255), -1) # Orange: Choroid
-
-    if holes:
-        for hole in holes:
-            if "contour" in hole:
-                cv2.drawContours(overlay, [hole["contour"]], -1, (255, 20, 147), 1)
-            elif "bbox" in hole:
-                bx, by, bw, bh = hole["bbox"]
-                cv2.rectangle(overlay, (int(bx), int(by)), (int(bx + bw), int(by + bh)), (255, 20, 147), 1)
-
-    if caverns:
-        for c in caverns:
-            if "bbox" in c:
-                bx, by, bw, bh = c["bbox"]
-                cv2.rectangle(overlay, (int(bx), int(by)), (int(bx + bw), int(by + bh)), (226, 43, 138), 1)
-
-    return overlay
-
-
 def process_single_image_cli(
     image_path_or_filename: str | Path,
     folder_name: Optional[str] = None,
@@ -379,12 +362,10 @@ def process_single_image_cli(
 
     src_p = Path(image_path_or_filename)
     if not src_p.exists() or not src_p.is_file():
-        # Attempt lookup via folder
         resolved = None
         if folder_name:
             resolved = find_image_path(folder_name, str(image_path_or_filename))
         if not resolved:
-            # Search whole source dir
             s_dir = get_source_dir()
             matches = list(s_dir.rglob(str(image_path_or_filename)))
             if matches:
@@ -404,7 +385,6 @@ def process_single_image_cli(
 
     orig_h, orig_w = img_bgr.shape[:2]
 
-    # Compass & White Bar Removal
     compass_bbox = None
     if active_params.get("compass_ui_enabled", False):
         img_bgr, compass_bbox = detect_and_remove_compass_artifacts(
@@ -481,7 +461,6 @@ def process_single_image_cli(
                 "transmission_ratio": c["transmission_ratio"]
             })
 
-    # Output directory
     if out_dir:
         destination_dir = Path(out_dir)
     else:
@@ -546,9 +525,7 @@ def process_folder_cli(
     save_overlay: bool = True,
     save_mask: bool = False,
 ) -> list[dict]:
-    """
-    Direct CLI entrypoint to process a batch of sample scans from a dataset subfolder.
-    """
+    """Direct CLI entrypoint to process a batch of sample scans from a dataset subfolder."""
     folder_path = find_folder_path(folder_name)
     if not folder_path:
         raise FileNotFoundError(f"Subfolder not found in Classified dataset: {folder_name}")
@@ -579,3 +556,248 @@ def process_folder_cli(
         )
         results.append(res)
     return results
+
+
+# -----------------------------------------------------------------------------
+# Interactive Dataset Curation & Export to Classified-masked/ for U-Net Training
+# -----------------------------------------------------------------------------
+
+def _sync_manifest_files(target_dir: Path, manifest_data: dict):
+    """Writes curated_manifest.json and regenerates manifest.csv atomically."""
+    target_dir.mkdir(parents=True, exist_ok=True)
+    manifest_json_p = target_dir / "curated_manifest.json"
+    manifest_csv_p = target_dir / "manifest.csv"
+
+    with open(manifest_json_p, "w", encoding="utf-8") as f:
+        json.dump(manifest_data, f, indent=2)
+
+    samples = manifest_data.get("samples", {})
+    with open(manifest_csv_p, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["folder", "filename", "image_path", "mask_path", "vis_path", "height", "width", "timestamp"])
+        for s in samples.values():
+            dim = s.get("dimensions", {})
+            writer.writerow([
+                s.get("folder", ""),
+                s.get("filename", ""),
+                s.get("image_path", ""),
+                s.get("mask_path", ""),
+                s.get("vis_path", ""),
+                dim.get("height", ""),
+                dim.get("width", ""),
+                s.get("timestamp", "")
+            ])
+
+
+def get_curated_manifest(masked_dir: Optional[Path] = None) -> dict:
+    """Returns all currently curated samples and picked lookup dictionary."""
+    target_masked_dir = Path(masked_dir) if masked_dir else get_masked_dataset_dir()
+    manifest_p = target_masked_dir / "curated_manifest.json"
+    if manifest_p.exists():
+        try:
+            with open(manifest_p, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                samples = data.get("samples", {})
+                picked_keys = {k: True for k in samples.keys()}
+                return {
+                    "status": "success",
+                    "masked_dir": str(target_masked_dir),
+                    "total_count": len(samples),
+                    "samples": list(samples.values()),
+                    "picked_keys": picked_keys,
+                }
+        except Exception:
+            pass
+
+    return {
+        "status": "success",
+        "masked_dir": str(target_masked_dir),
+        "total_count": 0,
+        "samples": [],
+        "picked_keys": {},
+    }
+
+
+def save_curated_mask_sample(
+    folder_name: str,
+    filename: str,
+    params: dict,
+    masked_dir: Optional[Path] = None,
+    source_dir: Optional[Path] = None
+) -> dict:
+    """
+    Generates and saves a high-quality raw image, binary mask, and visualization overlay
+    into the Classified-masked/ dataset directory for U-Net training.
+    """
+    img_path = find_image_path(folder_name, filename, source_dir=source_dir)
+    if not img_path or not img_path.exists():
+        raise FileNotFoundError(f"Image '{filename}' not found in folder '{folder_name}'")
+
+    img_bgr = cv2.imread(str(img_path))
+    if img_bgr is None:
+        raise ValueError(f"Could not read image at {img_path}")
+
+    orig_h, orig_w = img_bgr.shape[:2]
+
+    compass_enabled = params.get("compass_ui_enabled", None)
+    compass_location = params.get("compass_location", "auto")
+    margin_bottom = params.get("margin_bottom", params.get("margin", 15))
+
+    img_bgr_clean, compass_bbox = detect_and_remove_compass_artifacts(
+        img_bgr,
+        src_path=str(img_path),
+        enabled=compass_enabled,
+        location=compass_location,
+        margin=margin_bottom,
+        return_bbox=True
+    )
+    img_bgr_clean = detect_and_process_white_bars(img_bgr_clean, white_thresh=190, dark_bg_thresh=70, gap_pixels=3)
+
+    gray = cv2.cvtColor(img_bgr_clean, cv2.COLOR_BGR2GRAY)
+    active_sfcm_cache = get_sfcm_cache()
+    mask, y_top_outer, y_bottom_outer, y_rpe, y_bottom_sfcm, y_bottom_sfcm_raw = generate_tissue_mask_custom(
+        gray, params, compass_bbox=compass_bbox, return_sfcm=True, src_path=str(img_path), sfcm_cache=active_sfcm_cache
+    )
+
+    target_masked_dir = Path(masked_dir) if masked_dir else get_masked_dataset_dir()
+    images_dir = target_masked_dir / "Images" / folder_name
+    masks_dir = target_masked_dir / "Masks" / folder_name
+    vis_dir = target_masked_dir / "Visualizations" / folder_name
+
+    images_dir.mkdir(parents=True, exist_ok=True)
+    masks_dir.mkdir(parents=True, exist_ok=True)
+    vis_dir.mkdir(parents=True, exist_ok=True)
+
+    img_out_p = images_dir / f"{img_path.stem}.png"
+    mask_out_p = masks_dir / f"{img_path.stem}.png"
+    vis_out_p = vis_dir / f"{img_path.stem}_overlay.png"
+
+    cv2.imwrite(str(img_out_p), img_bgr)
+    cv2.imwrite(str(mask_out_p), mask)
+
+    raw_holes = []
+    if y_rpe is not None and y_bottom_sfcm is not None and params.get("holes_enabled", True):
+        raw_holes = detect_choroidal_holes(gray, y_rpe, y_bottom_sfcm, params=params)
+
+    overlay_bgr = render_boundary_overlay(
+        img_bgr,
+        y_top=y_top_outer,
+        y_rpe=y_rpe,
+        y_sfcm=y_bottom_sfcm if y_bottom_sfcm is not None else y_bottom_outer,
+        holes=raw_holes
+    )
+    cv2.imwrite(str(vis_out_p), overlay_bgr)
+
+    manifest_p = target_masked_dir / "curated_manifest.json"
+    manifest_data = {"version": "1.0", "samples": {}}
+    if manifest_p.exists():
+        try:
+            with open(manifest_p, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+                if "samples" not in manifest_data or not isinstance(manifest_data["samples"], dict):
+                    manifest_data["samples"] = {}
+        except Exception:
+            manifest_data = {"version": "1.0", "samples": {}}
+
+    sample_key = f"{folder_name}/{img_path.name}"
+    record = {
+        "folder": folder_name,
+        "filename": img_path.name,
+        "stem": img_path.stem,
+        "source_path": str(img_path.resolve()),
+        "image_path": str(img_out_p.relative_to(target_masked_dir)),
+        "mask_path": str(mask_out_p.relative_to(target_masked_dir)),
+        "vis_path": str(vis_out_p.relative_to(target_masked_dir)),
+        "dimensions": {"height": orig_h, "width": orig_w},
+        "timestamp": time.time(),
+        "params": params,
+    }
+    manifest_data["samples"][sample_key] = record
+    manifest_data["total_count"] = len(manifest_data["samples"])
+
+    _sync_manifest_files(target_masked_dir, manifest_data)
+
+    return {
+        "status": "success",
+        "message": f"Successfully curated '{img_path.name}' into Classified-masked/",
+        "sample": record,
+        "total_count": len(manifest_data["samples"])
+    }
+
+
+def remove_curated_mask_sample(
+    folder_name: str,
+    filename: str,
+    masked_dir: Optional[Path] = None
+) -> dict:
+    """Removes a previously curated sample from the Classified-masked/ dataset."""
+    target_masked_dir = Path(masked_dir) if masked_dir else get_masked_dataset_dir()
+    manifest_p = target_masked_dir / "curated_manifest.json"
+    sample_key = f"{folder_name}/{filename}"
+    stem = Path(filename).stem
+
+    if manifest_p.exists():
+        try:
+            with open(manifest_p, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+                samples = manifest_data.get("samples", {})
+        except Exception:
+            samples = {}
+    else:
+        samples = {}
+
+    removed = False
+    if sample_key in samples:
+        del samples[sample_key]
+        removed = True
+
+    for subdir, fname in [
+        ("Images", f"{stem}.png"),
+        ("Masks", f"{stem}.png"),
+        ("Visualizations", f"{stem}_overlay.png")
+    ]:
+        p = target_masked_dir / subdir / folder_name / fname
+        if p.exists():
+            try:
+                p.unlink()
+                removed = True
+            except OSError:
+                pass
+
+    manifest_data = {"version": "1.0", "samples": samples, "total_count": len(samples)}
+    _sync_manifest_files(target_masked_dir, manifest_data)
+
+    return {
+        "status": "success",
+        "removed": removed,
+        "folder": folder_name,
+        "filename": filename,
+        "total_count": len(samples)
+    }
+
+
+def curate_folder_batch(
+    folder_name: str,
+    filenames: list[str],
+    params: dict,
+    masked_dir: Optional[Path] = None,
+    source_dir: Optional[Path] = None
+) -> dict:
+    """Curates a batch of images into Classified-masked/."""
+    results = []
+    errors = []
+    for fname in filenames:
+        try:
+            res = save_curated_mask_sample(folder_name, fname, params, masked_dir=masked_dir, source_dir=source_dir)
+            results.append(res["sample"])
+        except Exception as e:
+            errors.append({"filename": fname, "error": str(e)})
+
+    manifest = get_curated_manifest(masked_dir=masked_dir)
+    return {
+        "status": "success" if not errors else "partial",
+        "curated_count": len(results),
+        "total_count": manifest["total_count"],
+        "curated_samples": results,
+        "errors": errors
+    }

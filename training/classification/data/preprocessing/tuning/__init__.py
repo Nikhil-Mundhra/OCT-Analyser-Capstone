@@ -29,15 +29,23 @@ from data.preprocessing.tuning.diagnostics import (
 )
 from data.preprocessing.tuning.processor import (
     FOLDER_SAMPLES_CACHE,
+    MASKED_DATASET_DIR,
     OUTPUT_DIR,
     SFCM_CACHE,
     SOURCE_DIR,
+    curate_folder_batch,
     find_folder_path,
     find_image_path,
     get_available_subfolders,
+    get_curated_manifest,
+    get_masked_dataset_dir,
+    get_output_dir,
+    get_source_dir,
     process_and_save_image,
+    remove_curated_mask_sample,
     reprocess_folder_sample,
     reprocess_single_image,
+    save_curated_mask_sample,
 )
 from data.preprocessing.tuning.server import (
     FineTuningRequestHandler,
@@ -63,6 +71,13 @@ __all__ = [
     "process_and_save_image",
     "reprocess_folder_sample",
     "reprocess_single_image",
+    "save_curated_mask_sample",
+    "remove_curated_mask_sample",
+    "get_curated_manifest",
+    "curate_folder_batch",
+    "get_source_dir",
+    "get_output_dir",
+    "get_masked_dataset_dir",
     "check_filesystem_access",
     "perform_preflight_checks",
     "verify_server_endpoints",
@@ -71,4 +86,5 @@ __all__ = [
     "FOLDER_SAMPLES_CACHE",
     "SOURCE_DIR",
     "OUTPUT_DIR",
+    "MASKED_DATASET_DIR",
 ]

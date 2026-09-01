@@ -224,7 +224,182 @@ function copyImageConfig(btn) {
   });
 }
 
+function updateCuratedBadge() {
+  const count = curatedSet.size;
+  const badge = document.getElementById('curated-badge');
+  const numEl = document.getElementById('curated-count-num');
+  const modalBadge = document.getElementById('modal-curated-count-badge');
+  if (badge) badge.textContent = `${count} Curated for U-Net`;
+  if (numEl) numEl.textContent = `${count}`;
+  if (modalBadge) modalBadge.textContent = `${count} Total`;
+}
+
+async function refreshCuratedState() {
+  try {
+    const manifest = await fetchCuratedManifest();
+    curatedManifest = manifest;
+    curatedSet = new Set(Object.keys(manifest.picked_keys || {}));
+    updateCuratedBadge();
+  } catch (err) {
+    console.error("Failed to load curated manifest:", err);
+  }
+}
+
+async function togglePickCard(btn) {
+  const filename = btn.getAttribute('data-filename');
+  const folder = document.getElementById('folder-select').value;
+  const key = `${folder}/${filename}`;
+  const isCurrentlyPicked = curatedSet.has(key);
+  const card = btn.closest('.image-card');
+
+  if (isCurrentlyPicked) {
+    btn.textContent = 'Removing...';
+    btn.style.opacity = '0.6';
+    try {
+      const res = await uncurateSample(folder, filename);
+      if (res.status === 'success') {
+        curatedSet.delete(key);
+        btn.classList.remove('picked');
+        btn.innerHTML = '+ Pick for U-Net';
+        if (card) card.classList.remove('card-curated');
+        updateCuratedBadge();
+        showStatusMessage(`Removed ${filename} from Classified-masked/`);
+      }
+    } catch (err) {
+      showStatusMessage(`Failed to remove: ${err.message}`, 4000);
+      btn.innerHTML = '&#10003; Picked';
+    } finally {
+      btn.style.opacity = '1';
+    }
+  } else {
+    btn.textContent = 'Saving...';
+    btn.style.opacity = '0.6';
+    const params = getParamsFromUI();
+    try {
+      const res = await curateSample(folder, filename, params);
+      if (res.status === 'success') {
+        curatedSet.add(key);
+        btn.classList.add('picked');
+        btn.innerHTML = '&#10003; Picked';
+        if (card) card.classList.add('card-curated');
+        updateCuratedBadge();
+        showStatusMessage(`Saved ${filename} to Classified-masked/ (Total: ${res.total_count})`);
+      }
+    } catch (err) {
+      showStatusMessage(`Failed to curate: ${err.message}`, 4000);
+      btn.innerHTML = '+ Pick for U-Net';
+    } finally {
+      btn.style.opacity = '1';
+    }
+  }
+}
+
+async function pickAllVisibleCards() {
+  const folder = document.getElementById('folder-select').value;
+  if (!currentVisibleSamples || currentVisibleSamples.length === 0) {
+    showStatusMessage('No visible scans to pick.');
+    return;
+  }
+
+  const filenames = currentVisibleSamples.map(s => s.filename);
+  const params = getParamsFromUI();
+  const btn = document.getElementById('btn-pick-all');
+  if (btn) {
+    btn.textContent = 'Saving Batch...';
+    btn.style.opacity = '0.6';
+  }
+
+  try {
+    const res = await curateBatch(folder, filenames, params);
+    if (res.status === 'success' || res.status === 'partial') {
+      filenames.forEach(fn => curatedSet.add(`${folder}/${fn}`));
+      updateCuratedBadge();
+      renderGallery(currentVisibleSamples);
+      showStatusMessage(`Saved ${res.curated_count} scans to Classified-masked/ (Total: ${res.total_count})`);
+    }
+  } catch (err) {
+    showStatusMessage(`Batch curation failed: ${err.message}`, 4000);
+  } finally {
+    if (btn) {
+      btn.textContent = '+ Pick All Visible';
+      btn.style.opacity = '1';
+    }
+  }
+}
+
+async function openCuratedModal() {
+  const modal = document.getElementById('modal-curated-list');
+  const container = document.getElementById('curated-list-container');
+  if (!modal || !container) return;
+
+  modal.style.display = 'flex';
+  container.innerHTML = '<div style="color: var(--text-muted); grid-column: 1/-1; padding: 20px; text-align: center;">Loading curated samples...</div>';
+
+  try {
+    const manifest = await fetchCuratedManifest();
+    curatedManifest = manifest;
+    curatedSet = new Set(Object.keys(manifest.picked_keys || {}));
+    updateCuratedBadge();
+
+    const samples = manifest.samples || [];
+    if (samples.length === 0) {
+      container.innerHTML = '<div style="color: var(--text-muted); grid-column: 1/-1; padding: 40px; text-align: center;">No curated samples yet. Click "+ Pick for U-Net" on any scan slice to add it here.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    samples.forEach(s => {
+      const itemCard = document.createElement('div');
+      itemCard.className = 'curated-item-card';
+      const dimStr = s.dimensions ? `${s.dimensions.width}x${s.dimensions.height}px` : '';
+
+      itemCard.innerHTML = `
+        <div class="curated-item-header">
+          <strong style="color: #00e5ff;">${s.folder}</strong>
+          <span style="font-size: 0.68rem; color: #8b949e;">${dimStr}</span>
+        </div>
+        <div class="curated-item-previews">
+          <img src="/masked/${s.image_path}?t=${Date.now()}" alt="Raw Scan" title="Raw Image">
+          <img src="/masked/${s.mask_path}?t=${Date.now()}" alt="Tissue Mask" title="Binary Mask" style="filter: brightness(1.2);">
+        </div>
+        <div class="curated-item-footer">
+          <span title="${s.filename}" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.filename}</span>
+          <button class="btn-unpick-curated" data-folder="${s.folder}" data-filename="${s.filename}" onclick="removeCuratedFromModal(this)">Remove</button>
+        </div>
+      `;
+      container.appendChild(itemCard);
+    });
+  } catch (err) {
+    container.innerHTML = `<div style="color: #f87171; grid-column: 1/-1; padding: 20px; text-align: center;">Failed to load manifest: ${err.message}</div>`;
+  }
+}
+
+function closeCuratedModal() {
+  const modal = document.getElementById('modal-curated-list');
+  if (modal) modal.style.display = 'none';
+}
+
+async function removeCuratedFromModal(btn) {
+  const folder = btn.getAttribute('data-folder');
+  const filename = btn.getAttribute('data-filename');
+  const itemCard = btn.closest('.curated-item-card');
+
+  btn.textContent = '...';
+  try {
+    await uncurateSample(folder, filename);
+    curatedSet.delete(`${folder}/${filename}`);
+    updateCuratedBadge();
+    if (itemCard) itemCard.remove();
+    renderGallery(currentVisibleSamples);
+    showStatusMessage(`Removed ${filename} from Classified-masked/`);
+  } catch (err) {
+    showStatusMessage(`Failed to remove: ${err.message}`, 4000);
+    btn.textContent = 'Remove';
+  }
+}
+
 function renderGallery(samples) {
+  currentVisibleSamples = samples || [];
   const grid = document.getElementById('gallery-grid');
   grid.innerHTML = '';
 
@@ -233,12 +408,16 @@ function renderGallery(samples) {
     return;
   }
 
+  const folder = document.getElementById('folder-select').value;
   const isOtsuBottomActive = getParamEl('use_otsu_bottom') ? getParamEl('use_otsu_bottom').checked : true;
   const isSfcmActive = getParamEl('use_sfcm') ? getParamEl('use_sfcm').checked : false;
 
   samples.forEach(s => {
+    const key = `${folder}/${s.filename}`;
+    const isPicked = curatedSet.has(key);
+
     const card = document.createElement('div');
-    card.className = 'image-card';
+    card.className = `image-card ${isPicked ? 'card-curated' : ''}`;
 
     const topPathD = buildSvgPathD(s.top_vector);
     const botPathD = isOtsuBottomActive ? buildSvgPathD(s.bottom_vector) : '';
@@ -273,6 +452,7 @@ function renderGallery(samples) {
       <div class="card-header-bar">
         <span>${s.filename}</span>
         <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="btn-pick ${isPicked ? 'picked' : ''}" data-filename="${s.filename}" data-folder="${folder}" onclick="togglePickCard(this)">${isPicked ? '&#10003; Picked' : '+ Pick for U-Net'}</button>
           <button class="btn-refresh-single" data-filename="${s.filename}" data-filepath="${s.filepath || ''}" onclick="refreshSingleCard(this)">Refresh Image</button>
           <button class="btn-copy-config" data-filename="${s.filename}" data-filepath="${s.filepath || ''}" onclick="copyImageConfig(this)">Copy Config</button>
         </div>
@@ -517,6 +697,24 @@ async function init() {
     document.getElementById('btn-mode-json').addEventListener('click', () => switchPanel('json'));
     document.getElementById('btn-apply-json').addEventListener('click', applyJsonToUI);
 
+    const btnPickAll = document.getElementById('btn-pick-all');
+    if (btnPickAll) btnPickAll.addEventListener('click', pickAllVisibleCards);
+
+    const btnViewCurated = document.getElementById('btn-view-curated');
+    if (btnViewCurated) btnViewCurated.addEventListener('click', openCuratedModal);
+
+    const btnCloseModal = document.getElementById('btn-close-curated-modal');
+    if (btnCloseModal) btnCloseModal.addEventListener('click', closeCuratedModal);
+
+    const modalBackdrop = document.getElementById('modal-curated-list');
+    if (modalBackdrop) {
+      modalBackdrop.addEventListener('click', e => {
+        if (e.target === modalBackdrop) closeCuratedModal();
+      });
+    }
+
+    await refreshCuratedState();
+
     const targetFolder = currentData.folders[0] || '';
     if (targetFolder) {
       loadFolderParams(targetFolder);
@@ -528,3 +726,4 @@ async function init() {
 }
 
 window.addEventListener('DOMContentLoaded', init);
+

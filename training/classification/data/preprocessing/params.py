@@ -8,11 +8,14 @@ Supports compass_location selection ('auto', 'bottom_left', 'bottom_right').
 """
 
 import json
+import os
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+# Resolve project root (OCT-Analyser-Capstone)
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
 PARAMS_FILE = PROJECT_ROOT / "data" / "folder_params.json"
-SOURCE_DIR = Path('/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified')
+_LOCAL_FALLBACK = Path('/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified')
+SOURCE_DIR = Path(os.environ.get("SOURCE_DIR", str(_LOCAL_FALLBACK if _LOCAL_FALLBACK.exists() else PROJECT_ROOT / "data" / "Classified")))
 
 DEFAULT_PARAMS = {
     "top_noise_mult": 1.5,
@@ -53,14 +56,15 @@ def is_spectralis_folder(folder_name: str) -> bool:
     return any(k in s for k in ('chu', 'mh_', 'mh38', 'mh84', 'mh69', 'macular-hole'))
 
 
-def initialize_default_params_file() -> dict:
+def initialize_default_params_file(source_dir: Path = None) -> dict:
     """
     Scans dataset directory and populates folder_params.json with default entries
-    for all 20 subfolders. Adds compass_location='auto' if missing.
+    for all detected subfolders. Adds compass_location='auto' if missing.
     """
+    active_source = Path(source_dir or SOURCE_DIR)
     subfolders = []
-    if SOURCE_DIR.exists():
-        for p in SOURCE_DIR.rglob('*'):
+    if active_source.exists():
+        for p in active_source.rglob('*'):
             if p.is_dir() and any(f.suffix.lower() in {'.jpg', '.jpeg', '.png'} for f in p.glob('*')):
                 subfolders.append(p.name)
     subfolders = sorted(list(set(subfolders)))

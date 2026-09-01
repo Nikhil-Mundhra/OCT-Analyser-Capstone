@@ -29,6 +29,7 @@ training/**/venv/
 
 # Uploads & Ephemeral Storage
 runtime_uploads/
+scratch/
 
 # Databases
 *.db

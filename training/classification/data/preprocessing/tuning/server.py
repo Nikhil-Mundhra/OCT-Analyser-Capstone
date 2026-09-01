@@ -50,17 +50,23 @@ from data.preprocessing.tuning.boundaries import (
 # Re-export image & dataset processing logic and caches
 from data.preprocessing.tuning.processor import (
     FOLDER_SAMPLES_CACHE,
+    MASKED_DATASET_DIR,
     OUTPUT_DIR,
     SFCM_CACHE,
     SOURCE_DIR,
+    curate_folder_batch,
     find_folder_path,
     find_image_path,
     get_available_subfolders,
+    get_curated_manifest,
+    get_masked_dataset_dir,
     get_output_dir,
     get_source_dir,
     process_and_save_image,
+    remove_curated_mask_sample,
     reprocess_folder_sample,
     reprocess_single_image,
+    save_curated_mask_sample,
 )
 
 # Re-export diagnostics and health checks
@@ -183,6 +189,22 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json_response(res)
                 return
 
+            elif path == "/api/curated_manifest":
+                manifest = get_curated_manifest()
+                self._send_json_response(manifest)
+                return
+
+            elif path.startswith("/masked/"):
+                active_masked = get_masked_dataset_dir()
+                rel = path[len("/masked/"):].lstrip("/")
+                target_file = (active_masked / rel).resolve()
+                if str(target_file).startswith(str(active_masked.resolve())) and target_file.exists() and target_file.is_file():
+                    content_type = "image/png" if rel.lower().endswith(".png") else "image/jpeg"
+                    self._send_file_response(target_file, content_type)
+                else:
+                    self._send_json_response({"status": "error", "message": "Curated dataset file not found"}, status=404)
+                return
+
             elif path.startswith("/preprocessed/"):
                 active_output = get_output_dir()
                 rel = path[len("/preprocessed/"):].lstrip("/")
@@ -260,6 +282,47 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                     self._send_json_response({"status": "success", "sample": sample})
                 else:
                     self._send_json_response({"status": "error", "message": "Image not found"}, status=404)
+                return
+
+            elif self.path == "/api/curate_sample":
+                folder_name = data.get("folder")
+                filename = data.get("filename")
+                if not folder_name or not filename:
+                    self._send_json_response({"status": "error", "message": "Missing 'folder' or 'filename' field"}, status=400)
+                    return
+                params = data.get("params", DEFAULT_PARAMS)
+                try:
+                    res = save_curated_mask_sample(folder_name, filename, params)
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif self.path == "/api/uncurate_sample":
+                folder_name = data.get("folder")
+                filename = data.get("filename")
+                if not folder_name or not filename:
+                    self._send_json_response({"status": "error", "message": "Missing 'folder' or 'filename' field"}, status=400)
+                    return
+                try:
+                    res = remove_curated_mask_sample(folder_name, filename)
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif self.path == "/api/curate_batch":
+                folder_name = data.get("folder")
+                filenames = data.get("filenames", [])
+                if not folder_name or not filenames:
+                    self._send_json_response({"status": "error", "message": "Missing 'folder' or 'filenames' field"}, status=400)
+                    return
+                params = data.get("params", DEFAULT_PARAMS)
+                try:
+                    res = curate_folder_batch(folder_name, filenames, params)
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
                 return
 
             self._send_json_response({"status": "error", "message": f"Unknown API endpoint: {self.path}"}, status=404)
@@ -408,6 +471,7 @@ Examples:
     parser.add_argument("--no-auto-port", dest="no_auto_port", action="store_true", help="Disable automatic port bumping on conflict")
     parser.add_argument("--source-dir", type=str, default=None, help="Override path to Classified dataset")
     parser.add_argument("--output-dir", type=str, default=None, help="Override path to preprocessed output directory")
+    parser.add_argument("--masked-dir", type=str, default=None, help="Override path to curated Classified-masked output directory")
 
     # Direct Processing CLI options
     parser.add_argument("-i", "--image", type=str, default=None, help="Path to a single image file or filename to process directly")
@@ -427,6 +491,8 @@ Examples:
         proc.SOURCE_DIR = Path(args.source_dir)
     if args.output_dir:
         proc.OUTPUT_DIR = Path(args.output_dir)
+    if args.masked_dir:
+        proc.MASKED_DATASET_DIR = Path(args.masked_dir)
 
     if args.self_test:
         sys.exit(run_standalone_self_tests(port=args.port))

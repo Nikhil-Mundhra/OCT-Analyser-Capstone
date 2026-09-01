@@ -14,9 +14,12 @@
     <div class="header-title">
       <h1>OCT Preprocessing Tuning Dashboard</h1>
       <span class="badge">Adaptive Segmentation</span>
+      <span id="curated-badge" class="badge badge-curated">0 Curated for U-Net</span>
     </div>
     <div class="header-actions">
       <span id="status-msg" class="status-badge">Live Parameters Updated</span>
+      <button id="btn-pick-all" class="btn-primary" style="background: #10b981; border-color: #10b981; color: #fff;" title="Save all visible slices and tuned masks to Classified-masked/">+ Pick All Visible</button>
+      <button id="btn-view-curated" class="btn-secondary" title="View all picked segmentation examples">View Curated (<span id="curated-count-num">0</span>)</button>
       <button id="btn-toggle-vectors">Hide Boundary Lines</button>
       <button id="btn-refresh-samples" class="btn-secondary">Refresh Random Images</button>
       <button id="btn-reset" class="btn-secondary">Reset to Defaults</button>
@@ -561,10 +564,30 @@
     <div class="main-view">
       <div class="gallery-toolbar">
         <span class="section-title">Sample Slice Previews (Click & Drag Vector Handles to Adjust Bounds)</span>
+        <span style="font-size: 0.78rem; color: #94a3b8;">U-Net Training Target: <code style="color: #10b981; font-weight: 600;">Classified-masked/</code></span>
       </div>
       <div id="gallery-grid" class="gallery-grid"></div>
     </div>
 
+  </div>
+
+  <!-- Curated Samples Modal Dialog -->
+  <div id="modal-curated-list" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h2>Curated Samples for U-Net Training</h2>
+          <span id="modal-curated-count-badge" class="badge badge-curated">0 Total</span>
+        </div>
+        <button id="btn-close-curated-modal" class="modal-close-btn" title="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 14px; font-size: 0.82rem; color: #94a3b8; line-height: 1.4;">
+          These verified scans and lossless masks are saved directly in <code style="color: #10b981;">Classified-masked/</code> and are immediately consumable by the <code style="color: #00e5ff;">ClassifiedMaskedDataset</code> U-Net loader.
+        </div>
+        <div id="curated-list-container" class="curated-list-grid"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->

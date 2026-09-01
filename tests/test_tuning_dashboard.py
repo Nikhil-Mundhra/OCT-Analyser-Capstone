@@ -4,7 +4,14 @@ import re
 from pathlib import Path
 from html.parser import HTMLParser
 import numpy as np
-import pytest
+
+try:
+    import pytest
+    fixture_decorator = pytest.fixture
+except ImportError:
+    pytest = None
+    def fixture_decorator(f):
+        return f
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -40,7 +47,7 @@ class ElementIdExtractor(HTMLParser):
         if self.in_title:
             self.title += data
 
-@pytest.fixture
+@fixture_decorator
 def dashboard_parser():
     html_path = PROJECT_ROOT / 'training' / 'classification' / 'data' / 'preprocessing' / 'tuning' / 'dashboard' / 'index.html'
     if not html_path.exists():
@@ -73,7 +80,13 @@ def test_sidebar_parameter_controls_exist(dashboard_parser):
         'gallery-grid',
         'btn-toggle-vectors',
         'btn-refresh-samples',
-        'status-msg'
+        'status-msg',
+        'curated-badge',
+        'btn-pick-all',
+        'btn-view-curated',
+        'modal-curated-list',
+        'btn-close-curated-modal',
+        'curated-list-container'
     ]
     for element_id in expected_ids:
         assert element_id in parser.ids, f"Required UI element #{element_id} missing in tuning_dashboard.html"
@@ -132,7 +145,16 @@ def test_js_script_methods_present():
         'buildSvgHandlesHtml',
         'showStatusMessage',
         'renderGallery',
-        'initParamGroups'
+        'initParamGroups',
+        'fetchCuratedManifest',
+        'curateSample',
+        'uncurateSample',
+        'curateBatch',
+        'togglePickCard',
+        'pickAllVisibleCards',
+        'openCuratedModal',
+        'closeCuratedModal',
+        'updateCuratedBadge'
     ]
     for symbol in required_js_symbols:
         assert symbol in all_js_content, f"JavaScript symbol {symbol} missing in modular JS scripts"
@@ -147,7 +169,7 @@ def test_boundary_spike_suppression():
     
     y_fixed = suppress_boundary_spikes(y, spike_px=10.0, window=20, direction='up')
     assert y_fixed[50] > 10.0
-    assert pytest.approx(y_fixed[50], abs=2.0) == 50.0
+    assert abs(y_fixed[50] - 50.0) <= 2.0
 
 def test_tissue_mask_custom_generation():
     from tuning_server import generate_tissue_mask_custom, DEFAULT_PARAMS
@@ -691,3 +713,177 @@ def test_cli_single_image_and_folder_processing(tmp_path, monkeypatch):
     overlay = render_boundary_overlay(img, y_top, y_rpe, y_sfcm)
     assert overlay.shape == img.shape
     assert not np.array_equal(overlay, img)
+
+
+def test_curation_save_remove_and_manifest(tmp_path, monkeypatch):
+    import cv2
+    import numpy as np
+    import tuning_server
+    from data.preprocessing.tuning.processor import (
+        save_curated_mask_sample,
+        remove_curated_mask_sample,
+        get_curated_manifest,
+        curate_folder_batch,
+    )
+
+    src_dir = tmp_path / "Classified"
+    folder = src_dir / "Chiu_DME"
+    folder.mkdir(parents=True)
+
+    img = np.full((100, 120, 3), 50, dtype=np.uint8)
+    img[25:75, :, :] = 180
+    img_path = folder / "Subject_01_slice_030.png"
+    cv2.imwrite(str(img_path), img)
+
+    masked_dir = tmp_path / "Classified-masked"
+    monkeypatch.setattr(tuning_server, "SOURCE_DIR", src_dir)
+    monkeypatch.setattr(tuning_server, "MASKED_DATASET_DIR", masked_dir)
+
+    # 1. Save curated mask sample
+    res = save_curated_mask_sample("Chiu_DME", "Subject_01_slice_030.png", tuning_server.DEFAULT_PARAMS, masked_dir=masked_dir)
+    assert res["status"] == "success"
+    assert res["total_count"] == 1
+    assert (masked_dir / "Images" / "Chiu_DME" / "Subject_01_slice_030.png").exists()
+    assert (masked_dir / "Masks" / "Chiu_DME" / "Subject_01_slice_030.png").exists()
+    assert (masked_dir / "Visualizations" / "Chiu_DME" / "Subject_01_slice_030_overlay.png").exists()
+    assert (masked_dir / "curated_manifest.json").exists()
+    assert (masked_dir / "manifest.csv").exists()
+
+    # 2. Get curated manifest
+    manifest = get_curated_manifest(masked_dir=masked_dir)
+    assert manifest["status"] == "success"
+    assert manifest["total_count"] == 1
+    assert "Chiu_DME/Subject_01_slice_030.png" in manifest["picked_keys"]
+
+    # 3. Batch curation
+    batch_res = curate_folder_batch("Chiu_DME", ["Subject_01_slice_030.png"], tuning_server.DEFAULT_PARAMS, masked_dir=masked_dir)
+    assert batch_res["status"] == "success"
+    assert batch_res["curated_count"] == 1
+
+    # 4. Remove curated sample
+    rem_res = remove_curated_mask_sample("Chiu_DME", "Subject_01_slice_030.png", masked_dir=masked_dir)
+    assert rem_res["status"] == "success"
+    assert rem_res["removed"] is True
+    assert rem_res["total_count"] == 0
+    assert not (masked_dir / "Images" / "Chiu_DME" / "Subject_01_slice_030.png").exists()
+    assert not (masked_dir / "Masks" / "Chiu_DME" / "Subject_01_slice_030.png").exists()
+
+
+def test_curation_http_endpoints(tmp_path, monkeypatch):
+    import io
+    import json
+    import cv2
+    import numpy as np
+    import tuning_server
+
+    src_dir = tmp_path / "Classified"
+    folder = src_dir / "Folder1"
+    folder.mkdir(parents=True)
+    img = np.full((100, 100, 3), 60, dtype=np.uint8)
+    cv2.imwrite(str(folder / "scan1.png"), img)
+
+    out_dir = tmp_path / "Output"
+    masked_dir = tmp_path / "Classified-masked"
+    monkeypatch.setattr(tuning_server, "SOURCE_DIR", src_dir)
+    monkeypatch.setattr(tuning_server, "OUTPUT_DIR", out_dir)
+    monkeypatch.setattr(tuning_server, "MASKED_DATASET_DIR", masked_dir)
+
+    class MockSocket:
+        def __init__(self, request_bytes):
+            self.rfile = io.BytesIO(request_bytes)
+            self.wfile = io.BytesIO()
+
+        def makefile(self, mode, *args, **kwargs):
+            if "r" in mode:
+                return self.rfile
+            return self.wfile
+
+        def sendall(self, data):
+            self.wfile.write(data)
+
+    # 1. POST /api/curate_sample
+    req_body = json.dumps({"folder": "Folder1", "filename": "scan1.png", "params": tuning_server.DEFAULT_PARAMS}).encode("utf-8")
+    req = f"POST /api/curate_sample HTTP/1.1\r\nHost: localhost\r\nContent-Length: {len(req_body)}\r\n\r\n".encode("utf-8") + req_body
+    mock_sock = MockSocket(req)
+    handler = tuning_server.FineTuningRequestHandler(mock_sock, ("127.0.0.1", 8000), None)
+    response = mock_sock.wfile.getvalue().decode("utf-8")
+    assert "200 OK" in response
+    assert '"status": "success"' in response
+
+    # 2. GET /api/curated_manifest
+    mock_sock = MockSocket(b"GET /api/curated_manifest HTTP/1.1\r\nHost: localhost\r\n\r\n")
+    handler = tuning_server.FineTuningRequestHandler(mock_sock, ("127.0.0.1", 8000), None)
+    response = mock_sock.wfile.getvalue().decode("utf-8")
+    assert "200 OK" in response
+    assert '"total_count": 1' in response
+
+    # 3. GET /masked/Images/Folder1/scan1.png
+    mock_sock = MockSocket(b"GET /masked/Images/Folder1/scan1.png HTTP/1.1\r\nHost: localhost\r\n\r\n")
+    handler = tuning_server.FineTuningRequestHandler(mock_sock, ("127.0.0.1", 8000), None)
+    response = mock_sock.wfile.getvalue().decode("utf-8", errors="ignore")
+    assert "200 OK" in response
+    assert "image/png" in response
+
+    # 4. POST /api/curate_batch
+    req_body = json.dumps({"folder": "Folder1", "filenames": ["scan1.png"], "params": tuning_server.DEFAULT_PARAMS}).encode("utf-8")
+    req = f"POST /api/curate_batch HTTP/1.1\r\nHost: localhost\r\nContent-Length: {len(req_body)}\r\n\r\n".encode("utf-8") + req_body
+    mock_sock = MockSocket(req)
+    handler = tuning_server.FineTuningRequestHandler(mock_sock, ("127.0.0.1", 8000), None)
+    response = mock_sock.wfile.getvalue().decode("utf-8")
+    assert "200 OK" in response
+
+    # 5. POST /api/uncurate_sample
+    req_body = json.dumps({"folder": "Folder1", "filename": "scan1.png"}).encode("utf-8")
+    req = f"POST /api/uncurate_sample HTTP/1.1\r\nHost: localhost\r\nContent-Length: {len(req_body)}\r\n\r\n".encode("utf-8") + req_body
+    mock_sock = MockSocket(req)
+    handler = tuning_server.FineTuningRequestHandler(mock_sock, ("127.0.0.1", 8000), None)
+    response = mock_sock.wfile.getvalue().decode("utf-8")
+    assert "200 OK" in response
+    assert '"total_count": 0' in response
+
+    # 6. POST /api/curate_sample missing fields
+    req_body = json.dumps({"folder": "Folder1"}).encode("utf-8")
+    req = f"POST /api/curate_sample HTTP/1.1\r\nHost: localhost\r\nContent-Length: {len(req_body)}\r\n\r\n".encode("utf-8") + req_body
+    mock_sock = MockSocket(req)
+    handler = tuning_server.FineTuningRequestHandler(mock_sock, ("127.0.0.1", 8000), None)
+    response = mock_sock.wfile.getvalue().decode("utf-8")
+    assert "400" in response
+
+
+def test_classified_masked_dataset_loader(tmp_path):
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent
+    seg_dir = root / "training" / "segmentation"
+    if str(seg_dir) not in sys.path:
+        sys.path.insert(0, str(seg_dir))
+
+    import cv2
+    import numpy as np
+    import torch
+    from dataset_classified_masked import ClassifiedMaskedDataset
+
+    masked_root = tmp_path / "Classified-masked"
+    images_dir = masked_root / "Images" / "ClassA"
+    masks_dir = masked_root / "Masks" / "ClassA"
+    images_dir.mkdir(parents=True)
+    masks_dir.mkdir(parents=True)
+
+    dummy_img = np.full((120, 160), 100, dtype=np.uint8)
+    dummy_mask = np.zeros((120, 160), dtype=np.uint8)
+    dummy_mask[30:80, 20:140] = 255
+
+    cv2.imwrite(str(images_dir / "scan01.png"), dummy_img)
+    cv2.imwrite(str(masks_dir / "scan01.png"), dummy_mask)
+
+    dataset = ClassifiedMaskedDataset(root_dir=masked_root, target_size=(512, 512))
+    assert len(dataset) == 1
+
+    img_tensor, mask_tensor = dataset[0]
+    assert isinstance(img_tensor, torch.Tensor)
+    assert isinstance(mask_tensor, torch.Tensor)
+    assert img_tensor.shape == (1, 512, 512)
+    assert mask_tensor.shape == (512, 512)
+    assert mask_tensor.max().item() == 1
+    assert mask_tensor.min().item() == 0
+

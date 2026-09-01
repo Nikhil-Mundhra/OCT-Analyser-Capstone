@@ -39,14 +39,9 @@ def process_image(
         if params is None:
             params = get_folder_params(folder_name)
 
-        margin_top = params.get("margin_top", params.get("margin", 15))
         margin_bottom = params.get("margin_bottom", params.get("margin", 15))
         compass_enabled = params.get("compass_ui_enabled", None)
         compass_location = params.get("compass_location", "auto")
-        top_mult = params.get("top_noise_mult", 1.5)
-        bot_mult = params.get("bot_noise_mult", 3.0)
-        sb_pct = params.get("shadow_bridge_pct", 20)
-        gaussian_sigma = params.get("gaussian_sigma", 15)
 
         img = cv2.imread(src_path, cv2.IMREAD_UNCHANGED)
         if img is None:
@@ -80,15 +75,10 @@ def process_image(
         gray_u8 = np.clip(gray * (255.0 if gray.max() <= 1.0 else 1.0), 0, 255).astype(np.uint8) if gray.dtype != np.uint8 else gray
         mask = generate_tissue_mask(
             gray_u8,
-            margin_top=margin_top,
-            margin_bottom=margin_bottom,
             clear_corners=clear_corners,
             compass_bbox=compass_bbox,
-            top_noise_mult=top_mult,
-            bot_noise_mult=bot_mult,
-            shadow_bridge_pct=sb_pct,
-            gaussian_sigma=gaussian_sigma,
-            **params
+            params=params,
+            src_path=src_path
         )
 
         # 3. Handle RGB Overlay Mode vs Production Masking
