@@ -11,6 +11,7 @@ Calibrates:
 """
 
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 import sys
 import json
 import logging
@@ -241,29 +242,81 @@ def run_calibration(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Calibrate Triage Thresholds on Validation Data")
-    parser.add_argument("--output", type=str, default="calibration_config.json", help="Output JSON path")
+    parser.add_argument("--eval-cache", type=str, default="checkpoints/classification/multi_head/WeightedRandomSampler/v1/eval_cache.pth", help="Path to eval_cache.pth")
+    parser.add_argument("--output", type=str, default="web-app/backend/core_ml/classification/weights/calibration_config.json", help="Output JSON path")
     parser.add_argument("--sensitivity", type=float, default=0.98, help="Target Abnormal Sensitivity")
     parser.add_argument("--specificity", type=float, default=0.95, help="Target Normal Specificity")
     args = parser.parse_args()
     
-    # Smoke test calibration routine with representative validation arrays
-    np.random.seed(42)
-    n_val = 500
-    dummy_h1_labels = np.random.choice([0, 1], size=n_val, p=[0.4, 0.6])
-    dummy_h1_logits = np.where(dummy_h1_labels == 1, np.random.normal(2.0, 1.0, n_val), np.random.normal(-2.0, 1.0, n_val))
-    
-    dummy_h2_labels = np.where(dummy_h1_labels == 1, np.random.randint(0, 12, size=n_val), -1)
-    dummy_h2_logits = np.random.normal(0.0, 1.0, size=(n_val, 12))
-    for i in range(n_val):
-        if dummy_h2_labels[i] >= 0:
-            dummy_h2_logits[i, dummy_h2_labels[i]] += 3.5
+    eval_cache_path = Path(args.eval_cache)
+    if eval_cache_path.exists():
+        logger.info(f"Loading real validation data from {eval_cache_path}...")
+        data = torch.load(eval_cache_path, map_location="cpu", weights_only=False)
+        
+        h1_probs = np.array(data["h1_probs_arr"]).flatten()
+        h1_targets = np.array(data["h1_targets"]).flatten()
+        h1_logits = np.log(np.clip(h1_probs, 1e-7, 1.0 - 1e-7) / np.clip(1.0 - h1_probs, 1e-7, 1.0 - 1e-7))
+        
+        h2_probs = np.array(data["all_h2_probs"])
+        h2_targets = np.array(data["all_h2_targets"])
+        h2_logits = np.log(np.clip(h2_probs, 1e-7, 1.0))
+        
+        logger.info(f"Loaded {len(h1_targets)} H1 validation samples and {len(h2_targets)} H2 abnormal validation samples.")
+        
+        # Build aligned array for H2 validation
+        h2_labels_full = np.full_like(h1_targets, -1, dtype=int)
+        h2_logits_full = np.zeros((len(h1_targets), h2_probs.shape[1]), dtype=float)
+        
+        abnormal_idx = np.where(h1_targets == 1)[0]
+        if len(abnormal_idx) == len(h2_targets):
+            h2_labels_full[abnormal_idx] = h2_targets
+            h2_logits_full[abnormal_idx] = h2_logits
+        else:
+            h2_labels_full = h2_targets
+            h2_logits_full = h2_logits
+            h1_targets = np.ones(len(h2_targets))
+            h1_logits = np.full(len(h2_targets), 3.0)
             
-    run_calibration(
-        h1_logits=dummy_h1_logits,
-        h1_labels=dummy_h1_labels,
-        h2_logits=dummy_h2_logits,
-        h2_labels=dummy_h2_labels,
-        output_config_path=args.output,
-        target_sensitivity=args.sensitivity,
-        target_specificity=args.specificity
-    )
+        config = run_calibration(
+            h1_logits=h1_logits,
+            h1_labels=h1_targets,
+            h2_logits=h2_logits_full,
+            h2_labels=h2_labels_full,
+            output_config_path=args.output,
+            target_sensitivity=args.sensitivity,
+            target_specificity=args.specificity
+        )
+        
+        # Also copy to checkpoint dir and hf_space
+        for alt_path in [
+            "checkpoints/classification/multi_head/WeightedRandomSampler/v1/calibration_config.json",
+            "hf_space/weights/calibration_config.json",
+            "web-app/backend/core_ml/classification/weights/multi_head_mps/calibration_config.json"
+        ]:
+            try:
+                config.save(alt_path)
+                logger.info(f"Mirrored calibration config to {alt_path}")
+            except Exception as e:
+                logger.warning(f"Could not mirror to {alt_path}: {e}")
+    else:
+        logger.warning(f"eval_cache.pth not found at {eval_cache_path}. Running synthetic fallback...")
+        np.random.seed(42)
+        n_val = 500
+        dummy_h1_labels = np.random.choice([0, 1], size=n_val, p=[0.4, 0.6])
+        dummy_h1_logits = np.where(dummy_h1_labels == 1, np.random.normal(2.0, 1.0, n_val), np.random.normal(-2.0, 1.0, n_val))
+        
+        dummy_h2_labels = np.where(dummy_h1_labels == 1, np.random.randint(0, 12, size=n_val), -1)
+        dummy_h2_logits = np.random.normal(0.0, 1.0, size=(n_val, 12))
+        for i in range(n_val):
+            if dummy_h2_labels[i] >= 0:
+                dummy_h2_logits[i, dummy_h2_labels[i]] += 3.5
+                
+        run_calibration(
+            h1_logits=dummy_h1_logits,
+            h1_labels=dummy_h1_labels,
+            h2_logits=dummy_h2_logits,
+            h2_labels=dummy_h2_labels,
+            output_config_path=args.output,
+            target_sensitivity=args.sensitivity,
+            target_specificity=args.specificity
+        )

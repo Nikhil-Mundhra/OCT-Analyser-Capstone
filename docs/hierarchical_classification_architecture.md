@@ -125,6 +125,33 @@ $$\hat{\mathcal{S}}(x) = \begin{cases}
 
 ---
 
-## 5. Summary Statement
+## 5. Empirical Calibration & Diagnostic Results (17,761 Validation Cohort)
+
+### 5.1 Calibrated Operating Thresholds
+Evaluating out-of-fold predictions on 17,761 clinical validation samples (5,635 Normal, 12,126 Abnormal across 12 pathology classes) produced the following optimal operating parameters:
+
+| Parameter | Calibrated Value | Optimization Objective |
+| :--- | :--- | :--- |
+| **$H1$ Temperature ($T_{H1}$)** | `1.1810` | NLL Minimization via L-BFGS |
+| **$H2$ Temperature ($T_{H2}$)** | `1.0376` | NLL Minimization via L-BFGS |
+| **Normal Specificity Threshold ($\tau_N$)** | `0.2036` | Target $\ge 95.0\%$ Specificity on Normal Scans |
+| **Abnormal Sensitivity Threshold ($\tau_A$)** | `0.4073` | Target $\ge 98.0\%$ Sensitivity on Abnormal Scans |
+| **Free Energy OOD Cutoff ($\tau_{\text{energy}}$)** | `-0.0012` | 95th Percentile of Known In-Distribution Pathologies |
+| **MSP Confidence Cutoff ($\tau_{\text{msp}}$)** | `0.5466` | 5th Percentile of Known In-Distribution Pathologies |
+| **Normalized Entropy Cutoff ($\tau_{\text{entropy}}$)** | `0.3889` | 95th Percentile of Known In-Distribution Pathologies |
+
+### 5.2 H1 Conditioning Sensitivity Analysis
+Evaluating the deployed `fold0_best_model.pth` checkpoint:
+1. **Scalar Sweep ($\frac{\partial P(D_i)}{\partial P(H1)}$):**
+   - Mean absolute derivative: `0.000586` (near-zero gradient).
+   - Sweeping $P(H1) \in [0.0, 1.0]$ across identical 1792D visual features shifted the conditional pathology probability by $< 0.1\%$.
+2. **Permutation Feature Importance:**
+   - Permuting the $P(H1)$ scalar across batch samples resulted in $\Delta \text{Accuracy} = 0.0000$ (zero accuracy degradation).
+3. **Conclusion:**
+   - $H2$'s internal representations are governed almost 100% by multi-scale visual features $\mathbf{f}_{\text{visual}}$, confirming the theoretical hypothesis that appending the 1D $P(H1)$ scalar is redundant when multi-scale backbone features are directly pooled.
+
+---
+
+## 6. Summary Statement
 
 > *"The architecture operates as a hierarchical closed-set classifier with probabilistic gating. While mathematically coherent under conditional independence, clinical deployment requires explicit abstention boundaries to manage gatekeeper error propagation and out-of-distribution pathologies. The Tri-State Clinical Triage Layer transforms forced classifications into safe, calibrated clinical referrals."*

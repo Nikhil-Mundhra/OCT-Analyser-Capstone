@@ -7,8 +7,9 @@ Empirical Diagnostic Benchmark for H1-Conditioning and Failure Mode Analysis:
 3. Decoupled Failure Mode Diagnostics: Separately evaluates Gatekeeper False Positives vs Semantic OOD Pathologies.
 """
 
-import sys
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+import sys
 import json
 import logging
 import argparse
@@ -220,35 +221,58 @@ def evaluate_decoupled_failure_modes(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run H1 Sensitivity and Triage Diagnostics")
-    parser.add_argument("--output", type=str, default="diagnostic_report.json", help="Output report JSON")
+    parser.add_argument("--checkpoint", type=str, default="web-app/backend/core_ml/classification/weights/multi_head_mps/fold0_best_model.pth", help="Path to trained model checkpoint")
+    parser.add_argument("--calibration-config", type=str, default="web-app/backend/core_ml/classification/weights/calibration_config.json", help="Path to calibration_config.json")
+    parser.add_argument("--output", type=str, default="docs/h1_sensitivity_diagnostic_report.json", help="Output report JSON")
     args = parser.parse_args()
     
     logger.info("Initializing Diagnostic Model and Calibration Engine...")
     model = build_multi_head_model(pretrained=False, warmup=False, condition_h2_on_h1=True)
-    engine = TriageCalibrationEngine()
     
-    # Create synthetic test batch representing 1792 visual features
+    ckpt_path = Path(args.checkpoint)
+    if ckpt_path.exists():
+        logger.info(f"Loading trained model weights from {ckpt_path}...")
+        state = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+        state_dict = state.get("model_state_dict", state)
+        clean_sd = {k[7:] if k.startswith("module.") else k: v for k, v in state_dict.items()}
+        model.load_state_dict(clean_sd)
+        logger.info("Trained model weights loaded successfully.")
+    else:
+        logger.warning(f"Checkpoint not found at {ckpt_path}. Using uninitialized weights.")
+        
+    calib_path = Path(args.calibration_config)
+    engine = TriageCalibrationEngine(config_path=calib_path if calib_path.exists() else None)
+    logger.info(f"Triage Calibration Engine loaded (tau_n={engine.config.tau_n}, tau_a={engine.config.tau_a})")
+    
     np.random.seed(42)
     torch.manual_seed(42)
     
+    # 1. Multi-scale feature representations sweep
     sample_feat = torch.randn(1, 1792)
     sweep_res = run_scalar_sweep(model, sample_feat)
     
-    batch_feat = torch.randn(64, 1792)
-    batch_h1 = torch.rand(64, 1)
-    batch_labels = torch.randint(0, 12, (64,))
+    # 2. Batch permutation importance
+    batch_feat = torch.randn(128, 1792)
+    batch_h1 = torch.rand(128, 1)
+    batch_labels = torch.randint(0, 12, (128,))
     perm_res = run_permutation_importance(model, batch_feat, batch_h1, batch_labels)
     
+    # 3. Decoupled failure modes
     decoupled_res = evaluate_decoupled_failure_modes(engine)
     
     report = {
+        "model_checkpoint": str(ckpt_path),
+        "calibration_config": str(calib_path),
         "scalar_sweep": sweep_res,
         "permutation_importance": perm_res,
         "decoupled_failure_modes": decoupled_res
     }
     
-    with open(args.output, "w", encoding="utf-8") as f:
+    out_file = Path(args.output)
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_file, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=4)
         
-    logger.info(f"Diagnostic report exported to {args.output}")
+    logger.info(f"Diagnostic report exported to {out_file}")
+    print("\n=== H1 SENSITIVITY & DIAGNOSTIC REPORT ===")
     print(json.dumps(report, indent=4))

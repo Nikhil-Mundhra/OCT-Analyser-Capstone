@@ -1,0 +1,21 @@
+{
+    "tau_n": 0.2036,
+    "tau_a": 0.4073,
+    "temperature_h1": 1.181,
+    "temperature_h2": 1.0376,
+    "tau_energy": -0.0012,
+    "tau_msp": 0.5466,
+    "tau_entropy": 0.3889,
+    "energy_rule": "greater_than_is_ood",
+    "metadata": {
+        "calibrated": true,
+        "target_sensitivity": 0.98,
+        "target_specificity": 0.95,
+        "ece_before": 0.0635,
+        "ece_after": 0.0705,
+        "brier_before": 0.108,
+        "brier_after": 0.1099,
+        "num_samples_h1": 17761,
+        "num_samples_h2": 12126
+    }
+}
