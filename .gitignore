@@ -30,6 +30,7 @@ training/**/venv/
 # Uploads & Ephemeral Storage
 runtime_uploads/
 scratch/
+data/Classified-masked/
 
 # Databases
 *.db
