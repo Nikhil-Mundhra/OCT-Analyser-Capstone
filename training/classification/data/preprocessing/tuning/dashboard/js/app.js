@@ -31,11 +31,25 @@ function updateOtsuSfcmVisibility() {
 }
 
 function updateAutoModeVisibility() {
+  const isUnetOn = getParamEl('unet_mode') ? getParamEl('unet_mode').checked : false;
   const isAutoOn = getParamEl('auto_mode') ? getParamEl('auto_mode').checked : false;
   const manualContainer = document.getElementById('manual-controls-container');
   const autoStatusCard = document.getElementById('auto-mode-status-card');
-  if (manualContainer) manualContainer.style.display = isAutoOn ? 'none' : 'flex';
-  if (autoStatusCard) autoStatusCard.style.display = isAutoOn ? 'flex' : 'none';
+  const unetStatusCard = document.getElementById('unet-mode-status-card');
+
+  if (isUnetOn) {
+    if (unetStatusCard) unetStatusCard.style.display = 'flex';
+    if (autoStatusCard) autoStatusCard.style.display = 'none';
+    if (manualContainer) manualContainer.style.display = 'none';
+  } else if (isAutoOn) {
+    if (unetStatusCard) unetStatusCard.style.display = 'none';
+    if (autoStatusCard) autoStatusCard.style.display = 'flex';
+    if (manualContainer) manualContainer.style.display = 'none';
+  } else {
+    if (unetStatusCard) unetStatusCard.style.display = 'none';
+    if (autoStatusCard) autoStatusCard.style.display = 'none';
+    if (manualContainer) manualContainer.style.display = 'flex';
+  }
 }
 
 function updateHolesVisibility() {
@@ -75,6 +89,12 @@ function loadFolderParams(folder) {
       updateSliderLabel(field.key, val + unit);
     }
   });
+
+  const autoEl = getParamEl('auto_mode');
+  const unetEl = getParamEl('unet_mode');
+  if (autoEl && autoEl.checked && unetEl) {
+    unetEl.checked = false;
+  }
 
   updateAutoModeVisibility();
   updateOtsuSfcmVisibility();
@@ -183,8 +203,20 @@ function showStatusMessage(text, durationMs = 2500) {
 }
 
 async function triggerReprocess(isSaveNotification = false, isRandomRefresh = false) {
-  const folder = document.getElementById('folder-select').value;
+  const folderEl = document.getElementById('folder-select');
+  const folder = folderEl ? folderEl.value : currentFolder;
+  if (!folder) return;
   const params = getParamsFromUI();
+
+  const grid = document.getElementById('gallery-grid');
+  if (grid && (!currentVisibleSamples || currentVisibleSamples.length === 0 || isRandomRefresh)) {
+    grid.innerHTML = `
+      <div style="color: var(--text-muted); grid-column: 1/-1; padding: 60px 20px; text-align: center; font-size: 14px;">
+        <div style="margin: 0 auto 12px auto; width: 32px; height: 32px; border: 3px solid rgba(0,242,254,0.2); border-top-color: #00f2fe; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+        Processing sample scans for <strong>${folder}</strong>...
+      </div>
+    `;
+  }
 
   try {
     const data = await reprocessFolder(folder, params, isRandomRefresh);
@@ -198,6 +230,9 @@ async function triggerReprocess(isSaveNotification = false, isRandomRefresh = fa
       showStatusMessage('Live Parameters Updated');
     }
   } catch (err) {
+    if (grid) {
+      grid.innerHTML = `<div style="color: #f87171; grid-column: 1/-1; padding: 40px; text-align: center;">Failed to load sample scans: ${err.message}</div>`;
+    }
     showStatusMessage('Error: ' + err.message, 4000);
   }
 }
@@ -409,8 +444,10 @@ function renderGallery(samples) {
   }
 
   const folder = document.getElementById('folder-select').value;
-  const isOtsuBottomActive = getParamEl('use_otsu_bottom') ? getParamEl('use_otsu_bottom').checked : true;
-  const isSfcmActive = getParamEl('use_sfcm') ? getParamEl('use_sfcm').checked : false;
+  const isUnetActive = getParamEl('unet_mode') ? getParamEl('unet_mode').checked : false;
+  const isAutoActive = isUnetActive ? false : (getParamEl('auto_mode') ? getParamEl('auto_mode').checked : false);
+  const isOtsuBottomActive = isUnetActive ? true : (isAutoActive ? false : (getParamEl('use_otsu_bottom') ? getParamEl('use_otsu_bottom').checked : true));
+  const isSfcmActive = isUnetActive ? false : (isAutoActive ? true : (getParamEl('use_sfcm') ? getParamEl('use_sfcm').checked : false));
 
   samples.forEach(s => {
     const key = `${folder}/${s.filename}`;
@@ -422,9 +459,12 @@ function renderGallery(samples) {
     const topPathD = buildSvgPathD(s.top_vector);
     const botPathD = isOtsuBottomActive ? buildSvgPathD(s.bottom_vector) : '';
 
-    const hasSfcm = isSfcmActive && s.sfcm_vector && s.sfcm_vector.length > 0;
+    const hasRpe = !isUnetActive && (isAutoActive || isSfcmActive) && s.rpe_vector && s.rpe_vector.length > 0;
+    const rpePathD = hasRpe ? buildSvgPathD(s.rpe_vector) : '';
+
+    const hasSfcm = !isUnetActive && isSfcmActive && s.sfcm_vector && s.sfcm_vector.length > 0;
     const sfcmPathD = hasSfcm ? buildSvgPathD(s.sfcm_vector) : '';
-    const sfcmStartVec = (hasSfcm && s.rpe_vector && s.rpe_vector.length > 0) ? s.rpe_vector : s.top_vector;
+    const sfcmStartVec = (hasSfcm && hasRpe) ? s.rpe_vector : s.top_vector;
     const sfcmMaskD = hasSfcm ? buildSfcmMaskPolygonD(sfcmStartVec, s.sfcm_vector) : '';
 
     const topHandlesHtml = buildSvgHandlesHtml(s.top_vector, 'top');
@@ -434,11 +474,20 @@ function renderGallery(samples) {
     const imgScale = s.scale || 0.437;
     const padT = s.pad_t || 0;
 
+    const holeCount = (s.holes || []).length;
     let tagText = 'Otsu (Top Only)';
-    if (isOtsuBottomActive && hasSfcm && (s.holes && s.holes.length > 0)) {
-      tagText = `Otsu + SFCM Choroid + ${s.holes.length} Holes (Pink)`;
-    } else if (hasSfcm && (s.holes && s.holes.length > 0)) {
-      tagText = `SFCM Choroid + ${s.holes.length} Holes (Pink)`;
+    if (isUnetActive) {
+      tagText = 'Attention U-Net (Deep Learning)';
+    } else if (isAutoActive) {
+      if (holeCount > 0) {
+        tagText = `Dynamic Multi-Surface + ${holeCount} Holes`;
+      } else {
+        tagText = 'Dynamic Clustering (ILM + RPE + SFCM)';
+      }
+    } else if (isOtsuBottomActive && hasSfcm && holeCount > 0) {
+      tagText = `Otsu + SFCM Choroid + ${holeCount} Holes (Pink)`;
+    } else if (hasSfcm && holeCount > 0) {
+      tagText = `SFCM Choroid + ${holeCount} Holes (Pink)`;
     } else if (isOtsuBottomActive && hasSfcm) {
       tagText = 'Otsu + SFCM Choroid (Orange)';
     } else if (hasSfcm) {
@@ -469,6 +518,7 @@ function renderGallery(samples) {
                style="display: ${drawVectorsEnabled ? 'block' : 'none'}; user-select:none;">
             ${hasSfcm ? `<path d="${sfcmMaskD}" fill="rgba(255, 145, 0, 0.22)" stroke="none" style="pointer-events:none;"/>` : ''}
             <path d="${topPathD}" stroke="#00f2fe" stroke-width="2" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 3px #00f2fe)" style="pointer-events:none;"/>
+            ${hasRpe ? `<path d="${rpePathD}" stroke="#ffd700" stroke-width="1.8" stroke-dasharray="4,2" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 3px #ffd700)" style="pointer-events:none;"/>` : ''}
             ${isOtsuBottomActive ? `<path d="${botPathD}" stroke="#ff007f" stroke-width="2" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 3px #ff007f)" style="pointer-events:none;"/>` : ''}
             ${hasSfcm ? `<path d="${sfcmPathD}" stroke="#ff9100" stroke-width="2.5" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 4px #ff9100)" style="pointer-events:none;"/>` : ''}
             ${(s.holes || []).map(h => `<path d="${h.path_d}" fill="rgba(255, 20, 147, 0.65)" stroke="#ff007f" stroke-width="1.5" filter="drop-shadow(0 0 3px rgba(255, 0, 127, 0.8))" style="pointer-events:none;"/>`).join('')}
@@ -512,13 +562,15 @@ async function refreshSingleCard(btn) {
       const safeId = s.filename.replace(/[^a-zA-Z0-9]/g, '-');
       const wrap = document.getElementById(`wrap-${safeId}`);
       if (wrap) {
-        const isOtsuBottomActive = getParamEl('use_otsu_bottom') ? getParamEl('use_otsu_bottom').checked : true;
-        const isSfcmActive = getParamEl('use_sfcm') ? getParamEl('use_sfcm').checked : false;
+        const isUnetActive = getParamEl('unet_mode') ? getParamEl('unet_mode').checked : false;
+        const isAutoActive = isUnetActive ? false : (getParamEl('auto_mode') ? getParamEl('auto_mode').checked : false);
+        const isOtsuBottomActive = isUnetActive ? true : (isAutoActive ? false : (getParamEl('use_otsu_bottom') ? getParamEl('use_otsu_bottom').checked : true));
+        const isSfcmActive = isUnetActive ? false : (isAutoActive ? true : (getParamEl('use_sfcm') ? getParamEl('use_sfcm').checked : false));
 
         const topPathD = buildSvgPathD(s.top_vector);
         const botPathD = isOtsuBottomActive ? buildSvgPathD(s.bottom_vector) : '';
 
-        const hasSfcm = isSfcmActive && s.sfcm_vector && s.sfcm_vector.length > 0;
+        const hasSfcm = !isUnetActive && isSfcmActive && s.sfcm_vector && s.sfcm_vector.length > 0;
         const sfcmPathD = hasSfcm ? buildSvgPathD(s.sfcm_vector) : '';
         const sfcmStartVec = (hasSfcm && s.rpe_vector && s.rpe_vector.length > 0) ? s.rpe_vector : s.top_vector;
         const sfcmMaskD = hasSfcm ? buildSfcmMaskPolygonD(sfcmStartVec, s.sfcm_vector) : '';
@@ -531,7 +583,11 @@ async function refreshSingleCard(btn) {
         const padT = s.pad_t || 0;
 
         let tagText = 'Otsu (Top Only)';
-        if (isOtsuBottomActive && hasSfcm && (s.holes && s.holes.length > 0)) {
+        if (isUnetActive) {
+          tagText = 'Attention U-Net (Deep Learning)';
+        } else if (isAutoActive) {
+          tagText = 'Dynamic Clustering (ILM + RPE + SFCM)';
+        } else if (isOtsuBottomActive && hasSfcm && (s.holes && s.holes.length > 0)) {
           tagText = `Otsu + SFCM Choroid + ${s.holes.length} Holes (Pink)`;
         } else if (hasSfcm && (s.holes && s.holes.length > 0)) {
           tagText = `SFCM Choroid + ${s.holes.length} Holes (Pink)`;
@@ -655,6 +711,14 @@ async function init() {
 
       const eventName = (field.type === 'bool' || field.type === 'str') ? 'change' : 'input';
       el.addEventListener(eventName, e => {
+        if (field.key === 'auto_mode' && el.checked) {
+          const unetEl = getParamEl('unet_mode');
+          if (unetEl) unetEl.checked = false;
+        } else if (field.key === 'unet_mode' && el.checked) {
+          const autoEl = getParamEl('auto_mode');
+          if (autoEl) autoEl.checked = false;
+        }
+
         if (field.type === 'bool') {
           updateAutoModeVisibility();
           updateOtsuSfcmVisibility();
@@ -668,11 +732,11 @@ async function init() {
       });
     });
 
-    document.getElementById('btn-save').addEventListener('click', () => {
-      triggerReprocess(true, false);
-    });
+    const btnSave = document.getElementById('btn-save');
+    if (btnSave) btnSave.addEventListener('click', () => triggerReprocess(true, false));
 
-    document.getElementById('btn-reset').addEventListener('click', () => {
+    const btnReset = document.getElementById('btn-reset');
+    if (btnReset) btnReset.addEventListener('click', () => {
       const folder = document.getElementById('folder-select').value;
       const def = currentData.default_params;
       currentData.saved_params[folder] = JSON.parse(JSON.stringify(def));
@@ -681,11 +745,11 @@ async function init() {
       showStatusMessage('Reset to Default Parameters');
     });
 
-    document.getElementById('btn-refresh-samples').addEventListener('click', () => {
-      triggerReprocess(false, true);
-    });
+    const btnRefresh = document.getElementById('btn-refresh-samples');
+    if (btnRefresh) btnRefresh.addEventListener('click', () => triggerReprocess(false, true));
 
-    document.getElementById('btn-toggle-vectors').addEventListener('click', e => {
+    const btnToggleVec = document.getElementById('btn-toggle-vectors');
+    if (btnToggleVec) btnToggleVec.addEventListener('click', e => {
       drawVectorsEnabled = !drawVectorsEnabled;
       e.target.textContent = drawVectorsEnabled ? 'Hide Boundary Lines' : 'Show Boundary Lines';
       document.querySelectorAll('.vector-svg-overlay').forEach(svg => {
@@ -693,9 +757,14 @@ async function init() {
       });
     });
 
-    document.getElementById('btn-mode-slider').addEventListener('click', () => switchPanel('slider'));
-    document.getElementById('btn-mode-json').addEventListener('click', () => switchPanel('json'));
-    document.getElementById('btn-apply-json').addEventListener('click', applyJsonToUI);
+    const btnModeSlider = document.getElementById('btn-mode-slider');
+    if (btnModeSlider) btnModeSlider.addEventListener('click', () => switchPanel('slider'));
+
+    const btnModeJson = document.getElementById('btn-mode-json');
+    if (btnModeJson) btnModeJson.addEventListener('click', () => switchPanel('json'));
+
+    const btnApplyJson = document.getElementById('btn-apply-json');
+    if (btnApplyJson) btnApplyJson.addEventListener('click', applyJsonToUI);
 
     const btnPickAll = document.getElementById('btn-pick-all');
     if (btnPickAll) btnPickAll.addEventListener('click', pickAllVisibleCards);
@@ -713,7 +782,47 @@ async function init() {
       });
     }
 
+    // Navigation Tab Switching
+    const tabSwiping = document.getElementById('nav-tab-swiping');
+    const tabTuning = document.getElementById('nav-tab-tuning');
+    const tuningAppContainer = document.querySelector('.app-container');
+
+    function switchToSwiping() {
+      if (tabSwiping) tabSwiping.classList.add('active');
+      if (tabTuning) tabTuning.classList.remove('active');
+      if (tuningAppContainer) tuningAppContainer.style.display = 'none';
+      if (window.swipingStudio) {
+        window.swipingStudio.activate();
+      }
+    }
+
+    function switchToTuning() {
+      if (tabTuning) tabTuning.classList.add('active');
+      if (tabSwiping) tabSwiping.classList.remove('active');
+      if (tuningAppContainer) tuningAppContainer.style.display = 'grid';
+      if (window.swipingStudio) window.swipingStudio.deactivate();
+
+      const folderSelect = document.getElementById('folder-select');
+      const swipeSelect = document.getElementById('swipe-folder-select');
+      if (swipeSelect && swipeSelect.value && swipeSelect.value !== 'ALL' && folderSelect) {
+        if (folderSelect.value !== swipeSelect.value) {
+          folderSelect.value = swipeSelect.value;
+          loadFolderParams(folderSelect.value);
+        }
+      }
+
+      if (!currentVisibleSamples || currentVisibleSamples.length === 0 || currentFolder !== (folderSelect ? folderSelect.value : '')) {
+        triggerReprocess(false, false);
+      }
+    }
+
+    if (tabSwiping) tabSwiping.addEventListener('click', switchToSwiping);
+    if (tabTuning) tabTuning.addEventListener('click', switchToTuning);
+
     await refreshCuratedState();
+
+    // Default to Swiping Studio
+    switchToSwiping();
 
     const targetFolder = currentData.folders[0] || '';
     if (targetFolder) {

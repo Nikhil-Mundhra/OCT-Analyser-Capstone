@@ -11,8 +11,10 @@ import os
 from pathlib import Path
 import random
 import sys
+import threading
 import time
 from typing import Optional
+import urllib.parse
 import cv2
 import numpy as np
 
@@ -196,10 +198,35 @@ def process_and_save_image(src_p: Path, out_folder: Path, folder_name: str, para
     img_bgr = detect_and_process_white_bars(img_bgr, white_thresh=190, dark_bg_thresh=70, gap_pixels=3)
 
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-    active_sfcm_cache = get_sfcm_cache()
-    mask, y_top_outer, y_bottom_outer, y_rpe, y_bottom_sfcm, y_bottom_sfcm_raw = generate_tissue_mask_custom(
-        gray, params, compass_bbox=compass_bbox, return_sfcm=True, src_path=str(src_p), sfcm_cache=active_sfcm_cache
-    )
+    is_unet_mode = bool(params.get("unet_mode", False))
+    cropper = get_unet_cropper() if is_unet_mode else None
+
+    if is_unet_mode and cropper is not None and cropper.has_weights:
+        try:
+            _, y_top_outer, y_bottom_outer = cropper.predict_mask_and_vectors(gray, threshold=0.50)
+            orig_h, orig_w = gray.shape
+            margin_top = int(params.get("margin_top", 15))
+            margin_bot = int(params.get("margin_bottom", 15))
+            mask = np.zeros((orig_h, orig_w), dtype=np.uint8)
+            for x in range(orig_w):
+                t_y = max(0, int(y_top_outer[x] - margin_top))
+                b_y = min(orig_h - 1, int(y_bottom_outer[x] + margin_bot))
+                if b_y > t_y:
+                    mask[t_y:b_y + 1, x] = 255
+            y_rpe = None
+            y_bottom_sfcm = None
+            y_bottom_sfcm_raw = None
+        except Exception as e:
+            sys.stderr.write(f"[UNetMode] Inference fallback to clustering: {e}\n")
+            active_sfcm_cache = get_sfcm_cache()
+            mask, y_top_outer, y_bottom_outer, y_rpe, y_bottom_sfcm, y_bottom_sfcm_raw = generate_tissue_mask_custom(
+                gray, params, compass_bbox=compass_bbox, return_sfcm=True, src_path=str(src_p), sfcm_cache=active_sfcm_cache
+            )
+    else:
+        active_sfcm_cache = get_sfcm_cache()
+        mask, y_top_outer, y_bottom_outer, y_rpe, y_bottom_sfcm, y_bottom_sfcm_raw = generate_tissue_mask_custom(
+            gray, params, compass_bbox=compass_bbox, return_sfcm=True, src_path=str(src_p), sfcm_cache=active_sfcm_cache
+        )
 
     mask_3c = cv2.merge([mask, mask, mask])
     processed = np.where(mask_3c > 0, img_bgr, 0).astype(np.uint8)
@@ -801,3 +828,697 @@ def curate_folder_batch(
         "curated_samples": results,
         "errors": errors
     }
+
+
+def reset_curated_dataset(masked_dir: Optional[Path] = None) -> dict:
+    """Completely clears all curated masks and resets curated_manifest.json to 0."""
+    import shutil
+    msk_dir = Path(masked_dir) if masked_dir else get_masked_dataset_dir()
+    if msk_dir.exists():
+        for sub in ["Images", "Masks", "Visualizations"]:
+            target_sub = msk_dir / sub
+            if target_sub.exists():
+                shutil.rmtree(target_sub)
+                target_sub.mkdir(parents=True, exist_ok=True)
+        manifest_p = msk_dir / "curated_manifest.json"
+        manifest_p.write_text(json.dumps({"version": "1.0", "samples": {}}, indent=2), encoding="utf-8")
+        csv_p = msk_dir / "curated_manifest.csv"
+        if csv_p.exists():
+            try:
+                csv_p.unlink()
+            except Exception:
+                pass
+    return {"status": "success", "message": "Curated dataset reset to 0", "total_curated": 0}
+
+
+# ==============================================================================
+# ATTENTION U-NET DYNAMIC CROP FILTERING & ACTIVE RETRAINING ENGINE
+# ==============================================================================
+
+_UNET_CROPPER_INSTANCE = None
+_UNET_CROPPER_CPU_INSTANCE = None
+_UNET_PREDICT_CACHE = {}
+_PREFETCH_LOCK = threading.Lock()
+_RETRAIN_LOCK = threading.Lock()
+_RETRAIN_STATE = {
+    "running": False,
+    "epoch": 0,
+    "total_epochs": 10,
+    "batch": 0,
+    "total_batches": 0,
+    "batch_loss": 0.0,
+    "train_loss": 0.0,
+    "val_loss": 0.0,
+    "val_dice": 0.0,
+    "val_iou": 0.0,
+    "phase": "idle",
+    "message": "Ready to train.",
+    "started_at": 0.0,
+    "updated_at": 0.0
+}
+
+
+def is_retraining_active() -> bool:
+    """Returns True if U-Net fine-tuning is currently executing in the background."""
+    return bool(_RETRAIN_STATE.get("running", False))
+
+
+def clear_unet_predict_cache():
+    """Clears the pre-computed in-memory boundary vector predictions cache."""
+    global _UNET_PREDICT_CACHE
+    with _PREFETCH_LOCK:
+        _UNET_PREDICT_CACHE.clear()
+
+
+def get_unet_cropper(force_reload: bool = False, prefer_cpu_if_training: bool = True):
+    """
+    Retrieves or instantiates the UNetTissueCropper.
+
+    If retraining is actively running on MPS/CUDA GPU, dynamically routes interactive
+    curation inference to CPU to prevent GPU context switching, resource contention,
+    and command buffer stalls. When retraining is idle, uses high-speed GPU acceleration.
+    """
+    global _UNET_CROPPER_INSTANCE, _UNET_CROPPER_CPU_INSTANCE
+
+    use_cpu = prefer_cpu_if_training and is_retraining_active()
+
+    if use_cpu:
+        if _UNET_CROPPER_CPU_INSTANCE is None or force_reload:
+            try:
+                from data.preprocessing.unet_cropper import UNetTissueCropper
+                _UNET_CROPPER_CPU_INSTANCE = UNetTissueCropper(device="cpu", target_size=(384, 384))
+            except Exception as e:
+                sys.stderr.write(f"[UNetCropper CPU] Failed to load UNetTissueCropper on CPU: {e}\n")
+                _UNET_CROPPER_CPU_INSTANCE = None
+        return _UNET_CROPPER_CPU_INSTANCE
+    else:
+        if _UNET_CROPPER_INSTANCE is None or force_reload:
+            try:
+                from data.preprocessing.unet_cropper import UNetTissueCropper
+                _UNET_CROPPER_INSTANCE = UNetTissueCropper(target_size=(384, 384))
+            except Exception as e:
+                sys.stderr.write(f"[UNetCropper GPU] Failed to load UNetTissueCropper on GPU: {e}\n")
+                _UNET_CROPPER_INSTANCE = None
+        return _UNET_CROPPER_INSTANCE
+
+
+def detect_tissue_lateral_bounds(
+    probs_orig: np.ndarray,
+    y_top: np.ndarray,
+    y_bot: np.ndarray,
+    threshold: float = 0.50
+) -> tuple[int, int, int, int]:
+    """
+    Analytically derives 2-point slanted lateral crop bounds [crop_left_top, crop_left_bot,
+    crop_right_top, crop_right_bot] targeting the anatomical Optic Nerve Head (ONH) /
+    Bruch's Membrane Opening (BMO) margins and peripheral tissue boundaries.
+    """
+    h, w = probs_orig.shape
+    bin_mask = (probs_orig >= threshold).astype(np.uint8)
+
+    # Measure column tissue thickness
+    col_thickness = np.sum(bin_mask, axis=0).astype(float)
+    thick = y_bot - y_top
+
+    # Reference macular thickness in the central scan region
+    center_start, center_end = int(w * 0.30), int(w * 0.70)
+    macular_thick_ref = float(np.median(thick[center_start:center_end])) if center_end > center_start else 100.0
+
+    # Smoothed ILM slope (dy_top / dx): positive dy means downward plunge into cup
+    smooth_top = cv2.GaussianBlur(y_top.reshape(1, -1), (1, 15), sigmaX=3.0).flatten()
+    dy_top = np.gradient(smooth_top)
+
+    clt, clb = 0, 0
+    crt, crb = w, w
+
+    # -------------------------------------------------------------
+    # 1. Check RIGHT Lateral Edge for Optic Nerve Head (ONH) / BMO
+    # -------------------------------------------------------------
+    search_r_start = int(w * 0.60)
+    r_tissue_end = w
+    zero_cols = np.where(col_thickness[search_r_start:] < 15)[0]
+    if len(zero_cols) > 0:
+        r_tissue_end = search_r_start + zero_cols[0]
+    else:
+        collapse_cols = np.where(thick[search_r_start:] < (0.35 * macular_thick_ref))[0]
+        if len(collapse_cols) > 0:
+            r_tissue_end = search_r_start + collapse_cols[0]
+
+    if r_tissue_end < (w - 10):
+        # Look backwards from tissue termination for the optic disc rim / ILM cup inflection
+        sub_range = range(max(search_r_start, r_tissue_end - 60), r_tissue_end)
+        steep_ilm_candidates = [x for x in sub_range if dy_top[x] > 0.40]
+
+        if len(steep_ilm_candidates) > 0:
+            # Rim crest / cup inflection where ILM starts descending into the nerve
+            rim_crest_x = steep_ilm_candidates[0]
+            # BMO: Bruch's membrane opening where outer layer terminates
+            bmo_x = min(w, r_tissue_end)
+            crt = int(rim_crest_x)
+            crb = int(bmo_x)
+        else:
+            crt = int(r_tissue_end)
+            crb = int(r_tissue_end)
+
+    # -------------------------------------------------------------
+    # 2. Check LEFT Lateral Edge for Optic Nerve Head (ONH) / BMO
+    # -------------------------------------------------------------
+    search_l_end = int(w * 0.40)
+    l_tissue_end = 0
+    zero_cols_l = np.where(col_thickness[:search_l_end] < 15)[0]
+    if len(zero_cols_l) > 0:
+        l_tissue_end = zero_cols_l[-1]
+    else:
+        collapse_cols_l = np.where(thick[:search_l_end] < (0.35 * macular_thick_ref))[0]
+        if len(collapse_cols_l) > 0:
+            l_tissue_end = collapse_cols_l[-1]
+
+    if l_tissue_end > 10:
+        # On the left, descending into the cup toward the left means dy_top < -0.40
+        sub_range_l = range(l_tissue_end, min(search_l_end, l_tissue_end + 60))
+        steep_ilm_l = [x for x in sub_range_l if dy_top[x] < -0.40]
+
+        if len(steep_ilm_l) > 0:
+            rim_crest_x_l = steep_ilm_l[-1]
+            bmo_x_l = max(0, l_tissue_end)
+            clt = int(rim_crest_x_l)
+            clb = int(bmo_x_l)
+        else:
+            clt = int(l_tissue_end)
+            clb = int(l_tissue_end)
+
+    return clt, clb, crt, crb
+
+
+def _compute_scan_vectors(cropper, p: Path) -> tuple[int, int, list[dict], list[dict], dict, int, int, int, int]:
+    """Computes high-speed 48-point U-Net boundary vectors, bounding box, and automatic 2-point slanted lateral bounds."""
+    img_bgr = cv2.imread(str(p))
+    if img_bgr is None:
+        return 0, 0, None, None, {"ymin": 0, "ymax": 0, "xmin": 0, "xmax": 0}, 0, 0, 0, 0
+
+    # Pre-process white scanner banners & corner artifacts to pure black background
+    img_bgr = detect_and_process_white_bars(img_bgr)
+    h, w = img_bgr.shape[:2]
+
+    y_top_vec = None
+    y_bot_vec = None
+    crop_box = {"ymin": 0, "ymax": h, "xmin": 0, "xmax": w}
+    crop_left_top = 0
+    crop_left_bot = 0
+    crop_right_top = w
+    crop_right_bot = w
+
+    if cropper is not None and cropper.has_weights:
+        try:
+            gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+            probs_orig, y_t, y_b = cropper.predict_mask_and_vectors(gray, threshold=0.50)
+
+            # Sample 48 ultra-high-resolution anchor points across width W
+            sample_indices = np.linspace(0, w - 1, 48, dtype=int)
+            y_top_vec = [{"x": int(x), "y": float(y_t[x])} for x in sample_indices]
+            y_bot_vec = [{"x": int(x), "y": float(y_b[x])} for x in sample_indices]
+
+            margin = 15
+            ymin = max(0, int(np.min(y_t)) - margin)
+            ymax = min(h, int(np.max(y_b)) + margin)
+            crop_box = {"ymin": ymin, "ymax": ymax, "xmin": 0, "xmax": w}
+
+            # Automatically derive exact 2-point slanted lateral bounds
+            crop_left_top, crop_left_bot, crop_right_top, crop_right_bot = detect_tissue_lateral_bounds(probs_orig, y_t, y_b)
+        except Exception:
+            pass
+
+    if y_top_vec is None or y_bot_vec is None:
+        sample_indices = np.linspace(0, w - 1, 48, dtype=int)
+        y_top_vec = [{"x": int(x), "y": float(h * 0.25)} for x in sample_indices]
+        y_bot_vec = [{"x": int(x), "y": float(h * 0.70)} for x in sample_indices]
+
+    return w, h, y_top_vec, y_bot_vec, crop_box, crop_left_top, crop_left_bot, crop_right_top, crop_right_bot
+
+
+def _background_prefetch_scans(scan_files: list[tuple[str, Path]], start_idx: int, count: int = 40):
+    """Background worker that asynchronously pre-computes U-Net vectors for the next scans."""
+    def worker():
+        cropper = get_unet_cropper()
+        if not cropper or not cropper.has_weights:
+            return
+        target_slice = scan_files[start_idx : start_idx + count]
+        for sub, p in target_slice:
+            key = f"{sub}/{p.name}"
+            with _PREFETCH_LOCK:
+                already_cached = key in _UNET_PREDICT_CACHE
+            if not already_cached:
+                try:
+                    w, h, yt, yb, cb, clt, clb, crt, crb = _compute_scan_vectors(cropper, p)
+                    with _PREFETCH_LOCK:
+                        _UNET_PREDICT_CACHE[key] = {
+                            "width": w, "height": h,
+                            "y_top_points": yt, "y_bot_points": yb,
+                            "crop_box": cb,
+                            "crop_left_top": clt, "crop_left_bot": clb,
+                            "crop_right_top": crt, "crop_right_bot": crb
+                        }
+                except Exception:
+                    pass
+    threading.Thread(target=worker, daemon=True).start()
+
+
+def get_crop_filter_queue(
+    folder_name: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 30,
+    source_dir: Optional[Path] = None,
+    masked_dir: Optional[Path] = None
+) -> dict:
+    """
+    Retrieves an ordered queue of scans from Classified/ with cached/prefetched U-Net boundary predictions.
+    """
+    src_dir = Path(source_dir) if source_dir else get_source_dir()
+    msk_dir = Path(masked_dir) if masked_dir else get_masked_dataset_dir()
+    cropper = get_unet_cropper()
+
+    manifest = get_curated_manifest(masked_dir=msk_dir)
+    curated_keys = set(manifest.get("picked_keys", {}).keys())
+
+    # Discover images across leaf disease folders
+    scan_files: list[tuple[str, Path]] = []
+    if folder_name and folder_name.upper() != "ALL":
+        target_f = find_folder_path(folder_name, source_dir=src_dir)
+        if target_f and target_f.exists():
+            for p in sorted(target_f.iterdir()):
+                if p.suffix.lower() in (".jpg", ".jpeg", ".png") and not p.name.startswith("."):
+                    scan_files.append((folder_name, p))
+    else:
+        for sub_name in get_available_subfolders(source_dir=src_dir):
+            target_f = find_folder_path(sub_name, source_dir=src_dir)
+            if target_f and target_f.exists():
+                for p in sorted(target_f.iterdir()):
+                    if p.suffix.lower() in (".jpg", ".jpeg", ".png") and not p.name.startswith("."):
+                        scan_files.append((sub_name, p))
+
+    # Prioritize uncurated scans first so swiping presents fresh unreviewed scans
+    uncurated_scans = [s for s in scan_files if f"{s[0]}/{s[1].name}" not in curated_keys]
+    curated_scans = [s for s in scan_files if f"{s[0]}/{s[1].name}" in curated_keys]
+    ordered_scans = uncurated_scans + curated_scans
+
+    total_scans = len(ordered_scans)
+    paged_scans = ordered_scans[offset : offset + limit]
+
+    queue_items = []
+    for sub, p in paged_scans:
+        sample_key = f"{sub}/{p.name}"
+        is_curated = sample_key in curated_keys
+
+        with _PREFETCH_LOCK:
+            cached_data = _UNET_PREDICT_CACHE.get(sample_key)
+
+        if cached_data is not None:
+            w = cached_data["width"]
+            h = cached_data["height"]
+            y_top_vec = cached_data["y_top_points"]
+            y_bot_vec = cached_data["y_bot_points"]
+            crop_box = cached_data["crop_box"]
+            clt = cached_data.get("crop_left_top", 0)
+            clb = cached_data.get("crop_left_bot", 0)
+            crt = cached_data.get("crop_right_top", w)
+            crb = cached_data.get("crop_right_bot", w)
+        else:
+            w, h, y_top_vec, y_bot_vec, crop_box, clt, clb, crt, crb = _compute_scan_vectors(cropper, p)
+            with _PREFETCH_LOCK:
+                _UNET_PREDICT_CACHE[sample_key] = {
+                    "width": w, "height": h,
+                    "y_top_points": y_top_vec, "y_bot_points": y_bot_vec,
+                    "crop_box": crop_box,
+                    "crop_left_top": clt, "crop_left_bot": clb,
+                    "crop_right_top": crt, "crop_right_bot": crb
+                }
+
+        queue_items.append({
+            "folder": sub,
+            "filename": p.name,
+            "sample_key": sample_key,
+            "width": w,
+            "height": h,
+            "is_curated": is_curated,
+            "y_top_points": y_top_vec,
+            "y_bot_points": y_bot_vec,
+            "crop_box": crop_box,
+            "crop_left": int((clt + clb) / 2),
+            "crop_right": int((crt + crb) / 2),
+            "crop_left_top": clt,
+            "crop_left_bot": clb,
+            "crop_right_top": crt,
+            "crop_right_bot": crb,
+            "image_url": f"/api/image_raw_direct?subfolder={urllib.parse.quote(sub)}&filename={urllib.parse.quote(p.name)}",
+        })
+
+    # Trigger background pre-computation for the next 40 scans ahead
+    _background_prefetch_scans(scan_files, offset + limit, count=40)
+
+    return {
+        "folder": folder_name or "ALL",
+        "total": total_scans,
+        "offset": offset,
+        "limit": limit,
+        "items": queue_items,
+        "curated_total": len(curated_keys)
+    }
+
+
+def save_curated_crop_from_vectors(
+    folder_name: str,
+    filename: str,
+    y_top_points: list[dict],
+    y_bot_points: list[dict],
+    crop_left: int = 0,
+    crop_right: Optional[int] = None,
+    crop_left_top: Optional[int] = None,
+    crop_left_bot: Optional[int] = None,
+    crop_right_top: Optional[int] = None,
+    crop_right_bot: Optional[int] = None,
+    source_dir: Optional[Path] = None,
+    masked_dir: Optional[Path] = None
+) -> dict:
+    """
+    Constructs a binary ground-truth mask from user-verified top/bottom boundary vectors
+    and 2-point slanted lateral crop boundaries [crop_left_top, crop_left_bot, crop_right_top, crop_right_bot],
+    committing the pair into Classified-masked/.
+    """
+    src_dir = Path(source_dir) if source_dir else get_source_dir()
+    msk_dir = Path(masked_dir) if masked_dir else get_masked_dataset_dir()
+
+    img_path = find_image_path(folder_name, filename, source_dir=src_dir)
+    if not img_path or not img_path.exists():
+        raise FileNotFoundError(f"Source scan not found for '{folder_name}/{filename}'")
+
+    img_bgr = cv2.imread(str(img_path))
+    if img_bgr is None:
+        raise ValueError(f"Could not read source scan: {img_path}")
+
+    # Ensure saved curated scan has white scanner borders zeroed to black background
+    img_bgr = detect_and_process_white_bars(img_bgr)
+
+    h, w = img_bgr.shape[:2]
+
+    # Resolve 2-Point Slanted Lateral Crop Boundaries
+    c_lt = max(0, min(w - 2, int(crop_left_top if crop_left_top is not None else crop_left)))
+    c_lb = max(0, min(w - 2, int(crop_left_bot if crop_left_bot is not None else crop_left)))
+    c_rt = min(w, max(c_lt + 2, int(crop_right_top if crop_right_top is not None else (crop_right if crop_right is not None else w))))
+    c_rb = min(w, max(c_lb + 2, int(crop_right_bot if crop_right_bot is not None else (crop_right if crop_right is not None else w))))
+
+    # Sort and interpolate vectors smoothly across scan width W using Monotonic Cubic PCHIP
+    from scipy.interpolate import PchipInterpolator
+
+    # Ensure strictly sorted unique X points
+    top_map = {}
+    for pt in y_top_points:
+        top_map[int(pt["x"])] = float(pt["y"])
+    bot_map = {}
+    for pt in y_bot_points:
+        bot_map[int(pt["x"])] = float(pt["y"])
+
+    top_sorted = sorted(top_map.items())
+    bot_sorted = sorted(bot_map.items())
+
+    top_xs = [p[0] for p in top_sorted]
+    top_ys = [p[1] for p in top_sorted]
+    bot_xs = [p[0] for p in bot_sorted]
+    bot_ys = [p[1] for p in bot_sorted]
+
+    full_x = np.arange(w)
+
+    if len(top_xs) >= 2:
+        pchip_top = PchipInterpolator(top_xs, top_ys, extrapolate=True)
+        interp_top = pchip_top(full_x)
+    else:
+        interp_top = np.interp(full_x, top_xs, top_ys)
+
+    if len(bot_xs) >= 2:
+        pchip_bot = PchipInterpolator(bot_xs, bot_ys, extrapolate=True)
+        interp_bot = pchip_bot(full_x)
+    else:
+        interp_bot = np.interp(full_x, bot_xs, bot_ys)
+
+    # Enforce non-intersecting ordering and valid boundaries
+    interp_top = np.clip(interp_top, 0, h - 1)
+    interp_bot = np.clip(interp_bot, interp_top + 10, h - 1)
+
+    # Generate 8-bit binary mask (0 = background, 255 = retinal tissue within slanted lateral bounds)
+    mask = np.zeros((h, w), dtype=np.uint8)
+
+    # 1. Forward top boundary points
+    poly_pts = []
+    for x in range(w):
+        poly_pts.append([x, int(round(interp_top[x]))])
+    # 2. Reverse bottom boundary points
+    for x in range(w - 1, -1, -1):
+        poly_pts.append([x, int(round(interp_bot[x]))])
+
+    cv2.fillPoly(mask, [np.array(poly_pts, dtype=np.int32)], 255)
+
+    # 3. Apply Left Slanted Curtain (Zero uncropped region left of line (c_lt, 0) -> (c_lb, h))
+    if c_lt > 0 or c_lb > 0:
+        left_poly = np.array([[0, 0], [c_lt, 0], [c_lb, h], [0, h]], dtype=np.int32)
+        cv2.fillPoly(mask, [left_poly], 0)
+
+    # 4. Apply Right Slanted Curtain (Zero uncropped region right of line (c_rt, 0) -> (c_rb, h))
+    if c_rt < w or c_rb < w:
+        right_poly = np.array([[c_rt, 0], [w, 0], [w, h], [c_rb, h]], dtype=np.int32)
+        cv2.fillPoly(mask, [right_poly], 0)
+
+    # 5. Pitch-Black Border & Non-Acquisition Mask Cleansing
+    # Clamps mask to zero wherever pixel intensity is dead background (<= 5)
+    # or entire columns on the lateral margins have zero optical signal (<= 8).
+    gray_img = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY) if img_bgr.ndim == 3 else img_bgr
+    mask[gray_img <= 5] = 0
+
+    col_max = np.max(gray_img, axis=0)
+    # Detect dead columns from left
+    left_dead_idx = 0
+    while left_dead_idx < w and col_max[left_dead_idx] <= 8:
+        left_dead_idx += 1
+    if left_dead_idx > 0:
+        mask[:, :left_dead_idx] = 0
+
+    # Detect dead columns from right
+    right_dead_idx = w - 1
+    while right_dead_idx >= 0 and col_max[right_dead_idx] <= 8:
+        right_dead_idx -= 1
+    if right_dead_idx < w - 1:
+        mask[:, right_dead_idx + 1:] = 0
+
+    # Directory structures
+    img_out_dir = msk_dir / "Images" / folder_name
+    mask_out_dir = msk_dir / "Masks" / folder_name
+    img_out_dir.mkdir(parents=True, exist_ok=True)
+    mask_out_dir.mkdir(parents=True, exist_ok=True)
+
+    stem = Path(filename).stem
+    out_img_p = img_out_dir / f"{stem}.png"
+    out_mask_p = mask_out_dir / f"{stem}.png"
+
+    cv2.imwrite(str(out_img_p), img_bgr)
+    cv2.imwrite(str(out_mask_p), mask)
+
+    # Update manifest
+    manifest_p = msk_dir / "curated_manifest.json"
+    if manifest_p.exists():
+        try:
+            with open(manifest_p, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+                samples = manifest_data.get("samples", {})
+        except Exception:
+            samples = {}
+    else:
+        samples = {}
+
+    sample_key = f"{folder_name}/{filename}"
+    samples[sample_key] = {
+        "folder": folder_name,
+        "filename": filename,
+        "image_path": str(out_img_p.relative_to(msk_dir)),
+        "mask_path": str(out_mask_p.relative_to(msk_dir)),
+        "width": w,
+        "height": h,
+        "timestamp": time.time(),
+        "source": "swiping_studio"
+    }
+
+    manifest_data = {"version": "1.0", "samples": samples, "total_count": len(samples)}
+    _sync_manifest_files(msk_dir, manifest_data)
+
+    return {
+        "status": "success",
+        "sample_key": sample_key,
+        "total_curated": len(samples),
+        "message": f"Saved curated mask for {filename}"
+    }
+
+
+def get_curation_statistics(
+    source_dir: Optional[Path] = None,
+    masked_dir: Optional[Path] = None
+) -> dict:
+    """Aggregates curated vs total scan counts per disease folder."""
+    src_dir = Path(source_dir) if source_dir else get_source_dir()
+    msk_dir = Path(masked_dir) if masked_dir else get_masked_dataset_dir()
+
+    manifest = get_curated_manifest(masked_dir=msk_dir)
+    curated_keys = set(manifest.get("picked_keys", {}).keys())
+
+    folder_stats = {}
+    if src_dir.exists():
+        for sub_name in get_available_subfolders(source_dir=src_dir):
+            target_f = find_folder_path(sub_name, source_dir=src_dir)
+            if target_f and target_f.exists():
+                total_in_sub = sum(1 for p in target_f.iterdir() if p.suffix.lower() in (".jpg", ".jpeg", ".png") and not p.name.startswith("."))
+                curated_in_sub = sum(1 for k in curated_keys if k.startswith(f"{sub_name}/"))
+                folder_stats[sub_name] = {
+                    "total": total_in_sub,
+                    "curated": curated_in_sub,
+                    "pct": (curated_in_sub / total_in_sub * 100) if total_in_sub > 0 else 0.0
+                }
+
+    total_scans = sum(v["total"] for v in folder_stats.values())
+    total_curated = len(curated_keys)
+
+    return {
+        "total_scans": total_scans,
+        "total_curated": total_curated,
+        "overall_pct": (total_curated / total_scans * 100) if total_scans > 0 else 0.0,
+        "folders": folder_stats
+    }
+
+
+_RETRAIN_STOP_FLAG = False
+
+
+def stop_unet_retraining() -> dict:
+    """Signals background retraining worker to halt gracefully."""
+    global _RETRAIN_STOP_FLAG, _RETRAIN_STATE
+    with _RETRAIN_LOCK:
+        if not _RETRAIN_STATE["running"]:
+            return {"status": "not_running", "message": "No training job is currently running."}
+        _RETRAIN_STOP_FLAG = True
+        _RETRAIN_STATE["message"] = "Stopping training gracefully... Preserving current best checkpoint."
+        _RETRAIN_STATE["phase"] = "stopping"
+        _RETRAIN_STATE["updated_at"] = time.time()
+        return {"status": "stopping", "message": "Stop signal sent to retraining worker.", "state": _RETRAIN_STATE}
+
+
+def get_training_history() -> dict:
+    """Reads the persistent training history ledger from checkpoints directory."""
+    history_file = _REPO_ROOT / "checkpoints" / "segmentation" / "tissue_cropper" / "training_history.json"
+    if not history_file.exists():
+        history_file = _REPO_ROOT / "models_suite" / "tissue_cropper" / "checkpoints" / "training_history.json"
+
+    if history_file.exists():
+        try:
+            with open(history_file, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            return {"status": "error", "message": f"Failed to read training history: {e}", "rounds": []}
+    return {"model_name": "Attention U-Net Tissue Cropper", "total_rounds": 0, "rounds": []}
+
+
+def trigger_unet_retraining_async(epochs: int = 10, lr: float = 2e-4) -> dict:
+    """Starts U-Net fine-tuning loop in a dedicated background worker thread."""
+    global _RETRAIN_STATE, _RETRAIN_STOP_FLAG
+    with _RETRAIN_LOCK:
+        if _RETRAIN_STATE["running"]:
+            return {"status": "already_running", "message": "Training is already in progress.", "state": _RETRAIN_STATE}
+
+        _RETRAIN_STOP_FLAG = False
+        _RETRAIN_STATE["running"] = True
+        _RETRAIN_STATE["epoch"] = 0
+        _RETRAIN_STATE["total_epochs"] = epochs
+        _RETRAIN_STATE["batch"] = 0
+        _RETRAIN_STATE["total_batches"] = 0
+        _RETRAIN_STATE["batch_loss"] = 0.0
+        _RETRAIN_STATE["train_loss"] = 0.0
+        _RETRAIN_STATE["val_loss"] = 0.0
+        _RETRAIN_STATE["val_dice"] = 0.0
+        _RETRAIN_STATE["val_iou"] = 0.0
+        _RETRAIN_STATE["phase"] = "initializing"
+        _RETRAIN_STATE["message"] = "Initializing training pipeline..."
+        _RETRAIN_STATE["started_at"] = time.time()
+        _RETRAIN_STATE["updated_at"] = time.time()
+
+    def _train_worker():
+        global _RETRAIN_STATE
+        try:
+            seg_dir = str(_REPO_ROOT / "training" / "segmentation")
+            if seg_dir not in sys.path:
+                sys.path.insert(0, seg_dir)
+            if str(_REPO_ROOT) not in sys.path:
+                sys.path.insert(0, str(_REPO_ROOT))
+
+            from train_tissue_cropper.train import train as run_training
+
+            def _progress_cb(phase="training", epoch=0, total_epochs=0, batch=0, total_batches=0,
+                             batch_loss=0.0, train_loss=0.0, val_loss=0.0, val_dice=0.0, val_iou=0.0, **kwargs):
+                with _RETRAIN_LOCK:
+                    _RETRAIN_STATE["phase"] = phase
+                    _RETRAIN_STATE["epoch"] = epoch
+                    _RETRAIN_STATE["total_epochs"] = total_epochs
+                    _RETRAIN_STATE["batch"] = batch
+                    _RETRAIN_STATE["total_batches"] = total_batches
+                    _RETRAIN_STATE["batch_loss"] = batch_loss
+                    _RETRAIN_STATE["train_loss"] = train_loss
+                    _RETRAIN_STATE["val_loss"] = val_loss
+                    _RETRAIN_STATE["val_dice"] = val_dice
+                    _RETRAIN_STATE["val_iou"] = val_iou
+                    _RETRAIN_STATE["updated_at"] = time.time()
+
+                    if phase == "training":
+                        pct = (batch / max(1, total_batches)) * 100
+                        _RETRAIN_STATE["message"] = f"Epoch {epoch}/{total_epochs} | Training batch {batch}/{total_batches} ({pct:.0f}%) | Batch Loss: {batch_loss:.4f}"
+                    elif phase == "validating":
+                        _RETRAIN_STATE["message"] = f"Epoch {epoch}/{total_epochs} | Validating batch {batch}/{total_batches}..."
+                    elif phase == "epoch_complete":
+                        _RETRAIN_STATE["message"] = f"Epoch {epoch}/{total_epochs} complete | Val Dice: {val_dice:.4f} ({val_dice*100:.1f}%)"
+                    elif phase == "early_stopped":
+                        _RETRAIN_STATE["message"] = f"Epoch {epoch}/{total_epochs} | Early stopped. Best Val Dice: {val_dice:.4f}"
+
+            best_d = run_training(
+                epochs=epochs,
+                learning_rate=lr,
+                resume_best=True,
+                patience=4,
+                min_delta=0.001,
+                smoke_test=False,
+                progress_callback=_progress_cb,
+                stop_check_fn=lambda: _RETRAIN_STOP_FLAG
+            )
+
+            # Reload updated weights in singleton croppers and invalidate prediction cache
+            global _UNET_CROPPER_INSTANCE, _UNET_CROPPER_CPU_INSTANCE
+            _UNET_CROPPER_INSTANCE = None
+            _UNET_CROPPER_CPU_INSTANCE = None
+            clear_unet_predict_cache()
+            get_unet_cropper(force_reload=True, prefer_cpu_if_training=False)
+
+            with _RETRAIN_LOCK:
+                _RETRAIN_STATE["running"] = False
+                _RETRAIN_STATE["phase"] = "complete"
+                _RETRAIN_STATE["message"] = f"Training completed successfully! Best Val Dice: {best_d:.4f} ({best_d*100:.1f}%)"
+                _RETRAIN_STATE["updated_at"] = time.time()
+
+        except Exception as e:
+            sys.stderr.write(f"[RetrainWorker] Error: {e}\n")
+            with _RETRAIN_LOCK:
+                _RETRAIN_STATE["running"] = False
+                _RETRAIN_STATE["phase"] = "error"
+                _RETRAIN_STATE["message"] = f"Training failed: {str(e)}"
+                _RETRAIN_STATE["updated_at"] = time.time()
+
+    th = threading.Thread(target=_train_worker, daemon=True)
+    th.start()
+
+    return {"status": "started", "message": "U-Net retraining started in background.", "state": _RETRAIN_STATE}
+
+
+def get_unet_retrain_status() -> dict:
+    """Returns the live status of the background U-Net retraining process."""
+    with _RETRAIN_LOCK:
+        return dict(_RETRAIN_STATE)

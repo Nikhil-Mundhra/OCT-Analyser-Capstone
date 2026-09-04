@@ -87,7 +87,7 @@ function handleTopVectorDrag(deltaSvgY) {
   if (draggingHandle.startMarginTop + deltaMargin > 30) {
     const overflow = (draggingHandle.startMarginTop + deltaMargin) - 30;
     const multDelta = overflow * 0.08;
-    let newTopMult = Math.max(0.5, Math.min(8.0, draggingHandle.startTopNoise + multDelta));
+    let newTopMult = Math.max(0.5, Math.min(15.0, draggingHandle.startTopNoise + multDelta));
     newTopMult = Math.round(newTopMult * 10) / 10;
     const multInput = document.getElementById('param-top_noise_mult');
     multInput.value = newTopMult;
@@ -95,7 +95,7 @@ function handleTopVectorDrag(deltaSvgY) {
   } else if (draggingHandle.startMarginTop + deltaMargin < 5) {
     const underflow = 5 - (draggingHandle.startMarginTop + deltaMargin);
     const multDelta = underflow * 0.08;
-    let newTopMult = Math.max(0.5, Math.min(8.0, draggingHandle.startTopNoise - multDelta));
+    let newTopMult = Math.max(0.5, Math.min(15.0, draggingHandle.startTopNoise - multDelta));
     newTopMult = Math.round(newTopMult * 10) / 10;
     const multInput = document.getElementById('param-top_noise_mult');
     multInput.value = newTopMult;

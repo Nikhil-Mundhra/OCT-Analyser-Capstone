@@ -47,7 +47,8 @@ DEFAULT_PARAMS = {
     "use_dp_ilm": True,
     "ilm_gradient_weight": 0.70,
     "ilm_smooth_weight": 0.25,
-    "auto_mode": True
+    "auto_mode": True,
+    "unet_mode": False
 }
 
 

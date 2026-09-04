@@ -4,7 +4,8 @@
 
 const PARAM_SCHEMA = [
   { key: 'auto_mode', type: 'bool', default: true },
-  { key: 'top_noise_mult', type: 'float', default: 1.5, min: 0.5, max: 8.0, step: 0.1 },
+  { key: 'unet_mode', type: 'bool', default: false },
+  { key: 'top_noise_mult', type: 'float', default: 1.5, min: 0.5, max: 15.0, step: 0.1 },
   { key: 'use_dp_ilm', type: 'bool', default: true },
   { key: 'ilm_gradient_weight', type: 'float', default: 0.70, min: 0.3, max: 1.0, step: 0.05 },
   { key: 'ilm_smooth_weight', type: 'float', default: 0.25, min: 0.05, max: 1.0, step: 0.05 },

@@ -4,25 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OCT Preprocessing Folder Fine-Tuning Dashboard</title>
-  <link rel="stylesheet" href="/css/dashboard.css">
-  <link rel="stylesheet" href="/css/controls.css">
-  <link rel="stylesheet" href="/css/overlays.css">
+  <link rel="stylesheet" href="/css/dashboard.css?v=48">
+  <link rel="stylesheet" href="/css/controls.css?v=48">
+  <link rel="stylesheet" href="/css/overlays.css?v=48">
 </head>
 <body>
 
   <header>
     <div class="header-title">
-      <h1>OCT Preprocessing Tuning Dashboard</h1>
-      <span class="badge">Adaptive Segmentation</span>
-      <span id="curated-badge" class="badge badge-curated">0 Curated for U-Net</span>
+      <h1>OCT Preprocessing & Curation Studio</h1>
+      <span class="badge">Attention U-Net Engine</span>
     </div>
+
+    <!-- Navigation Switcher -->
+    <div class="header-nav-tabs" style="display: flex; gap: 6px; background: rgba(0,0,0,0.35); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+      <button id="nav-tab-swiping" class="mode-btn active" style="padding: 6px 14px; font-weight: 700; color: #00f2fe; border-radius: 6px;">Crop Filtering & Swiping Studio</button>
+      <button id="nav-tab-tuning" class="mode-btn" style="padding: 6px 14px; font-weight: 600; border-radius: 6px;">Multi-Sample Tuning Gallery</button>
+    </div>
+
     <div class="header-actions">
-      <span id="status-msg" class="status-badge">Live Parameters Updated</span>
-      <button id="btn-pick-all" class="btn-primary" style="background: #10b981; border-color: #10b981; color: #fff;" title="Save all visible slices and tuned masks to Classified-masked/">+ Pick All Visible</button>
+      <button id="btn-model-history" class="btn-secondary" style="border-color: rgba(59, 130, 246, 0.4); color: #93c5fd;" title="View all training rounds and validation history">Model History</button>
+      <button id="btn-trigger-retrain" class="btn-primary retrain-btn-animated" title="Click to view live training telemetry or configure retraining">
+        <div id="btn-retrain-fill" class="btn-retrain-fill-bar"></div>
+        <span id="btn-retrain-shimmer" class="btn-shimmer-effect" style="display: none;"></span>
+        <span id="btn-retrain-text" class="btn-retrain-label">Retrain U-Net on Curated Data</span>
+      </button>
       <button id="btn-view-curated" class="btn-secondary" title="View all picked segmentation examples">View Curated (<span id="curated-count-num">0</span>)</button>
-      <button id="btn-toggle-vectors">Hide Boundary Lines</button>
-      <button id="btn-refresh-samples" class="btn-secondary">Refresh Random Images</button>
-      <button id="btn-reset" class="btn-secondary">Reset to Defaults</button>
     </div>
   </header>
 
@@ -47,10 +54,10 @@
       <!-- Panel 1: Slider Controls -->
       <div id="panel-sliders" class="control-card" style="display:flex;flex-direction:column;gap:10px;">
 
-        <!-- MASTER INTELLIGENT AUTO OPTIMIZATION CARD -->
+        <!-- DYNAMIC CLUSTERING MODE CARD -->
         <div class="toggle-group" style="padding: 12px 14px; background: rgba(0, 229, 255, 0.06); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 8px; margin-bottom: 6px;">
           <span class="param-title-wrap">
-            <span class="toggle-label" style="font-weight: 700; color: #00e5ff; letter-spacing: 0.03em;">Intelligent Auto Mode</span>
+            <span class="toggle-label" style="font-weight: 700; color: #00e5ff; letter-spacing: 0.03em;">Dynamic Clustering Mode</span>
             <span class="info-btn" tabindex="0">i<span class="tooltip-text">Activates autonomous, zero-parameter multi-surface tissue segmentation. Automatically cleans scanner banners, estimates SNR, runs coupled Gradient DP ILM + Chiu DP RPE + SFCM Choroid, and enforces 5-point anatomical invariants.</span></span>
           </span>
           <label class="switch">
@@ -59,10 +66,43 @@
           </label>
         </div>
 
-        <!-- AUTO MODE TELEMETRY STATUS CARD (shown when Auto Mode is ON) -->
-        <div id="auto-mode-status-card" style="display: none; flex-direction: column; gap: 10px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+        <!-- DEEP LEARNING U-NET MODE CARD -->
+        <div class="toggle-group" style="padding: 12px 14px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; margin-bottom: 6px;">
+          <span class="param-title-wrap">
+            <span class="toggle-label" style="font-weight: 700; color: #c084fc; letter-spacing: 0.03em;">Deep Learning U-Net Mode</span>
+            <span class="info-btn" tabindex="0">i<span class="tooltip-text">Infers continuous retinal tissue boundaries end-to-end using the trained Attention U-Net neural network with GPU hardware acceleration.</span></span>
+          </span>
+          <label class="switch">
+            <input type="checkbox" id="param-unet_mode">
+            <span class="slider-round" style="--slider-active-bg: linear-gradient(135deg, #a855f7, #6366f1);"></span>
+          </label>
+        </div>
+
+        <!-- U-NET MODE TELEMETRY STATUS CARD (shown when U-Net Mode is ON) -->
+        <div id="unet-mode-status-card" style="display: none; flex-direction: column; gap: 10px; padding: 14px; background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px;">
           <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-size: 0.78rem; font-weight: 700; color: #00e5ff; text-transform: uppercase; letter-spacing: 0.05em;">Autonomous Neural-Symbolic Engine</span>
+            <span style="font-size: 0.78rem; font-weight: 700; color: #c084fc; text-transform: uppercase; letter-spacing: 0.05em;">Neural Attention U-Net</span>
+            <span style="font-size: 0.72rem; padding: 2px 8px; background: rgba(168, 85, 247, 0.2); color: #e9d5ff; border-radius: 12px; font-weight: 600;">ACTIVE INFERENCE</span>
+          </div>
+          <div style="font-size: 0.80rem; color: #cbd5e1; line-height: 1.45;">
+            End-to-end Deep Learning boundary segmentation is active. Neural feature maps dynamically localize the ILM apex and Choroid-Scleral junction with zero heuristic tuning.
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+            <div style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border-left: 2px solid #a855f7;">
+              <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">Architecture</div>
+              <div style="font-size: 0.78rem; font-weight: 600; color: #f1f5f9;">Attention U-Net</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border-left: 2px solid #38bdf8;">
+              <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">Hardware</div>
+              <div style="font-size: 0.78rem; font-weight: 600; color: #f1f5f9;">Apple Silicon MPS</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AUTO MODE TELEMETRY STATUS CARD (shown when Dynamic Clustering is ON and U-Net is OFF) -->
+        <div id="auto-mode-status-card" style="display: none; flex-direction: column; gap: 10px; padding: 14px; background: rgba(0, 229, 255, 0.04); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: #00e5ff; text-transform: uppercase; letter-spacing: 0.05em;">Dynamic Multi-Surface Clustering</span>
             <span style="font-size: 0.72rem; padding: 2px 8px; background: rgba(0, 229, 255, 0.15); color: #00e5ff; border-radius: 12px; font-weight: 600;">ACTIVE</span>
           </div>
           <div style="font-size: 0.80rem; color: #94a3b8; line-height: 1.45;">
@@ -134,7 +174,7 @@
                   </span>
                   <span class="slider-value" id="val-top_noise_mult">1.5</span>
                 </div>
-                <input type="range" id="param-top_noise_mult" min="0.5" max="8.0" step="0.1" value="1.5">
+                <input type="range" id="param-top_noise_mult" min="0.5" max="15.0" step="0.1" value="1.5">
               </div>
 
               <div class="slider-group">
@@ -562,13 +602,185 @@
 
     <!-- Main Gallery -->
     <div class="main-view">
-      <div class="gallery-toolbar">
-        <span class="section-title">Sample Slice Previews (Click & Drag Vector Handles to Adjust Bounds)</span>
-        <span style="font-size: 0.78rem; color: #94a3b8;">U-Net Training Target: <code style="color: #10b981; font-weight: 600;">Classified-masked/</code></span>
+      <div class="gallery-toolbar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <span class="section-title">Sample Slice Previews (Click & Drag Vector Handles to Adjust Bounds)</span>
+          <span style="font-size: 0.78rem; color: #94a3b8; display: block; margin-top: 2px;">U-Net Training Target: <code style="color: #10b981; font-weight: 600;">Classified-masked/</code></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="status-msg" class="status-badge" style="margin-right: 6px;">Live Parameters Updated</span>
+          <button id="btn-pick-all" class="btn-primary" style="background: #10b981; border-color: #10b981; color: #fff; font-size: 0.80rem; padding: 5px 10px;" title="Save all visible slices and tuned masks to Classified-masked/">+ Pick All Visible</button>
+          <button id="btn-toggle-vectors" class="btn-secondary" style="font-size: 0.80rem; padding: 5px 10px;">Hide Boundary Lines</button>
+          <button id="btn-refresh-samples" class="btn-secondary" style="font-size: 0.80rem; padding: 5px 10px;">Refresh Random Images</button>
+          <button id="btn-reset" class="btn-secondary" style="font-size: 0.80rem; padding: 5px 10px;">Reset to Defaults</button>
+        </div>
       </div>
       <div id="gallery-grid" class="gallery-grid"></div>
     </div>
 
+  </div>
+
+  <!-- ============================================================================== -->
+  <!-- SWIPING & CROP FILTERING STUDIO VIEW -->
+  <!-- ============================================================================== -->
+  <div id="swiping-studio-view" class="swiping-studio-container" style="display: flex; flex-direction: column; height: calc(100vh - 65px); padding: 14px 20px; box-sizing: border-box; gap: 12px;">
+
+    <!-- Top Status & Filtering Bar -->
+    <div class="swiping-top-bar" style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); padding: 10px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <span style="font-size: 0.85rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Disease Filter:</span>
+        <select id="swipe-folder-select" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; outline: none;"></select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 0.80rem; color: #94a3b8;">Curated Ground Truth:</span>
+          <span id="swipe-curated-count" style="font-size: 0.90rem; font-weight: 700; color: #10b981;">0 / 0</span>
+          <div style="width: 140px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+            <div id="swipe-progress-bar-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #00f2fe); transition: width 0.3s ease;"></div>
+          </div>
+          <span id="swipe-progress-pct" style="font-size: 0.80rem; font-weight: 700; color: #00f2fe;">0.0%</span>
+        </div>
+
+        <span id="swipe-view-mode-badge" class="badge" style="background: rgba(0, 242, 254, 0.15); color: #00f2fe; border: 1px solid rgba(0, 242, 254, 0.3); font-size: 0.75rem;">VIEW: BOUNDARY VECTORS (ILM + CHOROID)</span>
+      </div>
+    </div>
+
+    <!-- Main Dual-Viewport Swipe Stage -->
+    <div class="swiping-stage" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; min-height: 0; align-items: center;">
+
+      <!-- LEFT: Raw Scan + Editable SVG Neural-Symbolic Vectors -->
+      <div id="swipe-card" class="swipe-card-wrapper" style="position: relative; height: 100%; max-height: 850px; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; user-select: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+
+        <!-- Stamp Overlays for Swipe Feedback -->
+        <div id="stamp-approve" class="swipe-stamp stamp-approve" style="position: absolute; top: 30px; left: 30px; border: 3px solid #10b981; color: #10b981; font-weight: 900; font-size: 1.8rem; padding: 4px 16px; border-radius: 8px; transform: rotate(-12deg); opacity: 0; pointer-events: none; z-index: 50;">APPROVE / KEEP</div>
+        <div id="stamp-skip" class="swipe-stamp stamp-skip" style="position: absolute; top: 30px; right: 30px; border: 3px solid #ef4444; color: #ef4444; font-weight: 900; font-size: 1.8rem; padding: 4px 16px; border-radius: 8px; transform: rotate(12deg); opacity: 0; pointer-events: none; z-index: 50;">SKIP / NEXT</div>
+
+        <img id="swipe-img-raw" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none;">
+        <canvas id="swipe-crop-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: none;"></canvas>
+        <svg id="swipe-svg-overlay" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair;"></svg>
+      </div>
+
+      <!-- RIGHT: Live Clean Tissue Band (Lossless Background Suppressed) -->
+      <div class="swipe-preview-wrapper" style="position: relative; height: 100%; max-height: 850px; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; overflow: hidden;">
+        <div style="padding: 10px 14px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.80rem; font-weight: 700; color: #e2e8f0; text-transform: uppercase;">Real-Time Clean Retinal Crop Preview</span>
+          <span style="font-size: 0.72rem; color: #10b981; font-weight: 600;">100% Retinal Tissue Preserved</span>
+        </div>
+
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px; background: #000;">
+          <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+            <canvas id="swipe-clean-crop-preview" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.6);"></canvas>
+          </div>
+        </div>
+
+        <div style="padding: 10px 14px; background: rgba(0,0,0,0.25); border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: #94a3b8; display: flex; justify-content: space-between;">
+          <span>Zeroed margins above ILM & below Choroid</span>
+          <span>Saves directly to: <code style="color:#10b981;">data/Classified-masked/</code></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Action & Keyboard Navigation Controls -->
+    <div class="swiping-bottom-bar" style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); padding: 10px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+      <div id="swipe-sample-meta" style="font-size: 0.85rem; color: #e2e8f0;">Ready.</div>
+
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button id="btn-swipe-skip" class="btn-secondary" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171; font-weight: 600;">
+          <kbd style="background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-right: 4px;">&larr; A</kbd> Skip / Next
+        </button>
+        <button id="btn-swipe-toggle-view" class="btn-secondary">
+          <kbd style="background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-right: 4px;">Space</kbd> Toggle View
+        </button>
+        <button id="btn-swipe-approve" class="btn-primary" style="background: #10b981; border-color: #10b981; color: #fff; font-weight: 700;">
+          <kbd style="background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-right: 4px;">D &rarr;</kbd> Approve & Save Ground Truth
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- U-Net Retraining Modal Dialog -->
+  <div id="retrain-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog" style="max-width: 580px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h2>Active U-Net Fine-Tuning</h2>
+          <span class="badge" style="background: #3b82f6; color: #fff;">MPS GPU</span>
+        </div>
+        <button id="btn-close-retrain-modal" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div id="retrain-desc-text" style="font-size: 0.82rem; color: #94a3b8; line-height: 1.45;">
+            Fine-tune the Attention U-Net on all <strong>5,719 base segmentation pairs + <span id="retrain-curated-count" style="color:#10b981;font-weight:700;">...</span> newly approved Classified-masked/ pairs</strong> (<strong id="retrain-total-pairs" style="color:#00f2fe;">...</strong> total) using Apple Silicon MPS hardware acceleration.
+          </div>
+          <div style="font-size: 0.74rem; color: #64748b;">
+            <em>Closing this modal (clicking &times;) will not stop training — the background process runs continuously.</em>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.04); padding: 12px; border-radius: 8px;">
+          <label style="font-size: 0.82rem; color: #e2e8f0; font-weight: 600;">Epochs:</label>
+          <input type="number" id="retrain-epochs-input" value="10" min="1" max="50" style="width: 70px; background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 4px 8px;">
+          <button id="btn-start-retrain-exec" class="btn-primary" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); border: none; font-weight: 700; margin-left: auto;">Start Retraining</button>
+          <button id="btn-stop-retrain-exec" class="btn-danger" style="display: none; background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; border: none; font-weight: 700; margin-left: auto; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.82rem;">Stop Retraining</button>
+        </div>
+
+        <div id="retrain-status-card" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.80rem;">
+            <span id="retrain-msg" style="color: #00f2fe; font-weight: 600;">Ready to train.</span>
+            <span id="retrain-pct-badge" style="color: #94a3b8; font-size: 0.75rem; font-weight: 700;">0.0%</span>
+          </div>
+          <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+            <div id="retrain-progress-bar-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #00f2fe); transition: width 0.2s ease;"></div>
+          </div>
+          <div id="retrain-metrics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.78rem; color: #94a3b8; margin-top: 4px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Model Training History Modal Dialog -->
+  <div id="modal-model-history" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog" style="max-width: 820px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h2>Model Training History</h2>
+          <span id="history-total-rounds-badge" class="badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3);">1 Round</span>
+        </div>
+        <button id="btn-close-history-modal" class="modal-close-btn" title="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;">
+
+        <!-- Summary Cards Grid -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; border-left: 3px solid #10b981;">
+            <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">Best Val Dice (F1)</div>
+            <div id="history-stat-dice" style="font-size: 1.25rem; font-weight: 700; color: #10b981; margin-top: 2px;">0.00%</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; border-left: 3px solid #38bdf8;">
+            <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">Best Val IoU</div>
+            <div id="history-stat-iou" style="font-size: 1.25rem; font-weight: 700; color: #38bdf8; margin-top: 2px;">0.00%</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; border-left: 3px solid #a855f7;">
+            <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">Total Rounds</div>
+            <div id="history-stat-rounds" style="font-size: 1.25rem; font-weight: 700; color: #f1f5f9; margin-top: 2px;">1</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; border-left: 3px solid #f59e0b;">
+            <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">Total Curated Active</div>
+            <div id="history-stat-curated" style="font-size: 1.25rem; font-weight: 700; color: #fbbf24; margin-top: 2px;">...</div>
+          </div>
+        </div>
+
+        <!-- Timeline of Rounds Container -->
+        <div style="display: flex; flex-direction: column; gap: 12px;" id="history-rounds-list">
+          <div style="color: #64748b; font-size: 0.85rem; text-align: center; padding: 20px;">Loading training history...</div>
+        </div>
+
+      </div>
+    </div>
   </div>
 
   <!-- Curated Samples Modal Dialog -->
@@ -591,9 +803,10 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/js/state.js"></script>
-  <script src="/js/api.js"></script>
-  <script src="/js/vector_overlay.js"></script>
-  <script src="/js/app.js"></script>
+  <script src="/js/state.js?v=53"></script>
+  <script src="/js/api.js?v=53"></script>
+  <script src="/js/vector_overlay.js?v=53"></script>
+  <script src="/js/swiping_studio.js?v=53"></script>
+  <script src="/js/app.js?v=53"></script>
 </body>
 </html>

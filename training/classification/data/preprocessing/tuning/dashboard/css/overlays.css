@@ -143,19 +143,54 @@
 }
 
 .vector-handle {
-  cursor: ns-resize;
-  pointer-events: all;
-  transition: r 0.12s ease;
+  cursor: grab;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1), r 0.12s ease;
 }
 
-.vector-handle:hover {
-  r: 5;
+/* Primary Hovered Node (Closest to Cursor) */
+.vector-handle.handle-hover-primary {
+  opacity: 1 !important;
+  r: 4.2px !important;
+  stroke: #ffffff !important;
+  stroke-width: 1.2px !important;
 }
 
-.vector-handle.active {
-  r: 6;
-  stroke: #ffffff;
-  stroke-width: 2px;
+.top-handle.handle-hover-primary {
+  filter: drop-shadow(0 0 6px rgba(0, 242, 254, 0.95)) !important;
+}
+
+.bot-handle.handle-hover-primary {
+  filter: drop-shadow(0 0 6px rgba(255, 145, 0, 0.95)) !important;
+}
+
+/* Adjacent 2 Nodes on that line */
+.vector-handle.handle-hover-adjacent {
+  opacity: 0.85 !important;
+  r: 3.0px !important;
+  stroke: #ffffff !important;
+  stroke-width: 1.0px !important;
+}
+
+.top-handle.handle-hover-adjacent {
+  filter: drop-shadow(0 0 4px rgba(0, 242, 254, 0.75)) !important;
+}
+
+.bot-handle.handle-hover-adjacent {
+  filter: drop-shadow(0 0 4px rgba(255, 145, 0, 0.75)) !important;
+}
+
+/* Selected nodes are always visible */
+.vector-handle.active,
+.node-selected,
+.vector-handle.node-selected {
+  opacity: 1 !important;
+  r: 4.2px !important;
+  stroke: #ffd700 !important;
+  stroke-width: 1.4px !important;
+  fill: #ffffff !important;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.95)) !important;
 }
 
 .top-handle {
@@ -163,9 +198,190 @@
 }
 
 .bot-handle {
-  fill: #ff007f;
+  fill: #ff9100;
+}
+
+.rpe-handle {
+  fill: #ffd700;
 }
 
 .sfcm-handle {
   fill: #ff9100;
+}
+
+/* Lateral Slanted 2-Point Corner Handles */
+.lateral-corner-handle {
+  transition: transform 0.15s ease, filter 0.15s ease, stroke-width 0.15s ease;
+  pointer-events: none;
+}
+
+#svg-handle-left-top, #svg-handle-left-bot {
+  filter: drop-shadow(0 0 5px rgba(0, 242, 254, 0.85));
+}
+
+#svg-handle-right-top, #svg-handle-right-bot {
+  filter: drop-shadow(0 0 5px rgba(255, 145, 0, 0.85));
+}
+
+/* Swiping Studio & Card Physics Styles */
+.swipe-card-wrapper {
+  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+  will-change: transform;
+}
+
+.swipe-card-wrapper:active {
+  cursor: grabbing;
+}
+
+.swipe-stamp {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  user-select: none;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  transition: opacity 0.15s ease;
+}
+
+.stamp-approve {
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.12);
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+}
+
+.stamp-skip {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.12);
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+}
+
+.mode-btn.active {
+  background: rgba(0, 242, 254, 0.15) !important;
+  color: #00f2fe !important;
+  border: 1px solid rgba(0, 242, 254, 0.4) !important;
+}
+
+/* Button & Card Kinetic Animation Classes */
+.btn-pulse-approve {
+  transform: scale(1.06) !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.8) !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease !important;
+}
+
+.btn-pulse-skip {
+  transform: scale(1.06) !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.8) !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease !important;
+}
+
+.stamp-active-approve {
+  opacity: 1 !important;
+  transform: rotate(-12deg) scale(1.18) !important;
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.12s ease !important;
+}
+
+.stamp-active-skip {
+  opacity: 1 !important;
+  transform: rotate(12deg) scale(1.18) !important;
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.12s ease !important;
+}
+
+.preview-flash {
+  animation: previewFlash 0.3s ease-out;
+}
+
+.draggable-tissue-band {
+  transition: fill 0.15s ease;
+}
+
+.draggable-tissue-band:hover {
+  fill: rgba(0, 242, 254, 0.28) !important;
+}
+
+.draggable-tissue-band:active {
+  fill: rgba(0, 242, 254, 0.40) !important;
+}
+
+#svg-top-hit:hover, #svg-bot-hit:hover {
+  cursor: ns-resize !important;
+}
+
+#svg-hit-left:hover, #svg-hit-right:hover {
+  cursor: ew-resize !important;
+}
+
+.node-selected {
+  stroke: #ffd700 !important;
+  fill: #ffffff !important;
+  filter: drop-shadow(0 0 7px rgba(255, 215, 0, 0.95)) !important;
+  transition: r 0.12s ease;
+}
+
+#svg-selection-box {
+  pointer-events: none !important;
+}
+
+/* Floating Central Curve Grab Handles (Minimalist & Hover-Revealed) */
+.curve-line-handle {
+  cursor: ns-resize !important;
+  user-select: none;
+}
+
+.curve-line-handle .handle-visual {
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.15s ease, filter 0.18s ease;
+  pointer-events: none;
+}
+
+.curve-line-handle:hover .handle-visual,
+.curve-line-handle:active .handle-visual,
+.curve-line-handle.is-active .handle-visual {
+  opacity: 1 !important;
+}
+
+.curve-line-handle-top:hover .handle-visual {
+  filter: drop-shadow(0 0 10px rgba(0, 242, 254, 0.95)) !important;
+}
+
+.curve-line-handle-bot:hover .handle-visual {
+  filter: drop-shadow(0 0 10px rgba(255, 145, 0, 0.95)) !important;
+}
+
+.curve-line-handle:active {
+  cursor: grabbing !important;
+}
+
+/* Multi-Node Selection Toolkit (Rotate & Rounding Slider) */
+#svg-selection-rotate-widget {
+  user-select: none;
+}
+
+#svg-selection-rotate-widget .rotate-hit-target {
+  cursor: grab;
+}
+
+#svg-selection-rotate-widget .rotate-hit-target:active {
+  cursor: grabbing;
+}
+
+#svg-selection-rotate-widget:hover .rotate-visual-badge {
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 1)) !important;
+  stroke: #ffffff !important;
+}
+
+#svg-selection-rotate-widget .round-hit-target {
+  cursor: ew-resize;
+}
+
+#svg-selection-rotate-widget .round-hit-target:hover ~ #svg-round-thumb-g .round-thumb-visual,
+#svg-selection-rotate-widget .round-hit-target:active ~ #svg-round-thumb-g .round-thumb-visual {
+  filter: drop-shadow(0 0 10px rgba(0, 242, 254, 1)) !important;
+}
+
+/* Hide handles during active rotation & rounding for clean unobstructed visualization */
+.is-rotating-nodes .vector-handle {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.08s ease !important;
 }

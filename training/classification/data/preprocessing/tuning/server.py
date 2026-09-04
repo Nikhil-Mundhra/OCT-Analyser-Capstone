@@ -15,7 +15,9 @@ import threading
 import time
 from typing import Any, Optional
 import urllib.parse
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+import cv2
+import numpy as np
 
 # Add root project dirs to sys.path if not already present
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -58,15 +60,23 @@ from data.preprocessing.tuning.processor import (
     find_folder_path,
     find_image_path,
     get_available_subfolders,
+    get_crop_filter_queue,
     get_curated_manifest,
+    get_curation_statistics,
     get_masked_dataset_dir,
     get_output_dir,
     get_source_dir,
+    get_training_history,
+    get_unet_retrain_status,
     process_and_save_image,
     remove_curated_mask_sample,
     reprocess_folder_sample,
     reprocess_single_image,
+    reset_curated_dataset,
+    save_curated_crop_from_vectors,
     save_curated_mask_sample,
+    stop_unet_retraining,
+    trigger_unet_retraining_async,
 )
 
 # Re-export diagnostics and health checks
@@ -129,7 +139,7 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         try:
             parsed = urllib.parse.urlparse(self.path)
-            path = parsed.path
+            path = urllib.parse.unquote(parsed.path)
 
             if path in ("/", "/index.html", "/tuning_dashboard.html"):
                 html_p = DASHBOARD_DIR / "index.html"
@@ -194,6 +204,60 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json_response(manifest)
                 return
 
+            elif path == "/api/curation_stats":
+                stats = get_curation_statistics()
+                self._send_json_response(stats)
+                return
+
+            elif path == "/api/retrain_status":
+                status = get_unet_retrain_status()
+                self._send_json_response(status)
+                return
+
+            elif path == "/api/training_history":
+                history = get_training_history()
+                self._send_json_response(history)
+                return
+
+            elif path == "/api/crop_filter_queue":
+                query_params = urllib.parse.parse_qs(parsed.query)
+                folder = query_params.get("folder", [None])[0]
+                offset = int(query_params.get("offset", [0])[0])
+                limit = int(query_params.get("limit", [30])[0])
+                clear_cache = query_params.get("clear_cache", ["false"])[0].lower() in ("true", "1")
+                if clear_cache:
+                    from data.preprocessing.tuning.processor import clear_unet_predict_cache
+                    clear_unet_predict_cache()
+                queue = get_crop_filter_queue(folder_name=folder, offset=offset, limit=limit)
+                self._send_json_response(queue)
+                return
+
+            elif path == "/api/image_raw_direct":
+                query_params = urllib.parse.parse_qs(parsed.query)
+                sub = query_params.get("subfolder", [""])[0]
+                fname = query_params.get("filename", [""])[0]
+                src_d = get_source_dir()
+                img_p = find_image_path(sub, fname, source_dir=src_d)
+                if img_p and img_p.exists() and img_p.is_file():
+                    img_bgr = cv2.imread(str(img_p))
+                    if img_bgr is not None:
+                        from data.preprocessing.white_bars import detect_and_process_white_bars
+                        cleaned = detect_and_process_white_bars(img_bgr)
+                        success, buf = cv2.imencode(".jpg", cleaned, [cv2.IMWRITE_JPEG_QUALITY, 95])
+                        if success:
+                            self.send_response(200)
+                            self.send_header("Content-Type", "image/jpeg")
+                            self.send_header("Content-Length", str(len(buf)))
+                            self.send_header("Cache-Control", "public, max-age=86400")
+                            self.end_headers()
+                            self.wfile.write(buf.tobytes())
+                            return
+                    ctype = "image/png" if fname.lower().endswith(".png") else "image/jpeg"
+                    self._send_file_response(img_p, ctype)
+                else:
+                    self._send_json_response({"status": "error", "message": f"Raw image not found for {sub}/{fname}"}, status=404)
+                return
+
             elif path.startswith("/masked/"):
                 active_masked = get_masked_dataset_dir()
                 rel = path[len("/masked/"):].lstrip("/")
@@ -210,9 +274,10 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                 rel = path[len("/preprocessed/"):].lstrip("/")
                 target_file = (active_output / rel).resolve()
                 if str(target_file).startswith(str(active_output.resolve())) and target_file.exists() and target_file.is_file():
-                    self._send_file_response(target_file, "image/jpeg")
+                    ctype = "image/png" if rel.lower().endswith(".png") else "image/jpeg"
+                    self._send_file_response(target_file, ctype)
                 else:
-                    self._send_json_response({"status": "error", "message": "Preprocessed image not found"}, status=404)
+                    self._send_json_response({"status": "error", "message": f"Preprocessed image not found: {rel}"}, status=404)
                 return
 
             if path.startswith("/api/"):
@@ -247,7 +312,10 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json_response({"status": "error", "message": "Invalid JSON"}, status=400)
                 return
 
-            if self.path == "/api/reprocess":
+            parsed_url = urllib.parse.urlparse(self.path)
+            path = parsed_url.path.rstrip("/")
+
+            if path == "/api/reprocess":
                 folder_name = data.get("folder")
                 if not folder_name:
                     self._send_json_response({"status": "error", "message": "Missing 'folder' field"}, status=400)
@@ -269,7 +337,7 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json_response(res)
                 return
 
-            elif self.path == "/api/reprocess_single":
+            elif path == "/api/reprocess_single":
                 folder_name = data.get("folder")
                 filename = data.get("filename")
                 if not folder_name or not filename:
@@ -284,7 +352,62 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                     self._send_json_response({"status": "error", "message": "Image not found"}, status=404)
                 return
 
-            elif self.path == "/api/curate_sample":
+            elif path == "/api/save_curated_crop":
+                folder_name = data.get("folder")
+                filename = data.get("filename")
+                y_top_points = data.get("y_top_points", [])
+                y_bot_points = data.get("y_bot_points", [])
+                crop_left = int(data.get("crop_left", 0))
+                crop_right = data.get("crop_right")
+                if crop_right is not None:
+                    crop_right = int(crop_right)
+                crop_left_top = data.get("crop_left_top")
+                crop_left_bot = data.get("crop_left_bot")
+                crop_right_top = data.get("crop_right_top")
+                crop_right_bot = data.get("crop_right_bot")
+
+                if not folder_name or not filename or not y_top_points or not y_bot_points:
+                    self._send_json_response({"status": "error", "message": "Missing required crop/vector fields"}, status=400)
+                    return
+                try:
+                    res = save_curated_crop_from_vectors(
+                        folder_name, filename, y_top_points, y_bot_points,
+                        crop_left=crop_left, crop_right=crop_right,
+                        crop_left_top=crop_left_top, crop_left_bot=crop_left_bot,
+                        crop_right_top=crop_right_top, crop_right_bot=crop_right_bot
+                    )
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif path == "/api/retrain_unet":
+                epochs = int(data.get("epochs", 10))
+                lr = float(data.get("lr", 2e-4))
+                try:
+                    res = trigger_unet_retraining_async(epochs=epochs, lr=lr)
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif path == "/api/stop_retrain":
+                try:
+                    res = stop_unet_retraining()
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif path == "/api/reset_curated":
+                try:
+                    res = reset_curated_dataset()
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif path == "/api/curate_sample":
                 folder_name = data.get("folder")
                 filename = data.get("filename")
                 if not folder_name or not filename:
@@ -298,7 +421,7 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                     self._send_json_response({"status": "error", "message": str(err)}, status=500)
                 return
 
-            elif self.path == "/api/uncurate_sample":
+            elif path == "/api/uncurate_sample":
                 folder_name = data.get("folder")
                 filename = data.get("filename")
                 if not folder_name or not filename:
@@ -311,7 +434,7 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                     self._send_json_response({"status": "error", "message": str(err)}, status=500)
                 return
 
-            elif self.path == "/api/curate_batch":
+            elif path == "/api/curate_batch":
                 folder_name = data.get("folder")
                 filenames = data.get("filenames", [])
                 if not folder_name or not filenames:
@@ -330,8 +453,8 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
             self._send_json_response({"status": "error", "message": f"Internal Server Error: {str(exc)}"}, status=500)
 
 
-class ReusableHTTPServer(HTTPServer):
-    """HTTPServer with socket reuse enabled and daemon worker handling."""
+class ReusableHTTPServer(ThreadingHTTPServer):
+    """ThreadingHTTPServer with parallel request dispatch and socket reuse enabled."""
     allow_reuse_address = True
     daemon_threads = True
 

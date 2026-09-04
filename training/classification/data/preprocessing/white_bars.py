@@ -151,14 +151,21 @@ def detect_and_remove_compass_artifacts(
 
 def detect_and_process_white_bars(
     img: np.ndarray,
-    white_thresh: int = 190,
+    white_thresh: int = 175,
     dark_bg_thresh: int = 70,
-    gap_pixels: int = 3,
+    gap_pixels: int = 4,
+    pad_pixels: int = 10,
+    max_search_depth_top: float = 0.35,
+    max_search_depth_bot: float = 0.35,
     highlight_red: bool = False
 ) -> np.ndarray:
     """
-    Column-wise raycasting from the top and bottom edges to detect and zero white
-    scanner annotation bars (white_thresh=190+).
+    Pure Per-Column Vertical Raycasting for White Scanner Border, Banner & Corner Artifact Removal.
+    Evaluates every single vertical column x in [0, W-1] independently:
+      1. Top-Down: Starts at y=0, raycasts downward if white, zeroing out until dark background.
+      2. Bottom-Up: Starts at y=H-1, raycasts upward if white, zeroing out until dark background.
+    Guarantees that corner triangles, partial white bars, metadata stamps, and full banners
+    are cleanly zeroed out column-by-column without horizontal artifacts or tissue clipping.
     """
     if img.ndim == 2:
         gray = img
@@ -175,13 +182,15 @@ def detect_and_process_white_bars(
     H, W = gray.shape
     bar_mask = np.zeros((H, W), dtype=np.uint8)
 
-    # 1. Top-Down Column Raycasting
-    top_row_white_pct = np.mean(gray[0, :] > white_thresh)
-    if top_row_white_pct > 0.15:
-        for x in range(W):
+    max_top_y = int(H * max_search_depth_top)
+    min_bot_y = int(H * (1.0 - max_search_depth_bot))
+
+    # 1. Top-Down Vertical Column Raycasting (every column x independently)
+    for x in range(W):
+        if gray[0, x] >= white_thresh:
             dark_count = 0
-            last_white_y = -1
-            for y in range(H):
+            last_white_y = 0
+            for y in range(max_top_y):
                 val = gray[y, x]
                 if val >= white_thresh:
                     bar_mask[y, x] = 255
@@ -193,17 +202,15 @@ def detect_and_process_white_bars(
                         break
                 else:
                     break
-            if last_white_y >= 0:
-                pad_end = min(H, last_white_y + 15)
-                bar_mask[:pad_end, x] = 255
+            pad_end = min(max_top_y, last_white_y + pad_pixels)
+            bar_mask[:pad_end, x] = 255
 
-    # 2. Bottom-Up Column Raycasting
-    bottom_row_white_pct = np.mean(gray[H - 1, :] > white_thresh)
-    if bottom_row_white_pct > 0.15:
-        for x in range(W):
+    # 2. Bottom-Up Vertical Column Raycasting (every column x independently)
+    for x in range(W):
+        if gray[H - 1, x] >= white_thresh:
             dark_count = 0
-            first_white_y = H
-            for y in range(H - 1, -1, -1):
+            first_white_y = H - 1
+            for y in range(H - 1, min_bot_y, -1):
                 val = gray[y, x]
                 if val >= white_thresh:
                     bar_mask[y, x] = 255
@@ -215,12 +222,21 @@ def detect_and_process_white_bars(
                         break
                 else:
                     break
-            if first_white_y < H:
-                pad_start = max(0, first_white_y - 15)
-                bar_mask[pad_start:, x] = 255
+            pad_start = max(min_bot_y, first_white_y - pad_pixels)
+            bar_mask[pad_start:, x] = 255
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    # Morphological closing along vertical columns
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 5))
     bar_mask = cv2.morphologyEx(bar_mask, cv2.MORPH_CLOSE, kernel)
+
+    if img.ndim == 2:
+        processed_img = gray.copy()
+        if highlight_red:
+            processed_img = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2BGR)
+            processed_img[bar_mask == 255] = [0, 0, 255]
+        else:
+            processed_img[bar_mask == 255] = 0
+        return processed_img
 
     processed_img = bgr.copy()
     if highlight_red:

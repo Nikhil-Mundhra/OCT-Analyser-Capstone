@@ -13,6 +13,14 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+try:
+    from data.preprocessing.white_bars import detect_and_process_white_bars
+except ImportError:
+    try:
+        from training.classification.data.preprocessing.white_bars import detect_and_process_white_bars
+    except ImportError:
+        from white_bars import detect_and_process_white_bars
+
 DEFAULT_MASKED_ROOT = Path(
     os.environ.get("MASKED_DATASET_DIR", "/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified-masked")
 )
@@ -77,6 +85,11 @@ class ClassifiedMaskedDataset(Dataset):
 
         if image is None:
             raise FileNotFoundError(f"Image not found or unreadable: {img_path}")
+
+        # Clean white scanner annotation bars / metadata borders to pure black
+        image = detect_and_process_white_bars(image, white_thresh=190, dark_bg_thresh=70, gap_pixels=3)
+        if self.in_channels == 1 and image.ndim == 3:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         # Read binary mask
         mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
