@@ -145,14 +145,14 @@
       "eye": "OD",
       "cohort": "Validation (Held-Out)",
       "is_validation": true,
-      "unet_dice": 0.15950331664094733,
-      "unet_mabe": 168.52074827229697,
-      "unet_p95": 293.9600513513514,
-      "unet_cup_iou": 0.826834740815711,
-      "bad_dice": 0.8086681682797517,
+      "unet_dice": 0.8021271963830924,
+      "unet_mabe": 79.2934291764769,
+      "unet_p95": 172.37376984126982,
+      "unet_cup_iou": 0.8437136169685369,
+      "bad_dice": 0.8066259033821429,
       "bad_mabe": NaN,
       "bad_p95": NaN,
-      "bad_cup_iou": 0.7052055035687324
+      "bad_cup_iou": 0.6936486681478802
     },
     {
       "subject": "BEH0335",
@@ -355,8 +355,8 @@
       "eye": "OD",
       "cohort": "Validation (Held-Out)",
       "filename": "gallery_bscan_BEH0335_OD.png",
-      "dice": 0.15950331664094733,
-      "mabe": 168.52074827229697
+      "dice": 0.8021271963830924,
+      "mabe": 79.2934291764769
     },
     {
       "subject": "BEH0349",

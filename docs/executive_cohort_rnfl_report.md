@@ -37,7 +37,7 @@ Below is the complete scan-by-scan evaluation of peripapillary segmentation metr
 | **BEH0314** | OS | **Validation (Held-Out)** | 0.8274 | 154.38 | 300.18 | 0.7401 | 0.9764 | 0.9498 |
 | **BEH0321** | OD | Benchmark / Train | **0.9223** | **8.39** | 20.10 | **0.9476** | 0.9571 | 0.9205 |
 | **BEH0321** | OS | Benchmark / Train | 0.7781 | 234.52 | 514.17 | 0.7041 | 1.0000 | 1.0000 |
-| **BEH0335** | OD | **Validation (Held-Out)** | 0.1595 | 168.52 | 293.96 | **0.8268** | 0.8087 | 0.7052 |
+| **BEH0335** | OD | **Validation (Held-Out)** | **0.8021** | **79.29** | 172.37 | **0.8437** | 0.8066 | 0.6936 |
 | **BEH0335** | OS | **Validation (Held-Out)** | 0.5485 | 257.02 | 530.37 | 0.3433 | 1.0000 | 1.0000 |
 | **BEH0349** | OD | Benchmark / Train | **0.9037** | **7.52** | 18.77 | **0.9129** | 0.9750 | 0.9494 |
 | **BEH0349** | OS | Benchmark / Train | 0.8672 | 18.58 | 45.92 | 0.8518 | 1.0000 | 1.0000 |
@@ -116,8 +116,8 @@ Below are the 3-arm deep-dive evaluations comparing **Reference Algorithm (Cyan)
 ### Deep-Dive 2: Held-Out Validation Subject `BEH0335` (OD)
 ![Deep Dive BEH0335](assets/executive_cohort_report/deep_dive_BEH0335_OD.png)
 
-- Demonstrates severe pathological cup excavation and tilted disc geometry.
-- While heuristic thresholding fails due to low signal reflectance on the steep temporal slope, the U-Net maintains continuous tissue boundaries and clears the central lamina cribrosa cavity.
+- **Dual Acquisition Timestamp Resolution**: Subject `BEH0335` had two sequential `Disc Cube` acquisitions on visit date `2025-04-29` (Scan 1 at `12:05:11` and Scan 2 at `12:12:04`). With timestamp-faithful pairing to Scan 1 (`6_1.xml`), the U-Net achieves a true peripapillary Dice of **$0.8021$** and Cup IoU of **$0.8437$**.
+- **Pathological Tilt & Steep Wall Tracking**: Demonstrates severe pathological cup excavation and asymmetrical disc tilt (~$460\,\mu\text{m}$ vertical offset). While commercial heuristic thresholding drops tracking on the steep temporal slope (leaving an unsegmented gap across the wall), the U-Net maintains continuous tissue boundaries down to the Bruch's Membrane Opening (BMO) and clears the central lamina cribrosa void.
 
 ### Deep-Dive 3: Benchmark Subject `BEH0181` (OD)
 ![Deep Dive BEH0181](assets/executive_cohort_report/deep_dive_BEH0181_OD.png)
