@@ -57,6 +57,8 @@ archive/
 *.zip
 *.tar.gz
 *.pdf
+!docs/*.pdf
+!docs/**/*.pdf
 
 # Environment Variables
 .env
