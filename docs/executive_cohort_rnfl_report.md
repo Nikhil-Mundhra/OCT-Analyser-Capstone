@@ -12,12 +12,21 @@ span[style*="#d97706"] code, span[style*="#d97706"] {
         margin-top: 10px !important;
         margin-bottom: 12px !important;
     }
-    h3 {
+    h2:last-of-type {
+        page-break-before: auto !important;
+        break-before: auto !important;
         margin-top: 14px !important;
         margin-bottom: 8px !important;
     }
-    p, li {
+    h3 {
+        margin-top: 12px !important;
         margin-bottom: 6px !important;
+    }
+    p, li {
+        margin-bottom: 5px !important;
+    }
+    hr {
+        margin: 8px 0 !important;
     }
     table {
         page-break-inside: auto;
@@ -238,21 +247,16 @@ Below are the 3-arm deep-dive evaluations comparing **Reference Algorithm (Cyan)
 
 ## 7. Algorithmic Mechanics Driving Boundary Adherence
 
-```
-    ANATOMICAL PROBLEM                   COMMERCIAL ALGORITHM                 VOLUMETRIC U-NET SOLUTION
-──────────────────────────────       ────────────────────────────         ───────────────────────────────────
-Steep Neuroretinal Rim Tilt          Graph-search cuts straight down      Differentiable Optical Edge Loss
-                                     into GCL to minimize curvature       pulls boundary onto Sobel gradient
+To explain the clinical failure modes and quantitative performance disparities observed across the cohort, the operational mechanics of the commercial graph-search heuristic are contrasted directly against the architectural innovations of the Volumetric U-Net:
 
-Staircase Quantization               Integer pixel mask thresholding      Continuous 1D Regression Head
-                                     produces discrete jagged steps       outputs continuous surface depths
-
-Optic Cup Cavity Bleeding            Heuristic morphological dilation     Dedicated 1D BMO detection head
-                                     bridges across deep canal            executes vertical truncation
-
-Inter-Slice Scanline Jitter          Independent slice-by-slice 2D        2.5D multi-slice context stack
-                                     processing creates comb spikes       enforces 3D volumetric coherence
-```
+| Anatomical Challenge & Region | Commercial Solix Heuristic Failure Mode | Multi-Task Volumetric U-Net Architectural Solution |
+| :--- | :--- | :--- |
+| **Steep Neuroretinal Rim Tilt**<br><span class="badge badge-challenge">High Curvature</span> | **Curvature Penalty Over-Smoothing**: Graph-search algorithm minimizes second-order smoothness penalties ($\lambda \cdot (\Delta y)^2$). On steep canal descents, the algorithm shortcuts straight down into the hyporeflective Ganglion Cell Layer (GCL), artificially inflating rim area by $30\text{--}50\,\mu\text{m}$. | **Differentiable Optical Gradient Alignment ($\mathcal{L}_{\text{edge}}$)**: Sobel-aligned loss vector pulls predicted boundaries magnetically onto true physical optical reflectivity transitions, contouring steep rim drop-offs without curvature flattening. |
+| **Staircase Quantization Artifacts**<br><span class="badge badge-challenge">Axial Resolution</span> | **Integer Voxel Binarization**: Pixel-level mask thresholding forces integer-quantized boundary steps ($90^\circ$ staircase corners), injecting high-frequency impulse noise into feature space and corrupting gradient calculations. | **Continuous 1D Regression Heads**: Predicts continuous floating-point axial coordinates ($y \in \mathbb{R}$) directly, generating physiological sub-pixel boundary contours with zero discrete step artifacts. |
+| **Optic Cup Cavity Bleeding**<br><span class="badge badge-challenge">Lamina Overfill</span> | **Canal Hole-Filling Dilation**: Morphological closing and dilation heuristics bridge across the deep neural canal, falsely classifying the non-neural lamina cribrosa floor as axonal nerve fiber tissue. | **Dedicated 1D BMO Detection Head**: Identifies precise Bruch's Membrane Opening termination coordinates and executes strict vertical truncation, preserving the hollow excavation of the optic cup. |
+| **Inter-Slice Scanline Jitter**<br><span class="badge badge-challenge">3D Incoherence</span> | **2D Independent Slice Inference**: Processing B-scans independently without inter-slice spatial memory produces high-frequency "comb-tooth" sawtooth jitter across 3D Slicer volume reconstructions. | **2.5D Multi-Slice Context Stack**: MONAI ResNet encoder ingests 5-slice adjacent context windows ($[-2, -1, 0, +1, +2]$), enforcing out-of-plane continuity and regularizing single-slice noise spikes. |
+| **Retinal Blood Vessel Shadows**<br><span class="badge badge-challenge">Optical Attenuation</span> | **Acoustic Drop-Down Trapping**: Large retinal vessel trunks attenuate incident beam power, creating dark vertical columns where heuristic segmenters lose contrast and drop down to the hyperreflective RPE band. | **Contextual Lamina Trajectory Bridging**: Encoder-decoder receptive fields recognize vascular attenuation geometry, interpolating continuous axonal paths across shadow columns. |
+| **Severe Pathological Disc Tilt**<br><span class="badge badge-challenge">Domain Shift (`BEH0335`)</span> | **Asymmetric Reflectivity Bias**: In high myopia with oblique scleral canal insertion, skewed optical incidence reduces nasal backscattering, causing total segmentation divergence ($108.9\,\mu\text{m}$ MABE). | **Geometry-Normalized Feature Embeddings**: Standardized orientation coordinates and axial depth anchors preserve qualitative tissue boundaries even under severe myopic disc tilt. |
 
 ---
 
