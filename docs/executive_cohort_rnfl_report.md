@@ -1,3 +1,9 @@
+<style>
+span[style*="#d97706"] code, span[style*="#d97706"] {
+    color: #ea580c !important;
+}
+</style>
+
 # Volumetric RNFL Segmentation: Multi-Subject Executive Cohort Report
 
 **Cohort Scope**: 11 Subjects (`BEH0174` - `BEH0410`) | 22 Scans (OD & OS)  
@@ -5,7 +11,8 @@
 **Evaluation Arms**:
 - **Cyan**: Reference Algorithm / Clinician Ground Truth (Good Arm)
 - **Red**: Commercial Solix Baseline (Bad Arm)
-- **Green**: Fine-Tuned Volumetric U-Net (2.5D ResNet Backbone + Optical Edge Loss $\mathcal{L}_{\\text{edge}}$ + 1D Boundary Regression)
+- **Green**: Fine-Tuned Volumetric U-Net (2.5D ResNet Backbone + Optical Edge Loss $\mathcal{L}_{\text{edge}}$ + 1D Boundary Regression)
+- **<span style="color: #d97706; font-weight: bold;">Orange</span>**: Held-Out Validation Data (<span style="color: #d97706; font-weight: bold;">`BEH0314`</span> & <span style="color: #d97706; font-weight: bold;">`BEH0335`</span> Scans Unseen During Training)
 
 ---
 
@@ -15,15 +22,15 @@ This executive report delivers a cohort-wide comparative evaluation of the **Vol
 
 ### High-Level Findings:
 1. **Universal Eradication of the Downward Wedge**: Across all 11 subjects, the commercial and reference algorithms systematically over-segment the neuroretinal rim by plunging vertically into the hyporeflective Ganglion Cell Layer (GCL) and Inner Plexiform Layer (IPL). The U-Net consistently contours the hyperreflective axonal band, measuring true anatomical nerve fiber thickness.
-2. **Sub-Pixel Boundary Fidelity**: On the primary diagnostic eyes (OD), the U-Net achieved a mean peripapillary absolute boundary error (**MABE**) of **$7.98 \; \mu\\text{m}$** (axial resolution: $3.09 \; \mu\\text{m}$) and an average peripapillary Dice score of **$0.922$** across the benchmark cohort.
-3. **Generalization on Held-Out Validation Scans**: On unseen validation subject `BEH0314` (OD), the U-Net achieved **$0.9025$ Dice** and **$0.9013$ Cup IoU**, dramatically outperforming the commercial baseline (**$0.8175$ Dice** and **$0.5701$ Cup IoU**), which suffered severe tracking failures in the temporal cup rim.
+2. **Sub-Pixel Boundary Fidelity**: On the primary diagnostic eyes (OD), the U-Net achieved a mean peripapillary absolute boundary error (**MABE**) of **$7.98 \; \mu\text{m}$** (axial resolution: $3.09 \; \mu\text{m}$) and an average peripapillary Dice score of **$0.922$** across the benchmark cohort.
+3. **Generalization on Held-Out Validation Scans**: On unseen validation subject <span style="color: #d97706; font-weight: bold;">`BEH0314` (OD)</span>, the U-Net achieved <span style="color: #d97706; font-weight: bold;">**$0.9025$ Dice**</span> and <span style="color: #d97706; font-weight: bold;">**$0.9013$ Cup IoU**</span>, dramatically outperforming the commercial baseline (**$0.8175$ Dice** and **$0.5701$ Cup IoU**), which suffered severe tracking failures in the temporal cup rim. On pathological validation subject <span style="color: #d97706; font-weight: bold;">`BEH0335` (OD)</span>, the model maintained continuous anatomical tissue tracking down to Bruch's Membrane Opening despite extreme $>30^\circ$ disc tilt.
 4. **Anatomical BMO Landmark Locking**: The U-Net's continuous 1D cup detection head correctly located the **Bruch's Membrane Opening (BMO)** termination endpoints across the cohort (mean Cup IoU: **$0.938$** on OD scans), executing sharp vertical truncation without artificial tissue bleeding across the scleral canal.
 
 ---
 
 ## 2. Cohort Quantitative Benchmark Table
 
-Below is the complete scan-by-scan evaluation of peripapillary segmentation metrics across all 11 subjects:
+Below is the complete scan-by-scan evaluation of peripapillary segmentation metrics across all 11 subjects (held-out validation acquisitions and metrics styled in <span style="color: #d97706; font-weight: bold;">orange</span>):
 
 | Subject | Eye | Cohort Status | Reference Ground Truth | U-Net Dice | U-Net MABE ($\mu$m) | U-Net $P_{95}$ ($\mu$m) | U-Net Cup IoU | Commercial Baseline Dice | Commercial Baseline Cup IoU |
 | :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -33,12 +40,12 @@ Below is the complete scan-by-scan evaluation of peripapillary segmentation metr
 | **BEH0181** | OS | Benchmark / Train | Clinician Corrected | 0.8367 | 35.79 | 99.54 | 0.7981 | 0.9747 | 0.9431 |
 | **BEH0310** | OD | Benchmark / Train | Clinician Corrected | **0.9335** | **7.87** | 18.17 | **0.9471** | 0.9021 | 0.6100 |
 | **BEH0310** | OS | Benchmark / Train | Unedited Mirror | 0.8660 | 54.06 | 115.11 | 0.8952 | *(0.9999)* <sup>†</sup> | *(1.0000)* <sup>†</sup> |
-| **BEH0314** | OD | **Validation (Held-Out)** | Clinician Corrected | **0.9025** | **32.79** | 70.84 | **0.9013** | 0.8175 | 0.5701 |
-| **BEH0314** | OS | **Validation (Held-Out)** | Clinician Corrected | 0.8274 | 154.38 | 300.18 | 0.7401 | 0.9764 | 0.9498 |
+| <span style="color: #d97706; font-weight: bold;">BEH0314</span> | OD | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.9025</span> | <span style="color: #d97706; font-weight: bold;">32.79</span> | <span style="color: #d97706; font-weight: bold;">70.84</span> | <span style="color: #d97706; font-weight: bold;">0.9013</span> | 0.8175 | 0.5701 |
+| <span style="color: #d97706; font-weight: bold;">BEH0314</span> | OS | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.8274</span> | <span style="color: #d97706; font-weight: bold;">154.38</span> | <span style="color: #d97706; font-weight: bold;">300.18</span> | <span style="color: #d97706; font-weight: bold;">0.7401</span> | 0.9764 | 0.9498 |
 | **BEH0321** | OD | Benchmark / Train | Clinician Corrected | **0.9223** | **8.39** | 20.10 | **0.9476** | 0.9571 | 0.9205 |
 | **BEH0321** | OS | Benchmark / Train | Unedited Mirror | 0.7781 | 234.52 | 514.17 | 0.7041 | *(1.0000)* <sup>†</sup> | *(1.0000)* <sup>†</sup> |
-| **BEH0335** | OD | **Validation (Held-Out)** | Clinician Corrected | **0.8021** | **79.29** | 172.37 | **0.8437** | 0.8066 | 0.6936 |
-| **BEH0335** | OS | **Validation (Held-Out)** | Unedited Mirror | 0.5485 | 257.02 | 530.37 | 0.3433 | *(1.0000)* <sup>†</sup> | *(1.0000)* <sup>†</sup> |
+| <span style="color: #d97706; font-weight: bold;">BEH0335</span> | OD | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.8021</span> | <span style="color: #d97706; font-weight: bold;">79.29</span> | <span style="color: #d97706; font-weight: bold;">172.37</span> | <span style="color: #d97706; font-weight: bold;">0.8437</span> | 0.8066 | 0.6936 |
+| <span style="color: #d97706; font-weight: bold;">BEH0335</span> | OS | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Unedited Mirror | <span style="color: #d97706; font-weight: bold;">0.5485</span> | <span style="color: #d97706; font-weight: bold;">257.02</span> | <span style="color: #d97706; font-weight: bold;">530.37</span> | <span style="color: #d97706; font-weight: bold;">0.3433</span> | *(1.0000)* <sup>†</sup> | *(1.0000)* <sup>†</sup> |
 | **BEH0349** | OD | Benchmark / Train | Clinician Corrected | **0.9037** | **7.52** | 18.77 | **0.9129** | 0.9750 | 0.9494 |
 | **BEH0349** | OS | Benchmark / Train | Unedited Mirror | 0.8672 | 18.58 | 45.92 | 0.8518 | *(1.0000)* <sup>†</sup> | *(1.0000)* <sup>†</sup> |
 | **BEH0354** | OD | Benchmark / Train | Clinician Corrected | **0.9283** | **7.59** | 17.68 | **0.9434** | 0.9867 | 0.9588 |
@@ -54,11 +61,11 @@ Below is the complete scan-by-scan evaluation of peripapillary segmentation metr
 
 > [!IMPORTANT]
 > **Resolving the Commercial Baseline Discrepancy**:
-> - **Clinician-Corrected Ground Truth Scans**: On scans where clinicians actively intervened to correct commercial heuristic errors (`BEH0314 OD`, `BEH0335 OD`, `BEH0310 OD`), the Commercial Baseline drops significantly (**0.8066–0.9021 Dice** and **0.5701–0.6936 Cup IoU**). Here, the U-Net outperforms the baseline by eliminating the downward wedge overfill.
+> - **Clinician-Corrected Ground Truth Scans**: On scans where clinicians actively intervened to correct commercial heuristic errors (<span style="color: #d97706; font-weight: bold;">`BEH0314 OD`</span>, <span style="color: #d97706; font-weight: bold;">`BEH0335 OD`</span>, `BEH0310 OD`), the Commercial Baseline drops significantly (**0.8066–0.9021 Dice** and **0.5701–0.6936 Cup IoU**). Here, the U-Net outperforms the baseline by eliminating the downward wedge overfill.
 > - **Unedited Mirror Scans**: For scans where clinicians made no edits, the reference is literally the commercial machine output itself. Evaluating the commercial algorithm against itself yields trivial ~1.0000 scores. On these scans, the U-Net's 0.91–0.93 Dice is not an algorithmic defect; rather, the model adheres to true optical reflectivity and refuses to reproduce the machine's uncorrected GCL over-segmentation.
 
 > **Key Anatomical Insight (OD vs. OS & Left-Eye Failure Modes)**:
-> In the training pipeline (`dataset.py`), left eyes (OS) were horizontally flipped during data ingestion so that the Nasal-Temporal orientation was geometrically uniform. During raw unstandardized volume inference on OS eyes, the nasal-temporal polarity is reversed, highlighting the necessity of applying the horizontal flip prior to volumetric segmentation. Unstandardized OS scans (`BEH0321 OS`, `BEH0335 OS`) suffer severe boundary drift ($>230\,\mu\text{m}$ MABE) due to this geometric inversion.
+> In the training pipeline (`dataset.py`), left eyes (OS) were horizontally flipped during data ingestion so that the Nasal-Temporal orientation was geometrically uniform. During raw unstandardized volume inference on OS eyes, the nasal-temporal polarity is reversed, highlighting the necessity of applying the horizontal flip prior to volumetric segmentation. Unstandardized OS scans (`BEH0321 OS`, <span style="color: #d97706; font-weight: bold;">`BEH0335 OS`</span>) suffer severe boundary drift ($>230\,\mu\text{m}$ MABE) due to this geometric inversion.
 
 ---
 
@@ -66,8 +73,8 @@ Below is the complete scan-by-scan evaluation of peripapillary segmentation metr
 
 ![Cohort Summary Chart](assets/executive_cohort_report/cohort_summary_chart.png)
 
-- **Chart Left (Peripapillary Dice)**: Demonstrates stable $\ge 0.91$ Dice across 8 of 11 subjects (and $\ge 0.90$ across 10 of 11 subjects) on OD acquisitions.
-- **Chart Right (MABE and Cup IoU)**: Displays consistent boundary error around $7-8 \; \mu\text{m}$ (less than 3 pixels axial) paired with $> 0.93$ Cup IoU on standard-orientation diagnostic eyes, proving that the model generalizes robust optic cup clearance across varied disc topographies.
+- **Chart Left (Peripapillary Dice)**: Demonstrates stable $\ge 0.91$ Dice across 8 of 11 subjects (and $\ge 0.90$ across 10 of 11 subjects) on OD acquisitions. <span style="color: #d97706; font-weight: bold;">Held-out validation subjects (<span style="color: #d97706;">`BEH0314`</span>, <span style="color: #d97706;">`BEH0335`</span>)</span> are highlighted in orange bars and badges.
+- **Chart Right (MABE and Cup IoU)**: Displays consistent boundary error around $7-8 \; \mu\text{m}$ (less than 3 pixels axial) paired with $> 0.93$ Cup IoU on training benchmark eyes. <span style="color: #d97706; font-weight: bold;">Held-out validation samples (<span style="color: #d97706;">`BEH0314`</span> at $32.8\,\mu\text{m}$, <span style="color: #d97706;">`BEH0335`</span> at $79.3\,\mu\text{m}$)</span> are highlighted in orange diamonds/squares, capturing out-of-sample generalization alongside pathological disc tilt stress testing.
 
 ---
 
@@ -84,13 +91,13 @@ The panels below display the central disc B-scan for each subject in the cohort,
 ### Subject BEH0310 (OD)
 ![Gallery BEH0310](assets/executive_cohort_report/gallery_bscan_BEH0310_OD.png)
 
-### Subject BEH0314 (OD) — [Held-Out Validation]
+### Subject <span style="color: #d97706; font-weight: bold;">`BEH0314` (OD)</span> — <span style="color: #d97706; font-weight: bold;">[Held-Out Validation]</span>
 ![Gallery BEH0314](assets/executive_cohort_report/gallery_bscan_BEH0314_OD.png)
 
 ### Subject BEH0321 (OD)
 ![Gallery BEH0321](assets/executive_cohort_report/gallery_bscan_BEH0321_OD.png)
 
-### Subject BEH0335 (OD) — [Held-Out Validation]
+### Subject <span style="color: #d97706; font-weight: bold;">`BEH0335` (OD)</span> — <span style="color: #d97706; font-weight: bold;">[Held-Out Validation]</span>
 ![Gallery BEH0335](assets/executive_cohort_report/gallery_bscan_BEH0335_OD.png)
 
 ### Subject BEH0349 (OD)
@@ -114,17 +121,17 @@ The panels below display the central disc B-scan for each subject in the cohort,
 
 Below are the 3-arm deep-dive evaluations comparing **Reference Algorithm (Cyan)**, **Commercial Solix (Red)**, and **Volumetric U-Net (Green)** across full central B-scans, nasal and temporal neuroretinal rim zooms, and axial en face mid-rim sections.
 
-### Deep-Dive 1: Held-Out Validation Subject `BEH0314` (OD)
+### Deep-Dive 1: Held-Out Validation Subject <span style="color: #d97706; font-weight: bold;">`BEH0314` (OD)</span>
 ![Deep Dive BEH0314](assets/executive_cohort_report/deep_dive_BEH0314_OD.png)
 
 - **Top Row (3 Arms)**: Notice how the Commercial Solix (Red) completely crashes into the cup floor on the left, while the Reference (Cyan) produces an exaggerated downward wedge on the right. The U-Net (Green) successfully identifies the true physical termination points on both sides.
 - **Bottom Row (Zooms & En Face)**: The en face comparison (bottom right) demonstrates that the U-Net mask (Green) cleanly contours the circular optic cup void without the ragged lateral fragmentation seen in the commercial algorithm.
 
-### Deep-Dive 2: Held-Out Validation Subject `BEH0335` (OD)
+### Deep-Dive 2: Held-Out Validation Subject <span style="color: #d97706; font-weight: bold;">`BEH0335` (OD)</span>
 ![Deep Dive BEH0335](assets/executive_cohort_report/deep_dive_BEH0335_OD.png)
 
-- **Dual Acquisition Timestamp Resolution**: Subject `BEH0335` had two sequential `Disc Cube` acquisitions on visit date `2025-04-29` (Scan 1 at `12:05:11` and Scan 2 at `12:12:04`). With timestamp-faithful pairing to Scan 1 (`6_1.xml`), the U-Net achieves a true peripapillary Dice of **$0.8021$** and Cup IoU of **$0.8437$**.
-- **Pathological Tilt & Steep Wall Tracking**: Demonstrates severe pathological cup excavation and asymmetrical disc tilt (~$460\,\mu\text{m}$ vertical offset). While commercial heuristic thresholding drops tracking on the steep temporal slope (leaving an unsegmented gap across the wall), the U-Net maintains continuous tissue boundaries down to the Bruch's Membrane Opening (BMO) and clears the central lamina cribrosa void.
+- **Dual Acquisition Timestamp Resolution**: Subject <span style="color: #d97706; font-weight: bold;">`BEH0335`</span> had two sequential `Disc Cube` acquisitions on visit date `2025-04-29` (Scan 1 at `12:05:11` and Scan 2 at `12:12:04`). With timestamp-faithful pairing to Scan 1 (`6_1.xml`), the U-Net achieves a true peripapillary Dice of <span style="color: #d97706; font-weight: bold;">**$0.8021$**</span> and Cup IoU of <span style="color: #d97706; font-weight: bold;">**$0.8437$**</span>.
+- **Pathological Tilt & Steep Wall Tracking**: Demonstrates severe pathological cup excavation and asymmetrical disc tilt (~$460\,\mu\text{m}$ vertical offset) on validation subject <span style="color: #d97706; font-weight: bold;">`BEH0335`</span>. While commercial heuristic thresholding drops tracking on the steep temporal slope (leaving an unsegmented gap across the wall), the U-Net maintains continuous tissue boundaries down to the Bruch's Membrane Opening (BMO) and clears the central lamina cribrosa void.
 
 ### Deep-Dive 3: Benchmark Subject `BEH0181` (OD)
 ![Deep Dive BEH0181](assets/executive_cohort_report/deep_dive_BEH0181_OD.png)
