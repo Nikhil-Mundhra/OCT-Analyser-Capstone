@@ -3,12 +3,21 @@ span[style*="#d97706"] code, span[style*="#d97706"] {
     color: #ea580c !important;
 }
 @media print {
-    h2 {
-        page-break-before: always;
-        break-before: page;
+    body {
+        line-height: 1.45 !important;
     }
-    h2:first-of-type, #methods--evaluation-protocol {
-        page-break-before: auto;
+    h2 {
+        page-break-before: always !important;
+        break-before: page !important;
+        margin-top: 10px !important;
+        margin-bottom: 12px !important;
+    }
+    h3 {
+        margin-top: 14px !important;
+        margin-bottom: 8px !important;
+    }
+    p, li {
+        margin-bottom: 6px !important;
     }
     table {
         page-break-inside: auto;
@@ -18,7 +27,7 @@ span[style*="#d97706"] code, span[style*="#d97706"] {
         page-break-after: auto;
     }
     td, th {
-        padding: 4px 8px !important;
+        padding: 5px 8px !important;
         font-size: 0.88em !important;
     }
 }
@@ -33,8 +42,6 @@ span[style*="#d97706"] code, span[style*="#d97706"] {
 - **Red**: Commercial Solix Heuristic Baseline (Bad Arm)
 - **Green**: Multi-Task Volumetric U-Net (2.5D ResNet Backbone + Optical Gradient Loss $\mathcal{L}_{\text{edge}}$ + Continuous 1D Boundary Regression)
 - **<span style="color: #d97706; font-weight: bold;">Orange</span>**: Held-Out Validation Cohort (<span style="color: #d97706; font-weight: bold;">`BEH0314`</span> & <span style="color: #d97706; font-weight: bold;">`BEH0335`</span> Volumes, Unseen During Training)
-
----
 
 ## 1. Executive Summary
 
