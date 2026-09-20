@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/css/dashboard.css?v=48">
   <link rel="stylesheet" href="/css/controls.css?v=48">
   <link rel="stylesheet" href="/css/overlays.css?v=48">
+  <link rel="stylesheet" href="/css/scout.css?v=1">
 </head>
 <body>
 
@@ -20,6 +21,7 @@
     <div class="header-nav-tabs" style="display: flex; gap: 6px; background: rgba(0,0,0,0.35); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
       <button id="nav-tab-swiping" class="mode-btn active" style="padding: 6px 14px; font-weight: 700; color: #00f2fe; border-radius: 6px;">Crop Filtering & Swiping Studio</button>
       <button id="nav-tab-tuning" class="mode-btn" style="padding: 6px 14px; font-weight: 600; border-radius: 6px;">Multi-Sample Tuning Gallery</button>
+      <button id="nav-tab-scout" class="mode-btn" style="padding: 6px 14px; font-weight: 600; border-radius: 6px;">Classified-unet-masked Scout</button>
     </div>
 
     <div class="header-actions">
@@ -29,7 +31,7 @@
         <span id="btn-retrain-shimmer" class="btn-shimmer-effect" style="display: none;"></span>
         <span id="btn-retrain-text" class="btn-retrain-label">Retrain U-Net on Curated Data</span>
       </button>
-      <button id="btn-view-curated" class="btn-secondary" title="View all picked segmentation examples">View Curated (<span id="curated-count-num">0</span>)</button>
+      <button id="btn-view-curated" class="btn-secondary" title="View all picked segmentation examples">View Curated (<span id="curated-count-num">0</span><span id="curated-badge" style="display:none;">0</span>)</button>
     </div>
   </header>
 
@@ -626,10 +628,41 @@
   <div id="swiping-studio-view" class="swiping-studio-container" style="display: flex; flex-direction: column; height: calc(100vh - 65px); padding: 14px 20px; box-sizing: border-box; gap: 12px;">
 
     <!-- Top Status & Filtering Bar -->
-    <div class="swiping-top-bar" style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); padding: 10px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <span style="font-size: 0.85rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Disease Filter:</span>
-        <select id="swipe-folder-select" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; outline: none;"></select>
+    <div class="swiping-top-bar" style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); padding: 10px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 0.85rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Disease:</span>
+          <select id="swipe-folder-select" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; outline: none;"></select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 0.85rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Mode:</span>
+          <select id="swipe-filter-mode-select" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
+            <option value="all">All Scans (Unreviewed First)</option>
+            <option value="curated" style="color: #34d399; font-weight: 700;">Curated Only (Review / Fix Mode)</option>
+            <option value="uncurated">Unreviewed Only</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Surgical BG Eraser & Rerun U-Net Tools Group -->
+      <div class="scout-tools-group" style="margin: 0 auto;">
+        <div class="scout-tool-select-wrap">
+          <label for="swipe-active-tool-select" class="scout-tool-select-label">TOOL:</label>
+          <select id="swipe-active-tool-select" class="scout-tool-select">
+            <option value="none">Vectors &amp; Drag Handles</option>
+            <option value="eraser">Surgical BG Eraser (Click Point)</option>
+            <option value="unet-window">Rerun U-Net (Window Box)</option>
+          </select>
+        </div>
+
+        <button id="swipe-tool-action-btn" class="scout-tool-btn retrain-btn-animated scout-ablate-btn" title="Toggle active surgical tool" style="display: none;">
+          <div id="swipe-ablate-fill" class="scout-ablate-fill-bar"></div>
+          <span id="swipe-ablate-shimmer" class="scout-ablate-shimmer-effect" style="display: none;"></span>
+          <span id="swipe-ablate-text" class="scout-ablate-label">Surgical BG Eraser</span>
+        </button>
+
+        <button id="swipe-btn-undo" class="scout-tool-btn danger" style="display: none;" title="Undo previous edit (Ctrl+Z)">Undo Action</button>
+        <span id="swipe-tool-status" class="scout-tool-status" style="display: none;">Select tool to edit</span>
       </div>
 
       <div style="display: flex; align-items: center; gap: 20px;">
@@ -650,15 +683,18 @@
     <div class="swiping-stage" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; min-height: 0; align-items: center;">
 
       <!-- LEFT: Raw Scan + Editable SVG Neural-Symbolic Vectors -->
-      <div id="swipe-card" class="swipe-card-wrapper" style="position: relative; height: 100%; max-height: 850px; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; user-select: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <div id="swipe-card" class="swipe-card-wrapper" style="position: relative; height: 100%; max-height: 850px; background: #050811; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; user-select: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 30px; box-sizing: border-box;">
 
         <!-- Stamp Overlays for Swipe Feedback -->
         <div id="stamp-approve" class="swipe-stamp stamp-approve" style="position: absolute; top: 30px; left: 30px; border: 3px solid #10b981; color: #10b981; font-weight: 900; font-size: 1.8rem; padding: 4px 16px; border-radius: 8px; transform: rotate(-12deg); opacity: 0; pointer-events: none; z-index: 50;">APPROVE / KEEP</div>
         <div id="stamp-skip" class="swipe-stamp stamp-skip" style="position: absolute; top: 30px; right: 30px; border: 3px solid #ef4444; color: #ef4444; font-weight: 900; font-size: 1.8rem; padding: 4px 16px; border-radius: 8px; transform: rotate(12deg); opacity: 0; pointer-events: none; z-index: 50;">SKIP / NEXT</div>
 
-        <img id="swipe-img-raw" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none;">
-        <canvas id="swipe-crop-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: none;"></canvas>
-        <svg id="swipe-svg-overlay" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair;"></svg>
+        <div id="swipe-stage-viewport" style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: visible;">
+          <img id="swipe-img-raw" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none;">
+          <canvas id="swipe-crop-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: none;"></canvas>
+          <svg id="swipe-svg-overlay" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; overflow: visible;"></svg>
+          <canvas id="swipe-crosshair-canvas" class="scout-crosshair-canvas" style="position: absolute; inset: -30px; width: calc(100% + 60px); height: calc(100% + 60px); z-index: 60; pointer-events: none; display: none;"></canvas>
+        </div>
       </div>
 
       <!-- RIGHT: Live Clean Tissue Band (Lossless Background Suppressed) -->
@@ -687,6 +723,9 @@
       <div id="swipe-sample-meta" style="font-size: 0.85rem; color: #e2e8f0;">Ready.</div>
 
       <div style="display: flex; align-items: center; gap: 12px;">
+        <button id="btn-swipe-prev" class="btn-secondary" style="font-weight: 600;" title="Step back to previous scan (Z or ArrowDown)">
+          <kbd style="background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-right: 4px;">&darr; Z</kbd> Prev
+        </button>
         <button id="btn-swipe-skip" class="btn-secondary" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171; font-weight: 600;">
           <kbd style="background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-right: 4px;">&larr; A</kbd> Skip / Next
         </button>
@@ -740,6 +779,163 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- ============================================================================== -->
+  <!-- CLASSIFIED-UNET-MASKED SCOUT EXPLORER & SPLIT VIEWER -->
+  <!-- ============================================================================== -->
+  <div id="scout-explorer-view" class="scout-container" style="display: none;">
+
+    <!-- Top Status & Filtering Bar -->
+    <div class="scout-top-bar">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 0.85rem; font-weight: 700; color: #00f2fe; text-transform: uppercase; letter-spacing: 0.05em;">Scouting:</span>
+        <code id="scout-dataset-path" style="font-size: 0.78rem; color: #94a3b8; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px;">Classified-unet-masked/</code>
+      </div>
+
+      <div class="scout-stats-group">
+        <span id="scout-total-count" class="scout-stat-badge">0 scans</span>
+        <span id="scout-clean-count" class="scout-stat-badge clean">0 clean</span>
+        <span id="scout-suspicious-count" class="scout-stat-badge suspicious">0 suspicious</span>
+      </div>
+    </div>
+
+    <!-- Main Layout Grid: Sidebar File Manager + Split Viewer Stage -->
+    <div class="scout-stage-layout">
+
+      <!-- Left Sidebar: File Manager -->
+      <div class="scout-file-manager">
+        <div class="scout-fm-controls">
+          <select id="scout-folder-select" class="scout-folder-select">
+            <option value="">All Categories & Folders</option>
+          </select>
+
+          <div class="scout-search-wrap">
+            <input type="text" id="scout-search-input" class="scout-search-input" placeholder="Search scan or folder...">
+          </div>
+
+          <div class="scout-filter-bar">
+            <button class="scout-filter-btn active" data-filter="all">All</button>
+            <button class="scout-filter-btn suspicious-btn" data-filter="suspicious">Suspicious</button>
+            <button class="scout-filter-btn clean-btn" data-filter="clean">Clean</button>
+          </div>
+        </div>
+
+        <!-- Scan Card List -->
+        <div id="scout-fm-list" class="scout-fm-list">
+          <div style="color: #64748b; font-size: 0.8rem; padding: 12px;">Loading scans...</div>
+        </div>
+      </div>
+
+      <!-- Right Viewport: Interactive Split Viewer -->
+      <div class="scout-viewer-pane">
+
+        <!-- Viewer Header -->
+        <div class="scout-viewer-header">
+          <div class="scout-viewer-title-group">
+            <div id="scout-viewer-filename" class="scout-viewer-filename">Select an image to scout</div>
+            <span id="scout-viewer-badge" class="scout-card-badge clean" style="display: inline-block;">READY</span>
+          </div>
+
+          <div class="scout-tools-group">
+            <div class="scout-tool-select-wrap">
+              <label for="scout-active-tool-select" class="scout-tool-select-label">TOOL:</label>
+              <select id="scout-active-tool-select" class="scout-tool-select">
+                <option value="eraser">Surgical BG Eraser (Click Point)</option>
+                <option value="unet-window">Rerun U-Net (Window Box)</option>
+              </select>
+            </div>
+
+            <button id="scout-tool-action-btn" class="scout-tool-btn retrain-btn-animated scout-ablate-btn" title="Toggle active surgical tool">
+              <div id="scout-ablate-fill" class="scout-ablate-fill-bar"></div>
+              <span id="scout-ablate-shimmer" class="scout-ablate-shimmer-effect" style="display: none;"></span>
+              <span id="scout-ablate-text" class="scout-ablate-label">Surgical BG Eraser</span>
+            </button>
+
+            <button id="scout-btn-undo" class="scout-tool-btn danger" style="display: none;" title="Undo previous edit (Ctrl+Z)">Undo Action</button>
+            <span id="scout-tool-status" class="scout-tool-status" style="display: none;">Click target to erase</span>
+          </div>
+
+          <div class="scout-mode-switcher">
+            <button class="scout-mode-btn active" data-mode="split-side">Side-by-Side</button>
+            <button class="scout-mode-btn" data-mode="split-slider">Comparison Slider</button>
+            <button class="scout-mode-btn" data-mode="overlay">Overlay Blend</button>
+          </div>
+        </div>
+
+        <!-- Anomaly Warning Banner (shown when scan is suspicious) -->
+        <div id="scout-anomaly-banner" class="scout-anomaly-banner" style="display: none;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700;">
+            <span>FLAGGED SUSPICIOUS SCAN</span>
+          </div>
+          <div id="scout-anomaly-flags" class="scout-anomaly-flags"></div>
+        </div>
+
+        <!-- The Stage: Changes to red background when suspicious! -->
+        <div id="scout-stage-viewport" class="scout-stage-viewport">
+
+          <!-- MODE 1: Side-by-Side Split View -->
+          <div id="scout-split-side" class="scout-split-side-layout">
+            <div class="scout-view-card">
+              <div class="scout-view-label">Real (Preprocessed & Centered 384x384)</div>
+              <div class="scout-canvas-frame">
+                <img id="scout-real-img-side" class="scout-img-rendered" alt="Real Scan">
+                <canvas id="scout-canvas-side-real" class="scout-crosshair-canvas" width="384" height="384"></canvas>
+              </div>
+            </div>
+            <div class="scout-view-card">
+              <div class="scout-view-label">Mask (Attention U-Net Binary 384x384)</div>
+              <div class="scout-canvas-frame">
+                <img id="scout-mask-img-side" class="scout-img-rendered" alt="Mask">
+                <canvas id="scout-canvas-side-mask" class="scout-crosshair-canvas" width="384" height="384"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODE 2: Draggable Comparison Slider Curtain -->
+          <div id="scout-split-slider" class="scout-split-slider-container" style="display: none; --split-pos: 50%;">
+            <img id="scout-mask-img-slider" class="scout-slider-layer-under scout-img-rendered" alt="Mask Under">
+            <img id="scout-real-img-slider" class="scout-slider-layer-over scout-img-rendered" alt="Real Over">
+            <div class="scout-slider-divider"></div>
+            <div class="scout-slider-handle">&harr;</div>
+          </div>
+
+          <!-- MODE 3: Translucent Overlay Blend -->
+          <div id="scout-overlay-view" class="scout-overlay-container" style="display: none;">
+            <img id="scout-real-img-overlay" class="scout-img-rendered" style="width: 100%; height: 100%;" alt="Real Base">
+            <img id="scout-mask-img-overlay" class="scout-overlay-mask scout-img-rendered" alt="Mask Overlay">
+          </div>
+
+        </div>
+
+        <!-- Bottom Diagnostics Inspector Drawer -->
+        <div class="scout-diagnostics-drawer">
+          <div class="scout-metric-cell">
+            <div class="scout-metric-label">Tissue Area Coverage</div>
+            <div id="scout-m-area" class="scout-metric-val">--</div>
+          </div>
+          <div class="scout-metric-cell">
+            <div class="scout-metric-label">Mean Retinal Thickness</div>
+            <div id="scout-m-thickness" class="scout-metric-val">--</div>
+          </div>
+          <div class="scout-metric-cell">
+            <div class="scout-metric-label">Foreground Components</div>
+            <div id="scout-m-components" class="scout-metric-val">--</div>
+          </div>
+          <div class="scout-metric-cell">
+            <div class="scout-metric-label">Boundary Smoothness</div>
+            <div id="scout-m-derivative" class="scout-metric-val">--</div>
+          </div>
+          <div class="scout-metric-cell">
+            <div class="scout-metric-label">Dark Margin Invariant</div>
+            <div id="scout-m-margin" class="scout-metric-val">--</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
   </div>
 
   <!-- Model Training History Modal Dialog -->
@@ -807,6 +1003,7 @@
   <script src="/js/api.js?v=53"></script>
   <script src="/js/vector_overlay.js?v=53"></script>
   <script src="/js/swiping_studio.js?v=53"></script>
+  <script src="/js/scout.js?v=1"></script>
   <script src="/js/app.js?v=53"></script>
 </body>
 </html>

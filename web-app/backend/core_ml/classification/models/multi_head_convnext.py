@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import timm
+
 
 class ChannelAttention(nn.Module):
     def __init__(self, in_planes, ratio=16):
@@ -45,30 +47,78 @@ class CBAMBlock(nn.Module):
         x = x * self.sa(x)
         return x
 
+
+class StripPoolingProjection(nn.Module):
+    """
+    Encodes spatial-extent information that Global Average Pooling discards.
+
+    Rationale: Geographic atrophy (GA) and subretinal fluid (SRF) are
+    horizontally-extended flat regions, not discrete blobs. Their discriminative
+    signal is *spatial extent* — the RPE band is absent over a wide lateral
+    stretch (GA) or a shallow horizontal pocket spans the scan width (SRF).
+    Standard GAP collapses all spatial arrangement into a single vector,
+    making GA indistinguishable from two drusen mounds with the same average
+    activation. This module preserves that extent signal.
+
+    Args:
+        in_channels: Channel count of the input feature map (256 for S2).
+        h_strips:    Number of rows to pool to for the vertical profile.
+        w_strips:    Number of columns to pool to for the horizontal profile.
+        out_dim:     Projected dimension per strip direction (default 128).
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        h_strips: int = 4,
+        w_strips: int = 7,
+        out_dim: int = 128,
+    ) -> None:
+        super().__init__()
+        self.h_strips = h_strips
+        self.w_strips = w_strips
+        self.h_proj = nn.Sequential(
+            nn.Linear(in_channels * w_strips, out_dim),
+            nn.GELU(),
+        )
+        self.v_proj = nn.Sequential(
+            nn.Linear(in_channels * h_strips, out_dim),
+            nn.GELU(),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h_strip = F.adaptive_avg_pool2d(x, (1, self.w_strips))
+        h_feat = self.h_proj(h_strip.flatten(1))
+        v_strip = F.adaptive_avg_pool2d(x, (self.h_strips, 1))
+        v_feat = self.v_proj(v_strip.flatten(1))
+        return torch.cat([h_feat, v_feat], dim=1)
+
+
 class MultiHeadConvNeXt(nn.Module):
     """
-    Multi-Head ConvNeXt V2 Model with Multi-Scale Aggregation and Strict Hierarchical Conditioning
+    Multi-Head ConvNeXt V2 Model with Multi-Scale Aggregation and Strict Hierarchical Conditioning.
+
+    H2 feature vector composition (h2_in_dim = 2817 with H1 conditioning):
+      S2 mean GAP (256) + S2 max GAP (256)
+    + S3 mean GAP (512) + S3 max GAP (512)
+    + S4 mean GAP (1024)
+    + Strip pool  (256)
+    + H1 prob     (1)
+    = 2817
     """
     def __init__(self, num_pathology_classes: int = 12, pretrained: bool = True, condition_h2_on_h1: bool = True):
         super().__init__()
         self.condition_h2_on_h1 = condition_h2_on_h1
         
-        # 1. Initialize pre-trained convnextv2_base, extracting features from stages 1, 2, 3
-        # (Resolutions for 224x224 input: Stage 1=28x28, Stage 2=14x14, Stage 3=7x7)
         self.backbone = timm.create_model('convnextv2_base', pretrained=pretrained, features_only=True, out_indices=(1, 2, 3))
-        
-        # 2. Freeze all parameters in the stem and the first three stages (stages 0, 1, 2)
         self.freeze_backbone()
                 
         self.gap = nn.AdaptiveAvgPool2d(1)
         
-        # Output channels for convnextv2_base stages 1, 2, 3
         dim_s2 = 256
         dim_s3 = 512
         dim_s4 = 1024
         
-        # normal_abnormal_head (binary -> 1 output)
-        # H1 only looks at the global context (Stage 4)
         self.normal_abnormal_head = nn.Sequential(
             nn.Linear(dim_s4, 512),
             nn.GELU(),
@@ -76,16 +126,19 @@ class MultiHeadConvNeXt(nn.Module):
             nn.Linear(512, 1)
         )
         
-        # Multi-Scale CBAM Attention Modules for H2
         self.cbam_s2 = CBAMBlock(in_planes=dim_s2)
         self.cbam_s3 = CBAMBlock(in_planes=dim_s3)
         self.cbam_s4 = CBAMBlock(in_planes=dim_s4)
-        
-        multi_scale_dim = dim_s2 + dim_s3 + dim_s4
+
+        self.strip_pool_s2 = StripPoolingProjection(
+            in_channels=dim_s2, h_strips=4, w_strips=7, out_dim=128
+        )
+
+        _gap_dim = (dim_s2 * 2) + (dim_s3 * 2) + dim_s4
+        _strip_dim = 128 * 2
+        multi_scale_dim = _gap_dim + _strip_dim
         h2_in_dim = multi_scale_dim + 1 if condition_h2_on_h1 else multi_scale_dim
-        
-        # granular_pathology_head (multi-label / multi-class)
-        # Input dim is multi_scale_dim + 1 if condition_h2_on_h1 else multi_scale_dim
+
         self.granular_pathology_head = nn.Sequential(
             nn.Linear(h2_in_dim, 512),
             nn.GELU(),
@@ -94,30 +147,35 @@ class MultiHeadConvNeXt(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, return_probs: bool = False):
-        # forward_features with features_only=True returns a list of feature maps
         features_list = self.backbone(x)
-        f_s2 = features_list[0] # [B, 256, 28, 28]
-        f_s3 = features_list[1] # [B, 512, 14, 14]
-        f_s4 = features_list[2] # [B, 1024, 7, 7]
+        f_s2 = features_list[0]  # [B, 256, 28, 28]
+        f_s3 = features_list[1]  # [B, 512, 14, 14]
+        f_s4 = features_list[2]  # [B, 1024, 7, 7]
         
-        # --- Stream 1: H1 Gatekeeper ---
-        # Un-gated Global Average Pooling on the final bottleneck
+        # H1 Gatekeeper
         gap_s4 = self.gap(f_s4).flatten(1)
         out_normal = self.normal_abnormal_head(gap_s4)
         
-        # --- Stream 2: H2 Granular Pathology (Multi-Scale) ---
-        # Apply CBAM at each scale BEFORE global pooling
+        # H2 Multi-Scale + Strip Pool
         att_s2 = self.cbam_s2(f_s2)
         att_s3 = self.cbam_s3(f_s3)
         att_s4 = self.cbam_s4(f_s4)
+
+        # P1: Mean + Max dual-stream at S2 and S3
+        gap_mean_s2 = self.gap(att_s2).flatten(1)
+        gap_max_s2  = att_s2.amax(dim=(2, 3))
+        gap_mean_s3 = self.gap(att_s3).flatten(1)
+        gap_max_s3  = att_s3.amax(dim=(2, 3))
+        gap_att_s4  = self.gap(att_s4).flatten(1)
+
+        # P3: Strip pooling
+        strip_feat = self.strip_pool_s2(att_s2)
+
+        multi_scale_features = torch.cat(
+            [gap_mean_s2, gap_max_s2, gap_mean_s3, gap_max_s3, gap_att_s4, strip_feat],
+            dim=1,
+        )
         
-        gap_att_s2 = self.gap(att_s2).flatten(1)
-        gap_att_s3 = self.gap(att_s3).flatten(1)
-        gap_att_s4 = self.gap(att_s4).flatten(1)
-        
-        multi_scale_features = torch.cat([gap_att_s2, gap_att_s3, gap_att_s4], dim=1)
-        
-        # Hierarchical Feature Conditioning: Append H1 Probability if enabled
         if self.condition_h2_on_h1:
             h1_prob = torch.sigmoid(out_normal).detach()
             h2_input = torch.cat([multi_scale_features, h1_prob], dim=1)
@@ -127,7 +185,6 @@ class MultiHeadConvNeXt(nn.Module):
         out_pathology = self.granular_pathology_head(h2_input)
         
         if return_probs:
-            # Strict Hierarchical Classification Conditioning (Mathematical Constraint)
             p_h1 = torch.sigmoid(out_normal)
             p_h2_given_h1 = torch.softmax(out_pathology, dim=1)
             final_h2_prob = p_h2_given_h1 * p_h1
@@ -160,6 +217,7 @@ class MultiHeadConvNeXt(nn.Module):
             list(self.cbam_s2.parameters()) +
             list(self.cbam_s3.parameters()) +
             list(self.cbam_s4.parameters()) +
+            list(self.strip_pool_s2.parameters()) +
             list(self.granular_pathology_head.parameters())
         )
         return [
@@ -179,3 +237,4 @@ def build_multi_head_model(pretrained=True, warmup=True, condition_h2_on_h1=True
     if warmup:
         model.freeze_backbone()
     return model
+

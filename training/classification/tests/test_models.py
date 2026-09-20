@@ -100,10 +100,32 @@ class TestModels(unittest.TestCase):
         feature_channels = model.backbone.feature_info.channels()
         self.assertEqual(feature_channels, [256, 512, 1024], "Channel dimensions must match baseline contract")
         
-        # Concatenated linear input dimension (256 + 512 + 1024 + 1 = 1793)
-        expected_concat_dim = sum(feature_channels) + 1
+        # h2_in_dim = S2-mean(256)+S2-max(256) + S3-mean(512)+S3-max(512) + S4-mean(1024)
+        #           + strip(256) + H1-prob(1) = 2817
+        expected_in_dim = 2817
         actual_in_features = model.granular_pathology_head[0].in_features
-        self.assertEqual(actual_in_features, expected_concat_dim, "Head input dimension mismatch!")
+        self.assertEqual(actual_in_features, expected_in_dim, "Head input dimension mismatch!")
+
+    def test_strip_pooling_projection_output_shape(self):
+        """Verify StripPoolingProjection produces (B, 256) from a (B, 256, 28, 28) input."""
+        from models.multi_head_convnext import StripPoolingProjection
+        module = StripPoolingProjection(in_channels=256, h_strips=4, w_strips=7, out_dim=128)
+        module.eval()
+        x = torch.randn(4, 256, 28, 28)
+        mask = torch.ones(4, 1, 28, 28)
+        with torch.no_grad():
+            out = module(x, mask)
+        self.assertEqual(out.shape, (4, 256), "StripPoolingProjection must output (B, 2*out_dim)")
+
+    def test_mean_max_dual_stream_h2_input_dim(self):
+        """Verify the full forward pass produces correct H2 head input dimension (2817)."""
+        model = build_multi_head_model(pretrained=False, warmup=False)
+        model.eval()
+        dummy_input = torch.randn(4, 3, 384, 384)
+        with torch.no_grad():
+            outputs = model(dummy_input)
+        self.assertEqual(outputs['normal_abnormal'].shape, (4, 1), "H1 must output (B, 1)")
+        self.assertEqual(outputs['pathology'].shape, (4, 12), "H2 must output (B, 12)")
 
 if __name__ == '__main__':
     unittest.main()

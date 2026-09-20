@@ -159,9 +159,6 @@ class UNetTissueCropper:
             if b_y > t_y:
                 mask_clean[t_y:b_y + 1, x] = 255
 
-        # Enforce dead background zeroing (scanner letterboxing / black margins)
-        mask_clean[gray <= 5] = 0
-
         # Suppress background to 0
         if is_color:
             mask_3c = cv2.merge([mask_clean, mask_clean, mask_clean])

@@ -150,6 +150,22 @@ class TestTissueCropperSuite(unittest.TestCase):
         self.assertTrue(cropped.shape[0] <= 300)
         self.assertEqual(cropped.shape[1], 400)
 
+    def test_white_bar_detection(self):
+        from data.preprocessing.white_bars import detect_and_process_white_bars
+        # 1. Verify scan where tissue touches top edge without a wide banner is NOT cut/notched
+        dme5_path = Path("/Users/nikhilmundhra/Downloads/Capstone/DataSets/Classified/Diabetic Complications/Diabetic Macular Edema (DME)/DME/DME-1695472-5.jpeg")
+        if dme5_path.exists():
+            im = cv2.imread(str(dme5_path))
+            cleaned = detect_and_process_white_bars(im)
+            diff = np.sum(cleaned != im)
+            self.assertEqual(diff, 0, "Tissue touching top edge was erroneously notched!")
+
+        # 2. Verify synthetic image with real wide banner (> 35 cols) is cleanly removed
+        synthetic_banner = np.full((100, 200), 30, dtype=np.uint8)
+        synthetic_banner[:10, 20:120] = 250  # 100-col wide white banner
+        cleaned_syn = detect_and_process_white_bars(synthetic_banner)
+        self.assertTrue(np.all(cleaned_syn[:10, 20:120] == 0), "Synthetic banner was not removed!")
+
     def test_train_smoke_test(self):
         # Run pre-flight smoke test
         best_dice = train(epochs=2, smoke_test=True)

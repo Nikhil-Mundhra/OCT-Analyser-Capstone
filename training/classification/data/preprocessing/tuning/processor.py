@@ -955,14 +955,11 @@ def detect_tissue_lateral_bounds(
     # 1. Check RIGHT Lateral Edge for Optic Nerve Head (ONH) / BMO
     # -------------------------------------------------------------
     search_r_start = int(w * 0.60)
-    r_tissue_end = w
     zero_cols = np.where(col_thickness[search_r_start:] < 15)[0]
-    if len(zero_cols) > 0:
-        r_tissue_end = search_r_start + zero_cols[0]
-    else:
-        collapse_cols = np.where(thick[search_r_start:] < (0.35 * macular_thick_ref))[0]
-        if len(collapse_cols) > 0:
-            r_tissue_end = search_r_start + collapse_cols[0]
+    collapse_cols = np.where(thick[search_r_start:] < (0.35 * macular_thick_ref))[0]
+    r_zero = (search_r_start + zero_cols[0]) if len(zero_cols) > 0 else w
+    r_collapse = (search_r_start + collapse_cols[0]) if len(collapse_cols) > 0 else w
+    r_tissue_end = min(r_zero, r_collapse)
 
     if r_tissue_end < (w - 10):
         # Look backwards from tissue termination for the optic disc rim / ILM cup inflection
@@ -984,14 +981,11 @@ def detect_tissue_lateral_bounds(
     # 2. Check LEFT Lateral Edge for Optic Nerve Head (ONH) / BMO
     # -------------------------------------------------------------
     search_l_end = int(w * 0.40)
-    l_tissue_end = 0
     zero_cols_l = np.where(col_thickness[:search_l_end] < 15)[0]
-    if len(zero_cols_l) > 0:
-        l_tissue_end = zero_cols_l[-1]
-    else:
-        collapse_cols_l = np.where(thick[:search_l_end] < (0.35 * macular_thick_ref))[0]
-        if len(collapse_cols_l) > 0:
-            l_tissue_end = collapse_cols_l[-1]
+    collapse_cols_l = np.where(thick[:search_l_end] < (0.35 * macular_thick_ref))[0]
+    l_zero = zero_cols_l[-1] if len(zero_cols_l) > 0 else 0
+    l_collapse = collapse_cols_l[-1] if len(collapse_cols_l) > 0 else 0
+    l_tissue_end = max(l_zero, l_collapse)
 
     if l_tissue_end > 10:
         # On the left, descending into the cup toward the left means dy_top < -0.40
@@ -1008,6 +1002,131 @@ def detect_tissue_lateral_bounds(
             clb = int(l_tissue_end)
 
     return clt, clb, crt, crb
+
+
+def sample_adaptive_contour_nodes(y_curve: np.ndarray, target_count: int = 48, min_spacing: int = 4) -> np.ndarray:
+    """
+    Samples target_count node indices across scan width W weighted by arc-length, slope gradient, and curvature.
+    Densely allocates nodes (3-5px spacing) across steep spikes, pits, and sharp tissue transitions,
+    while spacing nodes more widely across smooth, flat plateaus.
+    """
+    w = len(y_curve)
+    if w <= target_count:
+        return np.arange(w, dtype=int)
+
+    y_arr = np.nan_to_num(y_curve, nan=0.0).astype(np.float32)
+    y_smooth = cv2.GaussianBlur(y_arr.reshape(1, -1), (7, 1), 1.5).squeeze()
+
+    dy = np.gradient(y_smooth)
+    d2y = np.gradient(dy)
+
+    dy_scale = float(np.std(dy)) + 1e-4
+    d2y_scale = float(np.std(d2y)) + 1e-4
+
+    # Combined density: baseline uniform spacing + slope gradient + local curvature
+    w_x = 1.0 + 1.8 * np.clip(np.abs(dy) / dy_scale, 0.0, 8.0) + 2.5 * np.clip(np.abs(d2y) / d2y_scale, 0.0, 10.0)
+
+    cumsum = np.cumsum(w_x)
+    denom = cumsum[-1] - cumsum[0]
+    if denom <= 0:
+        return np.linspace(0, w - 1, target_count, dtype=int)
+
+    cdf = (cumsum - cumsum[0]) / denom
+
+    targets = np.linspace(0.0, 1.0, target_count)
+    sampled_x = np.interp(targets, cdf, np.arange(w))
+    sampled_indices = np.round(sampled_x).astype(int)
+    sampled_indices[0] = 0
+    sampled_indices[-1] = w - 1
+
+    # Filter with minimum spacing to prevent handle overlap
+    filtered = [0]
+    for x in sampled_indices[1:-1]:
+        if x - filtered[-1] >= min_spacing and (w - 1 - x) >= min_spacing:
+            filtered.append(int(x))
+    filtered.append(w - 1)
+
+    while len(filtered) < target_count:
+        diffs = np.diff(filtered)
+        max_gap_idx = int(np.argmax(diffs))
+        if diffs[max_gap_idx] <= min_spacing:
+            break
+        mid = (filtered[max_gap_idx] + filtered[max_gap_idx + 1]) // 2
+        filtered.insert(max_gap_idx + 1, mid)
+
+    return np.array(filtered, dtype=int)
+
+
+def enrich_nodes_for_ablation(
+    curve: np.ndarray,
+    base_indices: np.ndarray,
+    click_x: int,
+    modified_mask: np.ndarray,
+    max_extra_nodes: int = 6,
+    min_spacing: int = 2
+) -> tuple[np.ndarray, int]:
+    """
+    Evaluates an OCT boundary contour following background ablation to identify
+    important anatomical and surgical features (sharp peaks, troughs, ablated notches,
+    or significant spline approximation residuals) that are not covered by the base node set.
+    Inserts targeted anchor nodes at critical extrema to preserve fine-grained contour fidelity.
+    """
+    w = len(curve)
+    current_nodes = set(int(x) for x in base_indices)
+
+    # Detect local extrema (peaks and valleys) on smoothed curve
+    y_smooth = cv2.GaussianBlur(curve.astype(np.float32).reshape(1, -1), (5, 1), 1.0).squeeze()
+
+    from scipy.signal import find_peaks
+    from scipy.interpolate import PchipInterpolator
+
+    peaks, _ = find_peaks(y_smooth, distance=4, prominence=0.7)
+    valleys, _ = find_peaks(-y_smooth, distance=4, prominence=0.7)
+    all_extrema = sorted(list(set(np.concatenate([peaks, valleys])))) if (len(peaks) > 0 or len(valleys) > 0) else []
+
+    added_count = 0
+
+    # Priority 1: Check all local extrema in or near the ablated region or click_x
+    for ext_x in all_extrema:
+        if added_count >= max_extra_nodes:
+            break
+        is_near_edit = bool(modified_mask[ext_x] or abs(ext_x - click_x) <= 35)
+        min_dist = min(abs(ext_x - nx) for nx in current_nodes)
+
+        if is_near_edit and min_dist >= min_spacing:
+            sorted_nodes = sorted(list(current_nodes))
+            pchip = PchipInterpolator(sorted_nodes, curve[sorted_nodes])
+            err_at_peak = abs(float(curve[ext_x]) - float(pchip(ext_x)))
+            if err_at_peak >= 0.6:
+                current_nodes.add(int(ext_x))
+                added_count += 1
+
+    # Priority 2: Greedy residual insertion for any remaining uncovered high-error regions
+    for _ in range(max_extra_nodes - added_count):
+        sorted_nodes = sorted(list(current_nodes))
+        pchip = PchipInterpolator(sorted_nodes, curve[sorted_nodes])
+        residuals = np.abs(curve - pchip(np.arange(w)))
+
+        weights = 1.0 + 2.5 * modified_mask.astype(float)
+        click_dist = np.abs(np.arange(w) - click_x)
+        weights += 2.0 * np.exp(-(click_dist / 25.0) ** 2)
+
+        weighted_res = residuals * weights
+
+        for nx in current_nodes:
+            weighted_res[max(0, nx - min_spacing) : min(w, nx + min_spacing + 1)] = 0.0
+
+        worst_x = int(np.argmax(weighted_res))
+        worst_err = residuals[worst_x]
+
+        if worst_err < 1.0:
+            break
+
+        current_nodes.add(worst_x)
+        added_count += 1
+
+    final_nodes = np.array(sorted(list(current_nodes)), dtype=int)
+    return final_nodes, added_count
 
 
 def _compute_scan_vectors(cropper, p: Path) -> tuple[int, int, list[dict], list[dict], dict, int, int, int, int]:
@@ -1033,10 +1152,11 @@ def _compute_scan_vectors(cropper, p: Path) -> tuple[int, int, list[dict], list[
             gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
             probs_orig, y_t, y_b = cropper.predict_mask_and_vectors(gray, threshold=0.50)
 
-            # Sample 48 ultra-high-resolution anchor points across width W
-            sample_indices = np.linspace(0, w - 1, 48, dtype=int)
-            y_top_vec = [{"x": int(x), "y": float(y_t[x])} for x in sample_indices]
-            y_bot_vec = [{"x": int(x), "y": float(y_b[x])} for x in sample_indices]
+            # Sample adaptive anchor points based on curvature and arc-length
+            top_indices = sample_adaptive_contour_nodes(y_t, target_count=48)
+            bot_indices = sample_adaptive_contour_nodes(y_b, target_count=48)
+            y_top_vec = [{"x": int(x), "y": float(y_t[x])} for x in top_indices]
+            y_bot_vec = [{"x": int(x), "y": float(y_b[x])} for x in bot_indices]
 
             margin = 15
             ymin = max(0, int(np.min(y_t)) - margin)
@@ -1083,15 +1203,53 @@ def _background_prefetch_scans(scan_files: list[tuple[str, Path]], start_idx: in
     threading.Thread(target=worker, daemon=True).start()
 
 
+def extract_vectors_from_mask(mask: np.ndarray) -> tuple[np.ndarray, np.ndarray, int, int, int, int]:
+    """
+    Extracts top/bottom boundary vectors and lateral crop bounds from an existing 8-bit binary mask.
+    Returns (y_top, y_bot, crop_left_top, crop_left_bot, crop_right_top, crop_right_bot).
+    """
+    h, w = mask.shape[:2]
+    y_t = np.full(w, h * 0.25, dtype=np.float32)
+    y_b = np.full(w, h * 0.75, dtype=np.float32)
+
+    cols_with_signal = []
+    for x in range(w):
+        col = mask[:, x]
+        nonzero = np.where(col > 0)[0]
+        if len(nonzero) > 0:
+            y_t[x] = float(nonzero[0])
+            y_b[x] = float(nonzero[-1])
+            cols_with_signal.append(x)
+
+    if cols_with_signal:
+        min_x = cols_with_signal[0]
+        max_x = cols_with_signal[-1]
+        if min_x > 0:
+            y_t[:min_x] = y_t[min_x]
+            y_b[:min_x] = y_b[min_x]
+        if max_x < w - 1:
+            y_t[max_x + 1:] = y_t[max_x]
+            y_b[max_x + 1:] = y_b[max_x]
+        clt, clb = min_x, min_x
+        crt, crb = max_x + 1, max_x + 1
+    else:
+        clt, clb = 0, 0
+        crt, crb = w, w
+
+    return y_t, y_b, clt, clb, crt, crb
+
+
 def get_crop_filter_queue(
     folder_name: Optional[str] = None,
     offset: int = 0,
     limit: int = 30,
+    filter_mode: str = "all",
     source_dir: Optional[Path] = None,
     masked_dir: Optional[Path] = None
 ) -> dict:
     """
     Retrieves an ordered queue of scans from Classified/ with cached/prefetched U-Net boundary predictions.
+    Supports filter_mode='curated' for reviewing and fixing already curated masks.
     """
     src_dir = Path(source_dir) if source_dir else get_source_dir()
     msk_dir = Path(masked_dir) if masked_dir else get_masked_dataset_dir()
@@ -1116,10 +1274,16 @@ def get_crop_filter_queue(
                     if p.suffix.lower() in (".jpg", ".jpeg", ".png") and not p.name.startswith("."):
                         scan_files.append((sub_name, p))
 
-    # Prioritize uncurated scans first so swiping presents fresh unreviewed scans
+    # Prioritize or isolate scans based on filter_mode: 'all', 'curated', or 'uncurated'
     uncurated_scans = [s for s in scan_files if f"{s[0]}/{s[1].name}" not in curated_keys]
     curated_scans = [s for s in scan_files if f"{s[0]}/{s[1].name}" in curated_keys]
-    ordered_scans = uncurated_scans + curated_scans
+
+    if filter_mode == "curated":
+        ordered_scans = curated_scans
+    elif filter_mode == "uncurated":
+        ordered_scans = uncurated_scans
+    else:
+        ordered_scans = uncurated_scans + curated_scans
 
     total_scans = len(ordered_scans)
     paged_scans = ordered_scans[offset : offset + limit]
@@ -1142,6 +1306,31 @@ def get_crop_filter_queue(
             clb = cached_data.get("crop_left_bot", 0)
             crt = cached_data.get("crop_right_top", w)
             crb = cached_data.get("crop_right_bot", w)
+        elif is_curated and (msk_dir / "Masks" / sub / f"{p.stem}.png").exists():
+            # Load vectors directly from the previously approved curated ground truth mask
+            mask_p = msk_dir / "Masks" / sub / f"{p.stem}.png"
+            cur_mask = cv2.imread(str(mask_p), cv2.IMREAD_GRAYSCALE)
+            if cur_mask is not None:
+                h, w = cur_mask.shape[:2]
+                y_t, y_b, clt, clb, crt, crb = extract_vectors_from_mask(cur_mask)
+                top_indices = sample_adaptive_contour_nodes(y_t, target_count=48)
+                bot_indices = sample_adaptive_contour_nodes(y_b, target_count=48)
+                y_top_vec = [{"x": int(x), "y": round(float(y_t[x]), 2)} for x in top_indices]
+                y_bot_vec = [{"x": int(x), "y": round(float(y_b[x]), 2)} for x in bot_indices]
+                margin = 15
+                ymin = max(0, int(np.min(y_t)) - margin)
+                ymax = min(h, int(np.max(y_b)) + margin)
+                crop_box = {"ymin": ymin, "ymax": ymax, "xmin": 0, "xmax": w}
+                with _PREFETCH_LOCK:
+                    _UNET_PREDICT_CACHE[sample_key] = {
+                        "width": w, "height": h,
+                        "y_top_points": y_top_vec, "y_bot_points": y_bot_vec,
+                        "crop_box": crop_box,
+                        "crop_left_top": clt, "crop_left_bot": clb,
+                        "crop_right_top": crt, "crop_right_bot": crb
+                    }
+            else:
+                w, h, y_top_vec, y_bot_vec, crop_box, clt, clb, crt, crb = _compute_scan_vectors(cropper, p)
         else:
             w, h, y_top_vec, y_bot_vec, crop_box, clt, clb, crt, crb = _compute_scan_vectors(cropper, p)
             with _PREFETCH_LOCK:
@@ -1181,7 +1370,8 @@ def get_crop_filter_queue(
         "offset": offset,
         "limit": limit,
         "items": queue_items,
-        "curated_total": len(curated_keys)
+        "curated_total": len(curated_keys),
+        "filter_mode": filter_mode
     }
 
 
@@ -1287,10 +1477,9 @@ def save_curated_crop_from_vectors(
         cv2.fillPoly(mask, [right_poly], 0)
 
     # 5. Pitch-Black Border & Non-Acquisition Mask Cleansing
-    # Clamps mask to zero wherever pixel intensity is dead background (<= 5)
-    # or entire columns on the lateral margins have zero optical signal (<= 8).
+    # Trims entire columns on lateral margins that have zero optical signal (<= 8),
+    # while preserving internal fluid cysts (DME) and vessel shadows.
     gray_img = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY) if img_bgr.ndim == 3 else img_bgr
-    mask[gray_img <= 5] = 0
 
     col_max = np.max(gray_img, axis=0)
     # Detect dead columns from left
@@ -1522,3 +1711,292 @@ def get_unet_retrain_status() -> dict:
     """Returns the live status of the background U-Net retraining process."""
     with _RETRAIN_LOCK:
         return dict(_RETRAIN_STATE)
+
+
+def ablate_tuning_background(
+    folder: str,
+    filename: str,
+    click_x: int,
+    click_y: int,
+    y_top_points: list[dict],
+    y_bot_points: list[dict],
+    radius_x: int = 0,
+    source_dir: Optional[Path] = None
+) -> dict:
+    """
+    Surgically ablates background noise (such as vitreous haze, supra-ILM artifacts, or choroidal plateaus)
+    on an active tuning scan from Classified/ by adjusting its boundary vectors.
+    Updates the prediction cache and returns updated vector coordinates and ablated pixel estimate.
+    """
+    import scipy.ndimage as ndi
+
+    src_dir = Path(source_dir) if source_dir else get_source_dir()
+    img_path = find_image_path(folder, filename, source_dir=src_dir)
+    if not img_path or not img_path.exists():
+        return {"status": "error", "message": f"Source scan not found for {folder}/{filename}"}
+
+    img_bgr = cv2.imread(str(img_path))
+    if img_bgr is None:
+        return {"status": "error", "message": "Failed to decode scan image"}
+
+    img_bgr = detect_and_process_white_bars(img_bgr)
+    h, w = img_bgr.shape[:2]
+    cx = int(np.clip(click_x, 0, w - 1))
+    cy = int(np.clip(click_y, 0, h - 1))
+
+    # Reconstruct interpolated top and bottom vector depths across scan width
+    top_map = {int(pt["x"]): float(pt["y"]) for pt in y_top_points}
+    bot_map = {int(pt["x"]): float(pt["y"]) for pt in y_bot_points}
+    top_xs = sorted(top_map.keys())
+    bot_xs = sorted(bot_map.keys())
+    full_x = np.arange(w)
+    interp_top = np.interp(full_x, top_xs, [top_map[x] for x in top_xs])
+    interp_bot = np.interp(full_x, bot_xs, [bot_map[x] for x in bot_xs])
+
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    sobely = cv2.Sobel(blur, cv2.CV_64F, 0, 1, ksize=3)
+
+    is_supra_ilm = (cy <= interp_top[cx] + 25)
+    is_sub_rpe = (cy >= interp_bot[cx] - 25)
+
+    if radius_x > 0:
+        x1 = max(0, cx - int(radius_x))
+        x2 = min(w, cx + int(radius_x))
+    else:
+        x1 = 0
+        x2 = w
+
+    new_top = np.copy(interp_top)
+    new_bot = np.copy(interp_bot)
+    pixels_ablated = 0
+
+    if is_sub_rpe:
+        # Bottom-up sub-RPE noise removal: detect negative gradient peak of RPE
+        rpe_curve = np.zeros(w, dtype=np.float32)
+        valid_cols = []
+        for x in range(w):
+            col_ilm = int(np.clip(interp_top[x], 0, h - 1))
+            col_bot = int(np.clip(interp_bot[x], col_ilm + 5, h))
+            sub_ys = np.arange(col_ilm + 10, min(h, col_bot + 40))
+            if len(sub_ys) == 0:
+                continue
+            neg_peaks = np.where((sobely[sub_ys, x] < -20) & (blur[sub_ys, x] > 35))[0]
+            if len(neg_peaks) > 0:
+                rpe_curve[x] = sub_ys[neg_peaks[-1]]
+                valid_cols.append(x)
+
+        if len(valid_cols) > 5:
+            rpe_interp = np.interp(full_x, valid_cols, rpe_curve[valid_cols])
+            rpe_smooth = ndi.median_filter(rpe_interp, size=15)
+            rpe_smooth = ndi.gaussian_filter1d(rpe_smooth, sigma=4.0)
+
+            for x in range(x1, x2):
+                cutoff_y = float(np.clip(rpe_smooth[x] + 12, interp_top[x] + 10, h - 1))
+                if cutoff_y < new_bot[x]:
+                    pixels_ablated += int(new_bot[x] - cutoff_y)
+                    new_bot[x] = cutoff_y
+        else:
+            # Fallback: snap bottom boundary upward towards click level
+            for x in range(x1, x2):
+                target_y = float(np.clip(cy - 5, interp_top[x] + 10, h - 1))
+                if target_y < new_bot[x]:
+                    pixels_ablated += int(new_bot[x] - target_y)
+                    new_bot[x] = target_y
+
+    elif is_supra_ilm:
+        # Top-down supra-ILM noise removal: detect positive gradient peak of ILM
+        ilm_curve = np.zeros(w, dtype=np.float32)
+        valid_cols = []
+        for x in range(w):
+            col_ilm = int(np.clip(interp_top[x], 0, h - 1))
+            search_ys = np.arange(max(0, col_ilm - 30), min(h - 1, col_ilm + 40))
+            if len(search_ys) == 0:
+                continue
+            peaks = np.where((sobely[search_ys, x] > 30) & (blur[search_ys, x] > 45))[0]
+            if len(peaks) > 0:
+                ilm_curve[x] = search_ys[peaks[0]]
+                valid_cols.append(x)
+
+        if len(valid_cols) > 5:
+            ilm_interp = np.interp(full_x, valid_cols, ilm_curve[valid_cols])
+            ilm_smooth = ndi.median_filter(ilm_interp, size=15)
+            ilm_smooth = ndi.gaussian_filter1d(ilm_smooth, sigma=4.0)
+
+            for x in range(x1, x2):
+                cutoff_y = float(np.clip(ilm_smooth[x] - 2, 0, interp_bot[x] - 10))
+                if cutoff_y > new_top[x]:
+                    pixels_ablated += int(cutoff_y - new_top[x])
+                    new_top[x] = cutoff_y
+        else:
+            for x in range(x1, x2):
+                target_y = float(np.clip(cy + 5, 0, interp_bot[x] - 10))
+                if target_y > new_top[x]:
+                    pixels_ablated += int(target_y - new_top[x])
+                    new_top[x] = target_y
+    else:
+        # User clicked inside the retina; snap closer boundary to eliminate edge cyst/snout
+        dist_to_top = abs(cy - interp_top[cx])
+        dist_to_bot = abs(cy - interp_bot[cx])
+        scoop_rad = int(radius_x) if radius_x > 0 else 40
+        sx1 = max(0, cx - scoop_rad)
+        sx2 = min(w, cx + scoop_rad)
+        if dist_to_top <= dist_to_bot:
+            for x in range(sx1, sx2):
+                falloff = np.cos((x - cx) / scoop_rad * (np.pi / 2)) ** 2 if radius_x <= 0 else 1.0
+                target_y = float(np.clip(cy + 2, 0, interp_bot[x] - 10))
+                delta = (target_y - new_top[x]) * falloff
+                if delta > 0:
+                    pixels_ablated += int(delta)
+                    new_top[x] = np.clip(new_top[x] + delta, 0, interp_bot[x] - 10)
+        else:
+            for x in range(sx1, sx2):
+                falloff = np.cos((x - cx) / scoop_rad * (np.pi / 2)) ** 2 if radius_x <= 0 else 1.0
+                target_y = float(np.clip(cy - 2, interp_top[x] + 10, h - 1))
+                delta = (new_bot[x] - target_y) * falloff
+                if delta > 0:
+                    pixels_ablated += int(delta)
+                    new_bot[x] = np.clip(new_bot[x] - delta, interp_top[x] + 10, h - 1)
+
+    # Detect which boundaries were modified
+    top_mod_mask = (np.abs(new_top - interp_top) > 0.5)
+    bot_mod_mask = (np.abs(new_bot - interp_bot) > 0.5)
+    top_modified = bool(np.any(top_mod_mask))
+    bot_modified = bool(np.any(bot_mod_mask))
+
+    top_added = 0
+    bot_added = 0
+
+    if top_modified:
+        base_top = sample_adaptive_contour_nodes(new_top, target_count=max(48, len(y_top_points)))
+        final_top, top_added = enrich_nodes_for_ablation(
+            new_top, base_top, click_x=cx, modified_mask=top_mod_mask, max_extra_nodes=6, min_spacing=2
+        )
+        updated_top_points = [{"x": int(x), "y": round(float(new_top[x]), 2)} for x in final_top]
+    else:
+        updated_top_points = y_top_points
+
+    if bot_modified:
+        base_bot = sample_adaptive_contour_nodes(new_bot, target_count=max(48, len(y_bot_points)))
+        final_bot, bot_added = enrich_nodes_for_ablation(
+            new_bot, base_bot, click_x=cx, modified_mask=bot_mod_mask, max_extra_nodes=6, min_spacing=2
+        )
+        updated_bot_points = [{"x": int(x), "y": round(float(new_bot[x]), 2)} for x in final_bot]
+    else:
+        updated_bot_points = y_bot_points
+
+    total_added = (top_added if top_modified else 0) + (bot_added if bot_modified else 0)
+
+    # Update in-memory cache
+    sample_key = f"{folder}/{filename}"
+    with _PREFETCH_LOCK:
+        if sample_key in _UNET_PREDICT_CACHE:
+            _UNET_PREDICT_CACHE[sample_key]["y_top_points"] = updated_top_points
+            _UNET_PREDICT_CACHE[sample_key]["y_bot_points"] = updated_bot_points
+
+    return {
+        "status": "success",
+        "folder": folder,
+        "filename": filename,
+        "pixels_ablated": max(pixels_ablated, 1),
+        "nodes_added": total_added,
+        "y_top_points": updated_top_points,
+        "y_bot_points": updated_bot_points,
+    }
+
+
+def rerun_tuning_unet_on_window(
+    folder: str,
+    filename: str,
+    x1: int,
+    y1: int,
+    x2: int,
+    y2: int,
+    y_top_points: list[dict],
+    y_bot_points: list[dict],
+    threshold: float = 0.50,
+    source_dir: Optional[Path] = None
+) -> dict:
+    """
+    Reruns Attention U-Net inference on a targeted sub-window [x1:x2, y1:y2] of the raw scan.
+    Splices the predicted top and bottom vector depths in that horizontal window into the existing vectors.
+    Updates the prediction cache and returns updated vector coordinates and changed pixel count.
+    """
+    src_dir = Path(source_dir) if source_dir else get_source_dir()
+    img_path = find_image_path(folder, filename, source_dir=src_dir)
+    if not img_path or not img_path.exists():
+        return {"status": "error", "message": f"Source scan not found for {folder}/{filename}"}
+
+    img_bgr = cv2.imread(str(img_path))
+    if img_bgr is None:
+        return {"status": "error", "message": "Failed to decode scan image"}
+
+    img_bgr = detect_and_process_white_bars(img_bgr)
+    h, w = img_bgr.shape[:2]
+
+    wx1 = int(np.clip(min(x1, x2), 0, w - 1))
+    wx2 = int(np.clip(max(x1, x2), 0, w))
+    wy1 = int(np.clip(min(y1, y2), 0, h - 1))
+    wy2 = int(np.clip(max(y1, y2), 0, h))
+
+    if wx2 - wx1 < 10 or wy2 - wy1 < 10:
+        return {"status": "error", "message": "Window too small (must be at least 10x10 px)"}
+
+    cropper = get_unet_cropper()
+    if cropper is None or not cropper.has_weights:
+        return {"status": "error", "message": "Attention U-Net model weights not available"}
+
+    window_crop = img_bgr[wy1:wy2, wx1:wx2]
+    window_gray = cv2.cvtColor(window_crop, cv2.COLOR_BGR2GRAY)
+
+    probs, win_yt, win_yb = cropper.predict_mask_and_vectors(window_gray, threshold=threshold)
+
+    # Reconstruct interpolated top and bottom vector depths across scan width
+    top_map = {int(pt["x"]): float(pt["y"]) for pt in y_top_points}
+    bot_map = {int(pt["x"]): float(pt["y"]) for pt in y_bot_points}
+    top_xs = sorted(top_map.keys())
+    bot_xs = sorted(bot_map.keys())
+    full_x = np.arange(w)
+    interp_top = np.interp(full_x, top_xs, [top_map[x] for x in top_xs])
+    interp_bot = np.interp(full_x, bot_xs, [bot_map[x] for x in bot_xs])
+
+    new_top = np.copy(interp_top)
+    new_bot = np.copy(interp_bot)
+    pixels_changed = 0
+
+    win_w = wx2 - wx1
+    for i in range(win_w):
+        gx = wx1 + i
+        pred_top_y = float(wy1 + win_yt[i])
+        pred_bot_y = float(wy1 + win_yb[i])
+
+        # Ensure valid non-inverted bounds
+        pred_top_y = float(np.clip(pred_top_y, 0, h - 1))
+        pred_bot_y = float(np.clip(pred_bot_y, pred_top_y + 10, h - 1))
+
+        pixels_changed += int(abs(new_top[gx] - pred_top_y) + abs(new_bot[gx] - pred_bot_y))
+        new_top[gx] = pred_top_y
+        new_bot[gx] = pred_bot_y
+
+    # Resample updated vectors onto adaptive anchor points
+    top_indices = sample_adaptive_contour_nodes(new_top, target_count=48)
+    bot_indices = sample_adaptive_contour_nodes(new_bot, target_count=48)
+    updated_top_points = [{"x": int(x), "y": round(float(new_top[x]), 2)} for x in top_indices]
+    updated_bot_points = [{"x": int(x), "y": round(float(new_bot[x]), 2)} for x in bot_indices]
+
+    sample_key = f"{folder}/{filename}"
+    with _PREFETCH_LOCK:
+        if sample_key in _UNET_PREDICT_CACHE:
+            _UNET_PREDICT_CACHE[sample_key]["y_top_points"] = updated_top_points
+            _UNET_PREDICT_CACHE[sample_key]["y_bot_points"] = updated_bot_points
+
+    return {
+        "status": "success",
+        "folder": folder,
+        "filename": filename,
+        "pixels_changed": pixels_changed,
+        "y_top_points": updated_top_points,
+        "y_bot_points": updated_bot_points,
+        "window_bounds": [wx1, wy1, wx2, wy2]
+    }
+

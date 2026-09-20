@@ -1,0 +1,770 @@
+/* ==============================================================================
+   Classified-unet-masked Scout Explorer & Split Viewer Styling
+   ============================================================================== */
+
+.scout-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 65px);
+  padding: 12px 18px;
+  box-sizing: border-box;
+  gap: 12px;
+  background: #090d16;
+  color: #f8fafc;
+}
+
+/* Header / Status Bar */
+.scout-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.scout-stats-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.scout-stat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.scout-stat-badge.clean {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.scout-stat-badge.suspicious {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* Main Layout Grid: File Manager Sidebar + Main Split Viewer Stage */
+.scout-stage-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* File Manager Sidebar */
+.scout-file-manager {
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.scout-fm-controls {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 15, 29, 0.5);
+}
+
+.scout-search-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.scout-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  color: #f1f5f9;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.scout-search-input:focus {
+  border-color: #00f2fe;
+}
+
+.scout-filter-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.scout-filter-btn {
+  flex: 1;
+  padding: 6px 8px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.scout-filter-btn.active {
+  background: rgba(0, 242, 254, 0.15);
+  border-color: #00f2fe;
+  color: #00f2fe;
+}
+
+.scout-filter-btn.suspicious-btn.active {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.scout-filter-btn.clean-btn.active {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #6ee7b7;
+}
+
+.scout-folder-select {
+  background: #1e293b;
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* File Manager Image List */
+.scout-fm-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scout-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.scout-card:hover {
+  background: rgba(51, 65, 85, 0.5);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.scout-card.active {
+  background: rgba(0, 242, 254, 0.12);
+  border-color: #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+}
+
+/* SUSPICIOUS CARD STYLING: RED BACKGROUND */
+.scout-card.suspicious {
+  background: rgba(239, 68, 68, 0.18) !important;
+  border: 1.5px solid #ef4444 !important;
+  color: #fee2e2;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.25);
+}
+
+.scout-card.suspicious:hover {
+  background: rgba(239, 68, 68, 0.28) !important;
+}
+
+.scout-card.suspicious.active {
+  background: rgba(239, 68, 68, 0.32) !important;
+  border: 2px solid #ef4444 !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.45);
+}
+
+.scout-card-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  background: #000;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.scout-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.scout-card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #f1f5f9;
+}
+
+.scout-card-meta {
+  font-size: 0.70rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scout-card-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.scout-card-badge.clean {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.scout-card-badge.warning {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+}
+
+.scout-card-badge.critical {
+  background: #ef4444;
+  color: #fff;
+  font-weight: 800;
+}
+
+/* Main Split Viewer Viewport */
+.scout-viewer-pane {
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Viewport Header & Controls */
+.scout-viewer-header {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 15, 29, 0.6);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.scout-viewer-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.scout-viewer-filename {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.scout-mode-switcher {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.scout-mode-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scout-mode-btn.active {
+  background: rgba(0, 242, 254, 0.2);
+  color: #00f2fe;
+}
+
+/* Anomaly Warning Banner */
+.scout-anomaly-banner {
+  padding: 8px 16px;
+  background: rgba(239, 68, 68, 0.25);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fee2e2;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: pulse-red 2.5s infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { background-color: rgba(239, 68, 68, 0.25); }
+  50% { background-color: rgba(239, 68, 68, 0.38); }
+}
+
+.scout-anomaly-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scout-flag-pill {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* THE STAGE: SUSPICIOUS RED BACKGROUND VS CLEAN DARK BACKGROUND */
+.scout-stage-viewport {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.98) 100%);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* KEY USER REQUIREMENT: SUSPICIOUS IMAGES HAVE A RED BACKGROUND */
+.scout-stage-viewport.suspicious-active {
+  background: radial-gradient(circle at center, rgba(153, 27, 27, 0.45) 0%, rgba(69, 10, 10, 0.75) 100%) !important;
+  border: 2px solid rgba(239, 68, 68, 0.6) !important;
+  box-shadow: inset 0 0 50px rgba(239, 68, 68, 0.25) !important;
+}
+
+/* SPLIT MODE 1: SIDE-BY-SIDE */
+.scout-split-side-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+  height: 100%;
+  max-width: 840px;
+  max-height: 440px;
+  align-items: center;
+  justify-items: center;
+}
+
+.scout-view-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+}
+
+.scout-view-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scout-canvas-frame {
+  position: relative;
+  width: 384px;
+  height: 384px;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scout-img-rendered {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Synchronized Crosshair Overlay */
+.scout-crosshair-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+/* SPLIT MODE 2: INTERACTIVE SLIDER (CURTAIN) */
+.scout-split-slider-container {
+  position: relative;
+  width: 480px;
+  height: 480px;
+  max-width: 90%;
+  max-height: 90%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  user-select: none;
+  cursor: ew-resize;
+}
+
+.scout-slider-layer-under {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.scout-slider-layer-over {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(0 0, var(--split-pos, 50%) 0, var(--split-pos, 50%) 100%, 0 100%);
+  background: #000;
+}
+
+.scout-slider-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--split-pos, 50%);
+  width: 2px;
+  background: #00f2fe;
+  box-shadow: 0 0 10px #00f2fe;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.scout-slider-handle {
+  position: absolute;
+  top: 50%;
+  left: var(--split-pos, 50%);
+  width: 32px;
+  height: 32px;
+  background: #00f2fe;
+  color: #0f172a;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.8);
+  pointer-events: none;
+}
+
+/* SPLIT MODE 3: OVERLAY BLEND */
+.scout-overlay-container {
+  position: relative;
+  width: 480px;
+  height: 480px;
+  max-width: 90%;
+  max-height: 90%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.scout-overlay-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px #00f2fe);
+}
+
+/* Bottom Metrics & Diagnostic Inspector Drawer */
+.scout-diagnostics-drawer {
+  padding: 10px 18px;
+  background: rgba(10, 15, 29, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.scout-metric-cell {
+  background: rgba(30, 41, 59, 0.4);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 2px solid #00f2fe;
+}
+
+.scout-metric-cell.danger {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.scout-metric-label {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.scout-metric-val {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+/* Surgical BG Eraser Tools & Undo */
+.scout-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scout-tool-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.scout-tool-select-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+.scout-tool-select {
+  background: transparent;
+  color: #f1f5f9;
+  border: none;
+  font-size: 0.74rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.scout-tool-select option {
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+.scout-tool-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: rgba(30, 41, 59, 0.7);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scout-tool-btn:hover {
+  background: rgba(51, 65, 85, 0.9);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.scout-tool-btn.active {
+  background: rgba(0, 242, 254, 0.2);
+  color: #00f2fe;
+  border-color: #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.35);
+}
+
+.scout-tool-btn.danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.scout-tool-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #fee2e2;
+  border-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+}
+
+/* Scout BG Eraser Animated Progress Button */
+.scout-ablate-btn {
+  position: relative;
+  overflow: hidden;
+  min-width: 170px;
+  justify-content: center;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.scout-ablate-btn.ablating-active {
+  background: #0f172a !important;
+  border-color: rgba(239, 68, 68, 0.7) !important;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.4), 0 0 24px rgba(249, 115, 22, 0.25) !important;
+  pointer-events: none;
+}
+
+.scout-ablate-fill-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  background: linear-gradient(90deg, #ef4444 0%, #f97316 60%, #00f2fe 100%);
+  opacity: 0.85;
+  transition: width 0.2s ease;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.scout-ablate-shimmer-effect {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: ablateShimmer 1.4s infinite linear;
+  z-index: 2;
+  pointer-events: none;
+}
+
+@keyframes ablateShimmer {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+.scout-ablate-label {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+/* Inline Spinner for Eraser Button */
+.scout-btn-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: scoutSpin 0.7s infinite linear;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes scoutSpin {
+  to { transform: rotate(360deg); }
+}
+
+.scout-tool-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #00f2fe;
+  background: rgba(0, 242, 254, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  animation: pulse-border 1.5s infinite;
+}
+
+@keyframes pulse-border {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+.scout-crosshair-canvas.ablate-active {
+  cursor: crosshair !important;
+}
+
+.scout-crosshair-canvas.unet-window-active {
+  cursor: crosshair !important;
+}
+
+.scout-ablate-btn.unet-active {
+  border-color: rgba(59, 130, 246, 0.7) !important;
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.4), 0 0 24px rgba(139, 92, 246, 0.25) !important;
+}

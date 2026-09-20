@@ -77,6 +77,8 @@ from data.preprocessing.tuning.processor import (
     save_curated_mask_sample,
     stop_unet_retraining,
     trigger_unet_retraining_async,
+    ablate_tuning_background,
+    rerun_tuning_unet_on_window,
 )
 
 # Re-export diagnostics and health checks
@@ -87,6 +89,21 @@ from data.preprocessing.tuning.diagnostics import (
     perform_preflight_checks,
     run_standalone_self_tests,
     verify_server_endpoints,
+)
+
+# Scout service imports for Classified-unet-masked dataset
+from data.preprocessing.tuning.scout import (
+    UNET_MASKED_DIR,
+    ablate_scout_background,
+    get_scout_detail,
+    get_scout_overview,
+    get_scout_tree,
+    get_unet_masked_dir,
+    query_scout_images,
+    resolve_scout_file,
+    set_unet_masked_dir,
+    undo_scout_ablation,
+    rerun_unet_on_window,
 )
 
 PACKAGE_DIR = Path(__file__).resolve().parent
@@ -141,7 +158,7 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
             parsed = urllib.parse.urlparse(self.path)
             path = urllib.parse.unquote(parsed.path)
 
-            if path in ("/", "/index.html", "/tuning_dashboard.html"):
+            if path in ("/", "/index.html", "/tuning_dashboard.html", "/scout", "/scout.html"):
                 html_p = DASHBOARD_DIR / "index.html"
                 if html_p.exists():
                     self._send_file_response(html_p, "text/html; charset=utf-8")
@@ -224,11 +241,12 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                 folder = query_params.get("folder", [None])[0]
                 offset = int(query_params.get("offset", [0])[0])
                 limit = int(query_params.get("limit", [30])[0])
+                filter_mode = query_params.get("filter_mode", ["all"])[0]
                 clear_cache = query_params.get("clear_cache", ["false"])[0].lower() in ("true", "1")
                 if clear_cache:
                     from data.preprocessing.tuning.processor import clear_unet_predict_cache
                     clear_unet_predict_cache()
-                queue = get_crop_filter_queue(folder_name=folder, offset=offset, limit=limit)
+                queue = get_crop_filter_queue(folder_name=folder, offset=offset, limit=limit, filter_mode=filter_mode)
                 self._send_json_response(queue)
                 return
 
@@ -278,6 +296,54 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                     self._send_file_response(target_file, ctype)
                 else:
                     self._send_json_response({"status": "error", "message": f"Preprocessed image not found: {rel}"}, status=404)
+                return
+
+            elif path == "/api/scout/overview":
+                overview = get_scout_overview()
+                self._send_json_response(overview)
+                return
+
+            elif path == "/api/scout/tree":
+                tree = get_scout_tree()
+                self._send_json_response(tree)
+                return
+
+            elif path == "/api/scout/images":
+                query_params = urllib.parse.parse_qs(parsed.query)
+                folder = query_params.get("folder", [None])[0]
+                filter_type = query_params.get("filter", ["all"])[0]
+                q_text = query_params.get("query", [None])[0]
+                sort_by = query_params.get("sort_by", ["name"])[0]
+                offset = int(query_params.get("offset", [0])[0])
+                limit = int(query_params.get("limit", [50])[0])
+                result = query_scout_images(
+                    folder=folder,
+                    filter_type=filter_type,
+                    query=q_text,
+                    sort_by=sort_by,
+                    offset=offset,
+                    limit=limit,
+                )
+                self._send_json_response(result)
+                return
+
+            elif path == "/api/scout/detail":
+                query_params = urllib.parse.parse_qs(parsed.query)
+                img_path = query_params.get("path", [""])[0]
+                detail = get_scout_detail(rel_path=img_path)
+                self._send_json_response(detail)
+                return
+
+            elif path == "/api/scout/file":
+                query_params = urllib.parse.parse_qs(parsed.query)
+                file_type = query_params.get("type", ["image"])[0]
+                rel_path = query_params.get("path", [""])[0]
+                resolved = resolve_scout_file(file_type=file_type, rel_path=rel_path)
+                if resolved and resolved.exists() and resolved.is_file():
+                    ctype = "image/png" if resolved.name.lower().endswith(".png") else "image/jpeg"
+                    self._send_file_response(resolved, ctype)
+                else:
+                    self._send_json_response({"status": "error", "message": f"File not found for {file_type}: {rel_path}"}, status=404)
                 return
 
             if path.startswith("/api/"):
@@ -443,6 +509,118 @@ class FineTuningRequestHandler(SimpleHTTPRequestHandler):
                 params = data.get("params", DEFAULT_PARAMS)
                 try:
                     res = curate_folder_batch(folder_name, filenames, params)
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif path == "/api/scout/ablate_bg":
+                rel_path = data.get("rel_path")
+                if not rel_path:
+                    self._send_json_response({"status": "error", "message": "Missing 'rel_path'"}, status=400)
+                    return
+                click_x = int(data.get("x", 0))
+                click_y = int(data.get("y", 0))
+                radius_x = int(data.get("radius_x", 0))
+                try:
+                    res = ablate_scout_background(
+                        rel_path=rel_path,
+                        click_x=click_x,
+                        click_y=click_y,
+                        radius_x=radius_x,
+                    )
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif path == "/api/scout/undo_ablate":
+                rel_path = data.get("rel_path")
+                if not rel_path:
+                    self._send_json_response({"status": "error", "message": "Missing 'rel_path'"}, status=400)
+                    return
+                try:
+                    res = undo_scout_ablation(rel_path=rel_path)
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif path == "/api/scout/rerun_unet":
+                rel_path = data.get("rel_path")
+                if not rel_path:
+                    self._send_json_response({"status": "error", "message": "Missing 'rel_path'"}, status=400)
+                    return
+                x1 = int(data.get("x1", 0))
+                y1 = int(data.get("y1", 0))
+                x2 = int(data.get("x2", 0))
+                y2 = int(data.get("y2", 0))
+                threshold = float(data.get("threshold", 0.50))
+                try:
+                    res = rerun_unet_on_window(
+                        rel_path=rel_path,
+                        x1=x1,
+                        y1=y1,
+                        x2=x2,
+                        y2=y2,
+                        threshold=threshold,
+                    )
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif path == "/api/tuning/ablate_bg":
+                folder_name = data.get("folder")
+                filename = data.get("filename")
+                if not folder_name or not filename:
+                    self._send_json_response({"status": "error", "message": "Missing 'folder' or 'filename'"}, status=400)
+                    return
+                click_x = int(data.get("x", 0))
+                click_y = int(data.get("y", 0))
+                radius_x = int(data.get("radius_x", 0))
+                y_top_points = data.get("y_top_points", [])
+                y_bot_points = data.get("y_bot_points", [])
+                try:
+                    res = ablate_tuning_background(
+                        folder=folder_name,
+                        filename=filename,
+                        click_x=click_x,
+                        click_y=click_y,
+                        y_top_points=y_top_points,
+                        y_bot_points=y_bot_points,
+                        radius_x=radius_x,
+                    )
+                    self._send_json_response(res)
+                except Exception as err:
+                    self._send_json_response({"status": "error", "message": str(err)}, status=500)
+                return
+
+            elif path == "/api/tuning/rerun_unet":
+                folder_name = data.get("folder")
+                filename = data.get("filename")
+                if not folder_name or not filename:
+                    self._send_json_response({"status": "error", "message": "Missing 'folder' or 'filename'"}, status=400)
+                    return
+                x1 = int(data.get("x1", 0))
+                y1 = int(data.get("y1", 0))
+                x2 = int(data.get("x2", 0))
+                y2 = int(data.get("y2", 0))
+                threshold = float(data.get("threshold", 0.50))
+                y_top_points = data.get("y_top_points", [])
+                y_bot_points = data.get("y_bot_points", [])
+                try:
+                    res = rerun_tuning_unet_on_window(
+                        folder=folder_name,
+                        filename=filename,
+                        x1=x1,
+                        y1=y1,
+                        x2=x2,
+                        y2=y2,
+                        y_top_points=y_top_points,
+                        y_bot_points=y_bot_points,
+                        threshold=threshold,
+                    )
                     self._send_json_response(res)
                 except Exception as err:
                     self._send_json_response({"status": "error", "message": str(err)}, status=500)

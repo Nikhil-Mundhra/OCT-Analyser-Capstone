@@ -154,18 +154,22 @@ def detect_and_process_white_bars(
     white_thresh: int = 175,
     dark_bg_thresh: int = 70,
     gap_pixels: int = 4,
-    pad_pixels: int = 10,
+    pad_pixels: int = 4,
+    min_bar_width: int = 35,
     max_search_depth_top: float = 0.35,
     max_search_depth_bot: float = 0.35,
     highlight_red: bool = False
 ) -> np.ndarray:
     """
-    Pure Per-Column Vertical Raycasting for White Scanner Border, Banner & Corner Artifact Removal.
-    Evaluates every single vertical column x in [0, W-1] independently:
-      1. Top-Down: Starts at y=0, raycasts downward if white, zeroing out until dark background.
-      2. Bottom-Up: Starts at y=H-1, raycasts upward if white, zeroing out until dark background.
-    Guarantees that corner triangles, partial white bars, metadata stamps, and full banners
-    are cleanly zeroed out column-by-column without horizontal artifacts or tissue clipping.
+    Robust Scanner White-Bar, Banner & Corner Artifact Removal.
+
+    Prevents false-positive notched teeth ("castle battlements") cutting into retinal tissue by:
+      1. Requiring Horizontal Structure: Only triggers on connected white components spanning
+         at least min_bar_width columns (or corner-connected components >= 20 columns).
+         Scans where retinal tissue or noise touches the edge without a wide banner are never notched.
+      2. Envelope Boundary Smoothing: For detected banners, applies a smoothed envelope cut
+         across connected columns, preventing jagged, single-column vertical spikes.
+      3. Controlled Padding: Clamps safety padding to avoid overshooting into underlying tissue.
     """
     if img.ndim == 2:
         gray = img
@@ -185,15 +189,26 @@ def detect_and_process_white_bars(
     max_top_y = int(H * max_search_depth_top)
     min_bot_y = int(H * (1.0 - max_search_depth_bot))
 
-    # 1. Top-Down Vertical Column Raycasting (every column x independently)
-    for x in range(W):
-        if gray[0, x] >= white_thresh:
+    # 1. Top-Down Banner Detection with Horizontal Structure Validation
+    top_row_white = (gray[0, :] >= white_thresh).astype(np.uint8)
+    num_labels_t, labels_t, stats_t, _ = cv2.connectedComponentsWithStats(top_row_white[:, None])
+
+    valid_top_cols = set()
+    for lbl in range(1, num_labels_t):
+        area = stats_t[lbl, cv2.CC_STAT_AREA]
+        cols_in_lbl = np.where(labels_t[:, 0] == lbl)[0]
+        is_corner = (0 in cols_in_lbl) or ((W - 1) in cols_in_lbl)
+        if area >= min_bar_width or (is_corner and area >= 20):
+            valid_top_cols.update(cols_in_lbl)
+
+    if valid_top_cols:
+        col_end_y = {}
+        for x in valid_top_cols:
             dark_count = 0
             last_white_y = 0
             for y in range(max_top_y):
                 val = gray[y, x]
                 if val >= white_thresh:
-                    bar_mask[y, x] = 255
                     last_white_y = y
                     dark_count = 0
                 elif val < dark_bg_thresh:
@@ -202,18 +217,37 @@ def detect_and_process_white_bars(
                         break
                 else:
                     break
-            pad_end = min(max_top_y, last_white_y + pad_pixels)
-            bar_mask[:pad_end, x] = 255
+            col_end_y[x] = last_white_y
 
-    # 2. Bottom-Up Vertical Column Raycasting (every column x independently)
-    for x in range(W):
-        if gray[H - 1, x] >= white_thresh:
+        for lbl in range(1, num_labels_t):
+            cols_in_lbl = np.where(labels_t[:, 0] == lbl)[0]
+            if len(cols_in_lbl) > 0 and cols_in_lbl[0] in valid_top_cols:
+                depths = np.array([col_end_y.get(x, 0) for x in cols_in_lbl])
+                smooth_depth = int(np.percentile(depths, 75))
+                for idx, x in enumerate(cols_in_lbl):
+                    cut_y = min(max_top_y, max(depths[idx], smooth_depth) + pad_pixels)
+                    bar_mask[:cut_y, x] = 255
+
+    # 2. Bottom-Up Banner Detection with Horizontal Structure Validation
+    bot_row_white = (gray[H - 1, :] >= white_thresh).astype(np.uint8)
+    num_labels_b, labels_b, stats_b, _ = cv2.connectedComponentsWithStats(bot_row_white[:, None])
+
+    valid_bot_cols = set()
+    for lbl in range(1, num_labels_b):
+        area = stats_b[lbl, cv2.CC_STAT_AREA]
+        cols_in_lbl = np.where(labels_b[:, 0] == lbl)[0]
+        is_corner = (0 in cols_in_lbl) or ((W - 1) in cols_in_lbl)
+        if area >= min_bar_width or (is_corner and area >= 20):
+            valid_bot_cols.update(cols_in_lbl)
+
+    if valid_bot_cols:
+        col_start_y = {}
+        for x in valid_bot_cols:
             dark_count = 0
             first_white_y = H - 1
             for y in range(H - 1, min_bot_y, -1):
                 val = gray[y, x]
                 if val >= white_thresh:
-                    bar_mask[y, x] = 255
                     first_white_y = y
                     dark_count = 0
                 elif val < dark_bg_thresh:
@@ -222,11 +256,19 @@ def detect_and_process_white_bars(
                         break
                 else:
                     break
-            pad_start = max(min_bot_y, first_white_y - pad_pixels)
-            bar_mask[pad_start:, x] = 255
+            col_start_y[x] = first_white_y
 
-    # Morphological closing along vertical columns
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 5))
+        for lbl in range(1, num_labels_b):
+            cols_in_lbl = np.where(labels_b[:, 0] == lbl)[0]
+            if len(cols_in_lbl) > 0 and cols_in_lbl[0] in valid_bot_cols:
+                depths = np.array([col_start_y.get(x, H - 1) for x in cols_in_lbl])
+                smooth_depth = int(np.percentile(depths, 25))
+                for idx, x in enumerate(cols_in_lbl):
+                    cut_y = max(min_bot_y, min(depths[idx], smooth_depth) - pad_pixels)
+                    bar_mask[cut_y:, x] = 255
+
+    # Morphological closing along horizontal/vertical to ensure solid uniform removal
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 3))
     bar_mask = cv2.morphologyEx(bar_mask, cv2.MORPH_CLOSE, kernel)
 
     if img.ndim == 2:

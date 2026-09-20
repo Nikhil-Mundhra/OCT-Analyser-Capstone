@@ -641,6 +641,7 @@
     "use_dp_ilm": true,
     "ilm_gradient_weight": 0.7,
     "ilm_smooth_weight": 0.25,
-    "auto_mode": true
+    "auto_mode": true,
+    "unet_mode": false
   }
 }

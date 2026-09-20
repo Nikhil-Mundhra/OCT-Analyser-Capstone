@@ -27,6 +27,20 @@ class SwipingStudio {
     this.isFetchingNextBatch = false;
     this.isAnimating = false;
 
+    // Surgical BG Tools (Eraser & U-Net Window Rerun) & Undo State
+    this.activeTool = 'none'; // 'none', 'eraser', 'unet-window'
+    this.isToolActive = false;
+    this.isExecutingAction = false;
+    this.undoStack = []; // Stack of { y_top_points, y_bot_points } snapshots
+
+    // Window Box drag selection state for U-Net window rerun
+    this.isBoxSelecting = false;
+    this.boxStartPoint = null;
+    this.hoveredCropBox = null;
+    this.cropBoxAtMouseDown = null;
+    this._cachedRetinalBandPath = null;
+    this._cachedRetinalBandItem = null;
+
     this.initElements();
     this.bindEvents();
     this.startBackgroundHeartbeat();
@@ -39,14 +53,26 @@ class SwipingStudio {
     this.svgOverlay = document.getElementById('swipe-svg-overlay');
     this.cropPreviewCanvas = document.getElementById('swipe-crop-canvas');
     this.cleanCropPreview = document.getElementById('swipe-clean-crop-preview');
+    this.crosshairCanvas = document.getElementById('swipe-crosshair-canvas');
     this.curatedCountEl = document.getElementById('swipe-curated-count');
     this.progressPctEl = document.getElementById('swipe-progress-pct');
     this.progressBarEl = document.getElementById('swipe-progress-bar-fill');
     this.folderSelect = document.getElementById('swipe-folder-select');
+    this.filterModeSelect = document.getElementById('swipe-filter-mode-select');
+    this.filterMode = 'all';
     this.sampleMetaEl = document.getElementById('swipe-sample-meta');
     this.stampApprove = document.getElementById('stamp-approve');
     this.stampSkip = document.getElementById('stamp-skip');
     this.viewModeBadge = document.getElementById('swipe-view-mode-badge');
+
+    // Surgical BG Tools Elements
+    this.toolSelect = document.getElementById('swipe-active-tool-select');
+    this.toolActionBtn = document.getElementById('swipe-tool-action-btn');
+    this.toolActionFill = document.getElementById('swipe-ablate-fill');
+    this.toolActionShimmer = document.getElementById('swipe-ablate-shimmer');
+    this.toolActionText = document.getElementById('swipe-ablate-text');
+    this.btnUndo = document.getElementById('swipe-btn-undo');
+    this.toolStatusEl = document.getElementById('swipe-tool-status');
 
     // Retrain Button and Modal elements
     this.btnTriggerRetrain = document.getElementById('btn-trigger-retrain');
@@ -82,6 +108,24 @@ class SwipingStudio {
       if (!this.isActiveView()) return;
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
 
+      // Single-click Undo for Surgical BG Tools (Ctrl+Z / Cmd+Z)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+        e.preventDefault();
+        if (this.undoStack && this.undoStack.length > 0 && !this.isExecutingAction) {
+          this.undoLastAction();
+          return;
+        }
+      }
+
+      // Escape key exits surgical tool mode
+      if (e.key === 'Escape' && this.isToolActive) {
+        this.toggleActiveTool(false);
+        return;
+      }
+
+      // Suppress navigation while drawing a U-Net window box
+      if (this.isBoxSelecting) return;
+
       if (e.key === 'ArrowRight' || e.code === 'KeyD') {
         e.preventDefault();
         this.approveCurrentCrop();
@@ -92,8 +136,11 @@ class SwipingStudio {
         e.preventDefault();
         this.toggleViewMode();
       } else if (e.key === 'ArrowDown' || e.code === 'KeyZ') {
-        e.preventDefault();
-        this.stepPrevious();
+        // Fallback for Z without Ctrl: step previous scan
+        if (!e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          this.stepPrevious();
+        }
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         if (this.selectedNodes && this.selectedNodes.length > 0) {
           e.preventDefault();
@@ -116,9 +163,31 @@ class SwipingStudio {
       });
     }
 
+    // Tool Selector Dropdown
+    if (this.toolSelect) {
+      this.toolSelect.addEventListener('change', () => {
+        this.setToolType(this.toolSelect.value);
+      });
+    }
+
+    // Tool Action Button Toggle
+    if (this.toolActionBtn) {
+      this.toolActionBtn.addEventListener('click', () => {
+        this.toggleActiveTool();
+      });
+    }
+
+    // Undo Button
+    if (this.btnUndo) {
+      this.btnUndo.addEventListener('click', () => {
+        this.undoLastAction();
+      });
+    }
+
     // Action Buttons
     const btnApprove = document.getElementById('btn-swipe-approve');
     const btnSkip = document.getElementById('btn-swipe-skip');
+    const btnPrev = document.getElementById('btn-swipe-prev');
     const btnToggleView = document.getElementById('btn-swipe-toggle-view');
     const btnRetrain = document.getElementById('btn-trigger-retrain');
     const btnCloseModal = document.getElementById('btn-close-retrain-modal');
@@ -127,7 +196,11 @@ class SwipingStudio {
 
     if (btnApprove) btnApprove.addEventListener('click', () => this.approveCurrentCrop());
     if (btnSkip) btnSkip.addEventListener('click', () => this.skipCurrentCrop());
+    if (btnPrev) btnPrev.addEventListener('click', () => this.stepPrevious());
     if (btnToggleView) btnToggleView.addEventListener('click', () => this.toggleViewMode());
+    if (this.filterModeSelect) {
+      this.filterModeSelect.addEventListener('change', (e) => this.onFilterModeChange(e.target.value));
+    }
     if (btnRetrain) btnRetrain.addEventListener('click', () => this.openRetrainModal());
     if (this.headerRetrainBadge) this.headerRetrainBadge.addEventListener('click', () => this.openRetrainModal());
     if (btnCloseModal) btnCloseModal.addEventListener('click', () => this.closeRetrainModal());
@@ -144,9 +217,11 @@ class SwipingStudio {
     window.addEventListener('touchmove', (e) => this.handleGlobalDragMove(e), { passive: false });
     window.addEventListener('touchend', (e) => this.handleGlobalDragEnd(e));
 
-    // Mouse / Touch Swiping on Card
+    // Mouse / Touch Swiping on Card - STRICT ISOLATION GUARD:
+    // When any surgical tool is active, card swiping physics must be completely inert!
     if (this.card) {
       const onDragStart = (e) => {
+        if (this.isToolActive) return;
         if (this.activeDrag) return;
         if (e.target.closest('#swipe-svg-overlay') || e.target.tagName === 'circle' || e.target.tagName === 'path' || e.target.tagName === 'rect' || e.target.tagName === 'line') return;
         this.isSwipingCard = true;
@@ -156,7 +231,7 @@ class SwipingStudio {
       };
 
       const onDragMove = (e) => {
-        if (!this.isSwipingCard || this.activeDrag) return;
+        if (this.isToolActive || !this.isSwipingCard || this.activeDrag) return;
         const currentX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
         const deltaX = currentX - this.swipeStartX;
         this.currentTranslateX = deltaX;
@@ -180,7 +255,7 @@ class SwipingStudio {
       };
 
       const onDragEnd = () => {
-        if (!this.isSwipingCard) return;
+        if (this.isToolActive || !this.isSwipingCard) return;
         this.isSwipingCard = false;
         this.card.style.transition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
 
@@ -201,6 +276,14 @@ class SwipingStudio {
       this.card.addEventListener('mousedown', onDragStart);
       this.card.addEventListener('touchstart', onDragStart, { passive: true });
     }
+
+    // Crosshair Canvas Mouse Event Listeners for Surgical Eraser and Rerun U-Net Window
+    if (this.crosshairCanvas) {
+      this.crosshairCanvas.addEventListener('mousemove', (e) => this.handleCanvasMouseMove(e));
+      this.crosshairCanvas.addEventListener('mouseleave', () => this.handleCanvasMouseLeave());
+      this.crosshairCanvas.addEventListener('mousedown', (e) => this.handleCanvasMouseDown(e));
+      this.crosshairCanvas.addEventListener('mouseup', (e) => this.handleCanvasMouseUp(e));
+    }
   }
 
   isActiveView() {
@@ -217,6 +300,7 @@ class SwipingStudio {
   }
 
   deactivate() {
+    this.toggleActiveTool(false);
     if (this.container) this.container.style.display = 'none';
     const tuningApp = document.querySelector('.app-container');
     if (tuningApp) tuningApp.style.display = 'grid';
@@ -275,10 +359,31 @@ class SwipingStudio {
     this.loadQueue(0);
   }
 
+  onFilterModeChange(mode) {
+    this.filterMode = mode || 'all';
+    if (this.filterModeSelect) {
+      this.filterModeSelect.value = this.filterMode;
+      if (this.filterMode === 'curated') {
+        this.filterModeSelect.style.borderColor = '#10b981';
+        this.filterModeSelect.style.color = '#34d399';
+        this.filterModeSelect.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.35)';
+      } else {
+        this.filterModeSelect.style.borderColor = 'rgba(255,255,255,0.15)';
+        this.filterModeSelect.style.color = '#f8fafc';
+        this.filterModeSelect.style.boxShadow = 'none';
+      }
+    }
+    this.loadQueue(0);
+  }
+
   async loadQueue(offset = 0, clearCache = false) {
     try {
-      if (this.sampleMetaEl) this.sampleMetaEl.textContent = 'Loading scans with Attention U-Net inferences...';
-      const res = await fetchCropFilterQueue(this.selectedFolder, offset, 40, clearCache);
+      if (this.sampleMetaEl) {
+        this.sampleMetaEl.textContent = this.filterMode === 'curated'
+          ? 'Loading curated ground truth masks...'
+          : 'Loading scans with Attention U-Net inferences...';
+      }
+      const res = await fetchCropFilterQueue(this.selectedFolder, offset, 40, clearCache, this.filterMode);
       this.queue = res.items || [];
       this.totalScans = res.total || 0;
       this.currentIndex = 0;
@@ -308,7 +413,10 @@ class SwipingStudio {
     }
 
     if (this.sampleMetaEl) {
-      const curBadge = item.is_curated ? '<span class="badge" style="background:#10b981;color:#fff;">VERIFIED GROUND TRUTH</span>' : '<span class="badge" style="background:#3b82f6;color:#fff;">UNET PREDICTED</span>';
+      let curBadge = item.is_curated ? '<span class="badge" style="background:#10b981;color:#fff;">VERIFIED GROUND TRUTH</span>' : '<span class="badge" style="background:#3b82f6;color:#fff;">UNET PREDICTED</span>';
+      if (this.filterMode === 'curated') {
+        curBadge = '<span class="badge" style="background:#10b981;color:#fff;font-weight:700;box-shadow:0 0 10px rgba(16,185,129,0.5);">REVIEWING CURATED</span>';
+      }
       const scanNum = this.currentIndex + 1;
       const totalNum = this.totalScans || this.queue.length;
       this.sampleMetaEl.innerHTML = `<span style="color:#38bdf8;font-weight:700;margin-right:8px;">[Scan ${scanNum} of ${totalNum}]</span><strong>${item.folder}</strong> / ${item.filename} &bull; ${item.width}&times;${item.height}px ${curBadge}`;
@@ -319,6 +427,18 @@ class SwipingStudio {
 
     // Clear any prior node selection on scan switch
     this.clearSelection();
+
+    // Reset undo stack for the new scan
+    this.undoStack = [];
+    this.updateUndoButtonVisibility();
+
+    // Update crosshairCanvas dimensions (with 30px border padding buffer)
+    if (this.crosshairCanvas && item) {
+      this.crosshairCanvas.width = item.width + 60;
+      this.crosshairCanvas.height = item.height + 60;
+      const ctx = this.crosshairCanvas.getContext('2d');
+      ctx.clearRect(0, 0, this.crosshairCanvas.width, this.crosshairCanvas.height);
+    }
 
     if (this.imgRaw) {
       this.imgRaw.crossOrigin = "anonymous";
@@ -361,7 +481,7 @@ class SwipingStudio {
   async prefetchNextBatch() {
     this.isFetchingNextBatch = true;
     try {
-      const res = await fetchCropFilterQueue(this.selectedFolder, this.queue.length, 30);
+      const res = await fetchCropFilterQueue(this.selectedFolder, this.queue.length, 30, false, this.filterMode);
       if (res && res.items && res.items.length > 0) {
         this.queue = this.queue.concat(res.items);
         this.preloadNextImages(10);
@@ -408,7 +528,7 @@ class SwipingStudio {
       slopes[i] = dy[i] / dx[i];
     }
 
-    // Step 2: Monotone PCHIP tangents at each node to strictly eliminate overshoot & ringing
+    // Step 2: Monotone PCHIP tangents with chordal weighting to preserve steep transitions
     const tangents = new Array(n);
     tangents[0] = slopes[0];
     tangents[n - 1] = slopes[n - 2];
@@ -417,29 +537,39 @@ class SwipingStudio {
       const s0 = slopes[i - 1];
       const s1 = slopes[i];
       if (s0 * s1 <= 0) {
-        // Local extremum -> Flat slope strictly prevents curve ballooning
+        // Local extremum -> Flat slope strictly prevents curve overshoot beyond peak/valley
         tangents[i] = 0;
       } else {
-        // Weighted harmonic mean preserving monotonic curvature
-        const w0 = 2 * dx[i] + dx[i - 1];
-        const w1 = dx[i] + 2 * dx[i - 1];
-        tangents[i] = (w0 + w1) / (w0 / s0 + w1 / s1);
+        // Chordal weighted mean preserving responsive monotonic curvature
+        const w0 = dx[i];
+        const w1 = dx[i - 1];
+        tangents[i] = (w0 * s0 + w1 * s1) / (w0 + w1);
+        // Fritsch-Carlson monotonicity bound
+        const maxSlope = 3.0 * Math.min(Math.abs(s0), Math.abs(s1));
+        if (Math.abs(tangents[i]) > maxSlope) {
+          tangents[i] = Math.sign(tangents[i]) * maxSlope;
+        }
       }
     }
 
-    // Step 3: Cubic Bézier control points
+    // Step 3: Cubic Bézier control points with steep-slope arm tightening
     const segments = [];
     for (let i = 0; i < n - 1; i++) {
       const p1 = points[i];
       const p2 = points[i + 1];
       const h = dx[i];
+      const s = Math.abs(slopes[i]);
+      // For steep slopes, scale down horizontal control arm length to prevent curve bulging
+      const armScale = 1.0 / (1.0 + 0.15 * s);
+      const hEff = (h / 3) * Math.max(0.25, armScale);
+
       const cp1 = {
-        x: p1.x + h / 3,
-        y: p1.y + tangents[i] * (h / 3)
+        x: p1.x + hEff,
+        y: p1.y + tangents[i] * hEff
       };
       const cp2 = {
-        x: p2.x - h / 3,
-        y: p2.y - tangents[i + 1] * (h / 3)
+        x: p2.x - hEff,
+        y: p2.y - tangents[i + 1] * hEff
       };
       segments.push({ p1, cp1, cp2, p2 });
     }
@@ -460,29 +590,31 @@ class SwipingStudio {
   pointsToSmoothBandPolygonD(topPts, botPts) {
     if (!topPts || !botPts || topPts.length === 0 || botPts.length === 0) return '';
     const topD = this.pointsToSmoothPathD(topPts);
-    const revBot = [...botPts].reverse();
-    const botSegments = this.computeMonotoneHermiteBezierSegments(revBot);
+    const botSegments = this.computeMonotoneHermiteBezierSegments(botPts);
     let botSegD = '';
-    for (const seg of botSegments) {
-      botSegD += ` C ${seg.cp1.x.toFixed(2)} ${seg.cp1.y.toFixed(2)}, ${seg.cp2.x.toFixed(2)} ${seg.cp2.y.toFixed(2)}, ${seg.p2.x} ${seg.p2.y}`;
+    // Reverse bottom segments to travel from rightmost bottom point back to leftmost
+    for (let i = botSegments.length - 1; i >= 0; i--) {
+      const seg = botSegments[i];
+      botSegD += ` C ${seg.cp2.x.toFixed(2)} ${seg.cp2.y.toFixed(2)}, ${seg.cp1.x.toFixed(2)} ${seg.cp1.y.toFixed(2)}, ${seg.p1.x} ${seg.p1.y}`;
     }
-    return `${topD} L ${revBot[0].x} ${revBot[0].y} ${botSegD} Z`;
+    const lastBot = botPts[botPts.length - 1];
+    return `${topD} L ${lastBot.x} ${lastBot.y} ${botSegD} Z`;
   }
 
   traceSmoothPathToCanvas(ctx, topPts, botPts) {
     if (!topPts || !botPts || topPts.length === 0 || botPts.length === 0) return;
     const topSegments = this.computeMonotoneHermiteBezierSegments(topPts);
-    const revBot = [...botPts].reverse();
-    const botSegments = this.computeMonotoneHermiteBezierSegments(revBot);
+    const botSegments = this.computeMonotoneHermiteBezierSegments(botPts);
 
     ctx.beginPath();
     ctx.moveTo(topPts[0].x, topPts[0].y);
     for (const seg of topSegments) {
       ctx.bezierCurveTo(seg.cp1.x, seg.cp1.y, seg.cp2.x, seg.cp2.y, seg.p2.x, seg.p2.y);
     }
-    ctx.lineTo(revBot[0].x, revBot[0].y);
-    for (const seg of botSegments) {
-      ctx.bezierCurveTo(seg.cp1.x, seg.cp1.y, seg.cp2.x, seg.cp2.y, seg.p2.x, seg.p2.y);
+    ctx.lineTo(botPts[botPts.length - 1].x, botPts[botPts.length - 1].y);
+    for (let i = botSegments.length - 1; i >= 0; i--) {
+      const seg = botSegments[i];
+      ctx.bezierCurveTo(seg.cp2.x, seg.cp2.y, seg.cp1.x, seg.cp1.y, seg.p1.x, seg.p1.y);
     }
     ctx.closePath();
   }
@@ -505,6 +637,11 @@ class SwipingStudio {
 
   renderVectorsAndCrop(item) {
     if (!this.svgOverlay || !item) return;
+
+    this._cachedRetinalBandPath = null;
+    this._cachedRetinalBandItem = null;
+    this.hoveredCropBox = null;
+    this.cropBoxAtMouseDown = null;
 
     const w = item.width;
     const h = item.height;
@@ -594,7 +731,17 @@ class SwipingStudio {
         this.updateSelectedNodesVisual();
       };
 
-      // Right-Click on Top Curve to insert a node between existing points
+      // Click (Shift/Alt+Click) or Right-Click on Top Curve to insert a node between existing points
+      const onTopClick = (e) => {
+        if (e.altKey || e.shiftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+          const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+          const svgPt = this.clientToSvg(clientX, clientY);
+          this.insertNodeOnCurve(item, 'top', Math.round(svgPt.x), Math.round(svgPt.y));
+        }
+      };
       const onTopRightClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -603,6 +750,8 @@ class SwipingStudio {
         const svgPt = this.clientToSvg(clientX, clientY);
         this.insertNodeOnCurve(item, 'top', Math.round(svgPt.x), Math.round(svgPt.y));
       };
+      topHit.onclick = onTopClick;
+      topPath.onclick = onTopClick;
       topHit.oncontextmenu = onTopRightClick;
       topPath.oncontextmenu = onTopRightClick;
       this.svgOverlay.appendChild(topHit);
@@ -635,7 +784,17 @@ class SwipingStudio {
         this.updateSelectedNodesVisual();
       };
 
-      // Right-Click on Bottom Curve to insert a node between existing points
+      // Click (Shift/Alt+Click) or Right-Click on Bottom Curve to insert a node between existing points
+      const onBotClick = (e) => {
+        if (e.altKey || e.shiftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+          const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+          const svgPt = this.clientToSvg(clientX, clientY);
+          this.insertNodeOnCurve(item, 'bot', Math.round(svgPt.x), Math.round(svgPt.y));
+        }
+      };
       const onBotRightClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -644,6 +803,8 @@ class SwipingStudio {
         const svgPt = this.clientToSvg(clientX, clientY);
         this.insertNodeOnCurve(item, 'bot', Math.round(svgPt.x), Math.round(svgPt.y));
       };
+      botHit.onclick = onBotClick;
+      botPath.onclick = onBotClick;
       botHit.oncontextmenu = onBotRightClick;
       botPath.oncontextmenu = onBotRightClick;
       this.svgOverlay.appendChild(botHit);
@@ -1343,8 +1504,11 @@ class SwipingStudio {
     const cx = Math.max(1, Math.min(item.width - 2, clickX));
     const cy = Math.max(0, Math.min(item.height - 1, clickY));
 
-    // Avoid inserting duplicate node on top of an existing node within 4px
-    if (pts.some(p => Math.abs(p.x - cx) < 4)) {
+    // If clicking directly on an existing node within 3px, select it instead of duplicating
+    const existingIdx = pts.findIndex(p => Math.abs(p.x - cx) < 3);
+    if (existingIdx !== -1) {
+      this.selectedNodes = [{ curveType, idx: existingIdx }];
+      this.updateSelectedNodesVisual();
       return;
     }
 
@@ -2136,7 +2300,13 @@ class SwipingStudio {
   }
 
   renderEmptyQueue() {
-    if (this.sampleMetaEl) this.sampleMetaEl.textContent = 'All scans in this category have been filtered/curated!';
+    if (this.sampleMetaEl) {
+      if (this.filterMode === 'curated') {
+        this.sampleMetaEl.textContent = 'No curated scans found in this category yet!';
+      } else {
+        this.sampleMetaEl.textContent = 'All scans in this category have been filtered/curated!';
+      }
+    }
     if (this.svgOverlay) this.svgOverlay.innerHTML = '';
   }
 
@@ -2492,6 +2662,655 @@ class SwipingStudio {
     } catch (e) {
       console.error('Failed to render training history:', e);
       this.historyRoundsList.innerHTML = `<div style="color: #ef4444; font-size: 0.85rem; text-align: center; padding: 20px;">Failed to load training history: ${e.message}</div>`;
+    }
+  }
+
+  // ==============================================================================
+  // SURGICAL BG TOOLS: ERASER & RERUN U-NET ON SWIPING STUDIO
+  // ==============================================================================
+
+  setToolType(toolType) {
+    this.activeTool = toolType;
+    if (this.toolSelect) {
+      this.toolSelect.value = toolType;
+    }
+
+    if (toolType === 'none') {
+      this.toggleActiveTool(false);
+      return;
+    }
+
+    // Auto-activate tool on select
+    this.toggleActiveTool(true);
+  }
+
+  toggleActiveTool(forceState = null) {
+    if (forceState !== null) {
+      this.isToolActive = forceState;
+    } else {
+      this.isToolActive = !this.isToolActive;
+    }
+
+    if (!this.isToolActive && this.activeTool !== 'none') {
+      this.activeTool = 'none';
+      if (this.toolSelect) this.toolSelect.value = 'none';
+    }
+
+    if (!this.isToolActive) {
+      this.hoveredCropBox = null;
+      this.cropBoxAtMouseDown = null;
+      this.isBoxSelecting = false;
+      this.boxStartPoint = null;
+    }
+
+    // Isolate or restore vector handles and card swiping
+    if (this.crosshairCanvas) {
+      this.crosshairCanvas.style.display = this.isToolActive ? 'block' : 'none';
+      this.crosshairCanvas.style.pointerEvents = this.isToolActive ? 'auto' : 'none';
+      const item = this.queue ? this.queue[this.currentIndex] : null;
+      if (item) {
+        this.crosshairCanvas.width = item.width + 60;
+        this.crosshairCanvas.height = item.height + 60;
+      }
+    }
+
+    if (this.svgOverlay) {
+      // When surgical tool is active, prevent svg overlay from capturing pointer events
+      this.svgOverlay.style.pointerEvents = this.isToolActive ? 'none' : 'auto';
+    }
+
+    // Update Action Button Visuals
+    if (this.toolActionBtn) {
+      this.toolActionBtn.style.display = (this.activeTool !== 'none') ? 'inline-flex' : 'none';
+      if (this.isToolActive) {
+        this.toolActionBtn.classList.add('active');
+        if (this.activeTool === 'unet-window') {
+          this.toolActionBtn.classList.add('unet-active');
+        } else {
+          this.toolActionBtn.classList.remove('unet-active');
+        }
+      } else {
+        this.toolActionBtn.classList.remove('active', 'unet-active');
+      }
+
+      if (this.toolActionText) {
+        if (this.activeTool === 'eraser') {
+          this.toolActionText.textContent = this.isToolActive ? 'Eraser Active (Click Noise)' : 'Surgical BG Eraser';
+        } else if (this.activeTool === 'unet-window') {
+          this.toolActionText.textContent = this.isToolActive ? 'U-Net Active (Click Crop / Drag)' : 'Rerun U-Net Window';
+        }
+      }
+    }
+
+    // Update Status Pill
+    if (this.toolStatusEl) {
+      this.toolStatusEl.style.display = this.isToolActive ? 'inline-block' : 'none';
+      if (this.isToolActive) {
+        this.toolStatusEl.textContent = (this.activeTool === 'eraser')
+          ? 'Click on artifact / vitreous noise to erase'
+          : 'Hover inside crop to snap whole crop, or drag custom box window';
+      }
+    }
+
+    // Update Undo Button Visibility
+    this.updateUndoButtonVisibility();
+  }
+
+  updateUndoButtonVisibility() {
+    if (this.btnUndo) {
+      const hasSnapshots = this.undoStack && this.undoStack.length > 0;
+      this.btnUndo.style.display = hasSnapshots ? 'inline-flex' : 'none';
+    }
+  }
+
+  setActionLoaderState(isLoading, text = '', progressPct = 0) {
+    if (!this.toolActionBtn) return;
+
+    if (isLoading) {
+      this.toolActionBtn.classList.add('ablating-active');
+      if (this.toolActionFill) {
+        this.toolActionFill.style.width = `${progressPct}%`;
+      }
+      if (this.toolActionShimmer) {
+        this.toolActionShimmer.style.display = 'block';
+      }
+      if (this.toolActionText) {
+        this.toolActionText.innerHTML = `<span class="scout-btn-spinner"></span><span>${text}</span>`;
+      }
+    } else {
+      this.toolActionBtn.classList.remove('ablating-active');
+      if (this.toolActionFill) {
+        this.toolActionFill.style.width = '0%';
+      }
+      if (this.toolActionShimmer) {
+        this.toolActionShimmer.style.display = 'none';
+      }
+      if (this.toolActionText) {
+        const defaultLabel = (this.activeTool === 'eraser')
+          ? (this.isToolActive ? 'Eraser Active (Click Noise)' : 'Surgical BG Eraser')
+          : (this.activeTool === 'unet-window'
+            ? (this.isToolActive ? 'U-Net Active (Click Crop / Drag)' : 'Rerun U-Net Window')
+            : 'Surgical Tool');
+        this.toolActionText.innerHTML = text || defaultLabel;
+      }
+    }
+  }
+
+  getExactImageCoords(canvas, e) {
+    const rect = canvas.getBoundingClientRect();
+    const relX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    const canvasX = Math.min(canvas.width - 1, Math.floor(relX * canvas.width));
+    const canvasY = Math.min(canvas.height - 1, Math.floor(relY * canvas.height));
+
+    const item = this.queue ? this.queue[this.currentIndex] : null;
+    const imgW = item ? item.width : (canvas.width - 60);
+    const imgH = item ? item.height : (canvas.height - 60);
+
+    const rawImgX = canvasX - 30;
+    const rawImgY = canvasY - 30;
+    const clampedImgX = Math.max(0, Math.min(imgW - 1, rawImgX));
+    const clampedImgY = Math.max(0, Math.min(imgH - 1, rawImgY));
+
+    return {
+      canvasX,
+      canvasY,
+      x: clampedImgX,
+      y: clampedImgY,
+      rawImgX,
+      rawImgY
+    };
+  }
+
+  getCropBoundingBox(item) {
+    if (!item) return null;
+    const w = item.width;
+    const h = item.height;
+    const clt = item.crop_left_top !== undefined ? item.crop_left_top : (item.crop_left || 0);
+    const clb = item.crop_left_bot !== undefined ? item.crop_left_bot : (item.crop_left || 0);
+    const crt = item.crop_right_top !== undefined ? item.crop_right_top : (item.crop_right || w);
+    const crb = item.crop_right_bot !== undefined ? item.crop_right_bot : (item.crop_right || w);
+
+    // Horizontal boundaries: exact span of the cropped region
+    const minX = Math.max(0, Math.floor(Math.min(clt, clb)));
+    const maxX = Math.min(w, Math.ceil(Math.max(crt, crb)));
+
+    const topPts = item.y_top_points || [];
+    const botPts = item.y_bot_points || [];
+    if (topPts.length === 0 || botPts.length === 0) return null;
+
+    // Filter points within or close to the lateral crop window
+    const relevantTop = topPts.filter(p => p.x >= minX - 15 && p.x <= maxX + 15);
+    const relevantBot = botPts.filter(p => p.x >= minX - 15 && p.x <= maxX + 15);
+    const useTop = relevantTop.length > 0 ? relevantTop : topPts;
+    const useBot = relevantBot.length > 0 ? relevantBot : botPts;
+
+    // Include 15px context margin above and below as used in processor.py
+    const margin = 15;
+    const minY = Math.max(0, Math.floor(Math.min(...useTop.map(p => p.y)) - margin));
+    const maxY = Math.min(h, Math.ceil(Math.max(...useBot.map(p => p.y)) + margin));
+
+    return { minX, minY, maxX, maxY };
+  }
+
+  isPointInCroppedRegion(ctx, rawImgX, rawImgY, item) {
+    if (!item) return false;
+    const w = item.width;
+    const h = item.height;
+    if (rawImgX < 0 || rawImgX >= w || rawImgY < 0 || rawImgY >= h) return false;
+
+    const clt = item.crop_left_top !== undefined ? item.crop_left_top : (item.crop_left || 0);
+    const clb = item.crop_left_bot !== undefined ? item.crop_left_bot : (item.crop_left || 0);
+    const crt = item.crop_right_top !== undefined ? item.crop_right_top : (item.crop_right || w);
+    const crb = item.crop_right_bot !== undefined ? item.crop_right_bot : (item.crop_right || w);
+
+    // Lateral check: Must be inside the active lateral curtains
+    const fracY = Math.max(0, Math.min(1, rawImgY / (h || 1)));
+    const xLeft = clt + fracY * (clb - clt);
+    const xRight = crt + fracY * (crb - crt);
+    if (rawImgX < xLeft || rawImgX > xRight) {
+      return false;
+    }
+
+    const topPts = item.y_top_points || [];
+    const botPts = item.y_bot_points || [];
+    if (topPts.length === 0 || botPts.length === 0) return false;
+
+    // 1. Check if inside retinal tissue band path via Path2D
+    if (!this._cachedRetinalBandPath || this._cachedRetinalBandItem !== item) {
+      const polyD = this.pointsToSmoothBandPolygonD(topPts, botPts);
+      this._cachedRetinalBandPath = polyD ? new Path2D(polyD) : null;
+      this._cachedRetinalBandItem = item;
+    }
+
+    if (this._cachedRetinalBandPath && ctx && ctx.isPointInPath(this._cachedRetinalBandPath, rawImgX, rawImgY)) {
+      return true;
+    }
+
+    // 2. Also check if within the vertical span of the cropped retinal tissue
+    const cropBox = this.getCropBoundingBox(item);
+    if (cropBox) {
+      if (rawImgX >= cropBox.minX && rawImgX <= cropBox.maxX &&
+          rawImgY >= cropBox.minY && rawImgY <= cropBox.maxY) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  handleCanvasMouseMove(e) {
+    if (!this.crosshairCanvas || !this.isToolActive) return;
+    const canvas = this.crosshairCanvas;
+    const item = this.queue ? this.queue[this.currentIndex] : null;
+    if (!item) return;
+
+    const expectedW = item.width + 60;
+    const expectedH = item.height + 60;
+    if (canvas.width !== expectedW || canvas.height !== expectedH) {
+      canvas.width = expectedW;
+      canvas.height = expectedH;
+    }
+
+    const { canvasX, canvasY, x, y, rawImgX, rawImgY } = this.getExactImageCoords(canvas, e);
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (this.activeTool === 'eraser') {
+      // Surgical Eraser Reticle - Drawn centered at canvasX, canvasY so it never clips into edges
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 2]);
+
+      ctx.beginPath();
+      ctx.arc(canvasX, canvasY, 18, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#f87171';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(canvasX - 24, canvasY);
+      ctx.lineTo(canvasX + 24, canvasY);
+      ctx.moveTo(canvasX, canvasY - 24);
+      ctx.lineTo(canvasX, canvasY + 24);
+      ctx.stroke();
+
+      ctx.fillStyle = '#f87171';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`ERASER FOCUS [${x}, ${y}]`, 12, canvas.height - 12);
+
+    } else if (this.activeTool === 'unet-window') {
+      const isDraggingBox = this.isBoxSelecting && this.boxStartPoint &&
+        Math.hypot(canvasX - this.boxStartPoint.canvasX, canvasY - this.boxStartPoint.canvasY) > 5;
+
+      if (isDraggingBox) {
+        this.hoveredCropBox = null;
+        const bx = Math.min(this.boxStartPoint.canvasX, canvasX);
+        const by = Math.min(this.boxStartPoint.canvasY, canvasY);
+        const bw = Math.abs(canvasX - this.boxStartPoint.canvasX);
+        const bh = Math.abs(canvasY - this.boxStartPoint.canvasY);
+
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.22)';
+        ctx.fillRect(bx, by, bw, bh);
+
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 2]);
+        ctx.strokeRect(bx, by, bw, bh);
+
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#60a5fa';
+        ctx.font = 'bold 11px monospace';
+
+        const minImgX = Math.max(0, Math.min(item.width, Math.min(this.boxStartPoint.rawImgX, rawImgX)));
+        const maxImgX = Math.max(0, Math.min(item.width, Math.max(this.boxStartPoint.rawImgX, rawImgX)));
+        const minImgY = Math.max(0, Math.min(item.height, Math.min(this.boxStartPoint.rawImgY, rawImgY)));
+        const maxImgY = Math.max(0, Math.min(item.height, Math.max(this.boxStartPoint.rawImgY, rawImgY)));
+        const imgSpanW = maxImgX - minImgX;
+        const imgSpanH = maxImgY - minImgY;
+
+        ctx.fillText(`U-NET WINDOW: ${imgSpanW}x${imgSpanH} px [${minImgX}, ${minImgY}]`, Math.max(12, bx), Math.max(18, by - 6));
+      } else if (this.cropBoxAtMouseDown || this.isPointInCroppedRegion(ctx, rawImgX, rawImgY, item)) {
+        // Cursor is hovering or clicking inside the cropped region: Snap mask crop bounding box
+        const cropBox = this.cropBoxAtMouseDown || this.getCropBoundingBox(item);
+        if (cropBox) {
+          this.hoveredCropBox = cropBox;
+          const bx = cropBox.minX + 30;
+          const by = cropBox.minY + 30;
+          const bw = cropBox.maxX - cropBox.minX;
+          const bh = cropBox.maxY - cropBox.minY;
+
+          // 1. Shaded crop area highlight
+          ctx.fillStyle = 'rgba(0, 242, 254, 0.12)';
+          ctx.fillRect(bx, by, bw, bh);
+
+          // 2. Glowing cyan dashed stroke
+          ctx.strokeStyle = '#00f2fe';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 3]);
+          ctx.strokeRect(bx, by, bw, bh);
+          ctx.setLineDash([]);
+
+          // 3. Crisp corner viewfinder brackets
+          const cornerLen = Math.min(16, Math.floor(Math.min(bw, bh) / 4));
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          // Top-Left
+          ctx.moveTo(bx, by + cornerLen); ctx.lineTo(bx, by); ctx.lineTo(bx + cornerLen, by);
+          // Top-Right
+          ctx.moveTo(bx + bw - cornerLen, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + cornerLen);
+          // Bottom-Left
+          ctx.moveTo(bx, by + bh - cornerLen); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + cornerLen, by + bh);
+          // Bottom-Right
+          ctx.moveTo(bx + bw - cornerLen, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + cornerLen);
+          ctx.stroke();
+
+          // 4. Subtle cursor crosshair
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(canvasX - 10, canvasY); ctx.lineTo(canvasX + 10, canvasY);
+          ctx.moveTo(canvasX, canvasY - 10); ctx.lineTo(canvasX, canvasY + 10);
+          ctx.stroke();
+
+          // 5. High-contrast header tag above box
+          const tagText = `SNAP MASK CROP: ${bw}x${bh} px [${cropBox.minX}, ${cropBox.minY} to ${cropBox.maxX}, ${cropBox.maxY}]`;
+          ctx.font = 'bold 11px monospace';
+          const tagWidth = ctx.measureText(tagText).width;
+          const tagX = Math.max(12, Math.min(canvas.width - tagWidth - 20, bx));
+          const tagY = Math.max(18, by - 6);
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          ctx.fillRect(tagX - 4, tagY - 12, tagWidth + 8, 16);
+          ctx.strokeStyle = '#00f2fe';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(tagX - 4, tagY - 12, tagWidth + 8, 16);
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText(tagText, tagX, tagY);
+
+          // 6. Action prompt pill at bottom of canvas
+          const actionPrompt = 'CLICK TO RERUN ENTIRE CROP | DRAG BOX FOR CUSTOM WINDOW';
+          ctx.font = 'bold 11px monospace';
+          const promptWidth = ctx.measureText(actionPrompt).width;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          ctx.fillRect(10, canvas.height - 24, promptWidth + 12, 18);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(10, canvas.height - 24, promptWidth + 12, 18);
+
+          ctx.fillStyle = '#00f2fe';
+          ctx.fillText(actionPrompt, 16, canvas.height - 11);
+        }
+      } else {
+        this.hoveredCropBox = null;
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+
+        ctx.beginPath();
+        ctx.moveTo(canvasX, 0);
+        ctx.lineTo(canvasX, canvas.height);
+        ctx.moveTo(0, canvasY);
+        ctx.lineTo(canvas.width, canvasY);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#60a5fa';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(`U-NET CORNER [${x}, ${y}] - DRAG BOX`, 12, canvas.height - 12);
+      }
+    }
+  }
+
+  handleCanvasMouseLeave() {
+    if (this.isBoxSelecting) return;
+    this.hoveredCropBox = null;
+    if (this.crosshairCanvas) {
+      const ctx = this.crosshairCanvas.getContext('2d');
+      ctx.clearRect(0, 0, this.crosshairCanvas.width, this.crosshairCanvas.height);
+    }
+  }
+
+  handleCanvasMouseDown(e) {
+    if (!this.isToolActive || this.isExecutingAction) return;
+    const item = this.queue ? this.queue[this.currentIndex] : null;
+    if (!item) return;
+
+    const coords = this.getExactImageCoords(this.crosshairCanvas, e);
+
+    if (this.activeTool === 'unet-window') {
+      this.isBoxSelecting = true;
+      this.boxStartPoint = coords;
+      this.cropBoxAtMouseDown = this.hoveredCropBox;
+    }
+  }
+
+  handleCanvasMouseUp(e) {
+    if (!this.isToolActive || this.isExecutingAction) return;
+    const item = this.queue ? this.queue[this.currentIndex] : null;
+    if (!item) return;
+
+    const coords = this.getExactImageCoords(this.crosshairCanvas, e);
+
+    if (this.activeTool === 'unet-window' && this.isBoxSelecting && this.boxStartPoint) {
+      this.isBoxSelecting = false;
+      const start = this.boxStartPoint;
+      const end = coords;
+      this.boxStartPoint = null;
+
+      if (this.crosshairCanvas) {
+        const ctx = this.crosshairCanvas.getContext('2d');
+        ctx.clearRect(0, 0, this.crosshairCanvas.width, this.crosshairCanvas.height);
+      }
+
+      const dragDist = Math.hypot(end.canvasX - start.canvasX, end.canvasY - start.canvasY);
+      const w = Math.abs(end.rawImgX - start.rawImgX);
+      const h = Math.abs(end.rawImgY - start.rawImgY);
+
+      if (dragDist > 8 && w >= 10 && h >= 10) {
+        // User dragged a custom window
+        const x1 = Math.max(0, Math.min(item.width, Math.min(start.rawImgX, end.rawImgX)));
+        const x2 = Math.max(0, Math.min(item.width, Math.max(start.rawImgX, end.rawImgX)));
+        const y1 = Math.max(0, Math.min(item.height, Math.min(start.rawImgY, end.rawImgY)));
+        const y2 = Math.max(0, Math.min(item.height, Math.max(start.rawImgY, end.rawImgY)));
+        this.cropBoxAtMouseDown = null;
+        this.executeTuningUnetWindow(x1, y1, x2, y2);
+      } else if (this.cropBoxAtMouseDown || this.hoveredCropBox) {
+        // User clicked inside cropped region -> run U-Net on entire mask crop
+        const target = this.cropBoxAtMouseDown || this.hoveredCropBox;
+        this.cropBoxAtMouseDown = null;
+        this.executeTuningUnetWindow(target.minX, target.minY, target.maxX, target.maxY);
+      } else {
+        this.cropBoxAtMouseDown = null;
+      }
+    } else if (this.activeTool === 'eraser') {
+      this.executeTuningEraser(coords.x, coords.y);
+    }
+  }
+
+  async executeTuningEraser(x, y) {
+    const item = this.queue ? this.queue[this.currentIndex] : null;
+    if (!item || this.isExecutingAction) return;
+    this.isExecutingAction = true;
+
+    // Snapshot current vectors for single-click undo
+    this.undoStack.push({
+      y_top_points: JSON.parse(JSON.stringify(item.y_top_points)),
+      y_bot_points: JSON.parse(JSON.stringify(item.y_bot_points)),
+    });
+    this.updateUndoButtonVisibility();
+
+    this.setActionLoaderState(true, `Ablating [${x}, ${y}]...`, 30);
+
+    let currentPct = 30;
+    const progressTimer = setInterval(() => {
+      if (currentPct < 90) {
+        currentPct += 14;
+        if (this.toolActionFill) this.toolActionFill.style.width = `${currentPct}%`;
+      }
+    }, 160);
+
+    if (this.toolStatusEl) {
+      this.toolStatusEl.style.display = 'inline-block';
+      this.toolStatusEl.textContent = `Ablating noise at [${x}, ${y}]...`;
+    }
+
+    try {
+      const res = await fetch('/api/tuning/ablate_bg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folder: item.folder,
+          filename: item.filename,
+          x: x,
+          y: y,
+          radius_x: 0,
+          y_top_points: item.y_top_points,
+          y_bot_points: item.y_bot_points,
+        }),
+      });
+
+      clearInterval(progressTimer);
+
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') {
+        this.setActionLoaderState(false);
+        alert(`Ablation failed: ${data.message || 'Unknown error'}`);
+        return;
+      }
+
+      if (this.toolActionFill) this.toolActionFill.style.width = '100%';
+      const addedLabel = (data.nodes_added && data.nodes_added > 0) ? ` (+${data.nodes_added} nodes)` : '';
+      if (this.toolActionText) this.toolActionText.innerHTML = `Cleaned (${data.pixels_ablated} px${addedLabel})`;
+
+      // Update vectors on current item and immediately re-render clean crop
+      item.y_top_points = data.y_top_points;
+      item.y_bot_points = data.y_bot_points;
+      this.renderVectorsAndCrop(item);
+
+      if (this.toolStatusEl) {
+        if (data.nodes_added && data.nodes_added > 0) {
+          this.toolStatusEl.textContent = `Ablated ${data.pixels_ablated} px (+${data.nodes_added} adaptive node${data.nodes_added > 1 ? 's' : ''} added for contour fidelity)! Live crop updated.`;
+        } else {
+          this.toolStatusEl.textContent = `Ablated ${data.pixels_ablated} px! Live crop updated.`;
+        }
+      }
+
+      setTimeout(() => {
+        if (!this.isExecutingAction) this.setActionLoaderState(false);
+      }, 1200);
+
+    } catch (err) {
+      clearInterval(progressTimer);
+      this.setActionLoaderState(false);
+      console.error('Error during surgical background ablation:', err);
+      alert(`Network error during ablation: ${err.message}`);
+    } finally {
+      this.isExecutingAction = false;
+    }
+  }
+
+  async executeTuningUnetWindow(x1, y1, x2, y2) {
+    const item = this.queue ? this.queue[this.currentIndex] : null;
+    if (!item || this.isExecutingAction) return;
+    this.isExecutingAction = true;
+
+    const minX = Math.min(x1, x2);
+    const maxX = Math.max(x1, x2);
+    const minY = Math.min(y1, y2);
+    const maxY = Math.max(y1, y2);
+
+    // Snapshot current vectors for single-click undo
+    this.undoStack.push({
+      y_top_points: JSON.parse(JSON.stringify(item.y_top_points)),
+      y_bot_points: JSON.parse(JSON.stringify(item.y_bot_points)),
+    });
+    this.updateUndoButtonVisibility();
+
+    this.setActionLoaderState(true, `Running U-Net on window...`, 30);
+
+    let currentPct = 30;
+    const progressTimer = setInterval(() => {
+      if (currentPct < 90) {
+        currentPct += 14;
+        if (this.toolActionFill) this.toolActionFill.style.width = `${currentPct}%`;
+      }
+    }, 160);
+
+    if (this.toolStatusEl) {
+      this.toolStatusEl.style.display = 'inline-block';
+      this.toolStatusEl.textContent = `Running U-Net on window (${maxX - minX}x${maxY - minY} px)...`;
+    }
+
+    try {
+      const res = await fetch('/api/tuning/rerun_unet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folder: item.folder,
+          filename: item.filename,
+          x1: minX,
+          y1: minY,
+          x2: maxX,
+          y2: maxY,
+          threshold: 0.50,
+          y_top_points: item.y_top_points,
+          y_bot_points: item.y_bot_points,
+        }),
+      });
+
+      clearInterval(progressTimer);
+
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') {
+        this.setActionLoaderState(false);
+        alert(`U-Net execution failed: ${data.message || 'Unknown error'}`);
+        return;
+      }
+
+      if (this.toolActionFill) this.toolActionFill.style.width = '100%';
+      if (this.toolActionText) this.toolActionText.innerHTML = `Refined (${data.pixels_changed} px)`;
+
+      // Update vectors on current item and immediately re-render clean crop
+      item.y_top_points = data.y_top_points;
+      item.y_bot_points = data.y_bot_points;
+      this.renderVectorsAndCrop(item);
+
+      if (this.toolStatusEl) {
+        this.toolStatusEl.textContent = `U-Net segmented ${data.pixels_changed} px in window!`;
+      }
+
+      setTimeout(() => {
+        if (!this.isExecutingAction) this.setActionLoaderState(false);
+      }, 1200);
+
+    } catch (err) {
+      clearInterval(progressTimer);
+      this.setActionLoaderState(false);
+      console.error('Error during U-Net window execution:', err);
+      alert(`Network error during U-Net window execution: ${err.message}`);
+    } finally {
+      this.isExecutingAction = false;
+    }
+  }
+
+  undoLastAction() {
+    const item = this.queue ? this.queue[this.currentIndex] : null;
+    if (!item || !this.undoStack || this.undoStack.length === 0) return;
+
+    const snapshot = this.undoStack.pop();
+    item.y_top_points = snapshot.y_top_points;
+    item.y_bot_points = snapshot.y_bot_points;
+
+    this.renderVectorsAndCrop(item);
+    this.updateUndoButtonVisibility();
+
+    if (this.toolStatusEl) {
+      this.toolStatusEl.style.display = 'inline-block';
+      this.toolStatusEl.textContent = 'Action undone. Restored previous boundary vectors.';
     }
   }
 }

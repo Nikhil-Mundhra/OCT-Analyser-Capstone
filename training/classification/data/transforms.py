@@ -153,9 +153,15 @@ def get_train_transforms():
         RandFlip(prob=0.5, spatial_axis=1), # Horizontal flip only (Preserves Vitreous -> RPE superior-inferior anatomical ordering)
         RandAffine(prob=0.5, translate_range=(10, 10), padding_mode="zeros"), # Small +-10px spatial translation jitter
         RandRotate(range_x=0.09, prob=0.5, keep_size=True), # Small ~5 degree anatomical tilt rotation
-        RandGaussianNoise(prob=0.3, std=0.05),
+        # P2: std reduced 0.05->0.02. OCT hyperreflective foci are 2-5px punctate bright dots;
+        # std=0.05 generated pixel-scale noise at the same intensity and spatial frequency,
+        # training the model to suppress the very signal it must detect.
+        RandGaussianNoise(prob=0.3, std=0.02),
         NormalizeIntensity(subtrahend=IMAGENET_MEAN, divisor=IMAGENET_STD, channel_wise=True),
-        RandCoarseDropout(holes=1, spatial_size=(32, 32), dropout_holes=True, fill_value=0, prob=0.2)
+        # P4: hole size 32x32->20x20. A 32px hole at 384px resolution covers 2.3 Stage-2 cells,
+        # enough to fully erase a small drusen dome or hyperreflective focus cluster in one drop.
+        # 20x20 limits erasure to ~1.4 cells, retaining adjacent spatial context.
+        RandCoarseDropout(holes=1, spatial_size=(20, 20), dropout_holes=True, fill_value=0, prob=0.2)
     ])
 
 def get_val_transforms():

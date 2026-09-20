@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import timm
+from typing import Optional
 
 class ChannelAttention(nn.Module):
     def __init__(self, in_planes, ratio=16):
@@ -46,6 +47,74 @@ class CBAMBlock(nn.Module):
         x = x * self.sa(x)
         return x
 
+class StripPoolingProjection(nn.Module):
+    """
+    Encodes spatial-extent information that Global Average Pooling discards.
+
+    Rationale: Geographic atrophy (GA) and subretinal fluid (SRF) are
+    horizontally-extended flat regions, not discrete blobs. Their discriminative
+    signal is *spatial extent* — the RPE band is absent over a wide lateral
+    stretch (GA) or a shallow horizontal pocket spans the scan width (SRF).
+    Standard GAP collapses all spatial arrangement into a single vector,
+    making GA indistinguishable from two drusen mounds with the same average
+    activation. This module preserves that extent signal.
+
+    Approach: Pool the CBAM-attended Stage 2 feature map to thin orthogonal
+    strips, flatten, and project each to `out_dim` via a single Linear+GELU.
+    The horizontal strip (pooled across H) captures lateral distribution;
+    the vertical strip (pooled across W) captures depth-layer distribution.
+    Both are concatenated into a (B, 2 * out_dim) extent embedding.
+
+    Args:
+        in_channels: Channel count of the input feature map (256 for S2).
+        h_strips:    Number of rows to pool to for the vertical profile.
+        w_strips:    Number of columns to pool to for the horizontal profile.
+        out_dim:     Projected dimension per strip direction (default 128).
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        h_strips: int = 4,
+        w_strips: int = 7,
+        out_dim: int = 128,
+    ) -> None:
+        super().__init__()
+        self.h_strips = h_strips
+        self.w_strips = w_strips
+        # Horizontal profile: collapses H, retains W distribution
+        self.h_proj = nn.Sequential(
+            nn.Linear(in_channels * w_strips, out_dim),
+            nn.GELU(),
+        )
+        # Vertical profile: collapses W, retains H (layer) distribution
+        self.v_proj = nn.Sequential(
+            nn.Linear(in_channels * h_strips, out_dim),
+            nn.GELU(),
+        )
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x:    Attended feature map (B, C, H, W).
+            mask: Valid-tissue binary mask (B, 1, H, W).
+
+        Returns:
+            Extent embedding of shape (B, 2 * out_dim).
+        """
+        x_masked = x * mask
+
+        # Horizontal extent: pool to (1, w_strips) — captures lateral spread
+        h_strip = F.adaptive_avg_pool2d(x_masked, (1, self.w_strips))  # (B, C, 1, w_strips)
+        h_feat = self.h_proj(h_strip.flatten(1))                        # (B, out_dim)
+
+        # Vertical extent: pool to (h_strips, 1) — captures depth-layer spread
+        v_strip = F.adaptive_avg_pool2d(x_masked, (self.h_strips, 1))  # (B, C, h_strips, 1)
+        v_feat = self.v_proj(v_strip.flatten(1))                        # (B, out_dim)
+
+        return torch.cat([h_feat, v_feat], dim=1)  # (B, 2 * out_dim)
+
+
 class MultiHeadConvNeXt(nn.Module):
     """
     Multi-Head ConvNeXt V2 Model with Multi-Scale Aggregation and Strict Hierarchical Conditioning
@@ -89,12 +158,34 @@ class MultiHeadConvNeXt(nn.Module):
         self.cbam_s2 = CBAMBlock(in_planes=dim_s2)
         self.cbam_s3 = CBAMBlock(in_planes=dim_s3)
         self.cbam_s4 = CBAMBlock(in_planes=dim_s4)
-        
-        multi_scale_dim = dim_s2 + dim_s3 + dim_s4
+
+        # P3: Strip pooling on Stage 2 for spatial-extent biomarkers (GA, SRF).
+        # Produces a 256-dim horizontal+vertical profile embedding.
+        # h_strips=4, w_strips=7 chosen to match the S2 spatial resolution (28x28)
+        # with 4x compression, giving coarse but discriminative extent signatures.
+        self.strip_pool_s2 = StripPoolingProjection(
+            in_channels=dim_s2, h_strips=4, w_strips=7, out_dim=128
+        )
+
+        # P1: Mean + Max dual-stream at S2 and S3.
+        # Max pooling preserves peak-reflectivity signal that mean pooling washes out,
+        # separating hyperreflective foci (extreme max response) from moderate SHRM,
+        # and dark hyporeflective PED interiors from bright fibrovascular PED.
+        # S4 remains mean-only: it feeds H1 and contains global context, not local extrema.
+        #
+        # h2_in_dim = S2-mean(256) + S2-max(256)
+        #           + S3-mean(512) + S3-max(512)
+        #           + S4-mean(1024)
+        #           + strip(256)
+        #           + H1-prob(1 if conditioning)
+        #         = 2816 + (1 if condition_h2_on_h1 else 0)
+        _gap_dim = (dim_s2 * 2) + (dim_s3 * 2) + dim_s4
+        _strip_dim = 128 * 2  # 2 * out_dim from StripPoolingProjection
+        multi_scale_dim = _gap_dim + _strip_dim
         h2_in_dim = multi_scale_dim + 1 if condition_h2_on_h1 else multi_scale_dim
-        
+
         # granular_pathology_head (multi-label / multi-class)
-        # Input dim is multi_scale_dim + 1 if condition_h2_on_h1 else multi_scale_dim
+        # h2_in_dim = 2817 (with H1 conditioning) or 2816 (without)
         self.granular_pathology_head = nn.Sequential(
             nn.Linear(h2_in_dim, 512),
             nn.GELU(),
@@ -129,22 +220,39 @@ class MultiHeadConvNeXt(nn.Module):
         gap_s4 = masked_s4.sum(dim=(2, 3)) / mask_s4.sum(dim=(2, 3)).clamp_min(1.0)
         out_normal = self.normal_abnormal_head(gap_s4)
         
-        # --- Stream 2: H2 Granular Pathology (Multi-Scale Masked GAP) ---
-        # Apply CBAM and valid_mask at each scale BEFORE global pooling
+        # --- Stream 2: H2 Granular Pathology (Multi-Scale Masked GAP + Strip Pool) ---
+        # Apply CBAM and valid_mask at each scale BEFORE pooling.
         att_s2 = self.cbam_s2(f_s2) * mask_s2
         att_s3 = self.cbam_s3(f_s3) * mask_s3
         att_s4 = self.cbam_s4(f_s4) * mask_s4
-        
-        gap_att_s2 = att_s2.sum(dim=(2, 3)) / mask_s2.sum(dim=(2, 3)).clamp_min(1.0)
-        gap_att_s3 = att_s3.sum(dim=(2, 3)) / mask_s3.sum(dim=(2, 3)).clamp_min(1.0)
-        gap_att_s4 = att_s4.sum(dim=(2, 3)) / mask_s4.sum(dim=(2, 3)).clamp_min(1.0)
-        
-        multi_scale_features = torch.cat([gap_att_s2, gap_att_s3, gap_att_s4], dim=1)
-        
+
+        # P1: Mean + Max dual-stream at S2 and S3.
+        # mean: global context, avg reflectivity across tissue
+        # max:  peak reflectivity, separates hyperreflective foci (extreme) from
+        #       moderate SHRM, and dark PED interiors from bright fibrovascular PEDs.
+        mask_s2_sum = mask_s2.sum(dim=(2, 3)).clamp_min(1.0)
+        mask_s3_sum = mask_s3.sum(dim=(2, 3)).clamp_min(1.0)
+
+        gap_mean_s2 = att_s2.sum(dim=(2, 3)) / mask_s2_sum            # (B, 256)
+        gap_max_s2  = (att_s2).amax(dim=(2, 3))                       # (B, 256)
+        gap_mean_s3 = att_s3.sum(dim=(2, 3)) / mask_s3_sum            # (B, 512)
+        gap_max_s3  = (att_s3).amax(dim=(2, 3))                       # (B, 512)
+        gap_att_s4  = att_s4.sum(dim=(2, 3)) / mask_s4.sum(dim=(2, 3)).clamp_min(1.0)  # (B, 1024)
+
+        # P3: Horizontal strip pooling on S2 for spatial-extent biomarkers.
+        # att_s2 already has the tissue mask applied; pass mask through again for
+        # the strip module's internal masked average.
+        strip_feat = self.strip_pool_s2(att_s2, mask_s2)               # (B, 256)
+
+        multi_scale_features = torch.cat(
+            [gap_mean_s2, gap_max_s2, gap_mean_s3, gap_max_s3, gap_att_s4, strip_feat],
+            dim=1,
+        )  # (B, 256+256+512+512+1024+256) = (B, 2816)
+
         # Hierarchical Feature Conditioning: Append H1 Probability if enabled
         if self.condition_h2_on_h1:
             h1_prob = torch.sigmoid(out_normal).detach()
-            h2_input = torch.cat([multi_scale_features, h1_prob], dim=1)
+            h2_input = torch.cat([multi_scale_features, h1_prob], dim=1)  # (B, 2817)
         else:
             h2_input = multi_scale_features
         
@@ -237,6 +345,7 @@ class MultiHeadConvNeXt(nn.Module):
                 self.cbam_s2,
                 self.cbam_s3,
                 self.cbam_s4,
+                self.strip_pool_s2,
                 self.granular_pathology_head,
             ]
             head_decay, head_no_decay = [], []
@@ -281,6 +390,7 @@ class MultiHeadConvNeXt(nn.Module):
             self.cbam_s2,
             self.cbam_s3,
             self.cbam_s4,
+            self.strip_pool_s2,
             self.granular_pathology_head,
         ]
         head_decay, head_no_decay = [], []

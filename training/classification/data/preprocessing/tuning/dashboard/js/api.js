@@ -100,10 +100,13 @@ async function curateBatch(folder, filenames, params) {
   return await res.json();
 }
 
-async function fetchCropFilterQueue(folder = null, offset = 0, limit = 30, clearCache = false) {
+async function fetchCropFilterQueue(folder = null, offset = 0, limit = 30, clearCache = false, filterMode = 'all') {
   let url = `/api/crop_filter_queue?offset=${offset}&limit=${limit}`;
   if (folder && folder !== 'ALL') {
     url += `&folder=${encodeURIComponent(folder)}`;
+  }
+  if (filterMode && filterMode !== 'all') {
+    url += `&filter_mode=${encodeURIComponent(filterMode)}`;
   }
   if (clearCache) {
     url += `&clear_cache=true`;

@@ -785,12 +785,21 @@ async function init() {
     // Navigation Tab Switching
     const tabSwiping = document.getElementById('nav-tab-swiping');
     const tabTuning = document.getElementById('nav-tab-tuning');
+    const tabScout = document.getElementById('nav-tab-scout');
     const tuningAppContainer = document.querySelector('.app-container');
+    const scoutContainer = document.getElementById('scout-explorer-view');
+
+    if (window.ScoutExplorer && !window.scoutExplorer) {
+      window.scoutExplorer = new window.ScoutExplorer();
+    }
 
     function switchToSwiping() {
       if (tabSwiping) tabSwiping.classList.add('active');
       if (tabTuning) tabTuning.classList.remove('active');
+      if (tabScout) tabScout.classList.remove('active');
       if (tuningAppContainer) tuningAppContainer.style.display = 'none';
+      if (scoutContainer) scoutContainer.style.display = 'none';
+      if (window.scoutExplorer) window.scoutExplorer.deactivate();
       if (window.swipingStudio) {
         window.swipingStudio.activate();
       }
@@ -799,8 +808,11 @@ async function init() {
     function switchToTuning() {
       if (tabTuning) tabTuning.classList.add('active');
       if (tabSwiping) tabSwiping.classList.remove('active');
-      if (tuningAppContainer) tuningAppContainer.style.display = 'grid';
+      if (tabScout) tabScout.classList.remove('active');
+      if (scoutContainer) scoutContainer.style.display = 'none';
+      if (window.scoutExplorer) window.scoutExplorer.deactivate();
       if (window.swipingStudio) window.swipingStudio.deactivate();
+      if (tuningAppContainer) tuningAppContainer.style.display = 'grid';
 
       const folderSelect = document.getElementById('folder-select');
       const swipeSelect = document.getElementById('swipe-folder-select');
@@ -816,13 +828,30 @@ async function init() {
       }
     }
 
+    function switchToScout() {
+      if (tabScout) tabScout.classList.add('active');
+      if (tabSwiping) tabSwiping.classList.remove('active');
+      if (tabTuning) tabTuning.classList.remove('active');
+      if (tuningAppContainer) tuningAppContainer.style.display = 'none';
+      if (window.swipingStudio) window.swipingStudio.deactivate();
+      if (window.scoutExplorer) window.scoutExplorer.activate();
+    }
+
     if (tabSwiping) tabSwiping.addEventListener('click', switchToSwiping);
     if (tabTuning) tabTuning.addEventListener('click', switchToTuning);
+    if (tabScout) tabScout.addEventListener('click', switchToScout);
 
     await refreshCuratedState();
 
-    // Default to Swiping Studio
-    switchToSwiping();
+    // Check for direct scout routing
+    const urlParams = new URLSearchParams(window.location.search);
+    const isScoutMode = window.location.hash === '#scout' || urlParams.get('tab') === 'scout' || window.location.pathname.includes('scout');
+    if (isScoutMode) {
+      switchToScout();
+    } else {
+      // Default to Swiping Studio
+      switchToSwiping();
+    }
 
     const targetFolder = currentData.folders[0] || '';
     if (targetFolder) {
