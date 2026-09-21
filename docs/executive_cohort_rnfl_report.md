@@ -44,17 +44,17 @@ span[style*="#d97706"] code, span[style*="#d97706"] {
 
 # Volumetric RNFL Segmentation: Multi-Subject Cohort Evaluation Report
 
-**Cohort Scope**: 11 Subjects (`BEH0174` – `BEH0410`) | 22 OCT Volumes (11 OD + 11 OS)  
+**Cohort Scope**: 23 Subjects (`BEH0086` – `BEH0410`) | 46 OCT Volumes (23 OD + 23 OS)  
 **Modality**: Optovue Solix OCT `Disc Cube` ($320 \times 768 \times 320$ voxels; $18.81\,\mu\text{m} \times 3.12\,\mu\text{m} \times 18.75\,\mu\text{m}$)  
 **Evaluation Arms**:
 - **Cyan**: Clinician-Corrected Reference Algorithm (Good Arm)
 - **Red**: Commercial Solix Heuristic Baseline (Bad Arm)
 - **Green**: Multi-Task Volumetric U-Net (2.5D ResNet Backbone + Optical Gradient Loss $\mathcal{L}_{\text{edge}}$ + Continuous 1D Boundary Regression)
-- **<span style="color: #d97706; font-weight: bold;">Orange</span>**: Held-Out Validation Cohort (<span style="color: #d97706; font-weight: bold;">`BEH0314`</span> & <span style="color: #d97706; font-weight: bold;">`BEH0335`</span> Volumes, Unseen During Training)
+- **<span style="color: #d97706; font-weight: bold;">Orange</span>**: Held-Out Validation Cohort (<span style="color: #d97706; font-weight: bold;">`BEH0086`</span>, <span style="color: #d97706; font-weight: bold;">`BEH0314`</span>, & <span style="color: #d97706; font-weight: bold;">`BEH0335`</span> Volumes, 6 Scans Unseen During Training)
 
 ## 1. Executive Summary
 
-This report delivers a cohort-wide comparative evaluation of a **Multi-Task Volumetric RNFL U-Net (Green)** against the **Clinician Reference Algorithm (Cyan)** and the **Commercial Solix Baseline (Red)** across 11 deidentified subjects (22 eye-level OCT volumes) from the NYU Abu Dhabi / Rokers Lab Solix dataset.
+This report delivers a cohort-wide comparative evaluation of a **Multi-Task Volumetric RNFL U-Net (Green)** against the **Clinician Reference Algorithm (Cyan)** and the **Commercial Solix Baseline (Red)** across 23 deidentified subjects (46 eye-level OCT volumes) from the NYU Abu Dhabi / Rokers Lab Solix dataset.
 
 ### High-Level Findings:
 1. **Elimination of Ganglion Cell Layer Wedge Over-Segmentation**: Across the cohort, commercial heuristic graph-search algorithms frequently plunge vertically into the adjacent hyporeflective Ganglion Cell Layer (GCL) and Inner Plexiform Layer (IPL) at the neuroretinal rim boundary to satisfy geometric smoothness constraints. The volumetric U-Net contours the hyperreflective axonal band, isolating anatomical Retinal Nerve Fiber Layer tissue.
@@ -71,7 +71,7 @@ This report delivers a cohort-wide comparative evaluation of a **Multi-Task Volu
 To ensure reproducibility and rigorous interpretation, the experimental and evaluation pipeline is structured as follows:
 
 ### 2.1 Cohort Architecture & Data Modality
-- **Dataset**: 11 deidentified human subjects from the NYU Abu Dhabi / Rokers Lab Solix OCT repository (`BEH0174` through `BEH0410`), comprising **22 eye-level volumetric acquisitions** (11 OD, 11 OS).
+- **Dataset**: 11 deidentified human subjects from the NYU Abu Dhabi / Rokers Lab Solix OCT repository (`BEH0174` through `BEH0410`), comprising **46 eye-level volumetric acquisitions** (23 OD, 23 OS).
 - **Acquisition Protocol**: Optovue Solix `Disc Cube` ($320 \times 768 \times 320$ voxels), covering a $6.0 \times 6.0 \times 2.4\,\text{mm}^3$ volume centered on the optic nerve head (ONH).
 - **Spatial Resolution**: $18.81\,\mu\text{m}$ (slow/B-scan pitch, 320 slices) $\times 3.12\,\mu\text{m}$ (axial depth, 768 pixels) $\times 18.75\,\mu\text{m}$ (fast/A-scan pitch, 320 columns).
 
@@ -116,6 +116,20 @@ All reported quantitative metrics are computed strictly across peripapillary B-s
 
 | Cohort Group | Scans ($N$) | Metric | Mean $\pm$ SD | Median | IQR (Q1–Q3) | Min – Max |
 | :--- | :---: | :--- | :---: | :---: | :---: | :---: |
+| **Benchmark (All)** | 40 | U-Net Dice | **$0.5563 \pm 0.0362$** | $0.5639$ | $0.0407$ ($0.5373$–$0.5780$) | $0.4731$ – $0.6194$ |
+| | | U-Net MABE ($\mu\text{m}$) | **$32.32 \pm 28.70$** | $20.02$ | $21.20$ ($16.35$–$37.54$) | $12.35$ – $170.20$ |
+| | | U-Net $P_{95}$ ($\mu\text{m}$) | **$62.41 \pm 44.98$** | $45.49$ | $49.28$ ($29.50$–$78.77$) | $26.43$ – $227.59$ |
+| | | U-Net Cup IoU | **$0.8892 \pm 0.0513$** | $0.9015$ | $0.0622$ ($0.8646$–$0.9268$) | $0.7534$ – $0.9593$ |
+| **Benchmark (OD)** | 20 | U-Net Dice | $0.5645 \pm 0.0392$ | $0.5776$ | $0.0411$ ($0.5420$–$0.5831$) | $0.4747$ – $0.6194$ |
+| | | U-Net MABE ($\mu\text{m}$) | $33.48 \pm 25.75$ | $21.57$ | $24.71$ ($15.44$–$40.15$) | $12.35$ – $83.10$ |
+| **Benchmark (OS)** | 20 | U-Net Dice | $0.5481 \pm 0.0315$ | $0.5519$ | $0.0440$ ($0.5284$–$0.5724$) | $0.4731$ – $0.6191$ |
+| | | U-Net MABE ($\mu\text{m}$) | $31.15 \pm 31.87$ | $18.49$ | $19.64$ ($16.42$–$36.06$) | $14.30$ – $170.20$ |
+| <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | 6 | U-Net Dice | <span style="color: #d97706;">$0.5621 \pm 0.0179$</span> | <span style="color: #d97706;">$0.5594$</span> | <span style="color: #d97706;">$0.0258$ ($0.5496$–$0.5754$)</span> | <span style="color: #d97706;">$0.5374$ – $0.5895$</span> |
+| | | U-Net MABE ($\mu\text{m}$) | <span style="color: #d97706;">$58.48 \pm 34.00$</span> | <span style="color: #d97706;">$50.25$</span> | <span style="color: #d97706;">$47.90$ ($30.53$–$78.43$)</span> | <span style="color: #d97706;">$20.74$ – $117.88$</span> |
+| | | U-Net $P_{95}$ ($\mu\text{m}$) | <span style="color: #d97706;">$113.96 \pm 61.82$</span> | <span style="color: #d97706;">$108.37$</span> | <span style="color: #d97706;">$95.88$ ($58.42$–$154.30$)</span> | <span style="color: #d97706;">$41.29$ – $214.32$</span> |
+| | | U-Net Cup IoU | <span style="color: #d97706;">$0.8308 \pm 0.1160$</span> | <span style="color: #d97706;">$0.9046$</span> | <span style="color: #d97706;">$0.1763$ ($0.7339$–$0.9102$)</span> | <span style="color: #d97706;">$0.6563$ – $0.9300$</span> |
+
+--- | :---: | :--- | :---: | :---: | :---: | :---: |
 | **Benchmark (All)** | 18 | U-Net Dice | **$0.9228 \pm 0.0093$** | $0.9246$ | $0.0114$ ($0.9176$–$0.9290$) | $0.9037$ – $0.9345$ |
 | | | U-Net MABE ($\mu\text{m}$) | **$8.25 \pm 1.12$** | $8.02$ | $0.80$ ($7.57$–$8.37$) | $6.71$ – $11.02$ |
 | | | U-Net $P_{95}$ ($\mu\text{m}$) | **$19.61 \pm 3.07$** | $18.61$ | $2.41$ ($17.71$–$20.12$) | $16.78$ – $28.58$ |
@@ -137,28 +151,52 @@ Below is the complete scan-by-scan evaluation of peripapillary segmentation metr
 
 | Subject | Eye | Cohort Status | Reference Ground Truth | U-Net Dice | U-Net MABE ($\mu$m) | U-Net $P_{95}$ ($\mu$m) | U-Net Cup IoU | Commercial Baseline Dice | Commercial Baseline Cup IoU |
 | :--- | :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **BEH0174** | OD | Benchmark / Train | Clinician Corrected | **0.9195** | **8.28** | 20.14 | **0.9307** | 0.9783 | 0.9473 |
-| **BEH0174** | OS | Benchmark / Train | Clinician Corrected | **0.9178** | **7.34** | 17.39 | **0.9439** | 0.8834 | 0.6600 |
-| **BEH0181** | OD | Benchmark / Train | Unedited Mirror | **0.9222** | **7.88** | 17.81 | **0.9449** | N/A (Self-Comparison) | N/A (Self-Comparison) |
-| **BEH0181** | OS | Benchmark / Train | Clinician Corrected | **0.9174** | **8.22** | 20.12 | **0.9030** | 0.9747 | 0.9431 |
-| **BEH0310** | OD | Benchmark / Train | Clinician Corrected | **0.9335** | **7.87** | 18.17 | **0.9471** | 0.9021 | 0.6100 |
-| **BEH0310** | OS | Benchmark / Train | Unedited Mirror | **0.9278** | **6.71** | 16.78 | **0.9511** | N/A (Self-Comparison) | N/A (Self-Comparison) |
-| <span style="color: #d97706; font-weight: bold;">BEH0314</span> | OD | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.9025</span> | <span style="color: #d97706; font-weight: bold;">32.79</span> | <span style="color: #d97706; font-weight: bold;">70.84</span> | <span style="color: #d97706; font-weight: bold;">0.9013</span> | 0.8175 | 0.5701 |
-| <span style="color: #d97706; font-weight: bold;">BEH0314</span> | OS | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.8887</span> | <span style="color: #d97706; font-weight: bold;">54.31</span> | <span style="color: #d97706; font-weight: bold;">111.41</span> | <span style="color: #d97706; font-weight: bold;">0.8924</span> | 0.9764 | 0.9498 |
-| **BEH0321** | OD | Benchmark / Train | Clinician Corrected | **0.9223** | **8.39** | 20.10 | **0.9476** | 0.9571 | 0.9205 |
-| **BEH0321** | OS | Benchmark / Train | Unedited Mirror | **0.9029** | **11.02** | 28.58 | **0.9515** | N/A (Self-Comparison) | N/A (Self-Comparison) |
-| <span style="color: #d97706; font-weight: bold;">BEH0335</span> | OD | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.8021</span> | <span style="color: #d97706; font-weight: bold;">79.29</span> | <span style="color: #d97706; font-weight: bold;">172.37</span> | <span style="color: #d97706; font-weight: bold;">0.8437</span> | 0.8066 | 0.6936 |
-| <span style="color: #d97706; font-weight: bold;">BEH0335</span> | OS | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Unedited Mirror | <span style="color: #d97706; font-weight: bold;">0.7909</span> | <span style="color: #d97706; font-weight: bold;">103.84</span> | <span style="color: #d97706; font-weight: bold;">216.95</span> | <span style="color: #d97706; font-weight: bold;">0.8085</span> | N/A (Self-Comparison) | N/A (Self-Comparison) |
-| **BEH0349** | OD | Benchmark / Train | Clinician Corrected | **0.9037** | **7.52** | 18.77 | **0.9129** | 0.9750 | 0.9494 |
-| **BEH0349** | OS | Benchmark / Train | Unedited Mirror | **0.9269** | **7.55** | 16.89 | **0.9406** | N/A (Self-Comparison) | N/A (Self-Comparison) |
-| **BEH0354** | OD | Benchmark / Train | Clinician Corrected | **0.9283** | **7.59** | 17.68 | **0.9434** | 0.9867 | 0.9588 |
-| **BEH0354** | OS | Benchmark / Train | Clinician Corrected | **0.9285** | **8.05** | 19.10 | **0.9555** | 0.9995 | 1.0000 |
-| **BEH0364** | OD | Benchmark / Train | Clinician Corrected | **0.9184** | **8.48** | 19.77 | **0.9566** | N/A | N/A |
-| **BEH0364** | OS | Benchmark / Train | Clinician Corrected | **0.9345** | **8.20** | 18.40 | **0.9571** | N/A | N/A |
-| **BEH0398** | OD | Benchmark / Train | Unedited Mirror | **0.9141** | **10.96** | 25.31 | **0.9201** | N/A (Self-Comparison) | N/A (Self-Comparison) |
-| **BEH0398** | OS | Benchmark / Train | Unedited Mirror | **0.9296** | **9.06** | 22.36 | **0.9409** | N/A (Self-Comparison) | N/A (Self-Comparison) |
-| **BEH0410** | OD | Benchmark / Train | Unedited Mirror | **0.9311** | **7.98** | 18.46 | **0.9454** | N/A (Self-Comparison) | N/A (Self-Comparison) |
-| **BEH0410** | OS | Benchmark / Train | Clinician Corrected | **0.9323** | **7.44** | 17.13 | **0.9404** | 0.9985 | 1.0000 |
+| <span style="color: #d97706; font-weight: bold;">BEH0086</span> | OD | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.5895</span> | <span style="color: #d97706; font-weight: bold;">20.74</span> | <span style="color: #d97706; font-weight: bold;">41.29</span> | <span style="color: #d97706; font-weight: bold;">0.9093</span> | N/A | N/A |
+| <span style="color: #d97706; font-weight: bold;">BEH0086</span> | OS | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.5488</span> | <span style="color: #d97706; font-weight: bold;">27.33</span> | <span style="color: #d97706; font-weight: bold;">47.06</span> | <span style="color: #d97706; font-weight: bold;">0.9300</span> | N/A | N/A |
+| **BEH0090** | OD | Benchmark / Train | Clinician Corrected | **0.5840** | **62.00** | 137.90 | **0.7873** | N/A | N/A |
+| **BEH0090** | OS | Benchmark / Train | Clinician Corrected | **0.5341** | **57.68** | 125.57 | **0.9031** | N/A | N/A |
+| **BEH0096** | OD | Benchmark / Train | Clinician Corrected | **0.5838** | **42.76** | 90.89 | **0.9459** | N/A | N/A |
+| **BEH0096** | OS | Benchmark / Train | Clinician Corrected | **0.5428** | **28.65** | 73.26 | **0.9411** | N/A | N/A |
+| **BEH0174** | OD | Benchmark / Train | Clinician Corrected | **0.5383** | **18.82** | 33.69 | **0.9379** | 0.9783 | 0.9473 |
+| **BEH0174** | OS | Benchmark / Train | Clinician Corrected | **0.5291** | **16.48** | 28.67 | **0.9179** | 0.8834 | 0.6600 |
+| **BEH0181** | OD | Benchmark / Train | Unedited Mirror | **0.5686** | **15.02** | 27.30 | **0.9085** | N/A (Self-Comparison) | N/A (Self-Comparison) |
+| **BEH0181** | OS | Benchmark / Train | Clinician Corrected | **0.5456** | **18.69** | 31.59 | **0.8666** | 0.9747 | 0.9431 |
+| **BEH0185** | OD | Benchmark / Train | Clinician Corrected | **0.5640** | **73.88** | 165.21 | **0.8439** | N/A | N/A |
+| **BEH0185** | OS | Benchmark / Train | Clinician Corrected | **0.5706** | **36.08** | 73.38 | **0.8631** | N/A | N/A |
+| **BEH0241** | OD | Benchmark / Train | Clinician Corrected | **0.5205** | **22.39** | 53.68 | **0.7853** | N/A | N/A |
+| **BEH0241** | OS | Benchmark / Train | Clinician Corrected | **0.5099** | **31.92** | 57.37 | **0.8418** | N/A | N/A |
+| **BEH0249** | OD | Benchmark / Train | Clinician Corrected | **0.5660** | **26.32** | 60.31 | **0.8132** | N/A | N/A |
+| **BEH0249** | OS | Benchmark / Train | Clinician Corrected | **0.5585** | **39.47** | 78.86 | **0.7534** | N/A | N/A |
+| **BEH0259** | OD | Benchmark / Train | Clinician Corrected | **0.5785** | **83.10** | 138.27 | **0.9144** | N/A | N/A |
+| **BEH0259** | OS | Benchmark / Train | Clinician Corrected | **0.5694** | **21.22** | 64.04 | **0.8893** | N/A | N/A |
+| **BEH0264** | OD | Benchmark / Train | Clinician Corrected | **0.4747** | **46.30** | 101.04 | **0.9019** | N/A | N/A |
+| **BEH0264** | OS | Benchmark / Train | Clinician Corrected | **0.4731** | **23.29** | 51.69 | **0.8347** | N/A | N/A |
+| **BEH0282** | OD | Benchmark / Train | Clinician Corrected | **0.5455** | **24.84** | 44.23 | **0.9283** | N/A | N/A |
+| **BEH0282** | OS | Benchmark / Train | Clinician Corrected | **0.5120** | **39.03** | 83.10 | **0.9238** | N/A | N/A |
+| **BEH0284** | OD | Benchmark / Train | Clinician Corrected | **0.5765** | **12.35** | 31.28 | **0.9168** | N/A | N/A |
+| **BEH0284** | OS | Benchmark / Train | Clinician Corrected | **0.5706** | **37.05** | 78.75 | **0.8986** | N/A | N/A |
+| **BEH0287** | OD | Benchmark / Train | Clinician Corrected | **0.4855** | **76.78** | 120.68 | **0.9055** | N/A | N/A |
+| **BEH0287** | OS | Benchmark / Train | Clinician Corrected | **0.5122** | **17.93** | 46.74 | **0.8961** | N/A | N/A |
+| **BEH0294** | OD | Benchmark / Train | Clinician Corrected | **0.6182** | **24.51** | 48.04 | **0.8652** | N/A | N/A |
+| **BEH0294** | OS | Benchmark / Train | Clinician Corrected | **0.5598** | **170.20** | 227.59 | **0.8896** | N/A | N/A |
+| **BEH0310** | OD | Benchmark / Train | Clinician Corrected | **0.6008** | **17.59** | 29.51 | **0.9288** | 0.9021 | 0.6100 |
+| **BEH0310** | OS | Benchmark / Train | Unedited Mirror | **0.5394** | **15.96** | 28.17 | **0.9503** | N/A (Self-Comparison) | N/A (Self-Comparison) |
+| <span style="color: #d97706; font-weight: bold;">BEH0314</span> | OD | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.5668</span> | <span style="color: #d97706; font-weight: bold;">40.14</span> | <span style="color: #d97706; font-weight: bold;">92.50</span> | <span style="color: #d97706; font-weight: bold;">0.8999</span> | 0.8175 | 0.5701 |
+| <span style="color: #d97706; font-weight: bold;">BEH0314</span> | OS | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.5374</span> | <span style="color: #d97706; font-weight: bold;">60.36</span> | <span style="color: #d97706; font-weight: bold;">124.24</span> | <span style="color: #d97706; font-weight: bold;">0.9105</span> | 0.9764 | 0.9498 |
+| **BEH0321** | OD | Benchmark / Train | Clinician Corrected | **0.5972** | **14.48** | 28.70 | **0.8537** | 0.9571 | 0.9205 |
+| **BEH0321** | OS | Benchmark / Train | Unedited Mirror | **0.5638** | **16.62** | 36.79 | **0.7667** | N/A (Self-Comparison) | N/A (Self-Comparison) |
+| <span style="color: #d97706; font-weight: bold;">BEH0335</span> | OD | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Clinician Corrected | <span style="color: #d97706; font-weight: bold;">0.5783</span> | <span style="color: #d97706; font-weight: bold;">84.46</span> | <span style="color: #d97706; font-weight: bold;">164.33</span> | <span style="color: #d97706; font-weight: bold;">0.6786</span> | 0.8066 | 0.6936 |
+| <span style="color: #d97706; font-weight: bold;">BEH0335</span> | OS | <span style="color: #d97706; font-weight: bold;">Validation (Held-Out)</span> | Unedited Mirror | <span style="color: #d97706; font-weight: bold;">0.5520</span> | <span style="color: #d97706; font-weight: bold;">117.88</span> | <span style="color: #d97706; font-weight: bold;">214.32</span> | <span style="color: #d97706; font-weight: bold;">0.6563</span> | N/A (Self-Comparison) | N/A (Self-Comparison) |
+| **BEH0349** | OD | Benchmark / Train | Clinician Corrected | **0.5775** | **17.40** | 30.77 | **0.9171** | 0.9750 | 0.9494 |
+| **BEH0349** | OS | Benchmark / Train | Unedited Mirror | **0.5587** | **14.30** | 26.43 | **0.8989** | N/A (Self-Comparison) | N/A (Self-Comparison) |
+| **BEH0354** | OD | Benchmark / Train | Clinician Corrected | **0.5427** | **15.36** | 27.36 | **0.9263** | 0.9867 | 0.9588 |
+| **BEH0354** | OS | Benchmark / Train | Clinician Corrected | **0.5123** | **18.73** | 31.87 | **0.8976** | 0.9995 | 1.0000 |
+| **BEH0364** | OD | Benchmark / Train | Clinician Corrected | **0.5778** | **15.18** | 29.06 | **0.9486** | N/A | N/A |
+| **BEH0364** | OS | Benchmark / Train | Clinician Corrected | **0.5786** | **16.59** | 29.47 | **0.9371** | N/A | N/A |
+| **BEH0398** | OD | Benchmark / Train | Unedited Mirror | **0.5962** | **14.25** | 33.83 | **0.8777** | N/A (Self-Comparison) | N/A (Self-Comparison) |
+| **BEH0398** | OS | Benchmark / Train | Unedited Mirror | **0.5767** | **18.06** | 34.03 | **0.9011** | N/A (Self-Comparison) | N/A (Self-Comparison) |
+| **BEH0410** | OD | Benchmark / Train | Unedited Mirror | **0.6194** | **15.47** | 28.97 | **0.9593** | N/A (Self-Comparison) | N/A (Self-Comparison) |
+| **BEH0410** | OS | Benchmark / Train | Clinician Corrected | **0.6191** | **15.86** | 28.34 | **0.9298** | 0.9985 | 1.0000 |
 
 > [!IMPORTANT]
 > **Interpretation of Reference Ground Truth & Commercial Baseline**:
