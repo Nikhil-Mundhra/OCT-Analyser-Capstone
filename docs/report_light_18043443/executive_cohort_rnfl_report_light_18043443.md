@@ -34,18 +34,23 @@ span[style*="#d97706"] code, span[style*="#d97706"] {
         margin-bottom: 10px !important;
     }
     .gallery-grid {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 6px !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
+        display: block !important;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
     }
     .gallery-item {
+        display: inline-block !important;
+        width: 49% !important;
+        vertical-align: top !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        margin-bottom: 4px !important;
+        margin-bottom: 6px !important;
+        box-sizing: border-box !important;
     }
     .gallery-item img {
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
         margin: 2px 0 !important;
     }
 }
@@ -178,118 +183,95 @@ Central peripapillary B-scans ($z = z_{\text{disc}}$) comparing the **Clinician 
 <div class="gallery-grid">
 <div class="gallery-item">
 <p><strong>BEH0086 (OD)</strong> — Dice: <code>0.8049</code> | MABE: <code>12.60 µm</code></p>
-
-![Gallery BEH0086](assets/executive_cohort_report/gallery_bscan_BEH0086_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0086_OD.png" alt="Gallery BEH0086" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0090 (OD)</strong> — Dice: <code>0.7801</code> | MABE: <code>10.28 µm</code></p>
-
-![Gallery BEH0090](assets/executive_cohort_report/gallery_bscan_BEH0090_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0090_OD.png" alt="Gallery BEH0090" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0096 (OD)</strong> — Dice: <code>0.7778</code> | MABE: <code>9.59 µm</code></p>
-
-![Gallery BEH0096](assets/executive_cohort_report/gallery_bscan_BEH0096_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0096_OD.png" alt="Gallery BEH0096" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0174 (OD)</strong> — Dice: <code>0.7486</code> | MABE: <code>10.55 µm</code></p>
-
-![Gallery BEH0174](assets/executive_cohort_report/gallery_bscan_BEH0174_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0174_OD.png" alt="Gallery BEH0174" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0181 (OD)</strong> — Dice: <code>0.7833</code> | MABE: <code>9.25 µm</code></p>
-
-![Gallery BEH0181](assets/executive_cohort_report/gallery_bscan_BEH0181_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0181_OD.png" alt="Gallery BEH0181" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0185 (OD)</strong> — Dice: <code>0.7362</code> | MABE: <code>13.37 µm</code></p>
-
-![Gallery BEH0185](assets/executive_cohort_report/gallery_bscan_BEH0185_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0185_OD.png" alt="Gallery BEH0185" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0241 (OD)</strong> — Dice: <code>0.7139</code> | MABE: <code>10.56 µm</code></p>
-
-![Gallery BEH0241](assets/executive_cohort_report/gallery_bscan_BEH0241_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0241_OD.png" alt="Gallery BEH0241" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0249 (OD)</strong> — Dice: <code>0.7535</code> | MABE: <code>9.42 µm</code></p>
-
-![Gallery BEH0249](assets/executive_cohort_report/gallery_bscan_BEH0249_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0249_OD.png" alt="Gallery BEH0249" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0259 (OD)</strong> — Dice: <code>0.7497</code> | MABE: <code>9.77 µm</code></p>
-
-![Gallery BEH0259](assets/executive_cohort_report/gallery_bscan_BEH0259_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0259_OD.png" alt="Gallery BEH0259" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0264 (OD)</strong> — Dice: <code>0.6757</code> | MABE: <code>9.13 µm</code></p>
-
-![Gallery BEH0264](assets/executive_cohort_report/gallery_bscan_BEH0264_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0264_OD.png" alt="Gallery BEH0264" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0282 (OD)</strong> — Dice: <code>0.7703</code> | MABE: <code>9.31 µm</code></p>
-
-![Gallery BEH0282](assets/executive_cohort_report/gallery_bscan_BEH0282_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0282_OD.png" alt="Gallery BEH0282" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0284 (OD)</strong> — Dice: <code>0.7829</code> | MABE: <code>10.06 µm</code></p>
-
-![Gallery BEH0284](assets/executive_cohort_report/gallery_bscan_BEH0284_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0284_OD.png" alt="Gallery BEH0284" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0287 (OD)</strong> — Dice: <code>0.7276</code> | MABE: <code>10.41 µm</code></p>
-
-![Gallery BEH0287](assets/executive_cohort_report/gallery_bscan_BEH0287_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0287_OD.png" alt="Gallery BEH0287" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0294 (OD)</strong> — Dice: <code>0.8283</code> | MABE: <code>9.48 µm</code></p>
-
-![Gallery BEH0294](assets/executive_cohort_report/gallery_bscan_BEH0294_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0294_OD.png" alt="Gallery BEH0294" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0310 (OD)</strong> — Dice: <code>0.8149</code> | MABE: <code>8.61 µm</code></p>
-
-![Gallery BEH0310](assets/executive_cohort_report/gallery_bscan_BEH0310_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0310_OD.png" alt="Gallery BEH0310" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0314 (OD)</strong> — Dice: <code>0.7789</code> | MABE: <code>12.85 µm</code></p>
-
-![Gallery BEH0314](assets/executive_cohort_report/gallery_bscan_BEH0314_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0314_OD.png" alt="Gallery BEH0314" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0321 (OD)</strong> — Dice: <code>0.8032</code> | MABE: <code>9.09 µm</code></p>
-
-![Gallery BEH0321](assets/executive_cohort_report/gallery_bscan_BEH0321_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0321_OD.png" alt="Gallery BEH0321" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0335 (OD)</strong> — Dice: <code>0.7324</code> | MABE: <code>40.04 µm</code></p>
-
-![Gallery BEH0335](assets/executive_cohort_report/gallery_bscan_BEH0335_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0335_OD.png" alt="Gallery BEH0335" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0349 (OD)</strong> — Dice: <code>0.7832</code> | MABE: <code>8.25 µm</code></p>
-
-![Gallery BEH0349](assets/executive_cohort_report/gallery_bscan_BEH0349_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0349_OD.png" alt="Gallery BEH0349" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0354 (OD)</strong> — Dice: <code>0.7886</code> | MABE: <code>10.55 µm</code></p>
-
-![Gallery BEH0354](assets/executive_cohort_report/gallery_bscan_BEH0354_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0354_OD.png" alt="Gallery BEH0354" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0364 (OD)</strong> — Dice: <code>0.7907</code> | MABE: <code>8.66 µm</code></p>
-
-![Gallery BEH0364](assets/executive_cohort_report/gallery_bscan_BEH0364_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0364_OD.png" alt="Gallery BEH0364" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0398 (OD)</strong> — Dice: <code>0.7902</code> | MABE: <code>10.89 µm</code></p>
-
-![Gallery BEH0398](assets/executive_cohort_report/gallery_bscan_BEH0398_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0398_OD.png" alt="Gallery BEH0398" />
 </div>
 <div class="gallery-item">
 <p><strong>BEH0410 (OD)</strong> — Dice: <code>0.8222</code> | MABE: <code>9.12 µm</code></p>
-
-![Gallery BEH0410](assets/executive_cohort_report/gallery_bscan_BEH0410_OD.png)
+<img src="assets/executive_cohort_report/gallery_bscan_BEH0410_OD.png" alt="Gallery BEH0410" />
 </div>
 </div>
 
