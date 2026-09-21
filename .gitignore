@@ -80,6 +80,20 @@ frontend/.next
 web-app/frontend/.next/
 web-app/frontend/.next
 
+# Image Assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.webp
+
+# Whitelist essential test fixtures and public web assets
+!web-app/backend/tests/fixtures/images/**
+!web-app/frontend/public/**
+
 # Generated Telemetry & Test Debug Outputs
 telemetry_outputs/debug_*.png
 telemetry_outputs/test_*.png
@@ -93,3 +107,4 @@ models_suite/**/HRF-HPC/**/*.png
 models_suite/model3_hrf_dme/results/**/MobaXterm*.rtf
 models_suite/model3_hrf_dme/HRF-HPC/**/MobaXterm*.rtf
 scripts/hpc-nyuad.txt
+
