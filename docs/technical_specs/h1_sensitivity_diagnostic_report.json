@@ -1,0 +1,43 @@
+{
+    "model_checkpoint": "web-app/backend/core_ml/classification/weights/multi_head_mps/fold0_best_model.pth",
+    "calibration_config": "web-app/backend/core_ml/classification/weights/calibration_config.json",
+    "scalar_sweep": {
+        "top_predicted_class": "MH",
+        "mean_abs_conditional_derivative": 0.0005860734381712973,
+        "max_abs_conditional_derivative": 0.002031773328781128,
+        "conditional_prob_at_p0": 0.11681173741817474,
+        "conditional_prob_at_p50": 0.11732208728790283,
+        "conditional_prob_at_p100": 0.11783627420663834,
+        "joint_prob_at_p0": 0.0,
+        "joint_prob_at_p50": 0.058661043643951416,
+        "joint_prob_at_p100": 0.11783627420663834,
+        "sensitivity_assessment": "Low/Moderate Sensitivity: H2 prediction is governed almost entirely by visual features."
+    },
+    "permutation_importance": {
+        "accuracy_baseline": 0.0390625,
+        "accuracy_permuted_h1": 0.0390625,
+        "accuracy_drop": 0.0,
+        "scalar_importance_conclusion": "H1 scalar exhibits near-zero marginal contribution over visual features."
+    },
+    "decoupled_failure_modes": {
+        "true_normal_case": {
+            "p_abnormal": 0.03,
+            "triage_state": "NORMAL",
+            "final_diagnosis": "NORMAL",
+            "passed_safe_gate": true
+        },
+        "semantic_ood_case": {
+            "p_abnormal": 0.98,
+            "triage_state": "REVIEW_REQUIRED",
+            "review_reason": "H2_LOW_CONFIDENCE",
+            "energy_score": -2.6928470181650237,
+            "passed_safe_gate": true
+        },
+        "gatekeeper_false_positive_case": {
+            "p_abnormal": 0.85,
+            "triage_state": "REVIEW_REQUIRED",
+            "review_reason": "H2_LOW_CONFIDENCE",
+            "passed_safe_gate": true
+        }
+    }
+}

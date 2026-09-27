@@ -93,6 +93,9 @@ web-app/frontend/.next
 # Whitelist essential test fixtures and public web assets
 !web-app/backend/tests/fixtures/images/**
 !web-app/frontend/public/**
+!docs/**/*.png
+!docs/**/*.jpg
+!docs/**/*.jpeg
 
 # Generated Telemetry & Test Debug Outputs
 telemetry_outputs/debug_*.png
