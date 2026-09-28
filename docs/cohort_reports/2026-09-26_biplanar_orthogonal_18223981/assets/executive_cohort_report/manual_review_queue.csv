@@ -1,0 +1,26 @@
+subject,eye,cohort,qc_status,qc_flags,dice,mabe_um,cup_iou
+BEH0086,OD,Validation (Held-Out),manual_review,mask_dropout,0.906255,4.756492,0.964063
+BEH0086,OS,Validation (Held-Out),manual_review,mask_dropout;reference_mabe_above_operational_limit,0.876814,5.584822,0.946176
+BEH0090,OD,Training / Benchmark,manual_review,mask_dropout,0.919300,3.439948,0.914245
+BEH0185,OD,Training / Benchmark,manual_review,mask_dropout,0.892132,3.318297,0.943303
+BEH0185,OS,Training / Benchmark,manual_review,mask_dropout;reference_cup_iou_below_operational_limit,0.878336,3.673133,0.894235
+BEH0241,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.819717,3.144864,0.911027
+BEH0241,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit;reference_cup_iou_below_operational_limit,0.808422,3.569740,0.890139
+BEH0249,OD,Training / Benchmark,manual_review,mask_dropout,0.863961,3.292250,0.913522
+BEH0249,OS,Training / Benchmark,manual_review,mask_dropout,0.867384,3.836305,0.928601
+BEH0264,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.816726,3.809197,0.926454
+BEH0264,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit;reference_cup_iou_below_operational_limit,0.842634,3.754465,0.851150
+BEH0282,OD,Training / Benchmark,manual_review,mask_dropout,0.857666,2.850041,0.936734
+BEH0282,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.838455,3.463323,0.946196
+BEH0284,OD,Training / Benchmark,manual_review,mask_dropout,0.907648,2.981250,0.954438
+BEH0287,OD,Training / Benchmark,manual_review,mask_dropout,0.871222,2.858206,0.918783
+BEH0287,OS,Training / Benchmark,manual_review,mask_dropout,0.877211,3.226532,0.937143
+BEH0314,OD,Validation (Held-Out),manual_review,mask_dropout;reference_mabe_above_operational_limit,0.865386,5.053998,0.908170
+BEH0314,OS,Validation (Held-Out),manual_review,mask_dropout,0.871980,4.961733,0.901324
+BEH0335,OD,Validation (Held-Out),manual_review,mask_dropout;reference_mabe_above_operational_limit;reference_cup_iou_below_operational_limit,0.891395,14.339311,0.812841
+BEH0335,OS,Validation (Held-Out),manual_review,reference_mabe_above_operational_limit,0.871219,19.029709,0.902087
+BEH0349,OD,Training / Benchmark,manual_review,mask_dropout,0.900189,3.321417,0.913790
+BEH0349,OS,Training / Benchmark,manual_review,mask_dropout,0.895715,3.047487,0.945322
+BEH0354,OD,Training / Benchmark,manual_review,mask_dropout,0.907681,3.026454,0.926637
+BEH0398,OD,Training / Benchmark,manual_review,mask_dropout,0.884510,3.219014,0.925045
+BEH0398,OS,Training / Benchmark,manual_review,mask_dropout,0.883216,3.151776,0.950031

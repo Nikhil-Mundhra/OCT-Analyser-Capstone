@@ -1,0 +1,764 @@
+{
+  "checkpoint": "/Users/nikhilmundhra/Documents/Github/Capstone/train-cnn-models/checkpoints/rnfl_biplanar_18223981/best_volumetric_rnfl_net.pt",
+  "dataset_root": "/Users/nikhilmundhra/Library/CloudStorage/Box-Box/deidentified",
+  "subjects": [
+    "BEH0086",
+    "BEH0314",
+    "BEH0335"
+  ],
+  "eyes": [
+    "OD",
+    "OS"
+  ],
+  "results": [
+    {
+      "variant": "corrected_biplanar",
+      "orientation_mode": "corrected",
+      "biplanar": true,
+      "subject": "BEH0086",
+      "eye": "OD",
+      "dice": 0.9062548988061079,
+      "mabe_um": 4.7564916977089124,
+      "p95_um": 16.756105491329475,
+      "cup_iou": 0.9640634044063001,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.021167943332509678,
+        "boundary_jump_p99_px": 4.0,
+        "cup_fraction": 0.051484375,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 0.0,
+        "biplanar_probability_disagreement": 0.0038951928727328777,
+        "reference_dice": 0.9062548988061079,
+        "reference_mabe_um": 4.7564916977089124,
+        "reference_cup_iou": 0.9640634044063001
+      }
+    },
+    {
+      "variant": "corrected_biplanar",
+      "orientation_mode": "corrected",
+      "biplanar": true,
+      "subject": "BEH0086",
+      "eye": "OS",
+      "dice": 0.8769693145421958,
+      "mabe_um": 5.432289852779999,
+      "p95_um": 18.66475155279503,
+      "cup_iou": 0.9444800647416263,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.024660710072525467,
+        "boundary_jump_p99_px": 4.0,
+        "cup_fraction": 0.048017578125,
+        "biplanar_nfl_disagreement_um": 3.0899999141693115,
+        "biplanar_ilm_disagreement_um": 0.0,
+        "biplanar_probability_disagreement": 0.0037366263568401337,
+        "reference_dice": 0.8769693145421958,
+        "reference_mabe_um": 5.432289852779999,
+        "reference_cup_iou": 0.9444800647416263
+      }
+    },
+    {
+      "variant": "corrected_biplanar",
+      "orientation_mode": "corrected",
+      "biplanar": true,
+      "subject": "BEH0314",
+      "eye": "OD",
+      "dice": 0.8653857246689745,
+      "mabe_um": 5.053998489466178,
+      "p95_um": 17.745850318471334,
+      "cup_iou": 0.908170078214357,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.03264895002441804,
+        "boundary_jump_p99_px": 11.0,
+        "cup_fraction": 0.04015625,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 6.179999828338623,
+        "biplanar_probability_disagreement": 0.004011029377579689,
+        "reference_dice": 0.8653857246689745,
+        "reference_mabe_um": 5.053998489466178,
+        "reference_cup_iou": 0.908170078214357
+      }
+    },
+    {
+      "variant": "corrected_biplanar",
+      "orientation_mode": "corrected",
+      "biplanar": true,
+      "subject": "BEH0314",
+      "eye": "OS",
+      "dice": 0.8723472700233751,
+      "mabe_um": 4.7760306379894715,
+      "p95_um": 14.972105590062107,
+      "cup_iou": 0.9046754087454889,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.028308924976238898,
+        "boundary_jump_p99_px": 6.0,
+        "cup_fraction": 0.044443359375,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 6.179999828338623,
+        "biplanar_probability_disagreement": 0.004114416427910328,
+        "reference_dice": 0.8723472700233751,
+        "reference_mabe_um": 4.7760306379894715,
+        "reference_cup_iou": 0.9046754087454889
+      }
+    },
+    {
+      "variant": "corrected_biplanar",
+      "orientation_mode": "corrected",
+      "biplanar": true,
+      "subject": "BEH0335",
+      "eye": "OD",
+      "dice": 0.8913949182392099,
+      "mabe_um": 14.339311472974977,
+      "p95_um": 55.89446230158726,
+      "cup_iou": 0.8128409607133377,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.000478515625,
+        "mask_dropout_fraction": 0.026545495574041213,
+        "boundary_jump_p99_px": 6.0,
+        "cup_fraction": 0.0471484375,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 6.179999828338623,
+        "biplanar_probability_disagreement": 0.006092685274779797,
+        "reference_dice": 0.8913949182392099,
+        "reference_mabe_um": 14.339311472974977,
+        "reference_cup_iou": 0.8128409607133377
+      }
+    },
+    {
+      "variant": "corrected_biplanar",
+      "orientation_mode": "corrected",
+      "biplanar": true,
+      "subject": "BEH0335",
+      "eye": "OS",
+      "dice": 0.8717658960276077,
+      "mabe_um": 18.80063783388724,
+      "p95_um": 55.33405970149252,
+      "cup_iou": 0.8989071199959731,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.001279296875,
+        "mask_dropout_fraction": 0.011559300363651607,
+        "boundary_jump_p99_px": 7.0,
+        "cup_fraction": 0.065751953125,
+        "biplanar_nfl_disagreement_um": 12.359999656677246,
+        "biplanar_ilm_disagreement_um": 6.179999828338623,
+        "biplanar_probability_disagreement": 0.007726817857474089,
+        "reference_dice": 0.8717658960276077,
+        "reference_mabe_um": 18.80063783388724,
+        "reference_cup_iou": 0.8989071199959731
+      }
+    },
+    {
+      "variant": "legacy_biplanar",
+      "orientation_mode": "legacy_vertical_mirror",
+      "biplanar": true,
+      "subject": "BEH0086",
+      "eye": "OD",
+      "dice": 0.9062548988061079,
+      "mabe_um": 4.7564916977089124,
+      "p95_um": 16.756105491329475,
+      "cup_iou": 0.9640634044063001,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.021167943332509678,
+        "boundary_jump_p99_px": 4.0,
+        "cup_fraction": 0.051484375,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 0.0,
+        "biplanar_probability_disagreement": 0.0038951928727328777,
+        "reference_dice": 0.9062548988061079,
+        "reference_mabe_um": 4.7564916977089124,
+        "reference_cup_iou": 0.9640634044063001
+      }
+    },
+    {
+      "variant": "legacy_biplanar",
+      "orientation_mode": "legacy_vertical_mirror",
+      "biplanar": true,
+      "subject": "BEH0086",
+      "eye": "OS",
+      "dice": 0.654607643864888,
+      "mabe_um": 68.89568632103325,
+      "p95_um": 115.53913043478258,
+      "cup_iou": 0.7362580834566769,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "biplanar_boundary_disagreement",
+        "reference_dice_below_operational_limit",
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 6.8359375e-05,
+        "mask_dropout_fraction": 0.03606366340580821,
+        "boundary_jump_p99_px": 3.0,
+        "cup_fraction": 0.044560546875,
+        "biplanar_nfl_disagreement_um": 129.77999877929688,
+        "biplanar_ilm_disagreement_um": 80.33999633789062,
+        "biplanar_probability_disagreement": 0.052665676921606064,
+        "reference_dice": 0.654607643864888,
+        "reference_mabe_um": 68.89568632103325,
+        "reference_cup_iou": 0.7362580834566769
+      }
+    },
+    {
+      "variant": "legacy_biplanar",
+      "orientation_mode": "legacy_vertical_mirror",
+      "biplanar": true,
+      "subject": "BEH0314",
+      "eye": "OD",
+      "dice": 0.8653857246689745,
+      "mabe_um": 5.053998489466178,
+      "p95_um": 17.745850318471334,
+      "cup_iou": 0.908170078214357,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.03264895002441804,
+        "boundary_jump_p99_px": 11.0,
+        "cup_fraction": 0.04015625,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 6.179999828338623,
+        "biplanar_probability_disagreement": 0.004011029377579689,
+        "reference_dice": 0.8653857246689745,
+        "reference_mabe_um": 5.053998489466178,
+        "reference_cup_iou": 0.908170078214357
+      }
+    },
+    {
+      "variant": "legacy_biplanar",
+      "orientation_mode": "legacy_vertical_mirror",
+      "biplanar": true,
+      "subject": "BEH0314",
+      "eye": "OS",
+      "dice": 0.6408997373360139,
+      "mabe_um": 123.61982332114712,
+      "p95_um": 175.95486801242234,
+      "cup_iou": 0.5925893488523151,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "biplanar_boundary_disagreement",
+        "reference_dice_below_operational_limit",
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.000947265625,
+        "mask_dropout_fraction": 0.0574383692323141,
+        "boundary_jump_p99_px": 6.0,
+        "cup_fraction": 0.02642578125,
+        "biplanar_nfl_disagreement_um": 241.01998901367188,
+        "biplanar_ilm_disagreement_um": 173.0399932861328,
+        "biplanar_probability_disagreement": 0.05636931210756302,
+        "reference_dice": 0.6408997373360139,
+        "reference_mabe_um": 123.61982332114712,
+        "reference_cup_iou": 0.5925893488523151
+      }
+    },
+    {
+      "variant": "legacy_biplanar",
+      "orientation_mode": "legacy_vertical_mirror",
+      "biplanar": true,
+      "subject": "BEH0335",
+      "eye": "OD",
+      "dice": 0.8913949182392099,
+      "mabe_um": 14.339311472974977,
+      "p95_um": 55.89446230158726,
+      "cup_iou": 0.8128409607133377,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.000478515625,
+        "mask_dropout_fraction": 0.026545495574041213,
+        "boundary_jump_p99_px": 6.0,
+        "cup_fraction": 0.0471484375,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 6.179999828338623,
+        "biplanar_probability_disagreement": 0.006092685274779797,
+        "reference_dice": 0.8913949182392099,
+        "reference_mabe_um": 14.339311472974977,
+        "reference_cup_iou": 0.8128409607133377
+      }
+    },
+    {
+      "variant": "legacy_biplanar",
+      "orientation_mode": "legacy_vertical_mirror",
+      "biplanar": true,
+      "subject": "BEH0335",
+      "eye": "OS",
+      "dice": 0.6035966936250913,
+      "mabe_um": 354.1316391344788,
+      "p95_um": 528.419401119403,
+      "cup_iou": 0.819461060348867,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "biplanar_boundary_disagreement",
+        "reference_dice_below_operational_limit",
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0014453125,
+        "mask_dropout_fraction": 0.022889278562312584,
+        "boundary_jump_p99_px": 6.0,
+        "cup_fraction": 0.0546484375,
+        "biplanar_nfl_disagreement_um": 667.4400024414062,
+        "biplanar_ilm_disagreement_um": 630.3599853515625,
+        "biplanar_probability_disagreement": 0.06957611441612244,
+        "reference_dice": 0.6035966936250913,
+        "reference_mabe_um": 354.1316391344788,
+        "reference_cup_iou": 0.819461060348867
+      }
+    },
+    {
+      "variant": "corrected_horizontal_only",
+      "orientation_mode": "corrected",
+      "biplanar": false,
+      "subject": "BEH0086",
+      "eye": "OD",
+      "dice": 0.9062088011336991,
+      "mabe_um": 5.311719544364843,
+      "p95_um": 17.7558901734104,
+      "cup_iou": 0.9577525751359396,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.02208461483073948,
+        "boundary_jump_p99_px": 4.0,
+        "cup_fraction": 0.050615234375,
+        "reference_dice": 0.9062088011336991,
+        "reference_mabe_um": 5.311719544364843,
+        "reference_cup_iou": 0.9577525751359396
+      }
+    },
+    {
+      "variant": "corrected_horizontal_only",
+      "orientation_mode": "corrected",
+      "biplanar": false,
+      "subject": "BEH0086",
+      "eye": "OS",
+      "dice": 0.8774203351853125,
+      "mabe_um": 6.040215809462165,
+      "p95_um": 20.788406832298133,
+      "cup_iou": 0.9385292002259332,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.025370563995325664,
+        "boundary_jump_p99_px": 4.0,
+        "cup_fraction": 0.04732421875,
+        "reference_dice": 0.8774203351853125,
+        "reference_mabe_um": 6.040215809462165,
+        "reference_cup_iou": 0.9385292002259332
+      }
+    },
+    {
+      "variant": "corrected_horizontal_only",
+      "orientation_mode": "corrected",
+      "biplanar": false,
+      "subject": "BEH0314",
+      "eye": "OD",
+      "dice": 0.8628276510955234,
+      "mabe_um": 5.79119915434225,
+      "p95_um": 19.65495859872611,
+      "cup_iou": 0.9200062597554037,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.033091416182323426,
+        "boundary_jump_p99_px": 4.0,
+        "cup_fraction": 0.040595703125,
+        "reference_dice": 0.8628276510955234,
+        "reference_mabe_um": 5.79119915434225,
+        "reference_cup_iou": 0.9200062597554037
+      }
+    },
+    {
+      "variant": "corrected_horizontal_only",
+      "orientation_mode": "corrected",
+      "biplanar": false,
+      "subject": "BEH0314",
+      "eye": "OS",
+      "dice": 0.8702700259567253,
+      "mabe_um": 6.180138443872586,
+      "p95_um": 19.738574534161486,
+      "cup_iou": 0.9128611562730579,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.028953980023285742,
+        "boundary_jump_p99_px": 4.0,
+        "cup_fraction": 0.04380859375,
+        "reference_dice": 0.8702700259567253,
+        "reference_mabe_um": 6.180138443872586,
+        "reference_cup_iou": 0.9128611562730579
+      }
+    },
+    {
+      "variant": "corrected_horizontal_only",
+      "orientation_mode": "corrected",
+      "biplanar": false,
+      "subject": "BEH0335",
+      "eye": "OD",
+      "dice": 0.8904918263125783,
+      "mabe_um": 16.83715753977047,
+      "p95_um": 57.22549206349205,
+      "cup_iou": 0.7302509045951117,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "surface_order_violation",
+        "mask_dropout",
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.019013671875,
+        "mask_dropout_fraction": 0.034735126493579294,
+        "boundary_jump_p99_px": 6.0,
+        "cup_fraction": 0.0402734375,
+        "reference_dice": 0.8904918263125783,
+        "reference_mabe_um": 16.83715753977047,
+        "reference_cup_iou": 0.7302509045951117
+      }
+    },
+    {
+      "variant": "corrected_horizontal_only",
+      "orientation_mode": "corrected",
+      "biplanar": false,
+      "subject": "BEH0335",
+      "eye": "OS",
+      "dice": 0.8653481848152027,
+      "mabe_um": 27.091529261649153,
+      "p95_um": 88.16684701492537,
+      "cup_iou": 0.8702502964671229,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "surface_order_violation",
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.03662109375,
+        "mask_dropout_fraction": 0.008788773192595925,
+        "boundary_jump_p99_px": 6.440000000002328,
+        "cup_fraction": 0.073349609375,
+        "reference_dice": 0.8653481848152027,
+        "reference_mabe_um": 27.091529261649153,
+        "reference_cup_iou": 0.8702502964671229
+      }
+    },
+    {
+      "variant": "native_biplanar",
+      "orientation_mode": "native",
+      "biplanar": true,
+      "subject": "BEH0086",
+      "eye": "OD",
+      "dice": 0.9062548988061079,
+      "mabe_um": 4.7564916977089124,
+      "p95_um": 16.756105491329475,
+      "cup_iou": 0.9640634044063001,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.021167943332509678,
+        "boundary_jump_p99_px": 4.0,
+        "cup_fraction": 0.051484375,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 0.0,
+        "biplanar_probability_disagreement": 0.0038951928727328777,
+        "reference_dice": 0.9062548988061079,
+        "reference_mabe_um": 4.7564916977089124,
+        "reference_cup_iou": 0.9640634044063001
+      }
+    },
+    {
+      "variant": "native_biplanar",
+      "orientation_mode": "native",
+      "biplanar": true,
+      "subject": "BEH0086",
+      "eye": "OS",
+      "dice": 0.8744293188775639,
+      "mabe_um": 6.450087763189927,
+      "p95_um": 20.644462732919255,
+      "cup_iou": 0.9399177938531691,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.024330425859415084,
+        "boundary_jump_p99_px": 4.0,
+        "cup_fraction": 0.04833984375,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 0.0,
+        "biplanar_probability_disagreement": 0.003987847361713648,
+        "reference_dice": 0.8744293188775639,
+        "reference_mabe_um": 6.450087763189927,
+        "reference_cup_iou": 0.9399177938531691
+      }
+    },
+    {
+      "variant": "native_biplanar",
+      "orientation_mode": "native",
+      "biplanar": true,
+      "subject": "BEH0314",
+      "eye": "OD",
+      "dice": 0.8653857246689745,
+      "mabe_um": 5.053998489466178,
+      "p95_um": 17.745850318471334,
+      "cup_iou": 0.908170078214357,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.03264895002441804,
+        "boundary_jump_p99_px": 11.0,
+        "cup_fraction": 0.04015625,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 6.179999828338623,
+        "biplanar_probability_disagreement": 0.004011029377579689,
+        "reference_dice": 0.8653857246689745,
+        "reference_mabe_um": 5.053998489466178,
+        "reference_cup_iou": 0.908170078214357
+      }
+    },
+    {
+      "variant": "native_biplanar",
+      "orientation_mode": "native",
+      "biplanar": true,
+      "subject": "BEH0314",
+      "eye": "OS",
+      "dice": 0.8705148765803333,
+      "mabe_um": 10.10731584534158,
+      "p95_um": 36.160677018633535,
+      "cup_iou": 0.8968067701908204,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.0,
+        "mask_dropout_fraction": 0.02676725285073802,
+        "boundary_jump_p99_px": 6.0,
+        "cup_fraction": 0.04595703125,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 6.179999828338623,
+        "biplanar_probability_disagreement": 0.004263442009687424,
+        "reference_dice": 0.8705148765803333,
+        "reference_mabe_um": 10.10731584534158,
+        "reference_cup_iou": 0.8968067701908204
+      }
+    },
+    {
+      "variant": "native_biplanar",
+      "orientation_mode": "native",
+      "biplanar": true,
+      "subject": "BEH0335",
+      "eye": "OD",
+      "dice": 0.8913949182392099,
+      "mabe_um": 14.339311472974977,
+      "p95_um": 55.89446230158726,
+      "cup_iou": 0.8128409607133377,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "mask_dropout",
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.000478515625,
+        "mask_dropout_fraction": 0.026545495574041213,
+        "boundary_jump_p99_px": 6.0,
+        "cup_fraction": 0.0471484375,
+        "biplanar_nfl_disagreement_um": 6.179999828338623,
+        "biplanar_ilm_disagreement_um": 6.179999828338623,
+        "biplanar_probability_disagreement": 0.006092685274779797,
+        "reference_dice": 0.8913949182392099,
+        "reference_mabe_um": 14.339311472974977,
+        "reference_cup_iou": 0.8128409607133377
+      }
+    },
+    {
+      "variant": "native_biplanar",
+      "orientation_mode": "native",
+      "biplanar": true,
+      "subject": "BEH0335",
+      "eye": "OS",
+      "dice": 0.8681424689577665,
+      "mabe_um": 58.77527077482769,
+      "p95_um": 152.61486940298508,
+      "cup_iou": 0.8428191685919585,
+      "qc_status": "manual_review",
+      "qc_flags": [
+        "biplanar_boundary_disagreement",
+        "reference_mabe_above_operational_limit",
+        "reference_cup_iou_below_operational_limit"
+      ],
+      "qc_metrics": {
+        "surface_order_violation_fraction": 0.001640625,
+        "mask_dropout_fraction": 0.014844100434995774,
+        "boundary_jump_p99_px": 7.0,
+        "cup_fraction": 0.062119140625,
+        "biplanar_nfl_disagreement_um": 49.439998626708984,
+        "biplanar_ilm_disagreement_um": 37.07999801635742,
+        "biplanar_probability_disagreement": 0.011571433395147324,
+        "reference_dice": 0.8681424689577665,
+        "reference_mabe_um": 58.77527077482769,
+        "reference_cup_iou": 0.8428191685919585
+      }
+    }
+  ],
+  "summary": [
+    {
+      "variant": "corrected_biplanar",
+      "eye": "OD",
+      "n": 3,
+      "median_dice": 0.8913949182392099,
+      "median_mabe_um": 5.053998489466178,
+      "median_p95_um": 17.745850318471334,
+      "median_cup_iou": 0.908170078214357,
+      "manual_review_count": 3
+    },
+    {
+      "variant": "corrected_biplanar",
+      "eye": "OS",
+      "n": 3,
+      "median_dice": 0.8723472700233751,
+      "median_mabe_um": 5.432289852779999,
+      "median_p95_um": 18.66475155279503,
+      "median_cup_iou": 0.9046754087454889,
+      "manual_review_count": 3
+    },
+    {
+      "variant": "corrected_horizontal_only",
+      "eye": "OD",
+      "n": 3,
+      "median_dice": 0.8904918263125783,
+      "median_mabe_um": 5.79119915434225,
+      "median_p95_um": 19.65495859872611,
+      "median_cup_iou": 0.9200062597554037,
+      "manual_review_count": 3
+    },
+    {
+      "variant": "corrected_horizontal_only",
+      "eye": "OS",
+      "n": 3,
+      "median_dice": 0.8702700259567253,
+      "median_mabe_um": 6.180138443872586,
+      "median_p95_um": 20.788406832298133,
+      "median_cup_iou": 0.9128611562730579,
+      "manual_review_count": 3
+    },
+    {
+      "variant": "legacy_biplanar",
+      "eye": "OD",
+      "n": 3,
+      "median_dice": 0.8913949182392099,
+      "median_mabe_um": 5.053998489466178,
+      "median_p95_um": 17.745850318471334,
+      "median_cup_iou": 0.908170078214357,
+      "manual_review_count": 3
+    },
+    {
+      "variant": "legacy_biplanar",
+      "eye": "OS",
+      "n": 3,
+      "median_dice": 0.6408997373360139,
+      "median_mabe_um": 123.61982332114712,
+      "median_p95_um": 175.95486801242234,
+      "median_cup_iou": 0.7362580834566769,
+      "manual_review_count": 3
+    },
+    {
+      "variant": "native_biplanar",
+      "eye": "OD",
+      "n": 3,
+      "median_dice": 0.8913949182392099,
+      "median_mabe_um": 5.053998489466178,
+      "median_p95_um": 17.745850318471334,
+      "median_cup_iou": 0.908170078214357,
+      "manual_review_count": 3
+    },
+    {
+      "variant": "native_biplanar",
+      "eye": "OS",
+      "n": 3,
+      "median_dice": 0.8705148765803333,
+      "median_mabe_um": 10.10731584534158,
+      "median_p95_um": 36.160677018633535,
+      "median_cup_iou": 0.8968067701908204,
+      "manual_review_count": 3
+    }
+  ]
+}

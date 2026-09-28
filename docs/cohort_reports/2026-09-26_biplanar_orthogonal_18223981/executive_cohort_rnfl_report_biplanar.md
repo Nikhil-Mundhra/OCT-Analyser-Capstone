@@ -75,6 +75,31 @@ span[style*="#d97706"] code, span[style*="#d97706"] {
         break-inside: avoid !important;
         margin-bottom: 10px !important;
     }
+    .evidence-context {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    .evidence-table {
+        table-layout: fixed !important;
+        font-size: 9.25px !important;
+        line-height: 1.28 !important;
+        margin: 8px 0 10px 0 !important;
+    }
+    .evidence-table th, .evidence-table td {
+        padding: 4px 5px !important;
+        vertical-align: top !important;
+        overflow-wrap: anywhere !important;
+    }
+    .evidence-note {
+        background: #fff7ed !important;
+        border-left: 4px solid #f97316 !important;
+        padding: 7px 9px !important;
+        margin: 8px 0 !important;
+        font-size: 9.5px !important;
+        line-height: 1.35 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
     .gallery-grid {
         display: block !important;
         page-break-inside: auto !important;
@@ -95,55 +120,70 @@ span[style*="#d97706"] code, span[style*="#d97706"] {
         display: block !important;
         margin: 2px 0 !important;
     }
+    .deep-dive-item {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin: 8px 0 14px 0 !important;
+    }
+    .deep-dive-item h3 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
+    .deep-dive-item img {
+        margin-top: 4px !important;
+    }
 }
 </style>
 
-# Volumetric RNFL Segmentation (Bi-Planar Orthogonal Heavy Model): Multi-Subject Cohort Report
+# Volumetric RNFL Segmentation (Bi-Planar Orthogonal Model): Multi-Subject Cohort Report
 
-**Cohort Scope**: 23 Subjects (`BEH0086` – `BEH0410`) | 46 OCT Volumes (23 OD + 23 OS)  
-**Modality**: Optovue Solix OCT `Disc Cube` ($320 \times 768 \times 320$ voxels; $18.81\,\mu\text{m} \times 3.12\,\mu\text{m} \times 18.75\,\mu\text{m}$)  
-**Execution Environment**: NYUAD HPC Jubail (SLURM Job `18223981`) | Checkpoint: `best_volumetric_rnfl_net.pt`  
-**Architecture / Variant**: **Bi-Planar Orthogonal Heavy Architecture** (Fast-Slow Cross-Axis 2.5D Context + Dual-Plane Fusion + Continuous 1D Boundary Regression)  
+**Cohort Scope**: 23 Subjects (`BEH0086` - `BEH0410`) | 46 OCT Volumes (23 OD + 23 OS)<br>
+**Modality**: Optovue Solix OCT `Disc Cube` ($320 \times 768 \times 320$ voxels; $18.81\,\mu\text{m} \times 3.12\,\mu\text{m} \times 18.75\,\mu\text{m}$)<br>
+**Checkpoint Provenance**: NYUAD HPC Jubail (SLURM Job `18223981`) | Checkpoint: `best_volumetric_rnfl_net.pt`<br>
+**Evaluation Runtime**: Local Apple MPS corrected-cohort rerun<br>
+**Architecture / Variant**: **Bi-Planar Orthogonal Architecture** (2.5D multi-task residual U-Net with corrected OS native-coordinate biplanar fusion)<br>
+**Inference Policy**: Corrected OS native-coordinate restoration before horizontal/vertical biplanar fusion
 
 **Evaluation Arms**:
 
-- **<span style="color: #0284c7; font-weight: bold;">Cyan</span>**: Clinician-Corrected Reference Algorithm (Good Arm)
+- **<span style="color: #0284c7; font-weight: bold;">Cyan</span>**: Human-Corrected Reference (Good Arm)
 - **<span style="color: #dc2626; font-weight: bold;">Red</span>**: Commercial Solix Heuristic Baseline (Bad Arm)
-- **<span style="color: #16a34a; font-weight: bold;">Green</span>**: Multi-Task Volumetric U-Net (Bi-Planar Orthogonal Heavy Model, 2.5D Context + Continuous 1D Boundary Regression)
+- **<span style="color: #16a34a; font-weight: bold;">Green</span>**: Multi-Task Volumetric U-Net (Bi-Planar Orthogonal Model, 2.5D Context + Continuous 1D Boundary Regression)
 - **<span style="color: #ea580c; font-weight: bold;">Orange</span>**: Held-Out Validation Cohort (<span style="color: #ea580c; font-weight: bold;">`BEH0086`, `BEH0314`, `BEH0335`</span>, 6 Scans Unseen During Training)
 
 ## 1. Executive Summary
 
-This report delivers an automated cohort-wide comparative evaluation of the **Multi-Task Volumetric RNFL U-Net (<span style="color: #16a34a; font-weight: bold;">Green</span>)** against the **Clinician Reference Algorithm (<span style="color: #0284c7; font-weight: bold;">Cyan</span>)** and the **Commercial Solix Baseline (<span style="color: #dc2626; font-weight: bold;">Red</span>)** across 23 subjects (46 eye-level OCT volumes) executed end-to-end on NYUAD Jubail.
+This report delivers an automated cohort-wide comparative evaluation of the **Multi-Task Volumetric RNFL U-Net (<span style="color: #16a34a; font-weight: bold;">Green</span>)** against the **Human-Corrected Reference (<span style="color: #0284c7; font-weight: bold;">Cyan</span>)** and the **Commercial Solix Baseline (<span style="color: #dc2626; font-weight: bold;">Red</span>)** across 23 subjects (46 eye-level OCT volumes). The checkpoint was trained on NYUAD Jubail and this corrected cohort evaluation was executed locally on Apple MPS.
 
 <div class="kpi-grid">
     <div class="kpi-card">
-        <div class="kpi-title">Benchmark OD MABE</div>
-        <div class="kpi-value">3.02 µm</div>
-        <div class="kpi-sub">± 0.18 µm | Median: 2.96 µm</div>
+        <div class="kpi-title">Benchmark MABE</div>
+        <div class="kpi-value">3.23 µm</div>
+        <div class="kpi-sub">Median across 40 benchmark scans (OD + OS)</div>
     </div>
     <div class="kpi-card amber">
-        <div class="kpi-title">Held-Out Val OD MABE</div>
-        <div class="kpi-value">8.09 µm</div>
-        <div class="kpi-sub">Subject BEH0086 (Unseen Test Scan)</div>
+        <div class="kpi-title">Held-Out MABE</div>
+        <div class="kpi-value">5.32 µm</div>
+        <div class="kpi-sub">Median across 6 unseen OD + OS scans</div>
     </div>
     <div class="kpi-card cyan">
-        <div class="kpi-title">Benchmark OD Dice</div>
-        <div class="kpi-value">0.8983</div>
-        <div class="kpi-sub">± 0.0371 | Median: 0.9077</div>
+        <div class="kpi-title">Benchmark Dice</div>
+        <div class="kpi-value">0.9069</div>
+        <div class="kpi-sub">Median across both eyes</div>
     </div>
     <div class="kpi-card purple">
-        <div class="kpi-title">Optic Cup Cavity IoU</div>
-        <div class="kpi-value">0.9179</div>
-        <div class="kpi-sub">Mean: 0.8763 ± 0.1000</div>
+        <div class="kpi-title">NFL-Absence Cup-Region IoU</div>
+        <div class="kpi-value">0.9328</div>
+        <div class="kpi-sub">Mean: 0.9303 ± 0.0223</div>
     </div>
 </div>
 
 ### High-Level Findings:
 
-1. **Benchmark Cohort Performance**: Across the 40 benchmark acquisitions, the volumetric U-Net achieved a mean peripapillary absolute boundary error (**MABE**) of **$54.47 \pm 69.13 \; \mu\text{m}$** (median: $7.45 \; \mu\text{m}$, IQR: $107.40 \; \mu\text{m}$) and a mean Dice score of **$0.7872 \pm 0.1232$** (median: $0.8172$).
-2. **Held-Out Validation Stress-Testing**: On the 6 held-out validation acquisitions (`BEH0086`, `BEH0314`, `BEH0335`), the model demonstrated robust anatomical tracking: mean MABE was <span style="color: #d97706; font-weight: bold;">$95.18 \pm 135.26 \; \mu\text{m}$</span> and mean Cup IoU was <span style="color: #d97706; font-weight: bold;">$0.8081 \pm 0.1299$</span>.
-3. **Optic Cup & BMO Termination**: Continuous 1D boundary regression heads reliably bounded Bruch's Membrane Opening (BMO), eliminating wedge over-segmentation into adjacent hyporeflective ganglion cell layers.
+1. **Laterality Stability After Coordinate Correction**: Benchmark OD median MABE was **$3.20 \; \mu\text{m}$** with median Dice **$0.9077$**; benchmark OS median MABE was **$3.39 \; \mu\text{m}$** with median Dice **$0.9064$**. The previous cohort-wide OS collapse was an inference-coordinate defect, not a supported model finding.
+2. **Held-Out Failure Is Subject-Specific**: Across the 6 held-out acquisitions (`BEH0086`, `BEH0314`, `BEH0335`), median MABE was **$5.32 \; \mu\text{m}$**. The worst held-out scan was **BEH0335 OS** at **$19.03 \; \mu\text{m}$**; pooled validation statistics therefore require scan-level review.
+3. **Not Ready for Autonomous Clinical Use**: 25 of 46 assessed scans triggered at least one conservative operational review flag. These engineering thresholds are not clinically validated, but residual Dice, cup-IoU, and boundary-error failures require mandatory human review.
+4. **Audit-Correction Performance**: 12 scans contained material human edits of at least 1 px. The U-Net reduced raw boundary error in 10 scans, with median correction gain **+53.1%** and median edited-column recovery rate **56.5%**. This edit-focused analysis is primary; whole-mask commercial Dice is reference-dependent and descriptive only.
 
 ---
 
@@ -155,215 +195,246 @@ This report delivers an automated cohort-wide comparative evaluation of the **Mu
 - **Voxel Pitch**: $18.81\,\mu\text{m}$ (slow B-scan pitch) $\times 3.12\,\mu\text{m}$ (axial depth) $\times 18.75\,\mu\text{m}$ (fast A-scan pitch).
 
 ### 2.2 Evaluation Metrics
-- **Dice Similarity Coefficient**: Spatial volume overlap between predicted and clinician reference binary RNFL masks.
+- **Dice Similarity Coefficient**: Spatial overlap between predicted and human-audited binary RNFL masks. It is a secondary consistency endpoint because unchanged regions dominate whole-mask overlap.
 - **Mean Absolute Boundary Error (MABE)**: Mean axial displacement outside the optic cup cavity in $\mu\text{m}$ ($3.12367\,\mu\text{m}/\text{px}$).
 - **95th Percentile Boundary Error ($P_{95}$)**: Localized worst-case boundary drift in $\mu\text{m}$.
-- **Cup Intersection over Union (Cup IoU)**: Jaccard index evaluating optic cup margin detection along the horizontal fast axis.
+- **Audit-Correction Gain**: One minus the ratio of U-Net error to raw error on columns where the raw and audited NFL boundaries differ by at least 1 px. Positive values indicate recovery of human corrections.
+- **Unchanged-Region Preservation**: Fraction of human-accepted columns where the U-Net remains within 1 px of the audited NFL boundary.
+- **NFL-Absence Cup-Region IoU**: Jaccard overlap of columns where the NFL boundary is absent. This is an annotation-derived cup-region endpoint, not a full anatomical cup segmentation.
+- **Cup-Edge Localization**: Horizontal left-edge, right-edge, and width errors on slices where both reference and prediction contain a detectable NFL-absence region.
 
 ---
 
 ## 3. Cohort Quantitative Benchmark Results
 
-### 3.1 Statistical Distribution & Multi-Arm Raincloud Profiles
+### 3.1 Distribution and Individual Scan Profiles
 
-The multi-panel distribution plot below characterizes the full statistical spread, quartiles, and individual jittered acquisitions across the Benchmark and Held-Out Validation cohorts without information loss.
+The multi-panel plot stratifies benchmark and held-out scans by eye. Error metrics use logarithmic axes so the common 2-5 µm range remains visible alongside severe subject-level outliers. Dashed thresholds are operational report references, not validated clinical decision limits.
 
 ![Cohort Statistical Distributions](assets/executive_cohort_report/cohort_raincloud_distributions.png)
 
-- **RNFL Dice Overlap**: Benchmark OD acquisitions achieved **$0.8983 \pm 0.0371$** (median: $0.9077$), with held-out validation at **$0.7604 \pm 0.1411$**.
-- **Peripapillary Boundary Error (MABE)**: Benchmark OD scans maintained sub-pixel boundary adherence of **$3.02 \pm 0.18 \; \mu\text{m}$** (median: $2.96 \; \mu\text{m}$), well beneath the $5.0 \; \mu\text{m}$ axial acceptance threshold.
-- **Optic Cup Detection**: Optic cup margin tracking at Bruch's Membrane Opening (BMO) reached a median IoU of **$0.9179$**, preventing non-physiological bridging across the central cavity void.
+- **RNFL Dice Overlap**: Benchmark OD median Dice was **$0.9077$** versus **$0.9064$** for benchmark OS.
+- **Peripapillary Boundary Error (MABE)**: Benchmark OD median MABE was **$3.20 \; \mu\text{m}$**, versus **$3.39 \; \mu\text{m}$** for benchmark OS. The $5.0 \; \mu\text{m}$ line is an operational reference.
+- **NFL-Absence Cup-Region Detection**: The annotation-derived cup-region endpoint reached a median IoU of **$0.9328$**; this should not be interpreted as independent anatomical cup ground truth.
 
 ---
 
 ### 3.2 Complete 46-Scan Clinical Cohort Forest Chart
 
-The forest chart below visualizes all 46 individual eye-level scans ranked by boundary adherence ($MABE$), completely eliminating data compression and table clutter while preserving exact numerical values for every acquisition.
+The chart shows all 46 eye-level scans ranked best to worst by MABE. MABE uses a logarithmic axis to preserve the 2-15 µm range while retaining severe outliers; Dice and Cup IoU are shown in separate aligned panels. `[MIRROR]` identifies an unedited machine copy rather than an independent commercial annotation.
 
 ![Complete 46-Scan Forest Plot](assets/executive_cohort_report/cohort_per_scan_forest_plot.png)
 
 ---
 
-### 3.3 Head-to-Head Comparative Delta: U-Net vs Commercial Baseline
+### 3.3 Audit-Correction Analysis: U-Net vs Raw Commercial Boundary
 
-Comparative paired analysis across all subjects evaluated under dual annotations, demonstrating consistent error reduction and anatomical cup containment over the commercial Solix heuristic baseline.
+Whole-mask comparison is reference-dependent because the human-audited annotation was created by editing the raw commercial result. The primary comparator analysis therefore isolates columns with a raw-to-audit displacement of at least 1 px. Across 12 materially edited scans, the U-Net reduced boundary error in 10; median correction gain was **+53.1%**, median edited-column recovery was **56.5%**, and median unchanged-region preservation was **77.7%**. Negative correction gain means the U-Net was farther from the audit than the raw boundary on edited columns.
 
-![Baseline vs U-Net Head-to-Head](assets/executive_cohort_report/baseline_vs_unet_head_to_head.png)
+![Audit-Correction Analysis](assets/executive_cohort_report/baseline_vs_unet_head_to_head.png)
 
 ---
 
-## 4. Cohort Statistical Overview
+## 4. External Evidence Context
 
-The multi-panel cohort benchmark chart below summarizes the full distribution of boundary accuracy, volumetric overlap, optic cup detection, and error histograms across all 46 acquisitions.
+The closest published evidence spans different OCT devices, scan geometries, pathologies, reference standards, and aggregation methods. The table therefore positions the model rather than ranking it. The current-project row uses the **subject-disjoint held-out cohort**; training-cohort benchmark Dice is intentionally excluded from the cross-study comparison.
+
+<div class="evidence-context">
+<table class="evidence-table">
+<thead>
+<tr><th style="width: 18%;">Evidence</th><th style="width: 24%;">Evaluation setting</th><th style="width: 14%;">RNFL Dice</th><th style="width: 19%;">Other error endpoint</th><th style="width: 25%;">Comparability note</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Current model</strong></td><td>Optovue Solix Disc Cube; 3 subjects / 6 eyes; full volumes; subject-disjoint held-out set</td><td><strong>Median 0.874</strong></td><td>Boundary MABE: <strong>5.32 µm</strong> median; worst 19.03 µm</td><td>Most relevant generalization result, but the sample is too small for a superiority or safety claim.</td></tr>
+<tr><td><a href="https://doi.org/10.1167/tvst.15.4.7">Arian et al., 2026</a></td><td>External Spectralis circular B-scans: Thailand glaucoma (n=157) and US edema (n=32)</td><td>Mean 0.858 / 0.845</td><td>Thickness MAE: 7.19 / 15.41 µm; lower-boundary MUE: 14.52 / 24.82 µm</td><td>Strong external clinical evidence, but 2D circles and thickness/boundary endpoints differ from the Solix volume evaluation.</td></tr>
+<tr><td><a href="https://arxiv.org/abs/2207.14447">GOALS, 2022</a></td><td>Topcon DRI circumpapillary B-scans; patient-disjoint challenge tests</td><td>0.816 / 0.843</td><td>Boundary MED: 4.06 / 4.15 pixels</td><td>High anatomical relevance and multi-grader reference; single 2D circles and no defensible µm conversion.</td></tr>
+<tr><td><a href="https://doi.org/10.1038/s41598-022-22135-x">Razaghi et al., 2022</a></td><td>Spectralis circular B-scans; 127 independent test eyes spanning healthy, NAION, and optic neuritis</td><td>0.870</td><td>Thickness MAE: 1.04-1.20 µm across groups</td><td>Independent same-device test; thickness MAE is not interchangeable with local boundary MABE.</td></tr>
+<tr><td><a href="https://doi.org/10.3389/fcell.2026.1890734">Qiu et al., 2026 (M2D)</a></td><td>1,017 Heidelberg/TowardPi circumpapillary scans; expert-corrected subset</td><td>Mean 0.874</td><td>Expert-subset thickness MAD: 1.8 µm</td><td>Cross-device evidence, but large-scale overlap primarily used proprietary output as the reference.</td></tr>
+<tr><td><a href="https://doi.org/10.18502/jovr.v18i1.12724">Razaghi et al., 2023</a></td><td>SD-OCT B-scans; 50-image internal test; subject separation unclear</td><td>0.910</td><td>Thickness MAE: 2.23 ± 2.10 µm</td><td>Favorable internal result with a small image-level test; weaker generalization evidence.</td></tr>
+</tbody>
+</table>
+
+<div class="evidence-note"><strong>Interpretation:</strong> The held-out Dice of 0.874 lies within the approximately 0.82-0.88 range reported in external or difficult peripapillary RNFL evaluations. This is evidence of technical plausibility, not equivalence or superiority. No directly comparable external Optovue Solix Disc Cube benchmark was identified, and Dice alone does not resolve the 19.03 µm worst-case boundary failure.</div>
+</div>
+
+Values above retain each publication's original endpoint and aggregation. Mean and median values, full-volume and circular-scan evaluations, boundary and thickness errors, and human versus commercial-derived references must not be treated as interchangeable.
+
+---
+
+## 5. OD Subject Statistical Overview
+
+The aligned dot plots summarize the 23 OD acquisitions only. Dice, MABE, and Cup IoU use separate axes and operational thresholds. Commercial points appear only where an independent comparator is available; blank comparator positions represent missing annotations, not zero values.
 
 ![Cohort Summary Chart](assets/executive_cohort_report/cohort_summary_chart.png)
 
 ---
 
-## 5. Cohort Visual Gallery: All Evaluated Subjects
+## 6. OD Subject Gallery: Reference vs U-Net
 
-Central peripapillary B-scans ($z = z_{\text{disc}}$) comparing the **Clinician Reference (<span style="color: #0284c7; font-weight: bold;">Cyan</span>)**, **Commercial Heuristic Baseline (<span style="color: #dc2626; font-weight: bold;">Red</span>)**, and the **Volumetric U-Net (<span style="color: #16a34a; font-weight: bold;">Green</span>)**.
+Central peripapillary OD B-scans ($z = z_{\text{disc}}$) comparing the **Human-Corrected Reference (<span style="color: #0284c7; font-weight: bold;">Cyan</span>)** with the **Volumetric U-Net (<span style="color: #16a34a; font-weight: bold;">Green</span>)**. The gallery contains one OD view per subject; OS acquisitions and the commercial baseline are not shown here. Complete scan-level metrics remain archived in the report assets.
 
 <div class="gallery-grid">
 <div class="gallery-item">
-<p><strong>BEH0086 (OD)</strong> — Dice: <code>0.9063</code> | MABE: <code>4.62 µm</code></p>
+<p><strong>BEH0086 (OD)</strong> - Dice: <code>0.9063</code> | MABE: <code>4.76 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0086_OD.png" alt="Gallery BEH0086" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0090 (OD)</strong> — Dice: <code>0.9193</code> | MABE: <code>3.29 µm</code></p>
+<p><strong>BEH0090 (OD)</strong> - Dice: <code>0.9193</code> | MABE: <code>3.44 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0090_OD.png" alt="Gallery BEH0090" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0096 (OD)</strong> — Dice: <code>0.9300</code> | MABE: <code>3.26 µm</code></p>
+<p><strong>BEH0096 (OD)</strong> - Dice: <code>0.9300</code> | MABE: <code>3.51 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0096_OD.png" alt="Gallery BEH0096" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0174 (OD)</strong> — Dice: <code>0.9079</code> | MABE: <code>2.95 µm</code></p>
+<p><strong>BEH0174 (OD)</strong> - Dice: <code>0.9079</code> | MABE: <code>3.03 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0174_OD.png" alt="Gallery BEH0174" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0181 (OD)</strong> — Dice: <code>0.9133</code> | MABE: <code>3.10 µm</code></p>
+<p><strong>BEH0181 (OD)</strong> - Dice: <code>0.9133</code> | MABE: <code>3.21 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0181_OD.png" alt="Gallery BEH0181" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0185 (OD)</strong> — Dice: <code>0.8921</code> | MABE: <code>3.11 µm</code></p>
+<p><strong>BEH0185 (OD)</strong> - Dice: <code>0.8921</code> | MABE: <code>3.32 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0185_OD.png" alt="Gallery BEH0185" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0241 (OD)</strong> — Dice: <code>0.8197</code> | MABE: <code>2.83 µm</code></p>
+<p><strong>BEH0241 (OD)</strong> - Dice: <code>0.8197</code> | MABE: <code>3.14 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0241_OD.png" alt="Gallery BEH0241" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0249 (OD)</strong> — Dice: <code>0.8640</code> | MABE: <code>2.96 µm</code></p>
+<p><strong>BEH0249 (OD)</strong> - Dice: <code>0.8640</code> | MABE: <code>3.29 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0249_OD.png" alt="Gallery BEH0249" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0259 (OD)</strong> — Dice: <code>0.8935</code> | MABE: <code>3.21 µm</code></p>
+<p><strong>BEH0259 (OD)</strong> - Dice: <code>0.8934</code> | MABE: <code>3.57 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0259_OD.png" alt="Gallery BEH0259" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0264 (OD)</strong> — Dice: <code>0.8168</code> | MABE: <code>3.50 µm</code></p>
+<p><strong>BEH0264 (OD)</strong> - Dice: <code>0.8167</code> | MABE: <code>3.81 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0264_OD.png" alt="Gallery BEH0264" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0282 (OD)</strong> — Dice: <code>0.8577</code> | MABE: <code>2.83 µm</code></p>
+<p><strong>BEH0282 (OD)</strong> - Dice: <code>0.8577</code> | MABE: <code>2.85 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0282_OD.png" alt="Gallery BEH0282" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0284 (OD)</strong> — Dice: <code>0.9077</code> | MABE: <code>2.91 µm</code></p>
+<p><strong>BEH0284 (OD)</strong> - Dice: <code>0.9076</code> | MABE: <code>2.98 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0284_OD.png" alt="Gallery BEH0284" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0287 (OD)</strong> — Dice: <code>0.8712</code> | MABE: <code>2.93 µm</code></p>
+<p><strong>BEH0287 (OD)</strong> - Dice: <code>0.8712</code> | MABE: <code>2.86 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0287_OD.png" alt="Gallery BEH0287" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0294 (OD)</strong> — Dice: <code>0.9217</code> | MABE: <code>2.90 µm</code></p>
+<p><strong>BEH0294 (OD)</strong> - Dice: <code>0.9218</code> | MABE: <code>3.12 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0294_OD.png" alt="Gallery BEH0294" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0310 (OD)</strong> — Dice: <code>0.9297</code> | MABE: <code>2.90 µm</code></p>
+<p><strong>BEH0310 (OD)</strong> - Dice: <code>0.9297</code> | MABE: <code>3.06 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0310_OD.png" alt="Gallery BEH0310" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0314 (OD)</strong> — Dice: <code>0.8654</code> | MABE: <code>5.31 µm</code></p>
+<p><strong>BEH0314 (OD)</strong> - Dice: <code>0.8654</code> | MABE: <code>5.05 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0314_OD.png" alt="Gallery BEH0314" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0321 (OD)</strong> — Dice: <code>0.9473</code> | MABE: <code>2.82 µm</code></p>
+<p><strong>BEH0321 (OD)</strong> - Dice: <code>0.9472</code> | MABE: <code>3.06 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0321_OD.png" alt="Gallery BEH0321" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0335 (OD)</strong> — Dice: <code>0.8915</code> | MABE: <code>14.35 µm</code></p>
+<p><strong>BEH0335 (OD)</strong> - Dice: <code>0.8914</code> | MABE: <code>14.34 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0335_OD.png" alt="Gallery BEH0335" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0349 (OD)</strong> — Dice: <code>0.9002</code> | MABE: <code>2.89 µm</code></p>
+<p><strong>BEH0349 (OD)</strong> - Dice: <code>0.9002</code> | MABE: <code>3.32 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0349_OD.png" alt="Gallery BEH0349" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0354 (OD)</strong> — Dice: <code>0.9077</code> | MABE: <code>3.09 µm</code></p>
+<p><strong>BEH0354 (OD)</strong> - Dice: <code>0.9077</code> | MABE: <code>3.03 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0354_OD.png" alt="Gallery BEH0354" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0364 (OD)</strong> — Dice: <code>0.9391</code> | MABE: <code>2.96 µm</code></p>
+<p><strong>BEH0364 (OD)</strong> - Dice: <code>0.9390</code> | MABE: <code>3.19 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0364_OD.png" alt="Gallery BEH0364" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0398 (OD)</strong> — Dice: <code>0.8845</code> | MABE: <code>3.05 µm</code></p>
+<p><strong>BEH0398 (OD)</strong> - Dice: <code>0.8845</code> | MABE: <code>3.22 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0398_OD.png" alt="Gallery BEH0398" />
 </div>
 <div class="gallery-item">
-<p><strong>BEH0410 (OD)</strong> — Dice: <code>0.9427</code> | MABE: <code>3.00 µm</code></p>
+<p><strong>BEH0410 (OD)</strong> - Dice: <code>0.9426</code> | MABE: <code>3.27 µm</code></p>
 <img src="assets/executive_cohort_report/gallery_bscan_BEH0410_OD.png" alt="Gallery BEH0410" />
 </div>
 </div>
 
 ---
 
-## 6. 3-Arm Deep-Dive Panels: Validation & Archetype Subjects
+## 7. 3-Arm Deep-Dive Panels: Validation & Archetype Subjects
 
 Detailed cross-sectional analysis comparing optical intensity boundaries, vertical cut behavior, and local layer transitions across key clinical archetypes.
 
-### Subject BEH0086 (OD) [Validation (Held-Out)]
+<div class="deep-dive-item">
+<h3>Subject BEH0086 (OD) [Validation (Held-Out)]</h3>
+<img src="assets/executive_cohort_report/deep_dive_BEH0086_OD.png" alt="Deep Dive BEH0086" />
+</div>
 
-![Deep Dive BEH0086](assets/executive_cohort_report/deep_dive_BEH0086_OD.png)
+<div class="deep-dive-item">
+<h3>Subject BEH0174 (OD) [Training / Benchmark]</h3>
+<img src="assets/executive_cohort_report/deep_dive_BEH0174_OD.png" alt="Deep Dive BEH0174" />
+</div>
 
----
-### Subject BEH0174 (OD) [Training / Benchmark]
+<div class="deep-dive-item">
+<h3>Subject BEH0181 (OD) [Training / Benchmark]</h3>
+<img src="assets/executive_cohort_report/deep_dive_BEH0181_OD.png" alt="Deep Dive BEH0181" />
+</div>
 
-![Deep Dive BEH0174](assets/executive_cohort_report/deep_dive_BEH0174_OD.png)
+<div class="deep-dive-item">
+<h3>Subject BEH0314 (OD) [Validation (Held-Out)]</h3>
+<img src="assets/executive_cohort_report/deep_dive_BEH0314_OD.png" alt="Deep Dive BEH0314" />
+</div>
 
----
-### Subject BEH0181 (OD) [Training / Benchmark]
+<div class="deep-dive-item">
+<h3>Subject BEH0335 (OD) [Validation (Held-Out)]</h3>
+<img src="assets/executive_cohort_report/deep_dive_BEH0335_OD.png" alt="Deep Dive BEH0335" />
+</div>
 
-![Deep Dive BEH0181](assets/executive_cohort_report/deep_dive_BEH0181_OD.png)
-
----
-### Subject BEH0314 (OD) [Validation (Held-Out)]
-
-![Deep Dive BEH0314](assets/executive_cohort_report/deep_dive_BEH0314_OD.png)
-
----
-### Subject BEH0335 (OD) [Validation (Held-Out)]
-
-![Deep Dive BEH0335](assets/executive_cohort_report/deep_dive_BEH0335_OD.png)
-
----
-## 7. Algorithmic Mechanics Driving Boundary Adherence
+## 8. Algorithmic Mechanics Driving Boundary Adherence
 
 <div class="challenge-grid">
     <div class="challenge-card">
         <div class="challenge-title">GCL Hyporeflective Wedge Penetration</div>
         <div class="challenge-row"><span class="badge-red">Solix Baseline</span> Plunges deeply into adjacent hyporeflective ganglion cell layer.</div>
         <div class="challenge-row"><span class="badge-green">Volumetric U-Net</span> Continuous 1D head locks onto true hyperreflective optical gradient.</div>
-        <div class="challenge-row"><span class="badge-cyan">Clinician Truth</span> Manually verified anatomical transition interface.</div>
+        <div class="challenge-row"><span class="badge-cyan">Human-Corrected Reference</span> Manually reviewed anatomical transition interface.</div>
     </div>
     <div class="challenge-card">
         <div class="challenge-title">Optic Cup Cavity Void & BMO Bridging</div>
         <div class="challenge-row"><span class="badge-red">Solix Baseline</span> Bridges straight across non-physiological empty cup void.</div>
         <div class="challenge-row"><span class="badge-green">Volumetric U-Net</span> 1D cup head accurately truncates margin at Bruch's Membrane Opening.</div>
-        <div class="challenge-row"><span class="badge-cyan">Clinician Truth</span> Strict peripapillary termination at anatomical BMO.</div>
+        <div class="challenge-row"><span class="badge-cyan">Human-Corrected Reference</span> Reviewed peripapillary termination at the annotated margin.</div>
     </div>
     <div class="challenge-card">
         <div class="challenge-title">Major Vessel Axial Shadowing</div>
         <div class="challenge-row"><span class="badge-red">Solix Baseline</span> Axial signal drop causes erratic vertical jumps and boundary loss.</div>
         <div class="challenge-row"><span class="badge-green">Volumetric U-Net</span> Multi-slice 2.5D contextual slices interpolate across vessel shadows cleanly.</div>
-        <div class="challenge-row"><span class="badge-cyan">Clinician Truth</span> Preserved continuous anatomical layer contours.</div>
+        <div class="challenge-row"><span class="badge-cyan">Human-Corrected Reference</span> Reviewed continuous layer contours.</div>
     </div>
     <div class="challenge-card">
         <div class="challenge-title">Pathological Disc Tilt & Steep Slope</div>
         <div class="challenge-row"><span class="badge-red">Solix Baseline</span> Steep regional gradients induce boundary distortion and clipping.</div>
         <div class="challenge-row"><span class="badge-green">Volumetric U-Net</span> Continuous 1D regression preserves curvature continuity and slope fidelity.</div>
-        <div class="challenge-row"><span class="badge-cyan">Clinician Truth</span> Verified anatomical boundary conformity.</div>
+        <div class="challenge-row"><span class="badge-cyan">Human-Corrected Reference</span> Reviewed boundary conformity.</div>
     </div>
 </div>
 
 ---
 
-## 8. Clinical Significance & Conclusion
+## 9. Clinical Significance & Conclusion
 
-1. **Sub-Voxel Boundary Precision**: The continuous 1D boundary regression formulation avoids discrete pixel quantization artifacts, achieving reliable sub-voxel tracking.
-2. **End-to-End Cluster Orchestration**: This automated evaluation script confirms full integration between training, multi-volume GPU inference, metric logging, and clinical report generation within a single SLURM execution pass.
-3. **Execution Summary**: Checkpoint `best_volumetric_rnfl_net.pt` generated on NYUAD Jubail (Job `18223981`). All visual assets and quantitative matrices are archived in `assets/executive_cohort_report`.
+1. **Comparable OD and OS Cohort Performance**: Corrected native-coordinate restoration removes the systematic OS artifact. Benchmark medians are closely aligned by eye, but laterality stability does not eliminate individual failures.
+2. **Residual Clinical Risk**: The worst held-out scan, BEH0335 OS, reached **$19.03 \; \mu\text{m}$** MABE, and additional scans miss Dice or cup-IoU operational limits. The model is suitable for research and human-supervised review, not autonomous clinical use.
+3. **Comparator Evidence Is Reference-Dependent**: The edit-focused analysis shows whether the U-Net recovers human changes without allowing unchanged pixels to dominate. It still cannot establish clinical superiority because the audit is not an independent second-reader reference.
+4. **External Positioning**: Held-out Dice is within published external or difficult-cohort RNFL ranges, but cross-study differences and the small held-out cohort prevent a direct ranking or superiority claim.
+5. **Execution Summary**: Checkpoint `best_volumetric_rnfl_net.pt` was evaluated using corrected biplanar inference. All visual assets, scan-level metrics, audit-correction fields, comparator missingness, and manual-review outputs are archived in `assets/executive_cohort_report`.
 
