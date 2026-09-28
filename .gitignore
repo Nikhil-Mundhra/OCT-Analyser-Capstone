@@ -59,6 +59,7 @@ archive/
 *.pdf
 !docs/*.pdf
 !docs/**/*.pdf
+docs/**/*_legacy*.pdf
 
 # Environment Variables
 .env
