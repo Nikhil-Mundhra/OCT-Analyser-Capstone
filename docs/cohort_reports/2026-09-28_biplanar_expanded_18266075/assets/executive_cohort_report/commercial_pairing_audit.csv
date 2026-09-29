@@ -1,0 +1,123 @@
+subject,eye,cohort,pairing_status,unet_dice,commercial_dice,dice_delta,unet_mabe_um,commercial_mabe_um,mabe_delta_um,unet_cup_iou,commercial_cup_iou,cup_iou_delta
+BEH0026,OD,Training / Benchmark,missing_commercial_annotation,0.941992,,,2.503632,,,0.969780,,
+BEH0026,OS,Training / Benchmark,missing_commercial_annotation,0.932050,,,2.437802,,,0.958562,,
+BEH0030,OD,Training / Benchmark,missing_commercial_annotation,0.896882,,,2.548745,,,0.968109,,
+BEH0030,OS,Training / Benchmark,missing_commercial_annotation,0.919864,,,2.577367,,,0.959872,,
+BEH0043,OD,Training / Benchmark,missing_commercial_annotation,0.806697,,,2.453605,,,0.948561,,
+BEH0043,OS,Training / Benchmark,missing_commercial_annotation,0.844156,,,2.881383,,,0.942126,,
+BEH0081,OD,Training / Benchmark,missing_commercial_annotation,0.882386,,,2.825021,,,0.945895,,
+BEH0081,OS,Training / Benchmark,missing_commercial_annotation,0.905500,,,2.550548,,,0.943253,,
+BEH0084,OD,Training / Benchmark,missing_commercial_annotation,0.817514,,,2.550435,,,0.914036,,
+BEH0084,OS,Training / Benchmark,missing_commercial_annotation,0.853349,,,2.775594,,,0.942430,,
+BEH0090,OD,Validation (Held-Out),missing_commercial_annotation,0.891509,,,6.782482,,,0.937560,,
+BEH0090,OS,Validation (Held-Out),missing_commercial_annotation,0.886605,,,5.133862,,,0.955682,,
+BEH0174,OD,Validation (Held-Out),paired,0.893314,0.978280,-0.084966,5.850303,,,0.970646,0.947318,0.023327
+BEH0174,OS,Validation (Held-Out),paired,0.911011,0.883414,0.027597,5.071101,8.919726,-3.848624,0.938483,0.660039,0.278444
+BEH0181,OD,Training / Benchmark,excluded_unedited_mirror,0.892631,,,2.566251,,,0.965138,,
+BEH0181,OS,Training / Benchmark,paired,0.881443,0.974686,-0.093243,2.512375,,,0.931195,0.943129,-0.011934
+BEH0185,OD,Training / Benchmark,excluded_unedited_mirror,0.881010,,,2.828345,,,0.954317,,
+BEH0185,OS,Training / Benchmark,paired,0.888548,0.942421,-0.053873,2.497394,,,0.945548,0.894334,0.051214
+BEH0249,OD,Training / Benchmark,missing_commercial_annotation,0.857556,,,2.516995,,,0.914161,,
+BEH0249,OS,Training / Benchmark,missing_commercial_annotation,0.860657,,,2.834381,,,0.935416,,
+BEH0259,OD,Training / Benchmark,missing_commercial_annotation,0.885163,,,2.719767,,,0.971924,,
+BEH0259,OS,Training / Benchmark,missing_commercial_annotation,0.895488,,,2.611325,,,0.949434,,
+BEH0264,OD,Training / Benchmark,missing_commercial_annotation,0.814168,,,2.797909,,,0.956706,,
+BEH0264,OS,Training / Benchmark,missing_commercial_annotation,0.840646,,,2.783601,,,0.893640,,
+BEH0279,OD,Training / Benchmark,missing_commercial_annotation,0.894182,,,2.525849,,,0.950457,,
+BEH0279,OS,Training / Benchmark,missing_commercial_annotation,0.899905,,,2.520966,,,0.953433,,
+BEH0284,OD,Validation (Held-Out),missing_commercial_annotation,0.894565,,,4.100124,,,0.952445,,
+BEH0284,OS,Validation (Held-Out),missing_commercial_annotation,0.891680,,,5.249922,,,0.923447,,
+BEH0289,OD,Training / Benchmark,missing_commercial_annotation,0.867257,,,2.709015,,,0.945813,,
+BEH0289,OS,Training / Benchmark,missing_commercial_annotation,0.872501,,,2.952783,,,0.950192,,
+BEH0290,OD,Training / Benchmark,missing_commercial_annotation,0.870878,,,2.659913,,,0.951820,,
+BEH0290,OS,Training / Benchmark,missing_commercial_annotation,0.903595,,,2.658051,,,0.951895,,
+BEH0293,OD,Training / Benchmark,missing_commercial_annotation,0.906052,,,2.552457,,,0.930114,,
+BEH0293,OS,Training / Benchmark,missing_commercial_annotation,0.897069,,,2.571352,,,0.951413,,
+BEH0294,OD,Training / Benchmark,missing_commercial_annotation,0.902532,,,2.600283,,,0.956439,,
+BEH0294,OS,Training / Benchmark,missing_commercial_annotation,0.905976,,,3.041011,,,0.957620,,
+BEH0297,OD,Training / Benchmark,missing_commercial_annotation,0.857424,,,2.450544,,,0.947314,,
+BEH0297,OS,Training / Benchmark,missing_commercial_annotation,0.886034,,,3.342234,,,0.944493,,
+BEH0298,OD,Training / Benchmark,paired,0.905556,0.962527,-0.056971,2.314902,,,0.948177,0.942343,0.005835
+BEH0298,OS,Training / Benchmark,paired,0.896639,0.920784,-0.024145,3.248165,6.018621,-2.770455,0.957460,0.807515,0.149945
+BEH0301,OD,Training / Benchmark,missing_commercial_annotation,0.903288,,,2.655618,,,0.970615,,
+BEH0301,OS,Training / Benchmark,missing_commercial_annotation,0.873293,,,2.810825,,,0.967073,,
+BEH0303,OD,Training / Benchmark,missing_commercial_annotation,0.908605,,,2.581723,,,0.974804,,
+BEH0303,OS,Training / Benchmark,missing_commercial_annotation,0.903772,,,2.440456,,,0.970845,,
+BEH0304,OD,Training / Benchmark,missing_commercial_annotation,0.924696,,,2.670493,,,0.964824,,
+BEH0304,OS,Training / Benchmark,missing_commercial_annotation,0.906950,,,2.895881,,,0.959513,,
+BEH0306,OD,Training / Benchmark,missing_commercial_annotation,0.858948,,,2.521458,,,0.945890,,
+BEH0306,OS,Training / Benchmark,missing_commercial_annotation,0.849835,,,2.565394,,,0.958883,,
+BEH0308,OD,Training / Benchmark,missing_commercial_annotation,0.867736,,,2.595589,,,0.938470,,
+BEH0308,OS,Training / Benchmark,missing_commercial_annotation,0.866147,,,3.166647,,,0.955402,,
+BEH0310,OD,Validation (Held-Out),paired,0.911814,0.902095,0.009720,4.237551,7.514124,-3.276574,0.941625,0.609977,0.331648
+BEH0310,OS,Validation (Held-Out),excluded_unedited_mirror,0.891745,,,5.515846,,,0.937353,,
+BEH0312,OD,Training / Benchmark,missing_commercial_annotation,0.905963,,,2.396267,,,0.952831,,
+BEH0312,OS,Training / Benchmark,missing_commercial_annotation,0.874849,,,2.549668,,,0.948811,,
+BEH0314,OD,Validation (Held-Out),paired,0.856343,0.817548,0.038796,5.312517,,,0.940819,0.570093,0.370726
+BEH0314,OS,Validation (Held-Out),paired,0.862781,0.976416,-0.113635,4.792671,,,0.920559,0.949764,-0.029206
+BEH0315,OD,Training / Benchmark,missing_commercial_annotation,0.877871,,,2.443935,,,0.948046,,
+BEH0315,OS,Training / Benchmark,missing_commercial_annotation,0.872404,,,2.599564,,,0.945682,,
+BEH0316,OD,Training / Benchmark,missing_commercial_annotation,0.831331,,,2.947684,,,0.953377,,
+BEH0316,OS,Training / Benchmark,missing_commercial_annotation,0.822201,,,2.585355,,,0.959525,,
+BEH0317,OD,Training / Benchmark,missing_commercial_annotation,0.882251,,,2.407326,,,0.949812,,
+BEH0317,OS,Training / Benchmark,missing_commercial_annotation,0.874792,,,2.795502,,,0.936018,,
+BEH0318,OD,Training / Benchmark,missing_commercial_annotation,0.919571,,,2.628461,,,0.949050,,
+BEH0318,OS,Training / Benchmark,missing_commercial_annotation,0.934698,,,2.561245,,,0.971917,,
+BEH0319,OD,Training / Benchmark,missing_commercial_annotation,0.915072,,,2.347673,,,0.967645,,
+BEH0319,OS,Training / Benchmark,missing_commercial_annotation,0.915981,,,2.609198,,,0.967986,,
+BEH0321,OD,Training / Benchmark,paired,0.919870,0.957092,-0.037221,2.443055,,,0.952909,0.920471,0.032438
+BEH0321,OS,Training / Benchmark,excluded_unedited_mirror,0.927974,,,2.882057,,,0.961646,,
+BEH0322,OD,Training / Benchmark,missing_commercial_annotation,0.920598,,,2.647634,,,0.952556,,
+BEH0322,OS,Training / Benchmark,missing_commercial_annotation,0.905905,,,2.842875,,,0.958194,,
+BEH0323,OD,Training / Benchmark,paired,0.938053,0.909894,0.028159,2.644670,7.105562,-4.460892,0.968066,0.779100,0.188967
+BEH0323,OS,Training / Benchmark,paired,0.930317,0.998113,-0.067796,2.565024,0.343506,2.221519,0.973822,1.000000,-0.026178
+BEH0325,OD,Training / Benchmark,missing_commercial_annotation,0.923088,,,2.590261,,,0.964566,,
+BEH0325,OS,Training / Benchmark,missing_commercial_annotation,0.900360,,,2.665515,,,0.943360,,
+BEH0327,OD,Training / Benchmark,missing_commercial_annotation,0.906336,,,2.620157,,,0.954690,,
+BEH0327,OS,Training / Benchmark,missing_commercial_annotation,0.885852,,,2.816183,,,0.913650,,
+BEH0328,OD,Training / Benchmark,missing_commercial_annotation,0.793292,,,2.893490,,,0.911340,,
+BEH0328,OS,Training / Benchmark,missing_commercial_annotation,0.824902,,,2.660534,,,0.930977,,
+BEH0329,OD,Training / Benchmark,missing_commercial_annotation,0.913575,,,2.439230,,,0.957191,,
+BEH0329,OS,Training / Benchmark,missing_commercial_annotation,0.907026,,,2.670695,,,0.958778,,
+BEH0332,OD,Training / Benchmark,missing_commercial_annotation,0.866065,,,2.504572,,,0.949199,,
+BEH0332,OS,Training / Benchmark,missing_commercial_annotation,0.849484,,,2.865837,,,0.918398,,
+BEH0333,OD,Training / Benchmark,missing_commercial_annotation,0.835939,,,2.682888,,,0.931814,,
+BEH0333,OS,Training / Benchmark,missing_commercial_annotation,0.791362,,,3.538083,,,0.823879,,
+BEH0334,OD,Training / Benchmark,missing_commercial_annotation,0.839852,,,2.820468,,,0.947798,,
+BEH0334,OS,Training / Benchmark,missing_commercial_annotation,0.843509,,,2.864626,,,0.932781,,
+BEH0335,OD,Validation (Held-Out),paired,0.874258,0.806626,0.067632,11.171322,,,0.867818,0.693649,0.174169
+BEH0335,OS,Validation (Held-Out),excluded_unedited_mirror,0.853877,,,14.588516,,,0.899225,,
+BEH0336,OD,Training / Benchmark,missing_commercial_annotation,0.824330,,,3.170977,,,0.951972,,
+BEH0336,OS,Training / Benchmark,missing_commercial_annotation,0.827534,,,2.681574,,,0.900036,,
+BEH0338,OD,Training / Benchmark,missing_commercial_annotation,0.891964,,,2.588304,,,0.963256,,
+BEH0338,OS,Training / Benchmark,missing_commercial_annotation,0.909998,,,3.133158,,,0.948687,,
+BEH0340,OD,Training / Benchmark,missing_commercial_annotation,0.893616,,,2.458761,,,0.966317,,
+BEH0340,OS,Training / Benchmark,missing_commercial_annotation,0.877133,,,2.523065,,,0.959684,,
+BEH0341,OD,Training / Benchmark,missing_commercial_annotation,0.793609,,,2.926234,,,0.896229,,
+BEH0341,OS,Training / Benchmark,missing_commercial_annotation,0.834279,,,3.026549,,,0.947742,,
+BEH0342,OD,Training / Benchmark,missing_commercial_annotation,0.922796,,,2.420893,,,0.950042,,
+BEH0342,OS,Training / Benchmark,missing_commercial_annotation,0.923309,,,2.618285,,,0.951670,,
+BEH0343,OD,Training / Benchmark,missing_commercial_annotation,0.879307,,,2.630629,,,0.935376,,
+BEH0343,OS,Training / Benchmark,missing_commercial_annotation,0.860168,,,2.556536,,,0.928156,,
+BEH0344,OD,Training / Benchmark,missing_commercial_annotation,0.868633,,,2.590748,,,0.923448,,
+BEH0344,OS,Training / Benchmark,missing_commercial_annotation,0.878224,,,2.698088,,,0.928821,,
+BEH0348,OD,Training / Benchmark,paired,0.902732,0.935790,-0.033058,2.627404,,,0.939933,0.883273,0.056660
+BEH0348,OS,Training / Benchmark,paired,0.900213,0.912668,-0.012456,2.561050,,,0.956468,0.744903,0.211565
+BEH0349,OD,Training / Benchmark,excluded_unedited_mirror,0.885163,,,2.492079,,,0.937133,,
+BEH0349,OS,Training / Benchmark,excluded_unedited_mirror,0.885616,,,2.610682,,,0.959655,,
+BEH0350,OD,Training / Benchmark,paired,0.928226,0.977349,-0.049123,2.507517,,,0.941849,0.953239,-0.011390
+BEH0350,OS,Training / Benchmark,paired,0.900131,0.966561,-0.066429,2.866449,,,0.950402,0.928199,0.022203
+BEH0352,OD,Training / Benchmark,paired,0.901915,0.882661,0.019254,2.802634,9.718704,-6.916070,0.952223,0.673211,0.279012
+BEH0352,OS,Training / Benchmark,paired,0.894773,0.999586,-0.104813,2.909641,0.070196,2.839445,0.964578,1.000000,-0.035422
+BEH0354,OD,Validation (Held-Out),paired,0.892014,0.986658,-0.094644,4.067417,,,0.962822,0.958809,0.004013
+BEH0354,OS,Validation (Held-Out),paired,0.891163,0.999488,-0.108326,4.175513,0.091005,4.084507,0.954314,1.000000,-0.045686
+BEH0355,OD,Training / Benchmark,missing_commercial_annotation,0.862859,,,2.418156,,,0.950177,,
+BEH0355,OS,Training / Benchmark,missing_commercial_annotation,0.855085,,,2.579700,,,0.955580,,
+BEH0361,OD,Training / Benchmark,missing_commercial_annotation,0.890788,,,2.899736,,,0.930138,,
+BEH0361,OS,Training / Benchmark,missing_commercial_annotation,0.921487,,,2.907068,,,0.952023,,
+BEH0362,OD,Training / Benchmark,paired,0.907922,0.980451,-0.072529,2.360222,,,0.970107,0.955448,0.014660
+BEH0362,OS,Training / Benchmark,paired,0.901268,0.850044,0.051223,2.552988,9.753861,-7.200874,0.950641,0.621249,0.329392
+BEH0364,OD,Training / Benchmark,missing_commercial_annotation,0.920178,,,2.551785,,,0.947480,,
+BEH0364,OS,Training / Benchmark,missing_commercial_annotation,0.922661,,,2.509077,,,0.962300,,
+BEH0086,OD,Validation (Held-Out),missing_commercial_annotation,0.897375,,,4.297573,,,0.960406,,
+BEH0086,OS,Validation (Held-Out),missing_commercial_annotation,0.870490,,,5.154376,,,0.949923,,

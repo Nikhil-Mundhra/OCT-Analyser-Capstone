@@ -1,0 +1,59 @@
+subject,eye,cohort,qc_status,qc_flags,dice,mabe_um,cup_iou
+BEH0043,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.806697,2.453605,0.948561
+BEH0043,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.844156,2.881383,0.942126
+BEH0084,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.817514,2.550435,0.914036
+BEH0084,OS,Training / Benchmark,manual_review,mask_dropout,0.853349,2.775594,0.942430
+BEH0090,OD,Validation (Held-Out),manual_review,mask_dropout;reference_mabe_above_operational_limit,0.891509,6.782482,0.937560
+BEH0090,OS,Validation (Held-Out),manual_review,reference_mabe_above_operational_limit,0.886605,5.133862,0.955682
+BEH0174,OD,Validation (Held-Out),manual_review,mask_dropout;reference_mabe_above_operational_limit,0.893314,5.850303,0.970646
+BEH0174,OS,Validation (Held-Out),manual_review,reference_mabe_above_operational_limit,0.911011,5.071101,0.938483
+BEH0185,OD,Training / Benchmark,manual_review,mask_dropout,0.881010,2.828345,0.954317
+BEH0185,OS,Training / Benchmark,manual_review,mask_dropout,0.888548,2.497394,0.945548
+BEH0249,OD,Training / Benchmark,manual_review,mask_dropout,0.857556,2.516995,0.914161
+BEH0249,OS,Training / Benchmark,manual_review,mask_dropout,0.860657,2.834381,0.935416
+BEH0264,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.814168,2.797909,0.956706
+BEH0264,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit;reference_cup_iou_below_operational_limit,0.840646,2.783601,0.893640
+BEH0284,OD,Validation (Held-Out),manual_review,mask_dropout,0.894565,4.100124,0.952445
+BEH0284,OS,Validation (Held-Out),manual_review,reference_mabe_above_operational_limit,0.891680,5.249922,0.923447
+BEH0289,OD,Training / Benchmark,manual_review,mask_dropout,0.867257,2.709015,0.945813
+BEH0289,OS,Training / Benchmark,manual_review,mask_dropout,0.872501,2.952783,0.950192
+BEH0290,OD,Training / Benchmark,manual_review,mask_dropout,0.870878,2.659913,0.951820
+BEH0297,OD,Training / Benchmark,manual_review,mask_dropout,0.857424,2.450544,0.947314
+BEH0301,OS,Training / Benchmark,manual_review,mask_dropout,0.873293,2.810825,0.967073
+BEH0306,OD,Training / Benchmark,manual_review,mask_dropout,0.858948,2.521458,0.945890
+BEH0306,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.849835,2.565394,0.958883
+BEH0308,OD,Training / Benchmark,manual_review,mask_dropout,0.867736,2.595589,0.938470
+BEH0310,OS,Validation (Held-Out),manual_review,reference_mabe_above_operational_limit,0.891745,5.515846,0.937353
+BEH0312,OS,Training / Benchmark,manual_review,mask_dropout,0.874849,2.549668,0.948811
+BEH0314,OD,Validation (Held-Out),manual_review,mask_dropout;reference_mabe_above_operational_limit,0.856343,5.312517,0.940819
+BEH0314,OS,Validation (Held-Out),manual_review,mask_dropout,0.862781,4.792671,0.920559
+BEH0315,OD,Training / Benchmark,manual_review,mask_dropout,0.877871,2.443935,0.948046
+BEH0315,OS,Training / Benchmark,manual_review,mask_dropout,0.872404,2.599564,0.945682
+BEH0316,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.831331,2.947684,0.953377
+BEH0316,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.822201,2.585355,0.959525
+BEH0317,OD,Training / Benchmark,manual_review,mask_dropout,0.882251,2.407326,0.949812
+BEH0317,OS,Training / Benchmark,manual_review,mask_dropout,0.874792,2.795502,0.936018
+BEH0327,OS,Training / Benchmark,manual_review,mask_dropout,0.885852,2.816183,0.913650
+BEH0328,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.793292,2.893490,0.911340
+BEH0328,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.824902,2.660534,0.930977
+BEH0332,OD,Training / Benchmark,manual_review,mask_dropout,0.866065,2.504572,0.949199
+BEH0332,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.849484,2.865837,0.918398
+BEH0333,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.835939,2.682888,0.931814
+BEH0333,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit;reference_cup_iou_below_operational_limit,0.791362,3.538083,0.823879
+BEH0334,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.839852,2.820468,0.947798
+BEH0334,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.843509,2.864626,0.932781
+BEH0335,OD,Validation (Held-Out),manual_review,reference_mabe_above_operational_limit;reference_cup_iou_below_operational_limit,0.874258,11.171322,0.867818
+BEH0335,OS,Validation (Held-Out),manual_review,reference_mabe_above_operational_limit;reference_cup_iou_below_operational_limit,0.853877,14.588516,0.899225
+BEH0336,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.824330,3.170977,0.951972
+BEH0336,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.827534,2.681574,0.900036
+BEH0340,OD,Training / Benchmark,manual_review,mask_dropout,0.893616,2.458761,0.966317
+BEH0340,OS,Training / Benchmark,manual_review,mask_dropout,0.877133,2.523065,0.959684
+BEH0341,OD,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit;reference_cup_iou_below_operational_limit,0.793609,2.926234,0.896229
+BEH0341,OS,Training / Benchmark,manual_review,mask_dropout;reference_dice_below_operational_limit,0.834279,3.026549,0.947742
+BEH0343,OD,Training / Benchmark,manual_review,mask_dropout,0.879307,2.630629,0.935376
+BEH0343,OS,Training / Benchmark,manual_review,mask_dropout,0.860168,2.556536,0.928156
+BEH0344,OD,Training / Benchmark,manual_review,mask_dropout,0.868633,2.590748,0.923448
+BEH0354,OD,Validation (Held-Out),manual_review,mask_dropout,0.892014,4.067417,0.962822
+BEH0354,OS,Validation (Held-Out),manual_review,mask_dropout,0.891163,4.175513,0.954314
+BEH0355,OD,Training / Benchmark,manual_review,mask_dropout,0.862859,2.418156,0.950177
+BEH0355,OS,Training / Benchmark,manual_review,mask_dropout,0.855085,2.579700,0.955580
