@@ -1,0 +1,17 @@
+subject,eye,cohort,qc_status,qc_flags,dice,mabe_um,cup_iou
+BEH0030,OD,Held Out,manual_review,mask_dropout;reference_mabe_above_operational_limit,0.923795,13.369698,0.903395
+BEH0043,OD,Held Out,manual_review,reference_mabe_above_operational_limit,0.942421,5.329076,0.907062
+BEH0090,OD,Held Out,manual_review,reference_mabe_above_operational_limit,0.944864,5.939658,0.936840
+BEH0174,OS,Held Out,manual_review,reference_mabe_above_operational_limit,0.943195,5.158083,0.911771
+BEH0249,OD,Held Out,manual_review,reference_cup_iou_below_operational_limit,0.946181,4.733874,0.885787
+BEH0249,OS,Held Out,manual_review,reference_mabe_above_operational_limit,0.954271,5.355915,0.921713
+BEH0264,OD,Held Out,manual_review,reference_mabe_above_operational_limit,0.929028,6.518847,0.933941
+BEH0264,OS,Held Out,manual_review,reference_mabe_above_operational_limit,0.938422,6.186264,0.930518
+BEH0279,OD,Held Out,manual_review,reference_mabe_above_operational_limit,0.951836,5.937253,0.949093
+BEH0290,OD,Held Out,manual_review,mask_dropout;biplanar_boundary_disagreement;reference_dice_below_operational_limit;reference_mabe_above_operational_limit,0.782613,39.636444,0.934272
+BEH0297,OD,Held Out,manual_review,reference_mabe_above_operational_limit,0.949055,5.273220,0.949168
+BEH0297,OS,Held Out,manual_review,reference_mabe_above_operational_limit,0.954095,5.208941,0.955185
+BEH0335,OD,Held Out,manual_review,reference_mabe_above_operational_limit;reference_cup_iou_below_operational_limit,0.886117,10.769977,0.881632
+BEH0335,OS,Held Out,manual_review,reference_mabe_above_operational_limit,0.889893,14.950810,0.927044
+BEH0352,OD,Held Out,manual_review,reference_mabe_above_operational_limit,0.947833,5.030344,0.940825
+BEH0352,OS,Held Out,manual_review,reference_mabe_above_operational_limit,0.947937,5.441314,0.958471
