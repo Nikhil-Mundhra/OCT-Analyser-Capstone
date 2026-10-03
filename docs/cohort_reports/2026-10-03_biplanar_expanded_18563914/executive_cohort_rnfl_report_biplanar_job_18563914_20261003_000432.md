@@ -139,9 +139,9 @@ span[style*="#d97706"] code, span[style*="#d97706"] {
 
 **Cohort Scope**: 20 Subjects (`BEH0030` - `BEH0354`) | 40 OCT Volumes (20 OD + 20 OS)<br>
 **Modality**: Optovue Solix OCT `Disc Cube` ($320 \times 768 \times 320$ voxels; $18.81\,\mu\text{m} \times 3.12\,\mu\text{m} \times 18.75\,\mu\text{m}$)<br>
-**Checkpoint Provenance**: NYUAD HPC Jubail (SLURM Job `18563914`) | Checkpoint: `best_volumetric_rnfl_net.pt`<br>
+**Checkpoint Provenance**: NYUAD HPC Jubail (SLURM Job `18563914`) | Checkpoint: `rnfl_biplanar_18563914`<br>
 **Evaluation Runtime**: Local Apple MPS corrected-cohort rerun<br>
-**Architecture / Variant**: **Bi-Planar Orthogonal Heavy Architecture** (Bi-Planar Orthogonal Heavy U-Net (2.5D Context + 1D Continuous Boundary Regression Heads))<br>
+**Architecture / Variant**: **Bi-Planar Orthogonal Heavy Architecture** (Bi-Planar 2.5D Fusion, Tversky + Boundary BCE + Thickness Integral, base_channels=32 (~6.69M params))<br>
 **Inference Policy**: Corrected OS native-coordinate restoration before horizontal/vertical biplanar fusion
 
 **Evaluation Arms**:
@@ -508,5 +508,5 @@ Detailed cross-sectional analysis comparing optical intensity boundaries, vertic
 2. **Residual Clinical Risk**: The worst held-out scan, BEH0290 OD, reached **$39.64 \; \mu\text{m}$** MABE, and additional scans miss Dice or cup-IoU operational limits. The model is suitable for research and human-supervised review, not autonomous clinical use.
 3. **Comparator Evidence Is Reference-Dependent**: The edit-focused analysis shows whether the U-Net recovers human changes without allowing unchanged pixels to dominate. It still cannot establish clinical superiority because the audit is not an independent second-reader reference.
 4. **External Positioning**: Held-out Dice is within published external or difficult-cohort RNFL ranges, but cross-study differences and the small held-out cohort prevent a direct ranking or superiority claim.
-5. **Execution Summary**: Checkpoint `best_volumetric_rnfl_net.pt` was evaluated using corrected biplanar inference. All visual assets, scan-level metrics, audit-correction fields, comparator missingness, and manual-review outputs are archived in `assets/executive_cohort_report`.
+5. **Execution Summary**: Checkpoint `rnfl_biplanar_18563914` was evaluated using corrected biplanar inference. All visual assets, scan-level metrics, audit-correction fields, comparator missingness, and manual-review outputs are archived in `assets/executive_cohort_report`.
 
