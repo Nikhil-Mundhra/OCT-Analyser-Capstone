@@ -367,9 +367,9 @@ Central peripapillary OD B-scans ($z = z_{\text{disc}}$) comparing the **Human-C
 
 ---
 
-## 7. 3-Arm Deep-Dive Panels: Validation & Archetype Subjects
+## 7. Cross-Sectional Deep-Dive Panels: Validation & Archetype Subjects
 
-Detailed cross-sectional analysis comparing optical intensity boundaries, vertical cut behavior, and local layer transitions across key clinical archetypes.
+Detailed cross-sectional analysis comparing optical intensity boundaries, vertical cut behavior, and local layer transitions across key clinical archetypes. For human-audited scans with manual edits, full 3-arm panels show the Commercial Solix baseline alongside Reference and U-Net; for scans accepted without edits, the redundant commercial arm is omitted to present expanded, high-resolution views of the Reference Algorithm and Volumetric U-Net.
 
 <div class="deep-dive-item">
 <h3>Subject BEH0030 (OD) [Held Out]</h3>
