@@ -7,6 +7,7 @@ export interface DocArticle {
   description: string;
   wide?: boolean;
   externalHref?: string;
+  pdfHref?: string;
 }
 
 export interface DocCategory {
@@ -17,94 +18,9 @@ export interface DocCategory {
   articles: DocArticle[];
 }
 
-export const baseDocCategories: DocCategory[] = [
-  {
-    id: "getting-started",
-    title: "Overview",
-    sidebarTitle: "Overview",
-    color: "blue",
-    articles: [
-      {
-        slug: "readme",
-        sidebarTitle: "Project README",
-        title: "OCT/OCTA Clinical Inference Interface",
-        description: "Core project overview, features, setup instructions, and architecture for the Capstone interface.",
-      }
-    ],
-  },
-  {
-    id: "technical",
-    title: "Technical Implementation",
-    sidebarTitle: "Technical Implementation",
-    color: "purple",
-    articles: [
-      {
-        slug: "implementation-info",
-        sidebarTitle: "Implementation Specs",
-        title: "Implementation Details & Specs",
-        description: "Technical specifications detailing integration with local servers, dicom image viewing, and python API.",
-      }
-    ],
-  },
-  {
-    id: "clinical",
-    title: "Clinical Reference",
-    sidebarTitle: "Clinical Reference",
-    color: "emerald",
-    articles: [
-      {
-        slug: "biomarker-mapping",
-        sidebarTitle: "Biomarker Mapping",
-        title: "3D OCT/OCTA Biomarker Mapping",
-        description: "Layer-specific structural and vascular biomarkers with OCT/OCTA reference images and disease-feature mappings.",
-        externalHref: "/docs_content/biomarker_mapping_docs/oct_biomarker_mapping.html",
-      },
-      {
-        slug: "wireframe-demo",
-        sidebarTitle: "Wireframe Demo",
-        title: "Clinical Workflow Demo",
-        description: "Standalone clinical workflow prototype covering triage, upload/QC, review, decision gate, and outcomes/audit screens.",
-        externalHref: "/demo/",
-      }
-    ],
-  },
-  {
-    id: "diagrams",
-    title: "Architecture & Workflows",
-    sidebarTitle: "Architecture Diagrams",
-    color: "blue",
-    articles: [
-      {
-        slug: "architecture-flowchart",
-        sidebarTitle: "Architecture Flowchart",
-        title: "Deep Learning Architecture Flowchart",
-        description: "Mermaid source for the 3D tensor pipeline, shared backbone, prediction heads, uncertainty, and report assembly.",
-        externalHref: "/diagrams/?diagram=architecture",
-      },
-      {
-        slug: "online-workflow",
-        sidebarTitle: "Online Inference Workflow",
-        title: "Online Clinical Inference Workflow",
-        description: "Sequence diagram source for clinician upload, API ingestion, preprocessing, QC, inference, explanation, and reporting.",
-        externalHref: "/diagrams/?diagram=online",
-      },
-      {
-        slug: "offline-workflow",
-        sidebarTitle: "Offline Training Workflow",
-        title: "Offline Training and Validation Workflow",
-        description: "Sequence diagram source for research ingestion, standardization, model training, evaluation, metrics, and versioned storage.",
-        externalHref: "/diagrams/?diagram=offline",
-      }
-    ],
-  },
-];
-
 import generatedDocs from "./modelDocsGenerated.json";
 
-export const docCategories: DocCategory[] = [
-  ...baseDocCategories,
-  ...generatedDocs.categories
-];
+export const docCategories: DocCategory[] = generatedDocs.categories as DocCategory[];
 
 export const docSlugs = docCategories.flatMap((category) =>
   category.articles.map((article) => article.slug)

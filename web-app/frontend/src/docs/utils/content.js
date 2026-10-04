@@ -5,7 +5,6 @@ import generatedDocs from '../modelDocsGenerated.json';
 
 export const slugToPath = {
   'readme': '/docs_content/README.md',
-  'implementation-info': '/docs_content/implementation-info.txt',
   ...generatedDocs.slugPaths
 };
 
@@ -15,7 +14,7 @@ export async function fetchDocContent(slug) {
   
   try {
     const res = await fetch(path);
-    if (!res.ok) throw new Error('Failed to fetch doc');
+    if (!res.ok) throw new Error(`Failed to fetch doc at ${path}: ${res.statusText}`);
     const text = await res.text();
     return text;
   } catch (err) {
@@ -31,6 +30,8 @@ export function extractHeadingsFromMdx(mdx) {
   
   while ((match = headingRegex.exec(mdx)) !== null) {
     let text = match[1].trim();
+    // Strip HTML tags
+    text = text.replace(/<[^>]+>/g, '');
     // Strip bold/italic markdown from text for ID generation
     text = text.replace(/[*_]+/g, '');
     // Strip markdown escapes (like \.)
@@ -56,7 +57,7 @@ export function getHeadingIdGenerator() {
   const seenIds = new Set();
   
   return (text) => {
-    let cleanText = text.replace(/[*_]+/g, '');
+    let cleanText = text.replace(/<[^>]+>/g, '').replace(/[*_]+/g, '');
     const id = cleanText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     let finalId = id;
     let counter = 1;

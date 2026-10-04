@@ -729,3 +729,160 @@
 
 
 
+
+/* ==========================================================================
+   Executive Clinical Report Components (Cohort Benchmark Reports)
+   ========================================================================== */
+
+.kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+  gap: 1rem !important;
+  margin: 1.5rem 0 2rem 0 !important;
+}
+
+.kpi-card {
+  padding: 1.15rem 1.25rem !important;
+  border-radius: 0.75rem !important;
+  background: var(--bg-soft) !important;
+  border: 1px solid var(--line-2) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.2s ease !important;
+}
+
+.kpi-title {
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  font-weight: 600 !important;
+  color: var(--ink-3) !important;
+  margin-bottom: 0.4rem !important;
+}
+
+.kpi-value, .kpi-val {
+  font-size: 1.65rem !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.kpi-sub {
+  font-size: 0.75rem !important;
+  color: var(--ink-4) !important;
+  margin-top: 0.4rem !important;
+  line-height: 1.4 !important;
+}
+
+.kpi-card.amber {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  background: rgba(245, 158, 11, 0.05) !important;
+}
+.kpi-card.amber .kpi-value, .kpi-card.amber .kpi-val {
+  color: #d97706 !important;
+}
+
+.kpi-card.cyan {
+  border-color: rgba(6, 182, 212, 0.4) !important;
+  background: rgba(6, 182, 212, 0.05) !important;
+}
+.kpi-card.cyan .kpi-value, .kpi-card.cyan .kpi-val {
+  color: #0891b2 !important;
+}
+
+.kpi-card.purple {
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  background: rgba(139, 92, 246, 0.05) !important;
+}
+.kpi-card.purple .kpi-value, .kpi-card.purple .kpi-val {
+  color: #7c3aed !important;
+}
+
+.kpi-card.green {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  background: rgba(16, 185, 129, 0.05) !important;
+}
+.kpi-card.green .kpi-value, .kpi-card.green .kpi-val {
+  color: #059669 !important;
+}
+
+.gallery-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 1.25rem !important;
+  margin: 1.75rem 0 !important;
+}
+
+.gallery-item {
+  border-radius: 0.65rem !important;
+  overflow: hidden !important;
+  border: 1px solid var(--line) !important;
+  background: var(--bg-alt) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.gallery-item:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+.gallery-item img {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+}
+
+.deep-dive-item {
+  margin: 2.25rem 0 !important;
+  padding: 1.5rem !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid var(--line) !important;
+  background: var(--bg-alt) !important;
+}
+
+.deep-dive-item h3 {
+  margin-top: 0 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.evidence-note {
+  background: #fff7ed !important;
+  border-left: 4px solid #f97316 !important;
+  padding: 0.85rem 1.15rem !important;
+  margin: 1.25rem 0 !important;
+  font-size: 0.875rem !important;
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+  color: #9a3412 !important;
+  line-height: 1.5 !important;
+}
+
+.dark .evidence-note {
+  background: rgba(249, 115, 22, 0.1) !important;
+  border-left-color: #fb923c !important;
+  color: #fed7aa !important;
+}
+
+.challenge-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 1.25rem !important;
+  margin: 1.5rem 0 !important;
+}
+
+.challenge-card {
+  padding: 1.25rem !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid var(--line) !important;
+  background: var(--bg-alt) !important;
+}
+
+.report-fig-stacked,
+.report-fig-radar,
+.report-fig-wide {
+  width: 100% !important;
+  height: auto !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid var(--line) !important;
+  margin: 1rem 0 !important;
+}

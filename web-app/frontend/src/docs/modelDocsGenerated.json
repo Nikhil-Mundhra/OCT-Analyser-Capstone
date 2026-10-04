@@ -1,42 +1,309 @@
 {
   "categories": [
     {
+      "id": "getting-started",
+      "title": "Overview & System Architecture",
+      "sidebarTitle": "Overview",
+      "color": "blue",
+      "articles": [
+        {
+          "slug": "readme",
+          "title": "OCT/OCTA Clinical Inference Interface",
+          "sidebarTitle": "Project Overview",
+          "description": "Core platform overview, multi-model segmentation pipeline, clinical workflows, and setup guide.",
+          "wide": false
+        },
+        {
+          "slug": "docs-catalog",
+          "title": "Clinical Documentation Catalog",
+          "sidebarTitle": "Documentation Index",
+          "description": "Comprehensive catalog of clinical cohort benchmarks, anatomical references, and technical specifications.",
+          "wide": false
+        }
+      ]
+    },
+    {
+      "id": "cohort-reports",
+      "title": "Clinical Cohort Benchmark Reports",
+      "sidebarTitle": "Cohort Reports",
+      "color": "emerald",
+      "articles": [
+        {
+          "slug": "cohort-3d-vs-biplanar-comparison",
+          "title": "3D Volumetric vs. Bi-Planar Orthogonal Benchmark",
+          "sidebarTitle": "3D vs. Bi-Planar Study",
+          "description": "Comparative study benchmarking 3D anisotropic U-Net against bi-planar orthogonal 2.5D fusion across 46 Solix volumes.",
+          "pdfHref": "/docs_content/cohort_reports/3d_vs_biplanar_comparison/research_report_3d_vs_biplanar_comparison.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-2026-10-04-rnfl-3d-expanded",
+          "title": "Dense Anisotropic 3D U-Net Benchmark (Job 18574378)",
+          "sidebarTitle": "3D U-Net (Job 18574378)",
+          "description": "Executive clinical evaluation of the full volumetric 3D U-Net across the 23-subject expanded Solix cohort.",
+          "pdfHref": "/docs_content/cohort_reports/2026-10-04_rnfl_3d_expanded_18574378/executive_cohort_rnfl_report_3d_job_18574378.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-2026-10-03-biplanar-expanded",
+          "title": "Bi-Planar Orthogonal Expanded Cohort (Job 18563914)",
+          "sidebarTitle": "Bi-Planar (Job 18563914)",
+          "description": "Automated cohort benchmark of the bi-planar orthogonal architecture with corrected OS coordinate restoration.",
+          "pdfHref": "/docs_content/cohort_reports/2026-10-03_biplanar_expanded_18563914/executive_cohort_rnfl_report_biplanar_job_18563914_20261003_000432.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-multi-model-validation",
+          "title": "Multi-Model Validation Benchmark Report",
+          "sidebarTitle": "Multi-Model Benchmark",
+          "description": "Cross-model validation comparing 2D U-Net, 2.5D ResNet, Bi-Planar Orthogonal, and 3D U-Net architectures.",
+          "pdfHref": "/docs_content/cohort_reports/multi_model_validation_benchmark/multi_model_validation_benchmark_report.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-2026-09-28-biplanar-expanded",
+          "title": "Bi-Planar Orthogonal Expanded Benchmark (Job 18266075)",
+          "sidebarTitle": "Bi-Planar (Job 18266075)",
+          "description": "Expanded cohort benchmark of bi-planar orthogonal model on held-out validation eyes.",
+          "pdfHref": "/docs_content/cohort_reports/2026-09-28_biplanar_expanded_18266075/executive_cohort_rnfl_report_biplanar.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-2026-09-26-biplanar-orthogonal",
+          "title": "Bi-Planar Orthogonal Heavy Model (Job 18223981 - SOTA)",
+          "sidebarTitle": "Bi-Planar SOTA (Job 18223981)",
+          "description": "Landmark SOTA evaluation achieving 3.02 µm OD MABE and 4.62 µm validation MABE with dual-view orthogonal fusion.",
+          "pdfHref": "/docs_content/cohort_reports/2026-09-26_biplanar_orthogonal_18223981/executive_cohort_rnfl_report_biplanar.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-reports-index",
+          "title": "Clinical Cohort Reports Index & Synthesis",
+          "sidebarTitle": "Cohort Reports Index",
+          "description": "Executive summary and comparative matrix across all historical clinical segmentation runs.",
+          "wide": false
+        },
+        {
+          "slug": "cohort-2026-09-21-heavy-volumetric",
+          "title": "Volumetric 2.5D ResNet Heavy (Job 18045386)",
+          "sidebarTitle": "Volumetric Heavy (18045386)",
+          "description": "Evaluation of the 6.58M-parameter volumetric 2.5D ResNet architecture across 23 subjects.",
+          "pdfHref": "/docs_content/cohort_reports/2026-09-21_heavy_volumetric_18045386/executive_cohort_rnfl_report_heavy_18045386.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-2026-09-21-light-volumetric",
+          "title": "Volumetric 2.5D ResNet Light (Job 18043443)",
+          "sidebarTitle": "Volumetric Light (18043443)",
+          "description": "Compact 1.65M-parameter 2.5D ResNet model evaluation on the Solix cohort.",
+          "pdfHref": "/docs_content/cohort_reports/2026-09-21_light_volumetric_18043443/executive_cohort_rnfl_report_light_18043443.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-2026-09-21-expanded-23subj",
+          "title": "Expanded 23-Subject Solix Baseline",
+          "sidebarTitle": "23-Subject Solix Baseline",
+          "description": "Baseline benchmark evaluating initial commercial segmentation heuristic against clinician corrections.",
+          "pdfHref": "/docs_content/cohort_reports/2026-09-21_expanded_cohort_23subj/executive_cohort_rnfl_report_23subj_20260921.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-2026-09-14-pilot-11subj",
+          "title": "Pilot 11-Subject Benchmark",
+          "sidebarTitle": "Pilot 11-Subject Cohort",
+          "description": "Preliminary feasibility evaluation across 11 human subjects (22 eye volumes).",
+          "pdfHref": "/docs_content/cohort_reports/2026-09-14_pilot_cohort_11subj/executive_cohort_rnfl_report_11subj_20260914.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-baseline-unet-vs-heuristic",
+          "title": "Commercial Solix Algorithm vs. 2D U-Net",
+          "sidebarTitle": "2D U-Net vs Solix",
+          "description": "Foundational comparison of standard 2D slice-wise U-Net against the Optovue commercial heuristic.",
+          "pdfHref": "/docs_content/cohort_reports/baseline_unet_vs_heuristic_report/unet_vs_algorithm_segmentation_report.pdf",
+          "wide": false
+        },
+        {
+          "slug": "cohort-consolidated-archive",
+          "title": "Consolidated Milestone Executive Archive",
+          "sidebarTitle": "Consolidated Archive",
+          "description": "Archived executive synthesis of early milestone results and clinical audit findings.",
+          "pdfHref": "/docs_content/cohort_reports/consolidated_executive_archive/executive_cohort_rnfl_report_final.pdf",
+          "wide": false
+        }
+      ]
+    },
+    {
+      "id": "clinical",
+      "title": "Clinical Reference Guides",
+      "sidebarTitle": "Clinical Guides",
+      "color": "emerald",
+      "articles": [
+        {
+          "slug": "retinal-layers-guide",
+          "title": "Retinal Layer Boundaries & Optic Neuritis OCT Guide",
+          "sidebarTitle": "Retinal Layers Guide",
+          "description": "Detailed anatomical guide covering all 11 retinal interfaces, thickness profiles, and neuro-ophthalmic pathology patterns.",
+          "wide": false
+        },
+        {
+          "slug": "biomarker-mapping",
+          "title": "3D OCT/OCTA Biomarker Mapping",
+          "sidebarTitle": "Biomarker Mapping",
+          "description": "Layer-specific structural and vascular biomarkers with OCT/OCTA reference images and disease-feature mappings.",
+          "externalHref": "/docs_content/biomarker_mapping_docs/oct_biomarker_mapping.html"
+        },
+        {
+          "slug": "wireframe-demo",
+          "title": "Clinical Workflow Demo",
+          "sidebarTitle": "Wireframe Demo",
+          "description": "Standalone clinical workflow prototype covering triage, upload/QC, review, decision gate, and outcomes/audit screens.",
+          "externalHref": "/demo/"
+        }
+      ]
+    },
+    {
+      "id": "technical",
+      "title": "Technical Implementation & Specifications",
+      "sidebarTitle": "Technical Specs",
+      "color": "purple",
+      "articles": [
+        {
+          "slug": "implementation-info",
+          "title": "Implementation Details & Architectural Specs",
+          "sidebarTitle": "Implementation Specs",
+          "description": "Technical specifications detailing integration with local servers, DICOM volume ingestion, and Python API.",
+          "wide": false
+        },
+        {
+          "slug": "hierarchical-classification-architecture",
+          "title": "Hierarchical Multi-Stage Classification Architecture",
+          "sidebarTitle": "Classification Architecture",
+          "description": "Architectural blueprint for the multi-head hierarchical pathology classifier and triage decision engine.",
+          "wide": false
+        },
+        {
+          "slug": "preprocessing-tuning-guide",
+          "title": "Spatial Geometry Normalization & Preprocessing Tuning Guide",
+          "sidebarTitle": "Preprocessing Guide",
+          "description": "Guidelines for white-bar masking, bounding-box tissue cropping, aspect ratio preservation, and intensity normalization.",
+          "wide": false
+        },
+        {
+          "slug": "oct-segmentation-dataset-search",
+          "title": "Systematic Survey of Public & Clinical OCT Datasets",
+          "sidebarTitle": "Dataset Survey",
+          "description": "Comprehensive evaluation of DUKE, RETOUCH, AROI, and Solix clinical repositories for deep-learning transferability.",
+          "wide": false
+        },
+        {
+          "slug": "oct-layer-segmentation-validation",
+          "title": "OCT Layer Segmentation Validation & Clinician Correction Release",
+          "sidebarTitle": "Validation Protocols",
+          "description": "Quality control protocols, expert audit methodology, and manual curve correction procedures.",
+          "wide": false
+        },
+        {
+          "slug": "sam-medsam-postmortem",
+          "title": "Postmortem: SAM & MedSAM Zero-Shot Retinal Segmentation Failure",
+          "sidebarTitle": "SAM/MedSAM Postmortem",
+          "description": "Detailed postmortem analyzing why foundational vision models fail at fine retinal layer boundary extraction.",
+          "wide": false
+        }
+      ]
+    },
+    {
       "id": "classification",
-      "title": "Classification Models",
+      "title": "Classification Models & Pipelines",
       "sidebarTitle": "Classification",
       "color": "purple",
       "articles": [
         {
           "slug": "classification-readme",
-          "title": "OCT Multi-Head Classification Pipeline",
-          "sidebarTitle": "OCT Multi-Head Classification Pipeline",
-          "description": "This folder contains the authoritative documentation for the design, architecture, and engineering optimizations behind the PyTorch OCT Image Classifi..."
+          "title": "Classification Models Overview",
+          "sidebarTitle": "Overview",
+          "description": "Multi-head ConvNeXt models for ONH and retinal pathology categorization.",
+          "wide": false
         },
         {
           "slug": "classification-architecture",
-          "title": "Multi-Head ConvNeXt V2 System Architecture",
-          "sidebarTitle": "Multi-Head ConvNeXt V2 System Architecture",
-          "description": "This document specifies the architectural design of the unified multi-head classification network for OCT retinal scan analysis."
+          "title": "Multi-Head ConvNeXt Architecture",
+          "sidebarTitle": "Architecture",
+          "description": "Detailed architecture of the multi-head pathology classifier.",
+          "wide": false
         },
         {
-          "slug": "classification-data_augmentation",
-          "title": "Data & Augmentation Strategy",
-          "sidebarTitle": "Data & Augmentation Strategy",
-          "description": "The preprocessing pipeline leverages the **MONAI (Medical Open Network for AI)** framework to apply specialized, robust transformations that standardi..."
+          "slug": "classification-data-augmentation",
+          "title": "Classification Data Augmentation",
+          "sidebarTitle": "Data Augmentation",
+          "description": "Domain-specific perturbations and augmentations for ophthalmic OCT scans.",
+          "wide": false
         },
         {
-          "slug": "classification-training_pipeline",
-          "title": "Training Pipeline & Optimizations",
-          "sidebarTitle": "Training Pipeline & Optimizations",
-          "description": "The `MultiHeadTrainer` orchestrates a highly robust training loop designed to conquer extreme class imbalances while maintaining numerical stability d..."
+          "slug": "classification-training-pipeline",
+          "title": "Classification Training Pipeline",
+          "sidebarTitle": "Training Pipeline",
+          "description": "Training loops, loss weighting, and scheduler configurations for the hierarchical classifier.",
+          "wide": false
+        }
+      ]
+    },
+    {
+      "id": "diagrams",
+      "title": "Architecture & Workflows",
+      "sidebarTitle": "Architecture Diagrams",
+      "color": "blue",
+      "articles": [
+        {
+          "slug": "architecture-flowchart",
+          "title": "Deep Learning Architecture Flowchart",
+          "sidebarTitle": "Architecture Flowchart",
+          "description": "Mermaid source for the 3D tensor pipeline, shared backbone, prediction heads, uncertainty, and report assembly.",
+          "externalHref": "/diagrams/?diagram=architecture"
+        },
+        {
+          "slug": "online-workflow",
+          "title": "Online Clinical Inference Workflow",
+          "sidebarTitle": "Online Inference Workflow",
+          "description": "Sequence diagram source for clinician upload, API ingestion, preprocessing, QC, inference, explanation, and reporting.",
+          "externalHref": "/diagrams/?diagram=online"
+        },
+        {
+          "slug": "offline-workflow",
+          "title": "Offline Training and Validation Workflow",
+          "sidebarTitle": "Offline Training Workflow",
+          "description": "Sequence diagram source for research ingestion, standardization, model training, evaluation, metrics, and versioned storage.",
+          "externalHref": "/diagrams/?diagram=offline"
         }
       ]
     }
   ],
   "slugPaths": {
+    "readme": "/docs_content/README.md",
+    "docs-catalog": "/docs_content/docs_catalog.md",
+    "cohort-3d-vs-biplanar-comparison": "/docs_content/cohort_reports/3d_vs_biplanar_comparison/research_report_3d_vs_biplanar_comparison.md",
+    "cohort-2026-10-04-rnfl-3d-expanded": "/docs_content/cohort_reports/2026-10-04_rnfl_3d_expanded_18574378/executive_cohort_rnfl_report_3d_job_18574378.md",
+    "cohort-2026-10-03-biplanar-expanded": "/docs_content/cohort_reports/2026-10-03_biplanar_expanded_18563914/executive_cohort_rnfl_report_biplanar_job_18563914_20261003_000432.md",
+    "cohort-multi-model-validation": "/docs_content/cohort_reports/multi_model_validation_benchmark/multi_model_validation_benchmark_report.md",
+    "cohort-2026-09-28-biplanar-expanded": "/docs_content/cohort_reports/2026-09-28_biplanar_expanded_18266075/executive_cohort_rnfl_report_biplanar.md",
+    "cohort-2026-09-26-biplanar-orthogonal": "/docs_content/cohort_reports/2026-09-26_biplanar_orthogonal_18223981/executive_cohort_rnfl_report_biplanar.md",
+    "cohort-reports-index": "/docs_content/cohort_reports/README.md",
+    "cohort-2026-09-21-heavy-volumetric": "/docs_content/cohort_reports/2026-09-21_heavy_volumetric_18045386/executive_cohort_rnfl_report_heavy_18045386.md",
+    "cohort-2026-09-21-light-volumetric": "/docs_content/cohort_reports/2026-09-21_light_volumetric_18043443/executive_cohort_rnfl_report_light_18043443.md",
+    "cohort-2026-09-21-expanded-23subj": "/docs_content/cohort_reports/2026-09-21_expanded_cohort_23subj/executive_cohort_rnfl_report_23subj_20260921.md",
+    "cohort-2026-09-14-pilot-11subj": "/docs_content/cohort_reports/2026-09-14_pilot_cohort_11subj/executive_cohort_rnfl_report_11subj_20260914.md",
+    "cohort-baseline-unet-vs-heuristic": "/docs_content/cohort_reports/baseline_unet_vs_heuristic_report/unet_vs_algorithm_segmentation_report.md",
+    "cohort-consolidated-archive": "/docs_content/cohort_reports/consolidated_executive_archive/executive_cohort_rnfl_report_final.md",
+    "retinal-layers-guide": "/docs_content/clinical_guides/retinal_layers_optic_neuritis_oct_guide.md",
+    "implementation-info": "/docs_content/technical_specs/implementation_info.md",
+    "hierarchical-classification-architecture": "/docs_content/technical_specs/hierarchical_classification_architecture.md",
+    "preprocessing-tuning-guide": "/docs_content/technical_specs/preprocessing_tuning_guide.md",
+    "oct-segmentation-dataset-search": "/docs_content/technical_specs/oct_segmentation_dataset_search.md",
+    "oct-layer-segmentation-validation": "/docs_content/technical_specs/oct_layer_segmentation_validation_correction_release.md",
+    "sam-medsam-postmortem": "/docs_content/technical_specs/postmortems/SAM_MEDSAM_RETINAL_SEGMENTATION_FAILURE.md",
     "classification-readme": "/docs_content/models/classification/README.md",
     "classification-architecture": "/docs_content/models/classification/architecture.md",
-    "classification-data_augmentation": "/docs_content/models/classification/data_augmentation.md",
-    "classification-training_pipeline": "/docs_content/models/classification/training_pipeline.md"
+    "classification-data-augmentation": "/docs_content/models/classification/data_augmentation.md",
+    "classification-training-pipeline": "/docs_content/models/classification/training_pipeline.md"
   }
 }

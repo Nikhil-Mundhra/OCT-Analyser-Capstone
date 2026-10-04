@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Multi-Model Architectural Benchmark: Stratified Held-Out Validation</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 40px auto; max-width: 1000px; color: #0f172a; line-height: 1.6; font-size: 14px; }
+h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 24px; }
+h2 { color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; margin-top: 28px; font-size: 18px; }
+h3 { color: #334155; font-size: 15px; margin-top: 20px; }
+table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 13px; }
+th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
+th { background-color: #f1f5f9; font-weight: bold; color: #1e293b; }
+tr:nth-child(even) { background-color: #f8fafc; }
+img { max-width: 95%; height: auto; display: block; margin: 20px auto; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+.alert-box { background-color: #fff7ed; border-left: 4px solid #ea580c; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+.alert-title { font-weight: bold; color: #9a3412; margin-bottom: 6px; font-size: 14px; }
+blockquote { background: #f8fafc; border-left: 4px solid #0284c7; margin: 16px 0; padding: 10px 16px; color: #334155; }
+</style>
+</head>
+<body>
+<h1>Multi-Model Architectural Benchmark: Stratified Held-Out Validation &amp; Split Harmonization</h1>
+<p><strong>Evaluation Scope</strong>: 8 Subjects (16 Paired 3D Volumes: OD &amp; OS) across 4 Architecture Checkpoints<br />
+<strong>Pipeline Configuration</strong>: Continuous Surface Clamping (2.0 px axial tolerance) + Optic Cup-Reach Tracking (<code>disc_cut_mode='cup'</code>)<br />
+<strong>Evaluation Date</strong>: 2026-09-29 (Harmonized &amp; Stratified 2026-10-01)  </p>
+<div class="alert-box"><div class="alert-title">⚠️ Benchmark Split Harmonization Notice</div>
+
+> In the unstratified benchmark release, 8 subjects were evaluated under a single "Held-Out" label. Cross-referencing training manifests reveals an **asymmetric validation split**:
+> - Only **3 subjects (6 scans: `BEH0086`, `BEH0314`, `BEH0335`)** were mutually held out across **all 4 models**.
+> - The remaining **5 subjects (10 scans: `BEH0090`, `BEH0174`, `BEH0284`, `BEH0310`, `BEH0354`)** were in the **training set** of the 23-subject baseline models (`18043443`, `18045386`, `18223981`), but strictly held out for the 61-subject expanded model (`18266075`).
+> This report stratifies the benchmark into **true generalization** versus **in-sample training recovery**.
+
+---
+
+## 1. Executive Model Architecture Overview
+
+| Model ID | Architectural Description | Parameters | Training Cohort Scope | Biplanar Fusion | Validation Split Scope |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **`18043443`** | 2.5D ResNet Light (base channels=16, 5 slices) | ~1.65M | 20 Train / 3 Val | No (Unilateral) | 3 Val (`BEH0335, BEH0314, BEH0086`) |
+| **`18045386`** | 2.5D ResNet Heavy (base channels=32, 5 slices) | ~6.58M | 20 Train / 3 Val | No (Unilateral) | 3 Val (`BEH0335, BEH0314, BEH0086`) |
+| **`18223981`** | Biplanar Orthogonal Heavy (Dual-View Fusion) | ~6.58M | 20 Train / 3 Val | **Yes (Horizontal + Vertical)** | 3 Val (`BEH0335, BEH0314, BEH0086`) |
+| **`18266075`** | Biplanar Orthogonal Expanded (Dual-View Fusion) | ~6.58M | 51 Train / 10 Val | **Yes (Horizontal + Vertical)** | 10 Val (`BEH0335, BEH0314, BEH0174, BEH0310, BEH0354, BEH0086, BEH0090, ...`) |
+
+---
+
+## 2. Stratified Clinical Benchmarks
+
+### 2.1 True Mutually Disjoint Held-Out Cohort (3 Subjects / 6 Scans)
+*Strictly unseen by all four models during training (`BEH0086`, `BEH0314`, `BEH0335` — OD & OS).*
+
+| Model Identifier | Median RNFL Dice | Mean Dice $\pm$ SD | Status on True Held-Out Set |
+| :--- | :---: | :---: | :---: |
+| **2.5D ResNet Light (1.65M) `18043443`** | **0.8078** | 0.7229 $\pm$ 0.1373 | Baseline Unilateral |
+| **2.5D ResNet Heavy (6.58M) `18045386`** | **0.8780** | 0.8240 $\pm$ 0.0872 | Capacity Scaling |
+| **Biplanar Orthogonal 23-Subj (6.58M) `18223981`** | **0.9457** | 0.9206 $\pm$ 0.0431 | Dual-View Unaugmented |
+| **Biplanar Orthogonal 61-Subj (6.58M) `18266075`** | **0.9468** | **0.9254 $\pm$ 0.0353** | **Overall Winner (Top Mean & Median)** |
+
+> [!NOTE]
+> On the true mutual held-out test set, the **61-subject expanded model (`18266075`) outperforms the 23-subject model (`18223981`)** across both Mean Dice ($0.9254$ vs $0.9206$) and Median Dice ($0.9468$ vs $0.9457$), while winning 4 of the 6 individual scans.
+
+---
+
+### 2.2 Asymmetric Split Subset (5 Subjects / 10 Scans)
+*In-sample training data for 23-subject models; strictly unseen validation data for 61-subject model (`BEH0090`, `BEH0174`, `BEH0284`, `BEH0310`, `BEH0354`).*
+
+| Model Identifier | Evaluation Type | Median RNFL Dice | Mean Dice $\pm$ SD |
+| :--- | :---: | :---: | :---: |
+| **2.5D ResNet Light (1.65M) `18043443`** | In-Sample (Training) | **0.8306** | 0.8335 $\pm$ 0.0106 |
+| **2.5D ResNet Heavy (6.58M) `18045386`** | In-Sample (Training) | **0.8802** | 0.8805 $\pm$ 0.0144 |
+| **Biplanar Orthogonal 23-Subj (6.58M) `18223981`** | **In-Sample (Training Recovery)** | **0.9585** | 0.9584 $\pm$ 0.0039 |
+| **Biplanar Orthogonal 61-Subj (6.58M) `18266075`** | **Out-of-Sample (True Generalization)** | **0.9481** | 0.9479 $\pm$ 0.0071 |
+
+---
+
+### 2.3 Legacy Unstratified Pooled Cohort (All 16 Scans)
+*Historical reference table demonstrating the effect of pooled leakage.*
+
+| Model Identifier | Median RNFL Dice | Mean Dice $\pm$ SD | Median MABE | Mean MABE $\pm$ SD | Median $P_{95}$ | Median Cup IoU |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **2.5D ResNet Light (1.65M)** | **0.8253** | 0.7921 $\pm$ 0.1000 | **10.30 $\mu\text{m}$** | 15.97 $\pm$ 14.79 $\mu\text{m}$ | **25.52 $\mu\text{m}$** | **0.8905** |
+| **2.5D ResNet Heavy (6.58M)** | **0.8802** | 0.8593 $\pm$ 0.0610 | **10.37 $\mu\text{m}$** | 13.18 $\pm$ 9.10 $\mu\text{m}$ | **27.33 $\mu\text{m}$** | **0.8905** |
+| **Biplanar Orthogonal 23-Subj (6.58M)** *(10/16 in-sample)* | **0.9573** | 0.9442 $\pm$ 0.0323 | **3.47 $\mu\text{m}$** | 5.36 $\pm$ 4.44 $\mu\text{m}$ | **9.33 $\mu\text{m}$** | **0.9328** |
+| **Biplanar Orthogonal 61-Subj (6.58M)** *(16/16 held-out)* | **0.9481** | 0.9395 $\pm$ 0.0248 | **5.12 $\mu\text{m}$** | 5.99 $\pm$ 2.81 $\mu\text{m}$ | **17.19 $\mu\text{m}$** | **0.9392** |
+
+---
+
+## 3. Visual Architectural Comparisons
+
+### 3.1 Polar Performance Spider Chart
+![Model Performance Spider Chart](./assets/multi_model_radar_chart.png)
+
+### 3.2 Core Clinical Metrics Grouped Summary
+![Core Clinical Metrics Bar Chart](./assets/multi_model_grouped_metrics.png)
+
+### 3.3 Subject-Level Resilience & Outlier Response
+![Subject Level Comparison Bar Chart](./assets/multi_model_per_subject_bars.png)
+
+---
+
+## 4. Granular Scan-by-Scan Validation Table (16 Scans)
+
+### Part A: Mutually Held-Out Scans (Unseen by Both Models)
+
+| Subject | Eye | `18043443` (Light) Dice | `18045386` (Heavy) Dice | `18223981` (Biplanar 23s) Dice | `18266075` (Expanded 61s) Dice | Generalization Winner | Notes |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **BEH0086** | OD | 0.8314 | 0.8884 | **0.9588** | 0.9566 | **Biplanar 23s** | Normal peripapillary anatomy |
+| **BEH0086** | OS | 0.8202 | 0.8919 | 0.9490 | **0.9493** | **Biplanar 61s Exp** | Normal peripapillary anatomy |
+| **BEH0314** | OD | 0.8209 | 0.8864 | **0.9529** | 0.9504 | **Biplanar 23s** | Steep disc slope |
+| **BEH0314** | OS | 0.7954 | 0.8697 | 0.9425 | **0.9443** | **Biplanar 61s Exp** | Steep disc slope |
+| **BEH0335** | OD | 0.5911 | 0.7359 | 0.8570 | **0.8708** | **Biplanar 61s Exp** | Severe tilted disc & cup excavation |
+| **BEH0335** | OS | 0.4787 | 0.6720 | 0.8632 | **0.8812** | **Biplanar 61s Exp** | High-myopic tilt (+0.0180 gain) |
+
+*Tally on True Held-Out Set: **Biplanar 61s Expanded wins 4 / 6 scans** (66.7%).*
+
+---
+
+### Part B: Asymmetric Split Scans (In-Sample for 23s Models, Held-Out for 61s)
+
+| Subject | Eye | `18043443` (Light) Dice | `18045386` (Heavy) Dice | `18223981` (Biplanar 23s) Dice | `18266075` (Expanded 61s) Dice | Comparative Context |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **BEH0090** | OD | 0.8261 | 0.8625 | 0.9507 | 0.9351 | 23s trained on scan; 61s unseen |
+| **BEH0090** | OS | 0.8227 | 0.8630 | 0.9575 | 0.9428 | 23s trained on scan; 61s unseen |
+| **BEH0174** | OD | 0.8237 | 0.8665 | 0.9604 | 0.9478 | 23s trained on scan; 61s unseen |
+| **BEH0174** | OS | 0.8245 | 0.8813 | 0.9545 | 0.9465 | 23s trained on scan; 61s unseen |
+| **BEH0284** | OD | 0.8417 | 0.9002 | 0.9652 | 0.9551 | 23s trained on scan; 61s unseen |
+| **BEH0284** | OS | 0.8347 | 0.8667 | 0.9571 | 0.9484 | 23s trained on scan; 61s unseen |
+| **BEH0310** | OD | 0.8579 | 0.8982 | 0.9590 | 0.9509 | 23s trained on scan; 61s unseen |
+| **BEH0310** | OS | 0.8265 | 0.8791 | 0.9581 | 0.9389 | 23s trained on scan; 61s unseen |
+| **BEH0354** | OD | 0.8405 | 0.8922 | 0.9630 | 0.9570 | 23s trained on scan; 61s unseen |
+| **BEH0354** | OS | 0.8367 | 0.8950 | 0.9589 | 0.9569 | 23s trained on scan; 61s unseen |
+
+---
+
+## 5. Forensic Diagnostics: Why 23s Appeared Superior
+
+1. **Validation Split Leakage**:
+   - `18223981` was trained on 20 subjects, with only 3 subjects held out (`BEH0335, BEH0314, BEH0086`).
+   - The unstratified benchmark evaluated 8 subjects. Consequently, **62.5% of the evaluated scans (10/16)** were in the 23-subject model's training set. It memorized these clean profiles, whereas `18266075` evaluated them strictly out-of-sample.
+
+2. **Ground Truth Annotation Dilution (15 Hand-Audited vs 46 Machine-Accepted)**:
+   - As documented in the Solix dataset specification, only **15 subjects** across the cohort have hand-drawn human boundary corrections (`tsv/good` differing from `tsv/bad`).
+   - The original 23-subject cohort was enriched with these human-corrected scans.
+   - When expanding to 61 subjects, the additional ~46 subjects were **"Accepted as segmented"** (unedited commercial Solix machine segmentations).
+   - Expanding the cohort introduced a **3:1 ratio** of uncorrected commercial curves to human-audited curves, pulling the loss landscape toward commercial heuristic averages.
+
+3. **Data Augmentation Regularization**:
+   - `18223981` trained without data augmentation on native, clean B-scans.
+   - `18266075` incorporated speckle noise, gamma jitter, and $\pm 15\,\text{px}$ axial vertical translation. While this granted resilience to severe tilted outliers (`BEH0335`), slight boundary regularization introduced $1\text{--}2\,\mu\text{m}$ of smoothing on canonical scans.
+
+4. **Optimization Step Scaling at Fixed 20 Epochs**:
+   - At fixed 20 epochs with batch size 32 (accum 2), `18223981` completed **8,000 parameter updates**, whereas `18266075` executed **20,400 parameter updates** (2.55× more steps). This accelerated convergence toward the majority unedited machine consensus.
+
+---
+
+## 6. Recommended Action: Two-Stage Fine-Tuning Strategy
+
+To achieve both **wide anatomical generalization** and **sub-micron clinical boundary fidelity**:
+- **Phase 1 (Broad Pre-Training)**: Continue pre-training the bi-planar architecture on all 61 subjects for 20 epochs with data augmentation to learn robust global morphology, cup detection, and orthogonal invariance.
+- **Phase 2 (Targeted Expert Fine-Tuning)**: Fine-tune for **5–10 epochs** exclusively on the **15 human-audited subjects** with:
+  - Reduced learning rate ($1 \times 10^{-5}$ vs $5 \times 10^{-4}$)
+  - Tighter axial translation jitter ($\le \pm 3\,\text{px}$)
+  - Higher weight on boundary and thickness consistency losses ($\mathcal{L}_{\text{bnd}}, \mathcal{L}_{\text{thick}}$)
+This specialized second stage eliminates commercial heuristic bias and sharpens the regression heads onto true human clinical ground truth without sacrificing the stability gained from the 61-subject cohort.
+</body>
+</html>

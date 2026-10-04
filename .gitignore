@@ -94,6 +94,10 @@ web-app/frontend/.next
 # Whitelist essential test fixtures and public web assets
 !web-app/backend/tests/fixtures/images/**
 !web-app/frontend/public/**
+web-app/frontend/public/docs_content/cohort_reports/
+web-app/frontend/public/docs_content/clinical_guides/
+web-app/frontend/public/docs_content/technical_specs/
+web-app/frontend/public/docs_content/docs_catalog.md
 !docs/**/*.png
 !docs/**/*.jpg
 !docs/**/*.jpeg
