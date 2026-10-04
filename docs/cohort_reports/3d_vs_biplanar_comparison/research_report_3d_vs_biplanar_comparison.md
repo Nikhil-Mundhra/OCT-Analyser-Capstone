@@ -218,135 +218,286 @@ hr {
     margin-bottom: 3px !important;
     line-height: 1.2 !important;
 }
+.two-col-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 14px !important;
+    align-items: start !important;
+    margin: 5px 0 7px 0 !important;
+}
+.column-panel {
+    min-width: 0 !important;
+    padding: 7px 9px !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 5px !important;
+    background: #fbfdff !important;
+    break-inside: avoid !important;
+}
+.column-panel h2 {
+    margin-top: 0 !important;
+}
+.column-panel h3 {
+    margin-top: 4px !important;
+}
+.column-panel table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    font-size: 8.8px !important;
+}
+.column-panel th,
+.column-panel td {
+    overflow-wrap: anywhere !important;
+    vertical-align: top !important;
+}
+.column-panel ul,
+.column-panel ol {
+    padding-left: 18px !important;
+}
+.decision-box {
+    border-left: 4px solid #059669 !important;
+    background: #ecfdf5 !important;
+    padding: 6px 8px !important;
+    border-radius: 4px !important;
+    margin: 4px 0 !important;
+}
+.caution-box {
+    border-left: 4px solid #d97706 !important;
+    background: #fffbeb !important;
+    padding: 6px 8px !important;
+    border-radius: 4px !important;
+    margin: 4px 0 !important;
+}
+.source-strip {
+    margin-top: 6px !important;
+    padding: 6px 8px !important;
+    border-top: 1px solid #cbd5e1 !important;
+    background: #f8fafc !important;
+    font-size: 8.5px !important;
+}
 </style>
 
-# Comparative Clinical Benchmark: Dense Anisotropic 3D U-Net vs. Bi-Planar 2.5D Orthogonal Fusion
+# Paired Validation Study: Dense 3D vs. Bi-Planar RNFL Segmentation
 
 <div class="meta-banner">
 <strong>Protocol:</strong> Optovue Solix Peripapillary Retinal Nerve Fiber Layer (RNFL) Volumetric Segmentation<br/>
-<strong>Benchmark Cohort:</strong> Canonical Expanded Cohort (<code>deidentified-new</code>), 20 Held-Out Subjects (40 Paired OD/OS Volumes) | <strong>Standard:</strong> Zero Subject Leakage, Dynamic BMO Cup Tracking, Native OS Restoration
+<strong>Validation Cohort:</strong> <code>deidentified-new</code>, 20 subject-disjoint participants and 40 paired OD/OS volumes | <strong>Evaluation:</strong> Native OS restoration, dynamic BMO cup tracking, identical mutually held-out subjects<br/>
+<strong>Models:</strong> Dense Anisotropic 3D U-Net (Job <code>18574378</code>) and Bi-Planar 2.5D Orthogonal Fusion (Job <code>18563914</code>) | <strong>Report date:</strong> 4 October 2026
 </div>
 
 <div class="kpi-container">
+  <div class="kpi-box emerald">
+    <div class="kpi-label">Primary Research Candidate</div>
+    <div class="kpi-value">Bi-Planar</div>
+    <div class="kpi-desc">Lower MABE on 34/40 volumes and stronger performance on the human-corrected tier.</div>
+  </div>
   <div class="kpi-box purple">
-    <div class="kpi-label">Variance Reduction</div>
-    <div class="kpi-value">2.8× Tighter</div>
-    <div class="kpi-desc">3D U-Net caps σ at 2.10 µm (vs 5.84 µm Bi-Planar), suppressing tail volatility across cohort.</div>
+    <div class="kpi-label">Corrected-Eye MABE</div>
+    <div class="kpi-value">5.13 µm</div>
+    <div class="kpi-desc">Bi-Planar versus 6.12 µm for 3D; Bi-Planar was lower on all 10 corrected eyes.</div>
   </div>
   <div class="kpi-box rose">
-    <div class="kpi-label">Worst-Case Error</div>
-    <div class="kpi-value">-22.6 µm Capped</div>
-    <div class="kpi-desc">3D eliminates catastrophic spike: worst-case 17.02 µm vs 39.64 µm in Bi-Planar.</div>
-  </div>
-  <div class="kpi-box emerald">
-    <div class="kpi-label">Inlier Precision</div>
-    <div class="kpi-value">4.71 µm Median</div>
-    <div class="kpi-desc">Bi-Planar explicit 1D regression heads yield sub-micron sharpness on typical non-pathological scans.</div>
+    <div class="kpi-label">Observed Maximum MABE</div>
+    <div class="kpi-value">17.02 µm</div>
+    <div class="kpi-desc">3D versus 39.64 µm for Bi-Planar; this advantage arose from one severe Bi-Planar failure.</div>
   </div>
   <div class="kpi-box amber">
-    <div class="kpi-label">Cohort Agreement</div>
-    <div class="kpi-value">0.945 Dice</div>
-    <div class="kpi-desc">Both architectures achieve clinical consensus against human reference, surpassing commercial device heuristics.</div>
+    <div class="kpi-label">Evidence Status</div>
+    <div class="kpi-value">Validation</div>
+    <div class="kpi-desc">Both checkpoints were selected using this cohort; an untouched test cohort is still required.</div>
   </div>
 </div>
 
 > [!IMPORTANT]
-> **Executive Research Synthesis**  
-> While both neural architectures attain clinical concordance with expert human ground truth ($\text{Dice} \approx 0.944$), they embody distinct mathematical trade-offs:
-> 1. **Dense Anisotropic 3D U-Net (Job 18574378)** delivers **complete volumetric spatial continuity and outlier immunity**, shrinking MABE standard deviation by **$2.8\times$** ($2.10\,\mu\text{m}$ vs. $5.84\,\mu\text{m}$) and capping the single maximum error across all 40 volumes at **$17.02\,\mu\text{m}$** (vs. $39.64\,\mu\text{m}$ in Bi-Planar).
-> 2. **Bi-Planar Orthogonal Heavy (Job 18563914)** achieves **tighter median sub-micron accuracy on non-pathological inliers** ($\text{Median MABE} = 4.71\,\mu\text{m}$ vs. $5.50\,\mu\text{m}$), driven by explicit 1D boundary regression heads and optical gradient alignment ($\mathcal{L}_{\text{edge}}$), but remains vulnerable to out-of-plane slice decoupling under severe focal shadowing.
+> **Evidence-based conclusion**<br/>
+> The current validation evidence favors **Bi-Planar as the primary accuracy model**. It produced lower typical boundary error, better BMO cup overlap, and lower MABE on every eye with an expert-corrected reference. The 3D model avoided one severe Bi-Planar failure and therefore had a lower observed maximum error, but this single event does not establish general outlier immunity. Neither model has been validated for autonomous diagnosis or clinical deployment.
 
 ---
 
-## 1. Architectural & Methodological Specification
+<div class="two-col-grid" markdown="1">
+<div class="column-panel" markdown="1">
 
-| System Characteristic | Dense Anisotropic 3D U-Net (`AnisotropicRNFLUNet3D`) | Bi-Planar 2.5D Orthogonal Fusion (`VolumetricRNFLNet`) | Clinical Impact |
-| :--- | :--- | :--- | :--- |
-| **Spatial Receptive Field** | Full 3D Volumetric ($64 \times 768 \times 64$ patch context) | Orthogonal Multi-Slice ($5 \times 768 \times 320$ Horiz + Vert) | 3D connects inter-slice anatomical structures |
-| **Parameter Count** | **$16.42\text{M}$ parameters** ($32$ base channels, 5 anisotropic stages) | **$6.69\text{M}$ parameters** ($32$ base channels, ResNet-34) | Bi-Planar is lighter; 3D requires larger GPU memory |
-| **Inference Geometry** | Sliding-window 3D patch tiling with Gaussian boundary blending | Dual orthogonal forward passes (320 B-scans + 320 A-scans) | 3D executes in a single pass without projection fusion |
-| **Optimization Target** | Pure Dense Volumetric Soft Dice + Binary Cross-Entropy | Hybrid Multi-Task: Mask Tversky + 1D Smooth L1 + $\mathcal{L}_{\text{edge}}$ | Bi-Planar aligns directly to optical transitions |
-| **Boundary Continuity** | Intrinsically enforced via 3D $(Z, Y, X)$ spatial convolutions | Post-hoc averaging: $\frac{1}{2}(P_{\text{horiz}} + P_{\text{vert}})$ | 3D eliminates transverse slice-to-slice tearing |
+## 1. Study Design and Evidence Hierarchy
 
----
+Both architectures were trained on the same 119-subject Phase 1 cohort and evaluated on the same frozen 20-subject validation cohort. The split was performed at subject level: OD, OS, and repeat acquisitions from one participant remained in a single partition. No validation subject appeared in the Phase 1 training manifest.
 
-## 2. Statistical Head-to-Head Cohort Benchmark (N=40 Paired Volumes)
+The validation cohort comprised two reference tiers:
 
-| Clinical Dimension | Dense Anisotropic 3D U-Net | Bi-Planar 2.5D Heavy | Inter-Model Delta ($\Delta_{\text{3D} - \text{BP}}$) | Statistical Significance |
-| :--- | :---: | :---: | :---: | :---: |
-| **Mean Peripapillary Dice** | **$0.9446 \pm 0.0150$** | $0.9441 \pm 0.0305$ | **$+0.0005$** ($+0.05\%$) | Paired $t$-test $p = 0.921$; Wilcoxon $p = 0.006$ |
-| **Median NFL MABE (Inliers)** | $5.50\,\mu\text{m}$ | **$4.71\,\mu\text{m}$** | $+0.79\,\mu\text{m}$ | Bi-Planar sharper on non-pathological scans |
-| **Mean NFL MABE (Cohort)** | **$5.87 \pm 2.10\,\mu\text{m}$** | $6.22 \pm 5.84\,\mu\text{m}$ | **$-0.34\,\mu\text{m}$** (Error Reduction) | 3D standard deviation is **$2.8\times$ tighter** |
-| **Mean Tail Error $P_{95}$** | **$20.79 \pm 8.92\,\mu\text{m}$** | $20.92 \pm 14.29\,\mu\text{m}$| **$-0.13\,\mu\text{m}$** | 3D variance is **$38\%$ tighter** |
-| **Worst-Case Cohort MABE** | **$17.02\,\mu\text{m}$** (`BEH0335 OS`) | $39.64\,\mu\text{m}$ (`BEH0290 OD`) | **$-22.62\,\mu\text{m}$** | **Catastrophic dropout eliminated** |
-| **Worst-Case Cohort $P_{95}$** | **$62.54\,\mu\text{m}$** (`BEH0335 OS`) | $95.53\,\mu\text{m}$ (`BEH0290 OD`) | **$-32.99\,\mu\text{m}$** | **$34\%$ reduction in maximum failure** |
-| **BMO Cup Cavity IoU** | $0.9085 \pm 0.0459$ | **$0.9388 \pm 0.0201$** | $-0.0303$ | Paired $t$-test $p < 0.001$ |
+1. **Human-audited subjects:** 6 subjects, including 10 eyes with paired pre-correction and expert-corrected boundaries. These corrected eyes provide the strongest available evidence for agreement with expert review.
+2. **Accepted-as-segmented subjects:** 14 subjects whose commercial segmentation was accepted without a recorded manual edit. These references are useful for broad morphology assessment but may preserve commercial algorithm bias.
 
-<!-- pagebreak -->
+All 40 volumes were evaluated with native coordinate restoration for OS eyes and the same cup-reach post-processing. Comparisons are paired by subject and eye. Complete-cohort uncertainty was estimated by resampling subjects rather than treating bilateral eyes as independent. Analyses are exploratory and were not adjusted for multiple comparisons.
 
-## 3. Reliability Analysis & Catastrophic Outlier Suppression
+> [!WARNING]
+> **This is not an untouched test set.** Bi-Planar checkpoint selection optimized validation peripapillary MABE, whereas 3D checkpoint selection optimized validation Dice. The resulting comparison is appropriate for selecting a research candidate, but it cannot support a definitive clinical superiority claim.
 
-<img src="assets/model_comparison_3d_vs_biplanar_light_pdf.jpg" class="report-fig-wide-banner" alt="Model Comparison Dual-Theme Figure" />
-
-<div class="fig-caption">
-<strong>Figure 1: Statistical Error Distributions across Held-Out Cohort (40 Scans).</strong> (A) MABE dispersion: 3D U-Net flattens the distribution and eliminates extreme outliers. (B) Mean error vs. P95 tail margin: 3D maintains a tight cluster bounded below 20 µm. (C) Scan-by-scan delta waterfall: 3D delivers safety margins on challenging scans (up to -34.8 µm on BEH0290 OD).
 </div>
+<div class="column-panel" markdown="1">
 
----
+## 2. Architecture and Resource Profile
 
-## 4. Multi-Dimensional Clinical Capability Radar: Failure Mode Resilience
+| Characteristic | Dense Anisotropic 3D U-Net | Bi-Planar 2.5D Orthogonal Fusion |
+| :--- | :--- | :--- |
+| **Model** | `AnisotropicRNFLUNet3D` | `VolumetricRNFLNet` |
+| **Parameters** | Approximately **20.90M** | Approximately **6.58M** |
+| **Input context** | Sliding-window $64 \times 768 \times 64$ volumetric patches | Five-slice horizontal and vertical context with orthogonal fusion |
+| **Training objective** | Binary cross-entropy plus soft Dice | Tversky/overlap, boundary regression, thickness consistency, and optical-edge alignment |
+| **Inference** | Multiple overlapping 3D patches with Gaussian blending | Horizontal and vertical passes followed by fusion |
+| **Expected advantage** | Native volumetric context | Explicit continuous boundary localization and lower computational footprint |
 
-<div class="two-col-radar">
-  <div class="radar-left">
-    <img src="assets/clinical_capability_radar_light_pdf.jpg" class="report-fig-radar" alt="Multi-Dimensional Clinical Capability Radar" />
-    <div class="fig-caption">
-      <strong>Figure 2: Clinical Capability Radar Benchmark.</strong> Boundary accuracy across 6 clinical challenges (0.08 to 1.0 normalized score). (Red Dashed) Commercial Solix heuristic. (Green Dash-Dot) Bi-Planar 2.5D Heavy. (Purple Solid) Dense 3D U-Net.
-    </div>
-  </div>
-  <div class="radar-right">
-    <div class="radar-callout emerald">
-      <h4>Bi-Planar Precision Edge (Axes 2, 3, 4)</h4>
-      <p>The radar chart demonstrates that <strong>Bi-Planar 2.5D Heavy outperforms 3D U-Net across three focal challenges</strong>: <strong>Deep Cup Excavation</strong> (14.0 vs 20.2 µm P95; 91% vs 77%), <strong>GCL Wedge Penetration</strong> (12.4 vs 15.9 µm P95; 96% vs 90%), and <strong>Myopic Crescent Tilt</strong> (37.3 vs 48.7 µm P95; 84% vs 58%). Additionally, Bi-Planar achieves higher <strong>Cup Cavity IoU</strong> (0.9388 vs 0.9085, p &lt; 0.001). Explicit 1D continuous boundary regression heads and optical gradient loss (L_edge) snap to high-contrast tissue interfaces sharper than dense voxel segmentation.</p>
-    </div>
-    <div class="radar-callout purple">
-      <h4>Dense 3D Volumetric Continuity (Axis 6: BEH0290 OD)</h4>
-      <p>3D U-Net dramatically outperforms on <strong>Out-of-Plane Slice Continuity</strong> (17.4 vs 95.5 µm P95; 97% vs 5%). On BEH0290 OD, Bi-Planar suffered out-of-plane slice decoupling under local vessel shadowing, resulting in an anomalous 39.6 µm MABE. 3D U-Net eliminated <strong>78.1 µm of catastrophic tail error</strong> through native (Z, Y, X) volumetric convolutions, maintaining complete whole-cohort stability (2.8x tighter standard deviation: 2.10 vs 5.84 µm).</p>
-    </div>
-    <div class="radar-callout" style="border-left-color: #0969da;">
-      <h4 style="color: #0969da;">Clinical Envelope Synthesis</h4>
-      <p>Both neural models expand the capability envelope far beyond commercial Solix baseline (red inner collapse). Bi-Planar provides superior local edge fidelity on structured boundaries, whereas Dense 3D U-Net provides absolute fail-safe volumetric continuity against slice dropouts.</p>
-    </div>
-  </div>
+The architecture table describes engineering differences; it is not evidence of clinical superiority. Runtime, throughput, and peak memory were not measured under a controlled common inference protocol and are therefore not ranked here.
+
+</div>
 </div>
 
 <!-- pagebreak -->
 
-## 5. Visual Deep-Dive & Clinical Surface Anatomy
+<div class="two-col-grid" markdown="1">
+<div class="column-panel" markdown="1">
 
-<img src="assets/deep_dive_BEH0314_OD_pdf.jpg" class="report-fig-wide" alt="Clinical Visual Comparison" />
+## 3. Complete-Cohort Paired Results
 
-<div class="fig-caption">
-<strong>Figure 3: Clinical Deep Dive on Audited Scan BEH0314 OD (Small Optic Disc with Commercial Bridging).</strong> Row 0: Reference Ground Truth (Cyan, Left), Commercial Solix Failure (Red, Center), Model Prediction (Green, Right). Row 1: High-magnification Nasal Rim Zoom (Left), Temporal Rim Zoom (Center), En Face Mid-Rim Plane at y=231 (Right).
+| Endpoint | Dense 3D | Bi-Planar |
+| :--- | :---: | :---: |
+| **Mean Dice ± SD** | $0.9446 \pm 0.0152$ | $0.9441 \pm 0.0309$ |
+| **Higher-Dice volumes** | 12/40 | **28/40** |
+| **Median MABE** | $5.50\,\mu\text{m}$ | **$4.71\,\mu\text{m}$** |
+| **Mean MABE ± SD** | $5.87 \pm 2.13\,\mu\text{m}$ | $6.22 \pm 5.91\,\mu\text{m}$ |
+| **Median $P_{95}$** | $18.93\,\mu\text{m}$ | **$16.85\,\mu\text{m}$** |
+| **Mean cup IoU ± SD** | $0.9085 \pm 0.0464$ | **$0.9388 \pm 0.0204$** |
+| **Maximum MABE** | **$17.02\,\mu\text{m}$** | $39.64\,\mu\text{m}$ |
+
+**Paired interpretation**
+
+- Dice means were effectively tied: difference $+0.0004$, subject-bootstrap 95% CI $[-0.0054,\ 0.0098]$, paired $t$-test $p=0.921$.
+- Bi-Planar had lower MABE on 34/40 volumes and lower $P_{95}$ on 29/40.
+- Cup IoU favored Bi-Planar: difference $-0.0304$ for 3D minus Bi-Planar, 95% CI $[-0.0518,\ -0.0130]$, $p<0.001$.
+- The untrimmed MABE mean is dominated by `BEH0290 OD`; interpret it with the medians and sensitivity analysis.
+
+</div>
+<div class="column-panel" markdown="1">
+
+## 4. Human-Corrected Reference Tier
+
+Ten eyes from six subjects had a paired `bad` curve and expert-corrected `good` curve. This tier is clinically more informative than references accepted without editing.
+
+| Endpoint | Dense 3D | Bi-Planar |
+| :--- | :---: | :---: |
+| **Mean Dice** | $0.9441$ | **$0.9485$** |
+| **Mean MABE** | $6.12\,\mu\text{m}$ | **$5.13\,\mu\text{m}$** |
+| **Mean $P_{95}$** | $22.26\,\mu\text{m}$ | **$18.12\,\mu\text{m}$** |
+| **Mean cup IoU** | $0.8967$ | **$0.9407$** |
+
+**Directional results**
+
+- Bi-Planar had lower MABE on **10/10 corrected eyes** and all six audited subjects.
+- Bi-Planar had lower $P_{95}$ on 9/10 eyes and higher Dice on 8/10.
+- Subject-level MABE difference: $+0.94\,\mu\text{m}$ for 3D minus Bi-Planar; exact paired Wilcoxon $p=0.031$.
+
+<div class="decision-box">
+<strong>Selection signal:</strong> The corrected tier is small but directionally consistent. It provides the strongest available support for choosing Bi-Planar as the primary research model.
 </div>
 
-### Anatomical Concordance Breakdown:
-1. **Nasal & Temporal Rim Tracking (Row 1, Cols 0–1)**: The commercial Solix algorithm (Red) erroneously bridges across the cup void and penetrates deep into the inner plexiform layer. Both the 3D U-Net and Bi-Planar models track the true neuroretinal rim downward to the Bruch's Membrane Opening (BMO), aligning within $< 1.5\,\text{pixels}$ of expert manual delineations.
-2. **En Face Mid-Rim Continuity (Row 1, Col 2)**: The transverse plane ($y=231$) confirms that the 3D U-Net maintains circular ring integrity around the disc margin without chordal truncation artifacts frequently seen in 2D slice segmenters.
+</div>
+</div>
 
 ---
 
-## 6. Clinical & Engineering Synthesis: The Optimal Deployment Roadmap
+<!-- pagebreak -->
 
-| Dimension | Dense Anisotropic 3D U-Net | Bi-Planar 2.5D Heavy | Clinical Impact |
-| :--- | :--- | :--- | :--- |
-| **Safety & Outlier Immunity** | ★★★★★ (Worst-case: $17.02\,\mu\text{m}$) | ★★★☆☆ (Worst-case: $39.64\,\mu\text{m}$) | 3D guarantees zero false-positive diagnostic alerts |
-| **Inlier Sub-Micron Precision**| ★★★★☆ (Median: $5.50\,\mu\text{m}$) | ★★★★★ (Median: $4.71\,\mu\text{m}$) | Bi-Planar explicit 1D regression is sharper on easy scans |
-| **Architectural Simplicity** | ★★★★★ (Single-pass 3D inference) | ★★★☆☆ (Dual orthogonal passes + fusion) | 3D has fewer moving parts and no heuristic blending |
-| **Computational Footprint** | ★★★☆☆ ($16.42\text{M}$ params, $22\,\text{GB}$ VRAM) | ★★★★★ ($6.69\text{M}$ params, $<6\,\text{GB}$ VRAM) | Bi-Planar runs efficiently on mid-tier clinical GPUs |
+## 5. Sensitivity and Observed Failure Analysis
 
-### Strategic Recommendation & Phase 3 Architecture Formulation
-1. **Clinical Screening Deployment**: For general screening and automated hospital triaging, the **Dense Anisotropic 3D U-Net is strongly recommended**. Its $2.8\times$ lower variance and absolute immunity to catastrophic slice dropouts ensure zero false-positive glaucomatous defect alerts.
-2. **Phase 3 Hybrid Architecture Roadmap**: The core advantage of Bi-Planar stems not from 2.5D slicing, but from its **explicit 1D continuous boundary regression heads** and **optical gradient alignment loss ($\mathcal{L}_{\text{edge}}$)**. In Phase 3, we recommend equipping `AnisotropicRNFLUNet3D` with continuous surface regression heads ($\mathcal{S}_{\text{ILM}}(z, x)$, $\mathcal{S}_{\text{NFL}}(z, x)$) trained under joint volumetric Dice + Edge Gradient alignment. This will unite **3D volumetric continuity** with **sub-micron continuous boundary sharpness**.
+<img src="assets/model_comparison_3d_vs_biplanar_light_pdf.jpg" class="report-fig-wide-banner" alt="Paired model comparison showing MABE distributions, P95 error, and scan-level differences" />
 
----
-*Autonomous clinical evaluation report. Ground truth verified against human-audited Optovue Solix DICOM acquisitions.*
+<div class="fig-caption">
+<strong>Figure 1: Paired error distributions across 40 validation volumes.</strong> The raw cohort mean is strongly influenced by the Bi-Planar failure on <code>BEH0290 OD</code>. Most scan-level differences favor Bi-Planar, while 3D provides a large advantage on that single case. The figure is descriptive; it does not establish a population-level maximum-error guarantee.
+</div>
+
+<div class="two-col-grid" markdown="1">
+<div class="column-panel" markdown="1">
+
+### BEH0290 OD
+
+Bi-Planar reached $39.64\,\mu\text{m}$ MABE and $95.53\,\mu\text{m}$ $P_{95}$, whereas 3D reached $4.84\,\mu\text{m}$ MABE and $17.39\,\mu\text{m}$ $P_{95}$. This is a clinically important observed failure of the Bi-Planar pipeline and motivates explicit disagreement-based QC.
+
+### Outlier sensitivity
+
+With all 40 volumes, mean MABE was $5.87\,\mu\text{m}$ for 3D and $6.22\,\mu\text{m}$ for Bi-Planar. Excluding `BEH0290 OD`, mean MABE was $5.90\,\mu\text{m}$ for 3D and **$5.36\,\mu\text{m}$ for Bi-Planar** (paired $t$-test $p=0.032$). The lower complete-cohort mean for 3D is therefore not a stable general accuracy advantage.
+
+The 3D model also had a difficult case: `BEH0335 OS` reached $17.02\,\mu\text{m}$ MABE and $62.54\,\mu\text{m}$ $P_{95}$. The available data support the statement that 3D avoided one severe Bi-Planar failure—not that 3D is immune to outliers.
+
+<div class="caution-box">
+<strong>Reliability interpretation:</strong> 3D avoided one severe Bi-Planar failure. Forty volumes are insufficient to estimate a guaranteed maximum error or population failure rate.
+</div>
+
+</div>
+<div class="column-panel" markdown="1">
+
+## 6. Qualitative Anatomy Review
+
+<img src="assets/deep_dive_BEH0314_OD_pdf.jpg" class="report-fig-wide" alt="Dense 3D qualitative deep dive for BEH0314 OD" />
+
+<div class="fig-caption">
+<strong>Figure 2: Dense 3D qualitative review on audited scan BEH0314 OD.</strong> The panel was generated from the 3D evaluation output. It compares the corrected reference, commercial segmentation, and 3D prediction in representative B-scan and en face views. Because the corresponding Bi-Planar panel is not shown here, this figure supports anatomical plausibility but is not a visual head-to-head comparison.
+</div>
+
+On `BEH0314 OD`, both quantitative evaluations were strong, but Bi-Planar had lower MABE ($3.92$ versus $4.70\,\mu\text{m}$) and lower $P_{95}$ ($12.44$ versus $15.91\,\mu\text{m}$). The 3D visualization demonstrates preservation of the peripapillary ring and cup reach; the quantitative paired result should determine the comparative interpretation.
+
+</div>
+</div>
+
+<!-- pagebreak -->
+
+<div class="two-col-grid" markdown="1">
+<div class="column-panel" markdown="1">
+
+## 7. Limitations
+
+1. **Validation reuse:** the 20 subjects were excluded from gradient-based training but were used for checkpoint selection, so this is not an independent test cohort.
+2. **Different selection objectives:** Bi-Planar was selected primarily by validation MABE, while 3D was selected by validation Dice. This can favor each model on its own selection endpoint.
+3. **Limited expert-corrected sample:** only 10 corrected eyes from six subjects were available.
+4. **Reference heterogeneity:** 30 eyes lacked a paired pre-correction curve and were evaluated against segmentations accepted without manual editing.
+5. **Rare failures:** one extreme Bi-Planar case cannot establish either a population failure rate or 3D outlier immunity.
+6. **Exploratory inference:** multiple endpoints were examined without a prespecified multiplicity adjustment.
+7. **No diagnostic endpoint:** segmentation metrics do not demonstrate sensitivity, specificity, false-alert rate, or clinical safety.
+8. **No controlled efficiency benchmark:** latency, throughput, and memory were not measured under the same inference conditions.
+
+The previously generated clinical-capability radar is excluded from the inferential results because its normalized axes were manually constructed from selected cases rather than estimated from a prespecified cohort analysis.
+
+</div>
+<div class="column-panel" markdown="1">
+
+## 8. Model-Selection Decision and Next Steps
+
+### Current decision
+
+- **Primary research model:** **Bi-Planar 2.5D Orthogonal Fusion**, based on better typical MABE, stronger corrected-tier performance, and higher BMO cup IoU.
+- **Complementary QC model:** **Dense 3D U-Net**, used to identify large inter-model disagreement and potential slice-decoupling failures.
+- **Clinical deployment:** neither model is ready for autonomous clinical use on the basis of this validation study.
+
+### Confirmatory evaluation plan
+
+1. Freeze both checkpoints, inference code, preprocessing, post-processing, and decision thresholds before examining new outcomes.
+2. Construct an untouched subject-level test cohort, prioritizing expert-corrected eyes and preserving all OD/OS acquisitions from each subject in one split.
+3. Define subject-averaged corrected-eye MABE as the primary endpoint. Define $P_{95}$, Dice, cup IoU, prespecified failure rates, latency, and peak memory as secondary endpoints.
+4. Use paired subject-level analysis with bootstrap confidence intervals. Report the number needed for manual review and all threshold failures, not only cohort averages.
+5. Predefine a disagreement rule between the two models. Route high-disagreement cases to manual review and test whether this catches failures such as `BEH0290 OD` without excessive review burden.
+6. If no adequate untouched cohort remains, use grouped nested cross-validation with checkpoint selection confined to inner folds and architecture comparison performed only on outer folds.
+
+> [!NOTE]
+> **Final interpretation:** Bi-Planar is the stronger accuracy candidate in the available validation data. Dense 3D contributes a credible complementary robustness signal. A new test cohort—not additional reinterpretation of this validation set—is the next step required to establish superiority.
+
+</div>
+</div>
+
+<div class="source-strip" markdown="1">
+
+### Evidence Sources
+
+- 3D scan-level metrics: `../2026-10-04_rnfl_3d_expanded_18574378/assets/executive_cohort_report/cohort_evaluation_metrics.json`
+- Bi-Planar scan-level metrics: `../2026-10-03_biplanar_expanded_18563914/assets/executive_cohort_report/cohort_evaluation_metrics.json`
+- Frozen validation split: `train-cnn-models/model_training/train_rnfl_3d/manifests/stratified_held_out_v2.json`
+- Phase 1 training cohort: `train-cnn-models/model_training/train_rnfl_3d/manifests/phase1_train_manifest.json`
+
+*Research validation report. Results are intended for model development and human-supervised evaluation, not autonomous clinical diagnosis.*
+
+</div>
