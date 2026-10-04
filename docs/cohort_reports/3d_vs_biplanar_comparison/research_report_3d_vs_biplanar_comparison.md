@@ -125,11 +125,20 @@ hr {
     border: 1px solid #e2e8f0 !important;
     border-radius: 4px !important;
 }
-.report-fig-stacked {
-    max-height: 175px !important;
-    max-width: 98% !important;
+.report-fig-wide-banner {
+    width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
-    margin: 2px auto !important;
+    margin: 2px 0 3px 0 !important;
+    display: block !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 4px !important;
+}
+.report-fig-stacked {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 2px 0 !important;
     display: block !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 4px !important;
@@ -277,7 +286,7 @@ hr {
 
 ## 3. Reliability Analysis & Catastrophic Outlier Suppression
 
-<img src="assets/model_comparison_3d_vs_biplanar_light_pdf.jpg" class="report-fig-stacked" alt="Model Comparison Dual-Theme Figure" />
+<img src="assets/model_comparison_3d_vs_biplanar_light_pdf.jpg" class="report-fig-wide-banner" alt="Model Comparison Dual-Theme Figure" />
 
 <div class="fig-caption">
 <strong>Figure 1: Statistical Error Distributions across Held-Out Cohort (40 Scans).</strong> (A) MABE dispersion: 3D U-Net flattens the distribution and eliminates extreme outliers. (B) Mean error vs. P95 tail margin: 3D maintains a tight cluster bounded below 20 µm. (C) Scan-by-scan delta waterfall: 3D delivers safety margins on challenging scans (up to -34.8 µm on BEH0290 OD).
