@@ -126,22 +126,64 @@ hr {
     border-radius: 4px !important;
 }
 .report-fig-stacked {
-    max-height: 225px !important;
+    max-height: 175px !important;
     max-width: 98% !important;
     height: auto !important;
-    margin: 3px auto !important;
+    margin: 2px auto !important;
     display: block !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 4px !important;
 }
+.two-col-radar {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 12px;
+    align-items: start;
+    margin-top: 3px;
+}
+.radar-left {
+    display: flex;
+    flex-direction: column;
+}
 .report-fig-radar {
-    max-height: 300px !important;
-    max-width: 98% !important;
-    height: auto !important;
-    margin: 3px auto !important;
-    display: block !important;
+    max-height: 250px !important;
+    width: 100% !important;
+    object-fit: contain !important;
+    margin: 0 auto !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 4px !important;
+}
+.radar-right {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.radar-callout {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    padding: 5px 7px;
+}
+.radar-callout.emerald {
+    border-left: 3.5px solid #059669;
+}
+.radar-callout.purple {
+    border-left: 3.5px solid #7c3aed;
+}
+.radar-callout h4 {
+    font-family: 'Calibri', 'Carlito', sans-serif !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    margin-top: 0 !important;
+    margin-bottom: 2px !important;
+}
+.radar-callout.emerald h4 { color: #065f46 !important; }
+.radar-callout.purple h4 { color: #5b21b6 !important; }
+.radar-callout p {
+    margin: 0 !important;
+    font-size: 8.5px !important;
+    line-height: 1.22 !important;
+    color: #334155 !important;
 }
 .report-fig-wide {
     max-height: 195px !important;
@@ -241,18 +283,31 @@ hr {
 <strong>Figure 1: Statistical Error Distributions across Held-Out Cohort (40 Scans).</strong> (A) MABE dispersion: 3D U-Net flattens the distribution and eliminates extreme outliers. (B) Mean error vs. P95 tail margin: 3D maintains a tight cluster bounded below 20 µm. (C) Scan-by-scan delta waterfall: 3D delivers safety margins on challenging scans (up to -34.8 µm on BEH0290 OD).
 </div>
 
-### Forensic Case Study: The Out-of-Plane Slice Decoupling Phenomenon (`BEH0290 OD`)
-- **Bi-Planar 2.5D Decoupling**: Suffered an out-of-plane slice decoupling failure, spiking to **$\text{MABE} = 39.64\,\mu\text{m}$** and **$P_{95} = 95.53\,\mu\text{m}$**. Because 2.5D models process $Z$-stacks and $X$-stacks independently with limited transverse receptive context, local vessel shadowing can cause horizontal and vertical heads to decouple during post-hoc averaging.
-- **Dense 3D Volumetric Immunity**: Evaluated on the exact same volume, 3D U-Net maintained seamless volumetric continuity (**$\text{MABE} = 4.84\,\mu\text{m}$**, **$P_{95} = 17.39\,\mu\text{m}$**), completely eliminating **$34.80\,\mu\text{m}$ of mean error** and **$78.14\,\mu\text{m}$ of tail error**.
-
 ---
 
 ## 4. Multi-Dimensional Clinical Capability Radar: Failure Mode Resilience
 
-<img src="assets/clinical_capability_radar_light_pdf.jpg" class="report-fig-radar" alt="Multi-Dimensional Clinical Capability Radar" />
-
-<div class="fig-caption">
-<strong>Figure 2: Multi-Dimensional Clinical Capability Radar Benchmark (Polygon Spider-Web).</strong> Clinical boundary accuracy and failure resilience across the 6 primary anatomical challenges. (Red Dashed) Commercial Solix heuristic collapses on cup bridging, wedge penetration, and tilt. (Green Dash-Dot) Bi-Planar achieves high accuracy across challenges 1–5, but collapses on Axis 6 (slice continuity). (Purple Solid) Dense 3D U-Net forms a complete, well-rounded envelope encompassing all 6 clinical challenges.
+<div class="two-col-radar">
+  <div class="radar-left">
+    <img src="assets/clinical_capability_radar_light_pdf.jpg" class="report-fig-radar" alt="Multi-Dimensional Clinical Capability Radar" />
+    <div class="fig-caption">
+      <strong>Figure 2: Clinical Capability Radar Benchmark.</strong> Boundary accuracy across 6 clinical challenges (0.08 to 1.0 normalized score). (Red Dashed) Commercial Solix heuristic. (Green Dash-Dot) Bi-Planar 2.5D Heavy. (Purple Solid) Dense 3D U-Net.
+    </div>
+  </div>
+  <div class="radar-right">
+    <div class="radar-callout emerald">
+      <h4>Bi-Planar Precision Edge (Axes 2, 3, 4)</h4>
+      <p>The radar chart demonstrates that <strong>Bi-Planar 2.5D Heavy outperforms 3D U-Net across three focal challenges</strong>: <strong>Deep Cup Excavation</strong> (14.0 vs 20.2 µm P95; 91% vs 77%), <strong>GCL Wedge Penetration</strong> (12.4 vs 15.9 µm P95; 96% vs 90%), and <strong>Myopic Crescent Tilt</strong> (37.3 vs 48.7 µm P95; 84% vs 58%). Additionally, Bi-Planar achieves higher <strong>Cup Cavity IoU</strong> (0.9388 vs 0.9085, p &lt; 0.001). Explicit 1D continuous boundary regression heads and optical gradient loss (L_edge) snap to high-contrast tissue interfaces sharper than dense voxel segmentation.</p>
+    </div>
+    <div class="radar-callout purple">
+      <h4>Dense 3D Volumetric Continuity (Axis 6: BEH0290 OD)</h4>
+      <p>3D U-Net dramatically outperforms on <strong>Out-of-Plane Slice Continuity</strong> (17.4 vs 95.5 µm P95; 97% vs 5%). On BEH0290 OD, Bi-Planar suffered out-of-plane slice decoupling under local vessel shadowing, resulting in an anomalous 39.6 µm MABE. 3D U-Net eliminated <strong>78.1 µm of catastrophic tail error</strong> through native (Z, Y, X) volumetric convolutions, maintaining complete whole-cohort stability (2.8x tighter standard deviation: 2.10 vs 5.84 µm).</p>
+    </div>
+    <div class="radar-callout" style="border-left-color: #0969da;">
+      <h4 style="color: #0969da;">Clinical Envelope Synthesis</h4>
+      <p>Both neural models expand the capability envelope far beyond commercial Solix baseline (red inner collapse). Bi-Planar provides superior local edge fidelity on structured boundaries, whereas Dense 3D U-Net provides absolute fail-safe volumetric continuity against slice dropouts.</p>
+    </div>
+  </div>
 </div>
 
 <!-- pagebreak -->
