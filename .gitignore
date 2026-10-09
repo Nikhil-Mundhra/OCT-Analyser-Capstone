@@ -1,5 +1,7 @@
 # Operating System & IDE Artifacts
 .DS_Store
+:memory:.ses
+*.textClipping
 .vscode/
 .idea/
 
@@ -101,6 +103,13 @@ web-app/frontend/public/docs_content/docs_catalog.md
 !docs/**/*.png
 !docs/**/*.jpg
 !docs/**/*.jpeg
+
+# Ignore large per-scan slice galleries and raw tensor arrays in docs cohort reports
+docs/**/gallery_bscan_*
+docs/**/deep_dive_*
+docs/**/thickness_error_*
+*.npz
+*.textClipping
 
 # Generated Telemetry & Test Debug Outputs
 telemetry_outputs/debug_*.png
