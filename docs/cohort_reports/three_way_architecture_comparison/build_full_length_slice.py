@@ -206,7 +206,7 @@ def render(raw: np.ndarray, z: int, masks: dict[str, np.ndarray]) -> None:
         "and a large commercial error correction.",
         "Eye-level MABE (um): commercial 10.16,",
         "Bi-Planar 3.92, Dense 3D 4.70,",
-        "TransUNet 29.23.",
+        "TransUNet 6.43.",
         "The numbers summarize the entire eye volume;",
         "this figure shows only B-scan 160.",
         "Dense 3D here is the project's anisotropic",
@@ -236,7 +236,7 @@ def main() -> None:
     ckpts = {
         "biplanar": TRAIN / "checkpoints/rnfl_biplanar_18563914/best_volumetric_rnfl_net.pt",
         "dense3d": TRAIN / "checkpoints/rnfl_3d_18574378/best_rnfl_3d_net.pt",
-        "transunet": TRAIN / "checkpoints/rnfl_transunet_v100_18710145/best_volumetric_rnfl_net.pt",
+        "transunet": TRAIN / "checkpoints/rnfl_transunet_hybrid_18724310/best_volumetric_rnfl_net.pt",
     }
     cache = HERE / "assets/full_length_audited_BEH0314_OD_bscan160_masks.npz"
     if cache.exists():
