@@ -104,7 +104,8 @@ web-app/frontend/public/docs_content/docs_catalog.md
 !docs/**/*.jpg
 !docs/**/*.jpeg
 
-# Ignore large per-scan slice galleries and raw tensor arrays in docs cohort reports
+# Ignore large per-scan slice galleries, raw tensor arrays, and pre-publication cohort reports during double-blind review
+docs/cohort_reports/
 docs/**/gallery_bscan_*
 docs/**/deep_dive_*
 docs/**/thickness_error_*
