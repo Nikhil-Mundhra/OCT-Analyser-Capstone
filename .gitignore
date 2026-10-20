@@ -106,6 +106,8 @@ web-app/frontend/public/docs_content/docs_catalog.md
 
 # Ignore large per-scan slice galleries, raw tensor arrays, and pre-publication cohort reports during double-blind review
 docs/cohort_reports/
+docs/technical_specs/dense_3d_multitask_standardization_finding.md
+docs/technical_specs/transunet_20m_balanced_hybrid_architecture_decision.md
 docs/**/gallery_bscan_*
 docs/**/deep_dive_*
 docs/**/thickness_error_*
